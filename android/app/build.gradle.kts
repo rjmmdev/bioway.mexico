@@ -3,6 +3,8 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
+
 }
 
 android {
@@ -28,6 +30,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        multiDexEnabled = true
     }
 
     buildTypes {
@@ -41,4 +44,15 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Firebase BoM - maneja las versiones automáticamente
+    implementation(platform("com.google.firebase:firebase-bom:33.6.0"))
+
+    // Firebase Analytics
+    implementation("com.google.firebase:firebase-analytics")
+
+    // Multidex support
+    implementation("androidx.multidex:multidex:2.0.1")
 }
