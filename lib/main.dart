@@ -31,7 +31,7 @@ class BioWayApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'BioWay México',
+      title: 'BioWay',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         // Colores principales
