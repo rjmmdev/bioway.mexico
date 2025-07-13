@@ -1,0 +1,327 @@
+# .gitattributes para Proyecto Flutter - Trazabilidad BioWay
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# ============================================================================
+# DART & FLUTTER FILES
+# ============================================================================
+
+# Dart files
+*.dart text diff=dart eol=lf
+*.g.dart text linguist-generated=true eol=lf
+*.freezed.dart text linguist-generated=true eol=lf
+*.gr.dart text linguist-generated=true eol=lf
+*.config.dart text linguist-generated=true eol=lf
+*.part.dart text eol=lf
+
+# Flutter specific
+pubspec.yaml text eol=lf
+pubspec.lock text eol=lf
+analysis_options.yaml text eol=lf
+*.arb text eol=lf
+
+# ============================================================================
+# CONFIGURATION FILES
+# ============================================================================
+
+# YAML files
+*.yaml text eol=lf
+*.yml text eol=lf
+
+# JSON files
+*.json text eol=lf
+
+# XML files (Android)
+*.xml text eol=lf
+
+# Properties files
+*.properties text eol=lf
+
+# Configuration files
+*.toml text eol=lf
+*.ini text eol=lf
+*.cfg text eol=lf
+*.conf text eol=lf
+
+# Environment files
+.env text eol=lf
+.env.* text eol=lf
+
+# ============================================================================
+# ANDROID SPECIFIC
+# ============================================================================
+
+# Gradle files
+*.gradle text eol=lf
+*.gradle.kts text eol=lf
+gradle.properties text eol=lf
+gradlew text eol=lf
+gradle-wrapper.properties text eol=lf
+
+# Android manifest and resources
+AndroidManifest.xml text eol=lf
+*.pro text eol=lf
+
+# Kotlin files
+*.kt text eol=lf
+*.kts text eol=lf
+
+# Java files
+*.java text eol=lf
+
+# ============================================================================
+# iOS SPECIFIC
+# ============================================================================
+
+# Xcode project files
+*.pbxproj text eol=lf
+*.xcconfig text eol=lf
+*.entitlements text eol=lf
+*.plist text eol=lf
+
+# Swift files
+*.swift text eol=lf
+
+# Objective-C files
+*.h text eol=lf
+*.m text eol=lf
+*.mm text eol=lf
+
+# ============================================================================
+# WEB FILES
+# ============================================================================
+
+# HTML
+*.html text diff=html eol=lf
+*.htm text diff=html eol=lf
+
+# CSS
+*.css text diff=css eol=lf
+*.scss text diff=css eol=lf
+*.sass text diff=css eol=lf
+*.less text diff=css eol=lf
+
+# JavaScript
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.vue text eol=lf
+
+# ============================================================================
+# DOCUMENTATION
+# ============================================================================
+
+# Markdown
+*.md text diff=markdown eol=lf
+*.mdx text diff=markdown eol=lf
+
+# Text files
+*.txt text eol=lf
+*.rtf text eol=lf
+
+# Documentation
+LICENSE text eol=lf
+README text eol=lf
+CHANGELOG text eol=lf
+CONTRIBUTING text eol=lf
+AUTHORS text eol=lf
+
+# ============================================================================
+# SCRIPTS
+# ============================================================================
+
+# Shell scripts (Unix)
+*.sh text eol=lf
+*.bash text eol=lf
+*.zsh text eol=lf
+
+# Batch files (Windows)
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# ============================================================================
+# GIT FILES
+# ============================================================================
+
+.gitattributes text eol=lf
+.gitignore text eol=lf
+.gitmodules text eol=lf
+
+# ============================================================================
+# FIREBASE SPECIFIC
+# ============================================================================
+
+# Firebase configuration files
+google-services.json text eol=lf
+GoogleService-Info.plist text eol=lf
+firebase.json text eol=lf
+.firebaserc text eol=lf
+firestore.rules text eol=lf
+firestore.indexes.json text eol=lf
+storage.rules text eol=lf
+
+# ============================================================================
+# BINARY FILES
+# ============================================================================
+
+# Images
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.bmp binary
+*.tiff binary
+*.tif binary
+*.svg text eol=lf
+
+# Audio files
+*.mp3 binary
+*.wav binary
+*.flac binary
+*.aac binary
+*.ogg binary
+*.m4a binary
+
+# Video files
+*.mp4 binary
+*.avi binary
+*.mov binary
+*.wmv binary
+*.flv binary
+*.webm binary
+*.mkv binary
+
+# Font files
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.eot binary
+
+# Archives
+*.zip binary
+*.tar binary
+*.tar.gz binary
+*.tar.bz2 binary
+*.tar.xz binary
+*.gz binary
+*.bz2 binary
+*.xz binary
+*.7z binary
+*.rar binary
+
+# Documents
+*.pdf binary
+*.doc binary
+*.docx binary
+*.xls binary
+*.xlsx binary
+*.ppt binary
+*.pptx binary
+
+# Executables and Libraries
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+*.app binary
+*.deb binary
+*.rpm binary
+*.dmg binary
+*.pkg binary
+*.msi binary
+
+# Database files
+*.db binary
+*.sqlite binary
+*.sqlite3 binary
+
+# Keystore files (Android)
+*.keystore binary
+*.jks binary
+
+# ============================================================================
+# FLUTTER SPECIFIC BINARIES
+# ============================================================================
+
+# Flutter generated files
+*.g.dart linguist-generated
+*.freezed.dart linguist-generated
+*.gr.dart linguist-generated
+*.config.dart linguist-generated
+
+# iOS specific binaries
+*.framework binary
+*.a binary
+
+# Android specific binaries
+*.aar binary
+*.jar binary
+*.apk binary
+*.aab binary
+
+# ============================================================================
+# SPECIAL HANDLING
+# ============================================================================
+
+# Lock files
+*.lock text eol=lf
+yarn.lock text eol=lf
+package-lock.json text eol=lf
+
+# Certificate files
+*.pem text eol=lf
+*.crt text eol=lf
+*.key text eol=lf
+
+# Large data files (treat as binary to avoid diff issues)
+*.csv binary
+*.json filter=lfs diff=lfs merge=lfs -text
+
+# Ensure gradlew is always executable
+gradlew text eol=lf
+
+# ============================================================================
+# PROJECT SPECIFIC - BIOWAY TRAZABILIDAD
+# ============================================================================
+
+# Documentation específica del proyecto
+docs/*.md text eol=lf
+README_TRAZABILIDAD.md text eol=lf
+SETUP_FIREBASE.md text eol=lf
+
+# Archivos de configuración específicos
+config/*.dart text eol=lf
+lib/config/*.dart text eol=lf
+
+# Assets del proyecto
+assets/*.json text eol=lf
+assets/images/* binary
+assets/fonts/* binary
+
+# Archivos de internacionalización
+lib/l10n/*.arb text eol=lf
+lib/generated/*.dart linguist-generated
+
+# Scripts específicos del proyecto
+scripts/*.sh text eol=lf
+scripts/*.dart text eol=lf
+
+# ============================================================================
+# PERFORMANCE OPTIMIZATIONS
+# ============================================================================
+
+# Exclude large generated files from language detection
+*.g.dart linguist-generated=true
+*.freezed.dart linguist-generated=true
+*.gr.dart linguist-generated=true
+pubspec.lock linguist-generated=true
+
+# Mark as binary to avoid unnecessary diffs on large files
+*.map binary
+*.min.js binary
+*.min.css binary
