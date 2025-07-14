@@ -304,49 +304,16 @@ class _AnimatedLogoState extends State<AnimatedLogo>
               const SizedBox(height: 8),
 
               // Subtítulo con instrucción
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: BioWayColors.primaryGreen.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'MÉXICO',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: BioWayColors.darkGreen,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '•',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: BioWayColors.darkGreen.withOpacity(0.4),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  AnimatedDefaultTextStyle(
-                    duration: const Duration(milliseconds: 200),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: _isHovered || _isPressed
-                          ? BioWayColors.primaryGreen
-                          : BioWayColors.darkGreen.withOpacity(0.7),
-                      fontWeight: FontWeight.w500,
-                    ),
-                    child: const Text('Toca para cambiar plataforma'),
-                  ),
-                ],
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: _isHovered || _isPressed
+                      ? BioWayColors.primaryGreen
+                      : BioWayColors.darkGreen.withOpacity(0.7),
+                  fontWeight: FontWeight.w500,
+                ),
+                child: const Text('Toca para cambiar plataforma'),
               ),
             ],
           ],
