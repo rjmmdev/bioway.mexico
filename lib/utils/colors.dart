@@ -5,60 +5,93 @@ class BioWayColors {
   // Constructor privado para evitar instanciación
   BioWayColors._();
 
-  // ===== COLORES PRINCIPALES DE BIOWAY =====
+  // ===== COLORES PRINCIPALES DE BIOWAY (BASADOS EN XML) =====
 
-  /// Verde principal de la marca BioWay
-  static const Color primaryGreen = Color(0xFF22C55E);
+  /// Verde principal de la marca BioWay - desde background_1.xml
+  static const Color primaryGreen = Color(0xFF70D997);
 
-  /// Verde oscuro para textos y elementos destacados
-  static const Color darkGreen = Color(0xFF166534);
+  /// Verde oscuro para textos y elementos destacados - desde background_1.xml
+  static const Color darkGreen = Color(0xFF3DB388);
 
-  /// Verde claro para fondos y elementos sutiles
-  static const Color lightGreen = Color(0xFFD1FAE5);
+  /// Verde más oscuro para textos importantes - desde background_3.xml
+  static const Color deepGreen = Color(0xFF00896F);
 
-  /// Verde medio para gradientes y efectos
-  static const Color mediumGreen = Color(0xFF6EE7B7);
+  /// Verde claro para fondos y elementos sutiles - desde background_2.xml
+  static const Color lightGreen = Color(0xFFA3FFA6);
 
-  /// Verde brillante para estados activos
-  static const Color brightGreen = Color(0xFF4ADE80);
+  /// Verde medio - desde background_11.xml
+  static const Color mediumGreen = Color(0xFF90EE80);
 
-  // ===== COLORES DE ECOCE =====
+  /// Verde agua pastel - desde background_11.xml
+  static const Color aquaGreen = Color(0xFFC3FACC);
 
-  /// Verde característico de ECOCE
-  static const Color ecoceGreen = Color(0xFF059669);
+  /// Turquesa brillante - desde background_11.xml y otros
+  static const Color turquoise = Color(0xFF3FD9FF);
+
+  /// Verde lima brillante para acentos
+  static const Color limeGreen = Color(0xFF90EE80);
+
+  // ===== COLORES DE ECOCE (BASADOS EN XML) =====
+
+  /// Verde característico de ECOCE - basado en colores XML
+  static const Color ecoceGreen = Color(0xFF3DB388);
 
   /// Verde claro de ECOCE para fondos
-  static const Color ecoceLight = Color(0xFFF0FDF4);
+  static const Color ecoceLight = Color(0xFFC3FACC);
 
   /// Verde oscuro de ECOCE para textos
-  static const Color ecoceDark = Color(0xFF064E3B);
+  static const Color ecoceDark = Color(0xFF00896F);
 
-  // ===== COLOR DEL INDICADOR DE SWITCH =====
+  // ===== COLOR DEL INDICADOR DE SWITCH (BASADO EN XML) =====
 
-  /// Azul para el indicador de cambio de plataforma
-  static const Color switchBlue = Color(0xFF3B82F6);
+  /// Turquesa para el indicador de cambio de plataforma - desde background_11.xml
+  static const Color switchBlue = Color(0xFF3FD9FF);
 
-  /// Azul claro para estados hover del switch
-  static const Color switchBlueLight = Color(0xFF60A5FA);
+  /// Azul medio para estados hover del switch - desde background_22.xml
+  static const Color switchBlueLight = Color(0xFF1F97E7);
 
-  // ===== GRADIENTES =====
+  /// Morado para elementos especiales - desde background_22.xml
+  static const Color switchPurple = Color(0xFF6957BD);
 
-  /// Gradiente principal de fondo para BioWay
+  // ===== GRADIENTES BASADOS EN XML =====
+
+  /// Gradiente principal de fondo - desde background_11.xml
   static const List<Color> backgroundGradient = [
-    Color(0xFFD1FAE5), // Verde agua claro
-    Color(0xFF6EE7B7), // Verde más vibrante
+    Color(0xFF90EE80), // Verde lime
+    Color(0xFFC3FACC), // Verde agua pastel
+    Color(0xFF3FD9FF), // Turquesa brillante
   ];
 
-  /// Gradiente alternativo más suave
+  /// Gradiente suave verde - desde background_1.xml
   static const List<Color> softGradient = [
-    Color(0xFFF0FDF4), // Casi blanco verdoso
-    Color(0xFFD1FAE5), // Verde agua claro
+    Color(0xFF3DB388), // Verde oscuro
+    Color(0xFF70D997), // Verde principal
   ];
 
-  /// Gradiente para elementos destacados
+  /// Gradiente verde claro - desde background_2.xml
   static const List<Color> accentGradient = [
-    primaryGreen,
-    Color(0xFF16A34A), // Verde más oscuro
+    Color(0xFF70D997), // Verde principal
+    Color(0xFFA3FFA6), // Verde claro
+  ];
+
+  /// Gradiente turquesa-morado - desde background_22.xml
+  static const List<Color> aquaGradient = [
+    Color(0xFF3FD9FF), // Turquesa brillante
+    Color(0xFF1F97E7), // Azul medio
+    Color(0xFF6957BD), // Morado
+  ];
+
+  /// Gradiente principal inverso - desde background_33.xml
+  static const List<Color> mainGradient = [
+    Color(0xFF3FD9FF), // Turquesa brillante
+    Color(0xFFC3FACC), // Verde agua pastel
+    Color(0xFF90EE80), // Verde lime
+  ];
+
+  /// Gradiente cálido - desde background_3.xml
+  static const List<Color> warmGradient = [
+    Color(0xFFF4DF9E), // Amarillo suave
+    Color(0xFF00896F), // Verde profundo
   ];
 
   // ===== COLORES NEUTROS =====
@@ -80,8 +113,8 @@ class BioWayColors {
 
   // ===== COLORES DE ESTADO =====
 
-  /// Verde para estados de éxito
-  static const Color success = Color(0xFF10B981);
+  /// Verde para estados de éxito - más vibrante
+  static const Color success = Color(0xFF00D665);
 
   /// Rojo para errores y alertas
   static const Color error = Color(0xFFEF4444);
@@ -89,28 +122,39 @@ class BioWayColors {
   /// Amarillo/naranja para advertencias
   static const Color warning = Color(0xFFF59E0B);
 
-  /// Azul para información
-  static const Color info = Color(0xFF3B82F6);
+  /// Azul turquesa para información
+  static const Color info = Color(0xFF00C4E5);
 
-  // ===== COLORES DE MATERIALES (RECICLAJE) =====
+  // ===== COLORES DE MATERIALES (RECICLAJE) - ACTUALIZADOS =====
 
-  /// Color para PET
-  static const Color petBlue = Color(0xFF2563EB);
+  /// Color para PET - azul más vibrante
+  static const Color petBlue = Color(0xFF0085FF);
 
-  /// Color para HDPE
-  static const Color hdpeGreen = Color(0xFF059669);
+  /// Color para HDPE - verde reciclaje
+  static const Color hdpeGreen = Color(0xFF00A854);
 
-  /// Color para PP
-  static const Color ppOrange = Color(0xFFF97316);
+  /// Color para PP - naranja vibrante
+  static const Color ppOrange = Color(0xFFFF7A00);
 
-  /// Color para otros materiales
+  /// Color para otros materiales - morado vibrante
   static const Color otherPurple = Color(0xFF9333EA);
 
-  /// Color para vidrio
-  static const Color glassGreen = Color(0xFF10B981);
+  /// Color para vidrio - verde esmeralda
+  static const Color glassGreen = Color(0xFF00D665);
 
-  /// Color para metal
+  /// Color para metal - gris metálico
   static const Color metalGrey = Color(0xFF6B7280);
+
+  // ===== COLORES ESPECIALES PARA LA INTERFAZ =====
+
+  /// Rosa para elementos destacados (como se ve en la imagen)
+  static const Color accentPink = Color(0xFFFF6B9D);
+
+  /// Amarillo vibrante para notificaciones
+  static const Color brightYellow = Color(0xFFFFD93D);
+
+  /// Azul profundo para elementos de navegación
+  static const Color deepBlue = Color(0xFF0066CC);
 
   // ===== SOMBRAS Y OVERLAYS =====
 
@@ -122,6 +166,12 @@ class BioWayColors {
 
   /// Color para overlays claros
   static Color lightOverlay = Colors.white.withOpacity(0.8);
+
+  /// Sombra verde para elementos principales
+  static Color greenShadow = primaryGreen.withOpacity(0.3);
+
+  /// Sombra turquesa para elementos secundarios
+  static Color aquaShadow = aquaGreen.withOpacity(0.3);
 
   // ===== MÉTODOS ÚTILES =====
 
@@ -152,5 +202,29 @@ class BioWayColors {
     );
 
     return hslDark.toColor();
+  }
+
+  /// Obtiene el gradiente principal basado en el contexto
+  static LinearGradient getMainGradient({
+    AlignmentGeometry begin = Alignment.topLeft,
+    AlignmentGeometry end = Alignment.bottomRight,
+  }) {
+    return LinearGradient(
+      begin: begin,
+      end: end,
+      colors: mainGradient,
+    );
+  }
+
+  /// Obtiene el gradiente acuático/turquesa
+  static LinearGradient getAquaGradient({
+    AlignmentGeometry begin = Alignment.topLeft,
+    AlignmentGeometry end = Alignment.bottomRight,
+  }) {
+    return LinearGradient(
+      begin: begin,
+      end: end,
+      colors: aquaGradient,
+    );
   }
 }

@@ -4,6 +4,7 @@ import '../../utils/colors.dart';
 import '../../widgets/common/gradient_background.dart';
 import '../../widgets/login/animated_logo.dart';
 import 'platform_selector_screen.dart';
+import 'bioway_register_screen.dart';
 
 class BioWayLoginScreen extends StatefulWidget {
   const BioWayLoginScreen({super.key});
@@ -157,15 +158,26 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
   }
 
   void _handleRegister() {
-    // TODO: Implementar navegación a registro
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Función en desarrollo'),
-        backgroundColor: BioWayColors.info,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+        const BioWayRegisterScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0.0, 1.0);
+          const end = Offset.zero;
+          const curve = Curves.easeOutCubic;
+
+          var tween = Tween(begin: begin, end: end).chain(
+            CurveTween(curve: curve),
+          );
+
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 400),
       ),
     );
   }
