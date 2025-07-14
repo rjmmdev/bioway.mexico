@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../utils/colors.dart';
+import 'ecoce_register_screen.dart';
 
 class ECOCELoginScreen extends StatefulWidget {
   const ECOCELoginScreen({super.key});
@@ -149,6 +150,46 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         _showTemporarySuccessDialog();
       }
     }
+  }
+
+  void _handleRegister() {
+    HapticFeedback.lightImpact();
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+        const ECOCERegisterScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0.0, 1.0);
+          const end = Offset.zero;
+          const curve = Curves.easeOutCubic;
+
+          var tween = Tween(begin: begin, end: end).chain(
+            CurveTween(curve: curve),
+          );
+
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 400),
+      ),
+    );
+  }
+
+  void _handleForgotPassword() {
+    // TODO: Implementar recuperación de contraseña para ECOCE
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Función en desarrollo para ECOCE'),
+        backgroundColor: BioWayColors.info,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
   }
 
   void _showTemporarySuccessDialog() {
@@ -440,10 +481,38 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
 
                                   // Campo de contraseña
                                   _buildPasswordField(),
-                                  const SizedBox(height: 32),
+                                  const SizedBox(height: 12),
+
+                                  // Enlace ¿Olvidaste tu contraseña?
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: TextButton(
+                                      onPressed: _handleForgotPassword,
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: BioWayColors.ecoceGreen,
+                                        padding: EdgeInsets.zero,
+                                      ),
+                                      child: const Text(
+                                        '¿Olvidaste tu contraseña?',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
 
                                   // Botón de inicio de sesión
                                   _buildLoginButton(),
+                                  const SizedBox(height: 20),
+
+                                  // Divisor
+                                  _buildDivider(),
+                                  const SizedBox(height: 20),
+
+                                  // Botón de registro
+                                  _buildRegisterButton(),
                                   const SizedBox(height: 20),
 
                                   // Información adicional
@@ -659,6 +728,78 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
     );
   }
 
+  Widget _buildDivider() {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  Colors.grey.shade300,
+                ],
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'o',
+            style: TextStyle(
+              color: Colors.grey.shade500,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.grey.shade300,
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRegisterButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: OutlinedButton(
+        onPressed: _handleRegister,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: BioWayColors.ecoceGreen,
+          side: BorderSide(
+            color: BioWayColors.ecoceGreen,
+            width: 2,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: const Text(
+          'Registrar Proveedor',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildInfoSection() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -680,7 +821,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Sistema exclusivo para operadores de trazabilidad ECOCE',
+              'Sistema exclusivo para proveedores de ECOCE',
               style: TextStyle(
                 fontSize: 12,
                 color: BioWayColors.ecoceDark,
