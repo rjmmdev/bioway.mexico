@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../utils/colors.dart';
+import '../../../utils/colors.dart';
 
 /// Tarjeta interactiva para mostrar opciones de plataforma
 class PlatformOptionCard extends StatefulWidget {
