@@ -178,6 +178,182 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
     }
   }
 
+  // Método para mostrar alerta informativa del tipo de usuario
+  void _showUserTypeAlert() {
+    if (_selectedUserType == null) return;
+
+    String title;
+    String description;
+    List<String> features;
+    IconData icon;
+    Color color;
+
+    if (_selectedUserType == 'brindador') {
+      title = '¿Qué es un Brindador?';
+      description = 'Los Brindadores son personas que reciclan desde casa, brindando/donando sus materiales reciclables de forma responsable.';
+      features = [
+        'Recicla desde casa con guía paso a paso para separar y preparar materiales',
+        'Gana puntos por brindar reciclables limpios y separados',
+        'Conoce el impacto real de tu contribución en la reducción de emisiones',
+        'Participa en el programa de recompensas de la comunidad'
+      ];
+      icon = Icons.home_outlined;
+      color = BioWayColors.primaryGreen;
+    } else {
+      title = '¿Qué es un Recolector?';
+      description = 'Los Recolectores dignifican su labor recogiendo materiales reciclables ya limpios y separados usando BioWay.';
+      features = [
+        'Usa el mapa interactivo para ubicar materiales disponibles y optimizar rutas',
+        'Recibe materiales ya limpios y separados, aumentando tus ingresos',
+        'Trabaja en condiciones más seguras y dignas',
+        'Accede a horarios fijos si no tienes dispositivo móvil'
+      ];
+      icon = Icons.person_pin_circle;
+      color = BioWayColors.mediumGreen;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            constraints: BoxConstraints(
+              maxWidth: 400,
+              maxHeight: MediaQuery.of(context).size.height * 0.8,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header con ícono
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 40,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Título
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: BioWayColors.darkGreen,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Descripción
+                  Text(
+                    description,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: BioWayColors.textGrey,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Features
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: color.withOpacity(0.2)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Con BioWay podrás:',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: BioWayColors.darkGreen,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        ...features.map((feature) => Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                margin: const EdgeInsets.only(top: 3),
+                                width: 5,
+                                height: 5,
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  feature,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: BioWayColors.textGrey,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )).toList(),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Botón de cerrar
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: color,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                      ),
+                      child: const Text(
+                        'Continuar',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildStepIndicator() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -232,7 +408,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
     );
   }
 
-  // PASO 1: Selección de tipo de usuario
+  // PASO 1: Selección de tipo de usuario con información descriptiva
   Widget _buildUserTypeStep() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -269,9 +445,9 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
           Column(
             children: [
               _buildUserTypeCard(
-                icon: Icons.store_mall_directory,
+                icon: Icons.home_outlined,
                 title: 'Brindador',
-                subtitle: 'Centro de acopio\ny reciclaje',
+                subtitle: 'Persona que recicla\ndesde casa',
                 value: 'brindador',
                 isSelected: _selectedUserType == 'brindador',
               ),
@@ -303,11 +479,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    _selectedUserType == 'brindador'
-                        ? 'Como brindador, podrás registrar tu centro de acopio y recibir materiales'
-                        : _selectedUserType == 'recolector'
-                        ? 'Como recolector, podrás encontrar centros de acopio y registrar tus entregas'
-                        : 'Cada tipo de usuario tiene diferentes funciones y beneficios',
+                    'Toca cualquier opción para conocer más detalles sobre ese tipo de usuario.',
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.white70,
@@ -318,6 +490,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
               ],
             ),
           ),
+
           const SizedBox(height: 80), // Espacio para los botones
         ],
       ),
@@ -422,7 +595,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
     );
   }
 
-  // PASO 2B: Información específica para Recolector
+  // PASO 2B: Información específica para Recolector (MEJORADO)
   Widget _buildRecolectorInfoStep() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -453,11 +626,12 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
           ),
           const SizedBox(height: 24),
 
-          // Selector de empresa/asociación
+          // Container para la pregunta y el dropdown - CORREGIDO
           Container(
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(15),
+              borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.1),
@@ -466,43 +640,100 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                 ),
               ],
             ),
-            child: DropdownButtonFormField<String>(
-              value: _selectedCompany,
-              decoration: InputDecoration(
-                labelText: '¿Perteneces a alguna empresa?',
-                prefixIcon: Icon(Icons.business, color: Colors.grey.shade600, size: 20),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide.none,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Título de la sección
+                Text(
+                  '¿Perteneces a alguna empresa o asociación?',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: BioWayColors.darkGreen,
+                  ),
                 ),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-              items: _companies.map((company) {
-                return DropdownMenuItem<String>(
-                  value: company,
-                  child: Text(company, style: const TextStyle(fontSize: 14)),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedCompany = value;
-                });
-              },
-              hint: const Text('Selecciona una opción', style: TextStyle(fontSize: 14)),
-              isExpanded: true,
+                const SizedBox(height: 4),
+                Text(
+                  'Esta información nos ayuda a brindarte mejores servicios',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: BioWayColors.textGrey,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Dropdown mejorado
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: BioWayColors.backgroundGrey,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.grey.shade300,
+                      width: 1,
+                    ),
+                  ),
+                  child: DropdownButtonFormField<String>(
+                    value: _selectedCompany,
+                    decoration: InputDecoration(
+                      prefixIcon: Icon(
+                        Icons.business_outlined,
+                        color: BioWayColors.primaryGreen,
+                        size: 22,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                    hint: Text(
+                      'Selecciona una opción',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    items: _companies.map((company) {
+                      return DropdownMenuItem<String>(
+                        value: company,
+                        child: Text(
+                          company,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: BioWayColors.darkGreen,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedCompany = value;
+                      });
+                    },
+                    isExpanded: true,
+                    dropdownColor: Colors.white,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: BioWayColors.darkGreen,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
 
           const SizedBox(height: 20),
 
-          // Información sobre beneficios
+          // Información sobre beneficios - MEJORADA
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: BioWayColors.info.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(color: BioWayColors.info.withOpacity(0.3)),
             ),
             child: Column(
@@ -510,10 +741,10 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
               children: [
                 Row(
                   children: [
-                    Icon(Icons.info_outline, color: BioWayColors.info, size: 18),
+                    Icon(Icons.info_outline, color: BioWayColors.info, size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      'Beneficios de asociarte',
+                      'Beneficios de pertenecer a una empresa',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -522,11 +753,13 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 _buildBenefit('Acceso a materiales específicos'),
                 _buildBenefit('Rutas de recolección asignadas'),
                 _buildBenefit('Tarifas preferenciales'),
                 _buildBenefit('Capacitación y certificaciones'),
+                _buildBenefit('Soporte técnico especializado'),
+                _buildBenefit('Programas de incentivos adicionales'),
               ],
             ),
           ),
@@ -673,19 +906,27 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
 
   Widget _buildBenefit(String text) {
     return Padding(
-      padding: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.check_circle, color: BioWayColors.success, size: 14),
-          const SizedBox(width: 6),
+          Container(
+            margin: const EdgeInsets.only(top: 2),
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: BioWayColors.success,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               text,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey.shade700,
-                height: 1.3,
+                color: BioWayColors.info,
+                height: 1.4,
               ),
             ),
           ),
@@ -705,6 +946,10 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
       onTap: () {
         setState(() {
           _selectedUserType = value;
+        });
+        // Mostrar alerta informativa inmediatamente después de seleccionar
+        Future.delayed(const Duration(milliseconds: 200), () {
+          _showUserTypeAlert();
         });
       },
       child: AnimatedContainer(
@@ -760,12 +1005,19 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                 ],
               ),
             ),
-            if (isSelected)
+            if (isSelected) ...[
               Icon(
                 Icons.check_circle,
                 color: BioWayColors.primaryGreen,
                 size: 24,
               ),
+            ] else ...[
+              Icon(
+                Icons.info_outline,
+                color: Colors.white70,
+                size: 20,
+              ),
+            ],
           ],
         ),
       ),
