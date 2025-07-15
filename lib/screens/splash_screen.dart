@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../utils/colors.dart';
 import 'login/bioway/bioway_login_screen.dart'; // ACTUALIZADA
 
@@ -191,8 +192,8 @@ class _SplashScreenState extends State<SplashScreen>
                         child: Transform.rotate(
                           angle: _logoRotationAnimation.value,
                           child: Container(
-                            width: 140,
-                            height: 140,
+                            width: 160,
+                            height: 160,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               gradient: LinearGradient(
@@ -200,12 +201,12 @@ class _SplashScreenState extends State<SplashScreen>
                                 end: Alignment.bottomRight,
                                 colors: [
                                   BioWayColors.primaryGreen,
-                                  BioWayColors.primaryGreen.withOpacity(0.8),
+                                  BioWayColors.primaryGreen.withValues(alpha: 0.8),
                                 ],
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: BioWayColors.primaryGreen.withOpacity(0.4),
+                                  color: BioWayColors.primaryGreen.withValues(alpha: 0.4),
                                   blurRadius: 30,
                                   spreadRadius: 10,
                                 ),
@@ -214,11 +215,11 @@ class _SplashScreenState extends State<SplashScreen>
                             child: Stack(
                               alignment: Alignment.center,
                               children: [
-                                // Ícono principal
-                                const Icon(
-                                  Icons.eco,
-                                  size: 70,
-                                  color: Colors.white,
+                                // Logo SVG más grande
+                                SvgPicture.asset(
+                                  'assets/logos/bioway_logo.svg',
+                                  width: 100,
+                                  height: 100,
                                 ),
                                 // Anillo decorativo animado
                                 ...List.generate(2, (index) {
@@ -226,13 +227,13 @@ class _SplashScreenState extends State<SplashScreen>
                                     animation: _logoController,
                                     builder: (context, child) {
                                       return Container(
-                                        width: 140 + (index * 30),
-                                        height: 140 + (index * 30),
+                                        width: 160 + (index * 30),
+                                        height: 160 + (index * 30),
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
                                           border: Border.all(
                                             color: BioWayColors.primaryGreen
-                                                .withOpacity(0.2 - (index * 0.1)),
+                                                .withValues(alpha: 0.2 - (index * 0.1)),
                                             width: 2,
                                           ),
                                         ),
@@ -249,7 +250,7 @@ class _SplashScreenState extends State<SplashScreen>
                   },
                 ),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 20),
 
                 // Texto animado
                 AnimatedBuilder(

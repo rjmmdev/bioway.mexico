@@ -144,6 +144,9 @@ class BioWayColors {
 
   /// Color para metal - gris metálico
   static const Color metalGrey = Color(0xFF6B7280);
+  
+  /// Color para reciclaje - naranja reciclaje
+  static const Color recycleOrange = Color(0xFFFF6B00);
 
   // ===== COLORES ESPECIALES PARA LA INTERFAZ =====
 

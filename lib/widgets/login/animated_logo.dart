@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../utils/colors.dart';
 
 /// Logo animado de BioWay con indicador de switch para cambiar de plataforma
@@ -172,19 +173,21 @@ class _AnimatedLogoState extends State<AnimatedLogo>
                             end: Alignment.bottomRight,
                             colors: [
                               BioWayColors.primaryGreen,
-                              BioWayColors.primaryGreen.withOpacity(0.8),
+                              BioWayColors.primaryGreen.withValues(alpha: 0.8),
                             ],
                           ),
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                             width: 2,
                           ),
                         ),
-                        child: Icon(
-                          Icons.eco,
-                          size: widget.size * 0.5,
-                          color: Colors.white,
+                        child: Center(
+                          child: SvgPicture.asset(
+                            'assets/logos/bioway_logo.svg',
+                            width: widget.size * 0.7,
+                            height: widget.size * 0.7,
+                          ),
                         ),
                       ),
 
@@ -268,7 +271,7 @@ class _AnimatedLogoState extends State<AnimatedLogo>
             ),
 
             if (widget.showText) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
 
               // Texto BioWay con indicador
               AnimatedContainer(

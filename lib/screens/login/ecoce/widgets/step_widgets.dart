@@ -13,6 +13,7 @@ class RegisterHeader extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
+  final Color color;
 
   const RegisterHeader({
     super.key,
@@ -22,6 +23,7 @@ class RegisterHeader extends StatelessWidget {
     this.title = 'Registro Acopiador',
     this.subtitle = 'Centro de acopio de materiales',
     this.icon = Icons.warehouse,
+    this.color = BioWayColors.primaryGreen,
   });
 
   @override
@@ -48,10 +50,10 @@ class RegisterHeader extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: BioWayColors.lightGrey.withValues(alpha: 0.5),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.arrow_back, color: BioWayColors.darkGreen),
+                  child: Icon(Icons.arrow_back, color: color),
                 ),
               ),
               const SizedBox(width: 16),
@@ -62,10 +64,10 @@ class RegisterHeader extends StatelessWidget {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: BioWayColors.petBlue.withValues(alpha: 0.1),
+                        color: color.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(icon, color: BioWayColors.petBlue, size: 24),
+                      child: Icon(icon, color: color, size: 24),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -101,6 +103,7 @@ class RegisterHeader extends StatelessWidget {
           StepProgressIndicator(
             currentStep: currentStep,
             totalSteps: totalSteps,
+            color: color,
           ),
         ],
       ),
@@ -112,11 +115,13 @@ class RegisterHeader extends StatelessWidget {
 class StepProgressIndicator extends StatelessWidget {
   final int currentStep;
   final int totalSteps;
+  final Color color;
 
   const StepProgressIndicator({
     super.key,
     required this.currentStep,
     required this.totalSteps,
+    this.color = BioWayColors.petBlue,
   });
 
   @override
@@ -135,9 +140,9 @@ class StepProgressIndicator extends StatelessWidget {
               height: 32,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isActive || isCompleted ? BioWayColors.petBlue : BioWayColors.lightGrey,
+                color: isActive || isCompleted ? color : BioWayColors.lightGrey,
                 border: Border.all(
-                  color: isActive ? BioWayColors.petBlue : Colors.transparent,
+                  color: isActive ? color : Colors.transparent,
                   width: 2,
                 ),
               ),
@@ -161,7 +166,7 @@ class StepProgressIndicator extends StatelessWidget {
               child: Container(
                 height: 2,
                 margin: const EdgeInsets.symmetric(horizontal: 4),
-                color: isCompleted ? BioWayColors.petBlue : BioWayColors.lightGrey,
+                color: isCompleted ? color : BioWayColors.lightGrey,
               ),
             );
           }
@@ -172,15 +177,16 @@ class StepProgressIndicator extends StatelessWidget {
 }
 
 /// Construye el título de un paso con numeración
-Widget buildStepTitle(int currentStep, int totalSteps, String title, String subtitle) {
+Widget buildStepTitle(int currentStep, int totalSteps, String title, String subtitle, {Color? color}) {
+  final themeColor = color ?? BioWayColors.petBlue;
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(
         'Paso $currentStep de $totalSteps',
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
-          color: BioWayColors.petBlue,
+          color: themeColor,
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -192,6 +198,8 @@ Widget buildStepTitle(int currentStep, int totalSteps, String title, String subt
           fontWeight: FontWeight.bold,
           color: BioWayColors.darkGreen,
         ),
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
       ),
       const SizedBox(height: 4),
       Text(
@@ -200,6 +208,8 @@ Widget buildStepTitle(int currentStep, int totalSteps, String title, String subt
           fontSize: 14,
           color: BioWayColors.textGrey,
         ),
+        overflow: TextOverflow.ellipsis,
+        maxLines: 2,
       ),
     ],
   );
@@ -354,7 +364,7 @@ class BasicInfoStep extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        buildStepTitle(1, 4, 'Información Básica', 'Datos principales de tu centro de acopio'),
+        buildStepTitle(1, 5, 'Información Básica', 'Datos principales de tu centro de acopio'),
         const SizedBox(height: 32),
 
         buildTextField(
@@ -370,7 +380,7 @@ class BasicInfoStep extends StatelessWidget {
           label: 'RFC (Opcional)',
           hint: 'XXXX000000XXX',
           icon: Icons.article,
-          helperText: 'Tienes 30 días para proporcionarlo',
+          helperText: 'Tienes 2 semanas para proporcionarlo',
           inputFormatters: [
             LengthLimitingTextInputFormatter(13),
             FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9]')),
@@ -431,16 +441,12 @@ class BasicInfoStep extends StatelessWidget {
 /// Paso 2: Ubicación
 class LocationStep extends StatelessWidget {
   final Map<String, TextEditingController> controllers;
-  final bool isSearchingCP;
-  final Function(String) onCPChanged;
   final VoidCallback onNext;
   final VoidCallback onPrevious;
 
   const LocationStep({
     super.key,
     required this.controllers,
-    required this.isSearchingCP,
-    required this.onCPChanged,
     required this.onNext,
     required this.onPrevious,
   });
@@ -450,16 +456,84 @@ class LocationStep extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        buildStepTitle(2, 4, 'Ubicación', 'Dirección de tu centro de acopio'),
+        buildStepTitle(2, 5, 'Ubicación', 'Dirección de tu centro de acopio'),
         const SizedBox(height: 32),
 
-        PostalCodeSection(
-          controller: controllers['codigoPostal']!,
-          isSearching: isSearchingCP,
-          onChanged: onCPChanged,
+        // Sección de búsqueda por ubicación
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                BioWayColors.petBlue.withValues(alpha: 0.05),
+                BioWayColors.petBlue.withValues(alpha: 0.02),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: BioWayColors.petBlue.withValues(alpha: 0.2),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.search_rounded, color: BioWayColors.petBlue, size: 24),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Búsqueda por ubicación',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: BioWayColors.darkGreen,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Selecciona tu ubicación para facilitar el registro',
+                style: TextStyle(fontSize: 14, color: BioWayColors.textGrey),
+              ),
+              const SizedBox(height: 16),
+
+              // Estado
+              buildTextField(
+                controller: controllers['estado']!,
+                label: 'Estado *',
+                hint: 'Selecciona tu estado',
+                icon: Icons.map,
+              ),
+              const SizedBox(height: 16),
+
+              // Municipio
+              buildTextField(
+                controller: controllers['municipio']!,
+                label: 'Municipio *',
+                hint: 'Selecciona tu municipio',
+                icon: Icons.location_city,
+              ),
+              const SizedBox(height: 16),
+
+              // Colonia
+              buildTextField(
+                controller: controllers['colonia']!,
+                label: 'Colonia *',
+                hint: 'Selecciona tu colonia',
+                icon: Icons.holiday_village,
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 24),
 
+        // Dirección completa
         Row(
           children: [
             Expanded(
@@ -486,37 +560,6 @@ class LocationStep extends StatelessWidget {
         const SizedBox(height: 20),
 
         buildTextField(
-          controller: controllers['colonia']!,
-          label: 'Colonia *',
-          hint: 'Nombre de la colonia',
-          icon: Icons.location_city,
-        ),
-        const SizedBox(height: 20),
-
-        Row(
-          children: [
-            Expanded(
-              child: buildTextField(
-                controller: controllers['ciudad']!,
-                label: 'Ciudad *',
-                hint: 'Ciudad',
-                icon: Icons.location_city,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: buildTextField(
-                controller: controllers['estado']!,
-                label: 'Estado *',
-                hint: 'Estado',
-                icon: Icons.map,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-
-        buildTextField(
           controller: controllers['referencias']!,
           label: 'Referencias de ubicación *',
           hint: 'Ej: Frente a la iglesia, entrada lateral',
@@ -527,7 +570,9 @@ class LocationStep extends StatelessWidget {
         const SizedBox(height: 24),
 
         MapPreview(
-          postalCode: controllers['codigoPostal']!.text,
+          estado: controllers['estado']!.text,
+          municipio: controllers['municipio']!.text,
+          colonia: controllers['colonia']!.text,
         ),
         const SizedBox(height: 40),
 
@@ -648,11 +693,15 @@ class PostalCodeSection extends StatelessWidget {
 
 /// Vista previa del mapa
 class MapPreview extends StatelessWidget {
-  final String postalCode;
+  final String estado;
+  final String municipio;
+  final String colonia;
 
   const MapPreview({
     super.key,
-    required this.postalCode,
+    required this.estado,
+    required this.municipio,
+    required this.colonia,
   });
 
   @override
@@ -683,17 +732,24 @@ class MapPreview extends StatelessWidget {
                     Icon(Icons.map, size: 48, color: Colors.grey.shade400),
                     const SizedBox(height: 8),
                     Text(
-                      postalCode.length == 5
-                          ? 'Mapa de la zona $postalCode'
-                          : 'El mapa se mostrará al ingresar el CP',
+                      estado.isNotEmpty && municipio.isNotEmpty && colonia.isNotEmpty
+                          ? 'Mapa de $colonia, $municipio'
+                          : 'El mapa se mostrará al seleccionar la ubicación',
                       style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
                       textAlign: TextAlign.center,
                     ),
+                    if (estado.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        estado,
+                        style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                      ),
+                    ],
                   ],
                 ),
               ),
             ),
-            if (postalCode.length == 5)
+            if (estado.isNotEmpty && municipio.isNotEmpty && colonia.isNotEmpty)
               Positioned(
                 bottom: 16,
                 right: 16,
@@ -725,6 +781,8 @@ class OperationsStep extends StatelessWidget {
   final Function(bool) onTransportChanged;
   final VoidCallback onNext;
   final VoidCallback onPrevious;
+  final bool isTransportLocked;
+  final bool showCapacitySection;
 
   const OperationsStep({
     super.key,
@@ -735,6 +793,8 @@ class OperationsStep extends StatelessWidget {
     required this.onTransportChanged,
     required this.onNext,
     required this.onPrevious,
+    this.isTransportLocked = false,
+    this.showCapacitySection = true,
   });
 
   @override
@@ -742,7 +802,7 @@ class OperationsStep extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        buildStepTitle(3, 4, 'Información Operativa', 'Materiales EPF\'s y capacidad de tu centro'),
+        buildStepTitle(3, 5, 'Información Operativa', 'Materiales EPF\'s y capacidad de tu centro'),
         const SizedBox(height: 32),
 
         MaterialSelector(
@@ -794,7 +854,7 @@ class OperationsStep extends StatelessWidget {
               ),
               Switch(
                 value: hasTransport,
-                onChanged: onTransportChanged,
+                onChanged: isTransportLocked ? null : onTransportChanged,
                 activeColor: BioWayColors.petBlue,
               ),
             ],
@@ -802,11 +862,14 @@ class OperationsStep extends StatelessWidget {
         ),
         const SizedBox(height: 24),
 
-        CapacitySection(
-          dimensionsController: controllers['dimensiones']!,
-          weightController: controllers['peso']!,
-        ),
-        const SizedBox(height: 24),
+        if (showCapacitySection) ...[
+          CapacitySection(
+            largoController: controllers['largo']!,
+            anchoController: controllers['ancho']!,
+            weightController: controllers['peso']!,
+          ),
+          const SizedBox(height: 24),
+        ],
 
         buildTextField(
           controller: controllers['linkRedSocial']!,
@@ -826,14 +889,132 @@ class OperationsStep extends StatelessWidget {
   }
 }
 
+/// Widget personalizado para input de dimensiones con formato X
+class DimensionsInput extends StatefulWidget {
+  final TextEditingController largoController;
+  final TextEditingController anchoController;
+  final String label;
+  final String? helperText;
+  final IconData icon;
+
+  const DimensionsInput({
+    super.key,
+    required this.largoController,
+    required this.anchoController,
+    this.label = 'Dimensiones (metros) *',
+    this.helperText = 'Formato: largo X ancho',
+    this.icon = Icons.straighten,
+  });
+
+  @override
+  State<DimensionsInput> createState() => _DimensionsInputState();
+}
+
+class _DimensionsInputState extends State<DimensionsInput> {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(widget.icon, color: BioWayColors.petBlue, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              widget.label,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: BioWayColors.darkGreen,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: BioWayColors.lightGrey, width: 1),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: widget.largoController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16),
+                  decoration: InputDecoration(
+                    hintText: '15.25',
+                    hintStyle: TextStyle(color: BioWayColors.textGrey.withValues(alpha: 0.5)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    border: InputBorder.none,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: const Text(
+                  'X',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: BioWayColors.petBlue,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: TextFormField(
+                  controller: widget.anchoController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16),
+                  decoration: InputDecoration(
+                    hintText: '15.20',
+                    hintStyle: TextStyle(color: BioWayColors.textGrey.withValues(alpha: 0.5)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    border: InputBorder.none,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (widget.helperText != null) ...[
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Text(
+              widget.helperText!,
+              style: const TextStyle(
+                fontSize: 12,
+                color: BioWayColors.textGrey,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 /// Sección de capacidad de prensado específica para Acopiador
 class CapacitySection extends StatelessWidget {
-  final TextEditingController dimensionsController;
+  final TextEditingController largoController;
+  final TextEditingController anchoController;
   final TextEditingController weightController;
 
   const CapacitySection({
     super.key,
-    required this.dimensionsController,
+    required this.largoController,
+    required this.anchoController,
     required this.weightController,
   });
 
@@ -897,13 +1078,9 @@ class CapacitySection extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          buildTextField(
-            controller: dimensionsController,
-            label: 'Dimensiones (metros) *',
-            hint: 'Ej: 15.25 X 15.20',
-            icon: Icons.straighten,
-            helperText: 'Formato: largo X ancho',
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          DimensionsInput(
+            largoController: largoController,
+            anchoController: anchoController,
           ),
           const SizedBox(height: 16),
 
@@ -923,14 +1100,93 @@ class CapacitySection extends StatelessWidget {
   }
 }
 
-/// Paso 4: Credenciales y Documentos
+/// Paso 4: Datos Fiscales y Documentos
+class FiscalDataStep extends StatelessWidget {
+  final Map<String, String?> selectedFiles;
+  final Function(String) onFileToggle;
+  final VoidCallback onNext;
+  final VoidCallback onPrevious;
+
+  const FiscalDataStep({
+    super.key,
+    required this.selectedFiles,
+    required this.onFileToggle,
+    required this.onNext,
+    required this.onPrevious,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        buildStepTitle(4, 5, 'Datos Fiscales', 'Documentación fiscal requerida'),
+        const SizedBox(height: 32),
+
+        // Información sobre documentos requeridos
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: BioWayColors.info.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: BioWayColors.info.withOpacity(0.3)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_outline, color: BioWayColors.info, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Documentos Fiscales Requeridos',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: BioWayColors.darkGreen,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Sube los documentos en formato PDF o imagen. Máximo 5MB por archivo.\nTienes 2 semanas para completar esta documentación.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: BioWayColors.textGrey,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        DocumentUploader(
+          selectedFiles: selectedFiles,
+          onFileToggle: onFileToggle,
+        ),
+        const SizedBox(height: 40),
+
+        buildNavigationButtons(
+          onNext: onNext,
+          onPrevious: onPrevious,
+          nextLabel: 'Siguiente',
+        ),
+      ],
+    );
+  }
+}
+
+/// Paso 5: Credenciales de Acceso
 class CredentialsStep extends StatelessWidget {
   final Map<String, TextEditingController> controllers;
-  final Map<String, String?> selectedFiles;
   final bool acceptTerms;
   final bool obscurePassword;
   final bool obscureConfirmPassword;
-  final Function(String) onFileToggle;
   final Function(bool) onTermsChanged;
   final VoidCallback onPasswordVisibilityToggle;
   final VoidCallback onConfirmPasswordVisibilityToggle;
@@ -940,11 +1196,9 @@ class CredentialsStep extends StatelessWidget {
   const CredentialsStep({
     super.key,
     required this.controllers,
-    required this.selectedFiles,
     required this.acceptTerms,
     required this.obscurePassword,
     required this.obscureConfirmPassword,
-    required this.onFileToggle,
     required this.onTermsChanged,
     required this.onPasswordVisibilityToggle,
     required this.onConfirmPasswordVisibilityToggle,
@@ -957,7 +1211,7 @@ class CredentialsStep extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        buildStepTitle(4, 4, 'Credenciales de Acceso', 'Correo, contraseña y términos'),
+        buildStepTitle(5, 5, 'Credenciales de Acceso', 'Correo, contraseña y términos'),
         const SizedBox(height: 32),
 
         CredentialsSection(
@@ -968,12 +1222,6 @@ class CredentialsStep extends StatelessWidget {
           obscureConfirmPassword: obscureConfirmPassword,
           onPasswordVisibilityToggle: onPasswordVisibilityToggle,
           onConfirmPasswordVisibilityToggle: onConfirmPasswordVisibilityToggle,
-        ),
-        const SizedBox(height: 24),
-
-        DocumentUploader(
-          selectedFiles: selectedFiles,
-          onFileToggle: onFileToggle,
         ),
         const SizedBox(height: 24),
 
