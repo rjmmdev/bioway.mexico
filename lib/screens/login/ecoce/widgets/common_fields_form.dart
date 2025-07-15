@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../utils/colors.dart';
 
-/// Modelo para los datos del formulario común
+/// Modelo optimizado para los datos del formulario común
 class CommonFormData {
   // Datos básicos
   String tipoActor;
@@ -17,39 +17,81 @@ class CommonFormData {
   String calle = '';
   String numExt = '';
   String cp = '';
+  String colonia = '';
+  String ciudad = '';
+  String estado = '';
   String refUbi = '';
+  String linkMaps = '';
   String poligonoLoc = '';
 
   // Operativos
-  List<String> listaMateriales = [];
+  Set<String> listaMateriales = <String>{}; // Cambiado a Set para mejor rendimiento
   bool transporte = false;
   String linkRedSocial = '';
 
   // Documentos
-  String? constSitFis;
-  String? compDomicilio;
-  String? bancoCaratula;
-  String? ine;
+  Map<String, String?> documentos = {
+    'const_sit_fis': null,
+    'comp_domicilio': null,
+    'banco_caratula': null,
+    'ine': null,
+  };
 
   // Credenciales
-  String username = '';
   String password = '';
+  String confirmPassword = '';
+  bool acceptTerms = false;
 
   CommonFormData({required this.tipoActor});
+
+  // Método para validar si el formulario está completo
+  bool get isBasicInfoValid =>
+      nombre.isNotEmpty &&
+          nombreContacto.isNotEmpty &&
+          telContacto.isNotEmpty;
+
+  bool get isLocationValid =>
+      calle.isNotEmpty &&
+          numExt.isNotEmpty &&
+          cp.length == 5 &&
+          colonia.isNotEmpty &&
+          ciudad.isNotEmpty &&
+          estado.isNotEmpty &&
+          refUbi.isNotEmpty;
+
+  bool get isOperationalValid =>
+      listaMateriales.isNotEmpty;
+
+  bool get isCredentialsValid =>
+      correoContacto.isNotEmpty &&
+          password.isNotEmpty &&
+          confirmPassword.isNotEmpty &&
+          password == confirmPassword &&
+          acceptTerms;
 }
 
-/// Widget de formulario con campos comunes para todos los proveedores
+/// Widget optimizado de formulario con campos comunes para todos los proveedores
 class CommonFieldsForm extends StatefulWidget {
   final CommonFormData formData;
-  final bool showTransportField;
   final Function(CommonFormData) onDataChanged;
   final GlobalKey<FormState> formKey;
+
+  // Banderas para mostrar solo secciones específicas (optimización)
+  final bool showOnlyBasicInfo;
+  final bool showOnlyLocationInfo;
+  final bool showOnlyOperationalInfo;
+  final bool showOnlyCredentialsAndDocuments;
+  final bool showTransportField;
 
   const CommonFieldsForm({
     super.key,
     required this.formData,
     required this.onDataChanged,
     required this.formKey,
+    this.showOnlyBasicInfo = false,
+    this.showOnlyLocationInfo = false,
+    this.showOnlyOperationalInfo = false,
+    this.showOnlyCredentialsAndDocuments = false,
     this.showTransportField = true,
   });
 
@@ -58,30 +100,16 @@ class CommonFieldsForm extends StatefulWidget {
 }
 
 class _CommonFieldsFormState extends State<CommonFieldsForm> {
-  // Controladores
-  late TextEditingController _nombreController;
-  late TextEditingController _rfcController;
-  late TextEditingController _nombreContactoController;
-  late TextEditingController _telContactoController;
-  late TextEditingController _telEmpresaController;
-  late TextEditingController _correoController;
-  late TextEditingController _calleController;
-  late TextEditingController _numExtController;
-  late TextEditingController _cpController;
-  late TextEditingController _refUbiController;
-  late TextEditingController _poligonoController;
-  late TextEditingController _linkController;
-  late TextEditingController _usernameController;
-  late TextEditingController _passwordController;
-  late TextEditingController _confirmPasswordController;
+  // Controladores optimizados - solo se crean los necesarios
+  late final Map<String, TextEditingController> _controllers;
 
   // Estados
+  bool _isSearchingCP = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _acceptedTerms = false;
 
-  // Lista de materiales disponibles
-  final List<String> _availableMaterials = [
+  // Lista de materiales disponibles - constante para mejor memoria
+  static const List<String> _availableMaterials = [
     'PET',
     'HDPE',
     'PP',
@@ -103,209 +131,888 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
   }
 
   void _initControllers() {
-    _nombreController = TextEditingController(text: widget.formData.nombre);
-    _rfcController = TextEditingController(text: widget.formData.rfc);
-    _nombreContactoController = TextEditingController(text: widget.formData.nombreContacto);
-    _telContactoController = TextEditingController(text: widget.formData.telContacto);
-    _telEmpresaController = TextEditingController(text: widget.formData.telEmpresa);
-    _correoController = TextEditingController(text: widget.formData.correoContacto);
-    _calleController = TextEditingController(text: widget.formData.calle);
-    _numExtController = TextEditingController(text: widget.formData.numExt);
-    _cpController = TextEditingController(text: widget.formData.cp);
-    _refUbiController = TextEditingController(text: widget.formData.refUbi);
-    _poligonoController = TextEditingController(text: widget.formData.poligonoLoc);
-    _linkController = TextEditingController(text: widget.formData.linkRedSocial);
-    _usernameController = TextEditingController(text: widget.formData.username);
-    _passwordController = TextEditingController(text: widget.formData.password);
-    _confirmPasswordController = TextEditingController();
+    _controllers = {
+      if (widget.showOnlyBasicInfo || !_isStepSpecific()) ...{
+        'nombre': TextEditingController(text: widget.formData.nombre),
+        'rfc': TextEditingController(text: widget.formData.rfc),
+        'nombreContacto': TextEditingController(text: widget.formData.nombreContacto),
+        'telContacto': TextEditingController(text: widget.formData.telContacto),
+        'telEmpresa': TextEditingController(text: widget.formData.telEmpresa),
+      },
+      if (widget.showOnlyLocationInfo || !_isStepSpecific()) ...{
+        'calle': TextEditingController(text: widget.formData.calle),
+        'numExt': TextEditingController(text: widget.formData.numExt),
+        'cp': TextEditingController(text: widget.formData.cp),
+        'colonia': TextEditingController(text: widget.formData.colonia),
+        'ciudad': TextEditingController(text: widget.formData.ciudad),
+        'estado': TextEditingController(text: widget.formData.estado),
+        'refUbi': TextEditingController(text: widget.formData.refUbi),
+      },
+      if (widget.showOnlyOperationalInfo || !_isStepSpecific()) ...{
+        'linkRedSocial': TextEditingController(text: widget.formData.linkRedSocial),
+      },
+      if (widget.showOnlyCredentialsAndDocuments || !_isStepSpecific()) ...{
+        'correoContacto': TextEditingController(text: widget.formData.correoContacto),
+        'password': TextEditingController(text: widget.formData.password),
+        'confirmPassword': TextEditingController(text: widget.formData.confirmPassword),
+      },
+    };
 
-    // Listeners para actualizar formData
-    _nombreController.addListener(() => _updateFormData());
-    _rfcController.addListener(() => _updateFormData());
-    _nombreContactoController.addListener(() => _updateFormData());
-    _telContactoController.addListener(() => _updateFormData());
-    _telEmpresaController.addListener(() => _updateFormData());
-    _correoController.addListener(() => _updateFormData());
-    _calleController.addListener(() => _updateFormData());
-    _numExtController.addListener(() => _updateFormData());
-    _cpController.addListener(() => _updateFormData());
-    _refUbiController.addListener(() => _updateFormData());
-    _poligonoController.addListener(() => _updateFormData());
-    _linkController.addListener(() => _updateFormData());
-    _usernameController.addListener(() => _updateFormData());
-    _passwordController.addListener(() => _updateFormData());
+    // Agregar listeners solo a los controladores necesarios
+    _controllers.forEach((key, controller) {
+      controller.addListener(() => _updateFormData(key, controller.text));
+    });
+  }
+
+  bool _isStepSpecific() {
+    return widget.showOnlyBasicInfo ||
+        widget.showOnlyLocationInfo ||
+        widget.showOnlyOperationalInfo ||
+        widget.showOnlyCredentialsAndDocuments;
+  }
+
+  void _updateFormData(String field, String value) {
+    switch (field) {
+      case 'nombre':
+        widget.formData.nombre = value;
+        break;
+      case 'rfc':
+        widget.formData.rfc = value;
+        break;
+      case 'nombreContacto':
+        widget.formData.nombreContacto = value;
+        break;
+      case 'telContacto':
+        widget.formData.telContacto = value;
+        break;
+      case 'telEmpresa':
+        widget.formData.telEmpresa = value;
+        break;
+      case 'calle':
+        widget.formData.calle = value;
+        break;
+      case 'numExt':
+        widget.formData.numExt = value;
+        break;
+      case 'cp':
+        widget.formData.cp = value;
+        if (value.length == 5) {
+          _searchCP(value);
+        }
+        break;
+      case 'colonia':
+        widget.formData.colonia = value;
+        break;
+      case 'ciudad':
+        widget.formData.ciudad = value;
+        break;
+      case 'estado':
+        widget.formData.estado = value;
+        break;
+      case 'refUbi':
+        widget.formData.refUbi = value;
+        break;
+      case 'linkRedSocial':
+        widget.formData.linkRedSocial = value;
+        break;
+      case 'correoContacto':
+        widget.formData.correoContacto = value;
+        break;
+      case 'password':
+        widget.formData.password = value;
+        break;
+      case 'confirmPassword':
+        widget.formData.confirmPassword = value;
+        break;
+    }
+    widget.onDataChanged(widget.formData);
+  }
+
+  Future<void> _searchCP(String cp) async {
+    setState(() {
+      _isSearchingCP = true;
+    });
+
+    // Simular búsqueda de código postal
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (mounted) {
+      setState(() {
+        _isSearchingCP = false;
+        // Simular datos encontrados
+        if (_controllers['colonia'] != null) {
+          _controllers['colonia']!.text = 'Centro';
+          widget.formData.colonia = 'Centro';
+        }
+        if (_controllers['ciudad'] != null) {
+          _controllers['ciudad']!.text = 'Querétaro';
+          widget.formData.ciudad = 'Querétaro';
+        }
+        if (_controllers['estado'] != null) {
+          _controllers['estado']!.text = 'Querétaro';
+          widget.formData.estado = 'Querétaro';
+        }
+      });
+      widget.onDataChanged(widget.formData);
+    }
   }
 
   @override
   void dispose() {
-    _nombreController.dispose();
-    _rfcController.dispose();
-    _nombreContactoController.dispose();
-    _telContactoController.dispose();
-    _telEmpresaController.dispose();
-    _correoController.dispose();
-    _calleController.dispose();
-    _numExtController.dispose();
-    _cpController.dispose();
-    _refUbiController.dispose();
-    _poligonoController.dispose();
-    _linkController.dispose();
-    _usernameController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
+    _controllers.values.forEach((controller) => controller.dispose());
     super.dispose();
-  }
-
-  void _updateFormData() {
-    widget.formData.nombre = _nombreController.text;
-    widget.formData.rfc = _rfcController.text;
-    widget.formData.nombreContacto = _nombreContactoController.text;
-    widget.formData.telContacto = _telContactoController.text;
-    widget.formData.telEmpresa = _telEmpresaController.text;
-    widget.formData.correoContacto = _correoController.text;
-    widget.formData.calle = _calleController.text;
-    widget.formData.numExt = _numExtController.text;
-    widget.formData.cp = _cpController.text;
-    widget.formData.refUbi = _refUbiController.text;
-    widget.formData.poligonoLoc = _poligonoController.text;
-    widget.formData.linkRedSocial = _linkController.text;
-    widget.formData.username = _usernameController.text;
-    widget.formData.password = _passwordController.text;
-    widget.onDataChanged(widget.formData);
-  }
-
-  void _searchCP() {
-    // Simulación de búsqueda de CP
-    if (_cpController.text.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Buscando CP ${_cpController.text}...'),
-          backgroundColor: BioWayColors.info,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-    }
-  }
-
-  void _uploadDocument(String documentType) {
-    // Simulación de upload
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Seleccionar archivo para $documentType'),
-        backgroundColor: BioWayColors.info,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-    );
-  }
-
-  @override
+  }@override
   Widget build(BuildContext context) {
     return Form(
       key: widget.formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // SECCIÓN 1: DATOS BÁSICOS
-          _buildSectionTitle('Datos Básicos del Proveedor', Icons.business),
-          const SizedBox(height: 16),
+          if (widget.showOnlyBasicInfo || !_isStepSpecific())
+            _buildBasicInfoSection(),
+          if (widget.showOnlyLocationInfo || !_isStepSpecific())
+            _buildLocationSection(),
+          if (widget.showOnlyOperationalInfo || !_isStepSpecific())
+            _buildOperationalSection(),
+          if (widget.showOnlyCredentialsAndDocuments || !_isStepSpecific())
+            _buildCredentialsSection(),
+        ],
+      ),
+    );
+  }
 
-          // Tipo de actor (solo lectura)
-          _buildReadOnlyField(
-            label: 'Tipo de actor',
-            value: widget.formData.tipoActor,
-            icon: Icons.category,
+  Widget _buildBasicInfoSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildStepTitle('Información Básica', 'Datos principales de tu centro de acopio'),
+        const SizedBox(height: 32),
+
+        // Nombre Comercial
+        _buildTextField(
+          controller: _controllers['nombre']!,
+          label: 'Nombre Comercial *',
+          hint: 'Ej: Centro de Acopio San Juan',
+          icon: Icons.business,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'El nombre comercial es obligatorio';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 20),
+
+        // RFC (Opcional)
+        _buildTextField(
+          controller: _controllers['rfc']!,
+          label: 'RFC (Opcional)',
+          hint: 'XXXX000000XXX',
+          icon: Icons.article,
+          helperText: 'Tienes 30 días para proporcionarlo',
+          inputFormatters: [
+            LengthLimitingTextInputFormatter(13),
+            FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9]')),
+            TextInputFormatter.withFunction((oldValue, newValue) {
+              return newValue.copyWith(text: newValue.text.toUpperCase());
+            }),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // Nombre del Contacto
+        _buildTextField(
+          controller: _controllers['nombreContacto']!,
+          label: 'Nombre del Contacto *',
+          hint: 'Nombre completo',
+          icon: Icons.person,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'El nombre del contacto es obligatorio';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 20),
+
+        // Teléfonos en fila
+        Row(
+          children: [
+            Expanded(
+              child: _buildTextField(
+                controller: _controllers['telContacto']!,
+                label: 'Teléfono Móvil *',
+                hint: '10 dígitos',
+                icon: Icons.phone_android,
+                keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  LengthLimitingTextInputFormatter(15),
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9+\-\s]')),
+                ],
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Teléfono obligatorio';
+                  }
+                  return null;
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildTextField(
+                controller: _controllers['telEmpresa']!,
+                label: 'Teléfono Oficina',
+                hint: 'Opcional',
+                icon: Icons.phone,
+                keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  LengthLimitingTextInputFormatter(15),
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9+\-\s]')),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLocationSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildStepTitle('Ubicación', 'Dirección de tu centro de acopio'),
+        const SizedBox(height: 32),
+
+        // Código Postal con búsqueda
+        _buildCPSection(),
+        const SizedBox(height: 24),
+
+        // Dirección - Calle y Número
+        Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: _buildTextField(
+                controller: _controllers['calle']!,
+                label: 'Nombre de calle *',
+                hint: 'Ej: Av. Universidad',
+                icon: Icons.home,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'La calle es obligatoria';
+                  }
+                  return null;
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildTextField(
+                controller: _controllers['numExt']!,
+                label: 'Núm. Exterior *',
+                hint: '123',
+                icon: Icons.numbers,
+                inputFormatters: [
+                  LengthLimitingTextInputFormatter(10),
+                ],
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Número obligatorio';
+                  }
+                  return null;
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // Colonia
+        _buildTextField(
+          controller: _controllers['colonia']!,
+          label: 'Colonia *',
+          hint: 'Nombre de la colonia',
+          icon: Icons.location_city,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'La colonia es obligatoria';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 20),
+
+        // Ciudad y Estado en fila
+        Row(
+          children: [
+            Expanded(
+              child: _buildTextField(
+                controller: _controllers['ciudad']!,
+                label: 'Ciudad *',
+                hint: 'Ciudad',
+                icon: Icons.location_city,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'La ciudad es obligatoria';
+                  }
+                  return null;
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildTextField(
+                controller: _controllers['estado']!,
+                label: 'Estado *',
+                hint: 'Estado',
+                icon: Icons.map,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'El estado es obligatorio';
+                  }
+                  return null;
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+
+        // Referencias de ubicación
+        _buildTextField(
+          controller: _controllers['refUbi']!,
+          label: 'Referencias de ubicación *',
+          hint: 'Ej: Frente a la iglesia, entrada lateral',
+          icon: Icons.near_me,
+          maxLines: 3,
+          maxLength: 150,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Las referencias son obligatorias';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 24),
+
+        // Vista previa del mapa
+        _buildMapPreview(),
+      ],
+    );
+  }
+
+  Widget _buildOperationalSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildStepTitle('Información Operativa', 'Materiales y servicios'),
+        const SizedBox(height: 32),
+
+        // Selección de materiales
+        _buildMaterialsSection(),
+        const SizedBox(height: 24),
+
+        // Transporte propio
+        if (widget.showTransportField) _buildTransportSection(),
+        if (widget.showTransportField) const SizedBox(height: 24),
+
+        // Link de red social (opcional)
+        _buildTextField(
+          controller: _controllers['linkRedSocial']!,
+          label: 'Página web o red social (opcional)',
+          hint: 'https://www.ejemplo.com',
+          icon: Icons.language,
+          keyboardType: TextInputType.url,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCredentialsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildStepTitle('Credenciales de Acceso', 'Correo, contraseña y términos'),
+        const SizedBox(height: 32),
+
+        // Sección de credenciales
+        _buildCredentialsContainer(),
+        const SizedBox(height: 24),
+
+        // Documentos fiscales opcionales
+        _buildDocumentsSection(),
+        const SizedBox(height: 24),
+
+        // Términos y condiciones
+        _buildTermsSection(),
+      ],
+    );
+  }
+
+  Widget _buildStepTitle(String title, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: BioWayColors.darkGreen,
           ),
-          const SizedBox(height: 16),
-
-          // Nombre del proveedor
-          _buildTextField(
-            controller: _nombreController,
-            label: 'Nombre del proveedor *',
-            hint: 'Centro de Acopio La Esperanza SA de CV',
-            icon: Icons.business_center,
-            maxLength: 50,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Este campo es obligatorio';
-              }
-              return null;
-            },
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: const TextStyle(
+            fontSize: 14,
+            color: BioWayColors.textGrey,
           ),
-          const SizedBox(height: 16),
+        ),
+      ],
+    );
+  }
 
-          // RFC (opcional)
-          _buildTextField(
-            controller: _rfcController,
-            label: 'RFC',
-            hint: 'XAXX010101000',
-            icon: Icons.credit_card,
-            maxLength: 13,
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
-              TextInputFormatter.withFunction((oldValue, newValue) {
-                return newValue.copyWith(text: newValue.text.toUpperCase());
-              }),
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    String? helperText,
+    String? Function(String?)? validator,
+    List<TextInputFormatter>? inputFormatters,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+    int? maxLength,
+    bool obscureText = false,
+    Widget? suffixIcon,
+  }) {
+    return TextFormField(
+      controller: controller,
+      validator: validator,
+      inputFormatters: inputFormatters,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      maxLength: maxLength,
+      obscureText: obscureText,
+      textCapitalization: maxLines == 1
+          ? TextCapitalization.words
+          : TextCapitalization.sentences,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        helperText: helperText,
+        prefixIcon: Icon(icon, color: BioWayColors.petBlue),
+        suffixIcon: suffixIcon,
+        filled: true,
+        fillColor: BioWayColors.lightGrey.withOpacity(0.5),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: BioWayColors.lightGrey,
+            width: 1,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: BioWayColors.petBlue,
+            width: 2,
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: BioWayColors.error,
+            width: 1,
+          ),
+        ),
+        counterText: maxLength != null ? '' : null,
+      ),
+    );
+  }Widget _buildCPSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            BioWayColors.petBlue.withOpacity(0.05),
+            BioWayColors.petBlue.withOpacity(0.02),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: BioWayColors.petBlue.withOpacity(0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.pin_drop,
+                color: BioWayColors.petBlue,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Código Postal',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: BioWayColors.darkGreen,
+                ),
+              ),
             ],
-            helperText: 'Opcional. Tendrás 30 días para proporcionar esta información.',
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Ingresa tu código postal para facilitar la búsqueda',
+            style: TextStyle(
+              fontSize: 14,
+              color: BioWayColors.textGrey,
+            ),
           ),
           const SizedBox(height: 16),
-
-          // Nombre de contacto
-          _buildTextField(
-            controller: _nombreContactoController,
-            label: 'Nombre de contacto *',
-            hint: 'Nombre completo de la persona responsable',
-            icon: Icons.person,
-            maxLength: 50,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Este campo es obligatorio';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-
-          // Teléfonos
           Row(
             children: [
               Expanded(
-                child: _buildTextField(
-                  controller: _telContactoController,
-                  label: 'Tel. contacto *',
-                  hint: '+52 1234567890',
-                  icon: Icons.phone,
-                  maxLength: 15,
-                  keyboardType: TextInputType.phone,
+                child: TextFormField(
+                  controller: _controllers['cp']!,
+                  keyboardType: TextInputType.number,
+                  maxLength: 5,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(5),
+                  ],
+                  decoration: InputDecoration(
+                    hintText: '00000',
+                    counterText: '',
+                    prefixIcon: const Icon(
+                      Icons.location_searching,
+                      color: BioWayColors.petBlue,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: BioWayColors.lightGrey,
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: BioWayColors.petBlue,
+                        width: 2,
+                      ),
+                    ),
+                  ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Campo obligatorio';
+                    if (value == null || value.length != 5) {
+                      return 'Ingresa un CP válido (5 dígitos)';
                     }
                     return null;
                   },
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(
-                child: _buildTextField(
-                  controller: _telEmpresaController,
-                  label: 'Tel. empresa *',
-                  hint: '+52 1234567890',
-                  icon: Icons.phone_in_talk,
-                  maxLength: 15,
-                  keyboardType: TextInputType.phone,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Campo obligatorio';
-                    }
-                    return null;
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: _isSearchingCP ? 40 : 0,
+                child: _isSearchingCP
+                    ? const CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    BioWayColors.petBlue,
+                  ),
+                )
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMapPreview() {
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        color: BioWayColors.lightGrey.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: BioWayColors.lightGrey,
+          width: 1,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          children: [
+            // Placeholder del mapa
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.grey.shade200,
+                    Colors.grey.shade300,
+                  ],
+                ),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.map,
+                      size: 48,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.formData.cp.length == 5
+                          ? 'Mapa de la zona ${widget.formData.cp}'
+                          : 'El mapa se mostrará al ingresar el CP',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Botón de ubicación exacta
+            if (widget.formData.cp.length == 5)
+              Positioned(
+                bottom: 16,
+                right: 16,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    // Aquí se abriría el mapa completo
                   },
+                  icon: const Icon(Icons.my_location, size: 18),
+                  label: const Text('Ubicación exacta'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: BioWayColors.petBlue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMaterialsSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: BioWayColors.lightGrey.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: BioWayColors.lightGrey,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.recycling,
+                color: BioWayColors.petBlue,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Materiales que recibes *',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: BioWayColors.darkGreen,
+                      ),
+                    ),
+                    Text(
+                      'Selecciona todos los tipos de materiales',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: BioWayColors.textGrey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Grid optimizado de materiales usando Wrap para mejor responsive
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _availableMaterials.map((material) {
+              final isSelected = widget.formData.listaMateriales.contains(material);
+              return FilterChip(
+                label: Text(material),
+                selected: isSelected,
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      widget.formData.listaMateriales.add(material);
+                    } else {
+                      widget.formData.listaMateriales.remove(material);
+                    }
+                  });
+                  widget.onDataChanged(widget.formData);
+                },
+                selectedColor: BioWayColors.petBlue.withOpacity(0.2),
+                checkmarkColor: BioWayColors.petBlue,
+                labelStyle: TextStyle(
+                  color: isSelected
+                      ? BioWayColors.petBlue
+                      : BioWayColors.darkGreen,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              );
+            }).toList(),
+          ),
+
+          if (widget.formData.listaMateriales.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                'Debes seleccionar al menos un tipo de material',
+                style: TextStyle(
+                  color: BioWayColors.error,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTransportSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: BioWayColors.lightGrey,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.local_shipping,
+                      color: BioWayColors.petBlue,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      '¿Cuentas con transporte propio?',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: BioWayColors.darkGreen,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Para recolección de materiales',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: BioWayColors.textGrey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: widget.formData.transporte,
+            onChanged: (value) {
+              setState(() {
+                widget.formData.transporte = value;
+              });
+              widget.onDataChanged(widget.formData);
+            },
+            activeColor: BioWayColors.petBlue,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCredentialsContainer() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: BioWayColors.lightGrey,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.account_circle,
+                color: BioWayColors.petBlue,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Datos de Acceso',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: BioWayColors.darkGreen,
                 ),
               ),
             ],
@@ -314,182 +1021,34 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
 
           // Correo electrónico
           _buildTextField(
-            controller: _correoController,
+            controller: _controllers['correoContacto']!,
             label: 'Correo electrónico *',
-            hint: 'correo@ejemplo.com',
+            hint: 'ejemplo@correo.com',
             icon: Icons.email,
-            maxLength: 50,
             keyboardType: TextInputType.emailAddress,
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Este campo es obligatorio';
+                return 'El correo es obligatorio';
               }
-              if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
                 return 'Ingresa un correo válido';
               }
               return null;
             },
           ),
-
-          const SizedBox(height: 32),
-
-          // SECCIÓN 2: INFORMACIÓN DE UBICACIÓN
-          _buildSectionTitle('Información de Ubicación', Icons.location_on),
           const SizedBox(height: 16),
 
-          // Calle y número
-          Row(
-            children: [
-              Expanded(
-                flex: 3,
-                child: _buildTextField(
-                  controller: _calleController,
-                  label: 'Nombre de calle *',
-                  hint: 'Av. Revolución',
-                  icon: Icons.route,
-                  maxLength: 50,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Campo obligatorio';
-                    }
-                    return null;
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildTextField(
-                  controller: _numExtController,
-                  label: 'Núm. ext *',
-                  hint: '123',
-                  icon: Icons.numbers,
-                  maxLength: 10,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Obligatorio';
-                    }
-                    return null;
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Código postal con búsqueda
-          _buildCPField(),
-          const SizedBox(height: 16),
-
-          // Referencias
+          // Contraseña
           _buildTextField(
-            controller: _refUbiController,
-            label: 'Referencias (ubicación) *',
-            hint: 'Frente a la iglesia, entrada lateral',
-            icon: Icons.location_searching,
-            maxLength: 150,
-            maxLines: 2,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Este campo es obligatorio';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-
-          // Polígono asignado
-          _buildTextField(
-            controller: _poligonoController,
-            label: 'Polígono asignado *',
-            hint: 'Zona Norte CDMX',
-            icon: Icons.map,
-            maxLength: 50,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Este campo es obligatorio';
-              }
-              return null;
-            },
-          ),
-
-          const SizedBox(height: 32),
-
-          // SECCIÓN 3: INFORMACIÓN OPERATIVA
-          _buildSectionTitle('Información Operativa', Icons.settings),
-          const SizedBox(height: 16),
-
-          // Materiales que manejan
-          _buildMaterialsSelector(),
-          const SizedBox(height: 16),
-
-          // Transporte propio (no se muestra para transportistas)
-          if (widget.showTransportField) ...[
-            _buildSwitchField(
-              label: '¿Cuentas con transporte propio?',
-              value: widget.formData.transporte,
-              onChanged: (value) {
-                setState(() {
-                  widget.formData.transporte = value;
-                  _updateFormData();
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // Link de red social
-          _buildTextField(
-            controller: _linkController,
-            label: 'Link de red social o página web',
-            hint: 'https://www.ejemplo.com',
-            icon: Icons.link,
-            maxLength: 150,
-            keyboardType: TextInputType.url,
-          ),
-
-          const SizedBox(height: 32),
-
-          // SECCIÓN 4: DOCUMENTOS FISCALES
-          _buildSectionTitle('Documentos Fiscales (Opcionales)', Icons.folder),
-          const SizedBox(height: 16),
-
-          _buildDocumentUploadGrid(),
-
-          const SizedBox(height: 32),
-
-          // SECCIÓN 5: CREDENCIALES DE ACCESO
-          _buildSectionTitle('Credenciales de Acceso', Icons.security),
-          const SizedBox(height: 16),
-
-          // Username
-          _buildTextField(
-            controller: _usernameController,
-            label: 'Nombre de usuario *',
-            hint: 'usuario123',
-            icon: Icons.person_outline,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Este campo es obligatorio';
-              }
-              if (value.length < 4) {
-                return 'Mínimo 4 caracteres';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-
-          // Password
-          _buildTextField(
-            controller: _passwordController,
+            controller: _controllers['password']!,
             label: 'Contraseña *',
-            hint: '••••••••',
-            icon: Icons.lock_outline,
+            hint: 'Mínimo 6 caracteres',
+            icon: Icons.lock,
             obscureText: _obscurePassword,
             suffixIcon: IconButton(
               icon: Icon(
-                _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                color: BioWayColors.ecoceGreen,
+                _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                color: BioWayColors.textGrey,
               ),
               onPressed: () {
                 setState(() {
@@ -499,7 +1058,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Este campo es obligatorio';
+                return 'La contraseña es obligatoria';
               }
               if (value.length < 6) {
                 return 'Mínimo 6 caracteres';
@@ -509,17 +1068,17 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
           ),
           const SizedBox(height: 16),
 
-          // Confirm password
+          // Confirmar contraseña
           _buildTextField(
-            controller: _confirmPasswordController,
+            controller: _controllers['confirmPassword']!,
             label: 'Confirmar contraseña *',
-            hint: '••••••••',
+            hint: 'Repite tu contraseña',
             icon: Icons.lock_outline,
             obscureText: _obscureConfirmPassword,
             suffixIcon: IconButton(
               icon: Icon(
-                _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
-                color: BioWayColors.ecoceGreen,
+                _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                color: BioWayColors.textGrey,
               ),
               onPressed: () {
                 setState(() {
@@ -529,413 +1088,276 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Este campo es obligatorio';
+                return 'Confirma tu contraseña';
               }
-              if (value != _passwordController.text) {
+              if (value != widget.formData.password) {
                 return 'Las contraseñas no coinciden';
               }
               return null;
             },
           ),
-
-          const SizedBox(height: 24),
-
-          // Términos y condiciones
-          _buildTermsCheckbox(),
         ],
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title, IconData icon) {
+  Widget _buildDocumentsSection() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: BioWayColors.ecoceGreen.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: BioWayColors.ecoceGreen, size: 20),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: BioWayColors.darkGreen,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required IconData icon,
-    bool obscureText = false,
-    TextInputType? keyboardType,
-    int? maxLength,
-    int maxLines = 1,
-    List<TextInputFormatter>? inputFormatters,
-    String? Function(String?)? validator,
-    Widget? suffixIcon,
-    String? helperText,
-  }) {
-    return TextFormField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      maxLength: maxLength,
-      maxLines: maxLines,
-      inputFormatters: inputFormatters,
-      validator: validator,
-      style: const TextStyle(fontSize: 14),
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        helperText: helperText,
-        helperStyle: TextStyle(
-          color: BioWayColors.info,
-          fontSize: 12,
-        ),
-        prefixIcon: Icon(icon, color: BioWayColors.ecoceGreen, size: 20),
-        suffixIcon: suffixIcon,
-        counterText: '',
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: BioWayColors.ecoceGreen, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: BioWayColors.error, width: 2),
-        ),
-        labelStyle: TextStyle(color: BioWayColors.textGrey, fontSize: 14),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      ),
-    );
-  }
-
-  Widget _buildReadOnlyField({
-    required String label,
-    required String value,
-    required IconData icon,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: BioWayColors.ecoceGreen, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: BioWayColors.textGrey,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: BioWayColors.darkGreen,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCPField() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildTextField(
-            controller: _cpController,
-            label: 'Código Postal *',
-            hint: '12345',
-            icon: Icons.location_on,
-            maxLength: 5,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Este campo es obligatorio';
-              }
-              if (value.length != 5) {
-                return 'El CP debe tener 5 dígitos';
-              }
-              return null;
-            },
-          ),
-        ),
-        const SizedBox(width: 12),
-        Container(
-          height: 48,
-          child: ElevatedButton.icon(
-            onPressed: _searchCP,
-            icon: const Icon(Icons.search, size: 18),
-            label: const Text('Buscar'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: BioWayColors.ecoceGreen,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMaterialsSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.category, color: BioWayColors.ecoceGreen, size: 20),
-            const SizedBox(width: 8),
-            const Text(
-              'Listado de materiales que manejan *',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: BioWayColors.darkGreen,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _availableMaterials.map((material) {
-            final isSelected = widget.formData.listaMateriales.contains(material);
-            return FilterChip(
-              label: Text(material),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) {
-                    widget.formData.listaMateriales.add(material);
-                  } else {
-                    widget.formData.listaMateriales.remove(material);
-                  }
-                  _updateFormData();
-                });
-              },
-              selectedColor: BioWayColors.ecoceGreen.withOpacity(0.2),
-              checkmarkColor: BioWayColors.ecoceGreen,
-              labelStyle: TextStyle(
-                color: isSelected ? BioWayColors.ecoceGreen : BioWayColors.textGrey,
-                fontSize: 13,
-              ),
-            );
-          }).toList(),
-        ),
-        if (widget.formData.listaMateriales.isEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              'Selecciona al menos un material',
-              style: TextStyle(
-                color: BioWayColors.error,
-                fontSize: 12,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildSwitchField({
-    required String label,
-    required bool value,
-    required Function(bool) onChanged,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.local_shipping, color: BioWayColors.ecoceGreen, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: BioWayColors.darkGreen,
-              ),
-            ),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: BioWayColors.ecoceGreen,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDocumentUploadGrid() {
-    final documents = [
-      {'title': 'Constancia de Situación Fiscal', 'field': 'constSitFis'},
-      {'title': 'Comprobante de Domicilio', 'field': 'compDomicilio'},
-      {'title': 'Carátula de Banco', 'field': 'bancoCaratula'},
-      {'title': 'INE', 'field': 'ine'},
-    ];
-
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 1.5,
-      children: documents.map((doc) {
-        return _buildDocumentUploadCard(
-          title: doc['title']!,
-          onTap: () => _uploadDocument(doc['title']!),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildDocumentUploadCard({
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.grey.shade300,
-            width: 1,
-            style: BorderStyle.solid,
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.upload_file,
-              color: BioWayColors.ecoceGreen,
-              size: 32,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: BioWayColors.darkGreen,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTermsCheckbox() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: BioWayColors.info.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
+        color: BioWayColors.lightGrey.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: BioWayColors.info.withOpacity(0.2),
+          color: BioWayColors.lightGrey,
+          width: 1,
         ),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Checkbox(
-            value: _acceptedTerms,
-            onChanged: (value) {
-              setState(() {
-                _acceptedTerms = value ?? false;
-              });
-            },
-            activeColor: BioWayColors.ecoceGreen,
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _acceptedTerms = !_acceptedTerms;
-                });
-              },
-              child: RichText(
-                text: TextSpan(
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: BioWayColors.darkGreen,
-                    height: 1.4,
-                  ),
-                  children: [
-                    const TextSpan(text: 'He leído y acepto los '),
-                    TextSpan(
-                      text: 'términos y condiciones',
-                      style: TextStyle(
-                        color: BioWayColors.ecoceGreen,
-                        fontWeight: FontWeight.bold,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                    const TextSpan(text: ' del sistema ECOCE.'),
-                  ],
-                ),
+          Row(
+            children: [
+              const Icon(
+                Icons.folder_open,
+                color: BioWayColors.petBlue,
+                size: 24,
               ),
-            ),
+              const SizedBox(width: 8),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Documentos Fiscales',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: BioWayColors.darkGreen,
+                    ),
+                  ),
+                  Text(
+                    'Opcional - Puedes subirlos después',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: BioWayColors.textGrey,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Lista de documentos
+          _buildDocumentUpload(
+            'Constancia de Situación Fiscal',
+            'const_sit_fis',
+            Icons.description,
+          ),
+          const SizedBox(height: 12),
+          _buildDocumentUpload(
+            'Comprobante de Domicilio',
+            'comp_domicilio',
+            Icons.home_work,
+          ),
+          const SizedBox(height: 12),
+          _buildDocumentUpload(
+            'Carátula de Estado de Cuenta',
+            'banco_caratula',
+            Icons.account_balance,
+          ),
+          const SizedBox(height: 12),
+          _buildDocumentUpload(
+            'INE/Identificación Oficial',
+            'ine',
+            Icons.badge,
           ),
         ],
       ),
     );
   }
 
-  bool get isFormValid => _acceptedTerms && widget.formData.listaMateriales.isNotEmpty;
+  Widget _buildDocumentUpload(String title, String key, IconData icon) {
+    final hasFile = widget.formData.documentos[key] != null;
+
+    return InkWell(
+      onTap: () {
+        setState(() {
+          widget.formData.documentos[key] = hasFile ? null : '$title.pdf';
+        });
+        widget.onDataChanged(widget.formData);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: hasFile
+              ? BioWayColors.success.withOpacity(0.1)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: hasFile
+                ? BioWayColors.success
+                : BioWayColors.lightGrey,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: hasFile ? BioWayColors.success : BioWayColors.textGrey,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: hasFile ? FontWeight.bold : FontWeight.normal,
+                      color: hasFile ? BioWayColors.success : BioWayColors.darkGreen,
+                    ),
+                  ),
+                  Text(
+                    hasFile ? widget.formData.documentos[key]! : 'Toca para seleccionar archivo PDF',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: BioWayColors.textGrey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              hasFile ? Icons.check_circle : Icons.upload_file,
+              color: hasFile ? BioWayColors.success : BioWayColors.textGrey,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTermsSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            BioWayColors.petBlue.withOpacity(0.05),
+            BioWayColors.petBlue.withOpacity(0.02),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: BioWayColors.petBlue.withOpacity(0.3),
+          width: 2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.gavel,
+                color: BioWayColors.petBlue,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Términos y Condiciones',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: BioWayColors.darkGreen,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Checkbox(
+                value: widget.formData.acceptTerms,
+                onChanged: (value) {
+                  setState(() {
+                    widget.formData.acceptTerms = value ?? false;
+                  });
+                  widget.onDataChanged(widget.formData);
+                },
+                activeColor: BioWayColors.petBlue,
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'He leído y acepto los términos y condiciones de uso y el aviso de privacidad de ECOCE.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: BioWayColors.darkGreen,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 16,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              // Abrir términos y condiciones
+                            },
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text(
+                              'Ver términos y condiciones',
+                              style: TextStyle(
+                                color: BioWayColors.petBlue,
+                                fontSize: 12,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              // Abrir aviso de privacidad
+                            },
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text(
+                              'Ver aviso de privacidad',
+                              style: TextStyle(
+                                color: BioWayColors.petBlue,
+                                fontSize: 12,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }

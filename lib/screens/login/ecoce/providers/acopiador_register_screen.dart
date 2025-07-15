@@ -13,7 +13,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
     with SingleTickerProviderStateMixin {
   // Controladores de pasos
   int _currentStep = 1;
-  final int _totalSteps = 4;
+  static const int _totalSteps = 4;
 
   // Form keys para cada paso
   final _step1FormKey = GlobalKey<FormState>();
@@ -21,52 +21,12 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
   final _step3FormKey = GlobalKey<FormState>();
   final _step4FormKey = GlobalKey<FormState>();
 
-  // Datos del formulario (almacenamos todo aquí)
-  final Map<String, dynamic> _formData = {
-    'tipo_actor': 'A', // A para Acopiador
-    'folio': '',
-    // Paso 1: Información básica
-    'nombre': '', // nombre_comercial
-    'rfc': '',
-    'nombre_contacto': '',
-    'tel_contacto': '', // teléfono móvil
-    'tel_empresa': '', // teléfono oficina
-    // Paso 2: Ubicación
-    'calle': '',
-    'num_ext': '',
-    'cp': '',
-    'colonia': '',
-    'ciudad': '',
-    'estado': '',
-    'ref_ubi': '', // referencias
-    'link_maps': '', // se generará automáticamente
-    'poligono_loc': '', // se asignará automáticamente
-    // Paso 3: Información operativa
-    'lista_materiales': '',
-    'transporte': false,
-    'dim_cap': '', // dimensiones capacidad (obligatorio para acopiador)
-    'peso_cap': '', // peso capacidad (obligatorio para acopiador)
-    'link_red_social': '', // opcional
-    // Paso 4: Credenciales y documentos
-    'correo_contacto': '',
-    'password': '',
-    'confirmPassword': '',
-    'const_sit_fis': null, // archivo PDF opcional
-    'comp_domicilio': null, // archivo PDF opcional
-    'banco_caratula': null, // archivo PDF opcional
-    'ine': null, // archivo PDF opcional
-    'acceptTerms': false,
-    'fecha_reg': '', // se asignará automáticamente
-  };
-
-  // Controladores Paso 1
+  // Controladores para todos los campos
   final _nombreComercialController = TextEditingController();
   final _rfcController = TextEditingController();
   final _nombreContactoController = TextEditingController();
   final _telefonoController = TextEditingController();
   final _telefonoOficinaController = TextEditingController();
-
-  // Controladores Paso 2
   final _codigoPostalController = TextEditingController();
   final _direccionController = TextEditingController();
   final _numExtController = TextEditingController();
@@ -74,15 +34,52 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
   final _ciudadController = TextEditingController();
   final _estadoController = TextEditingController();
   final _referenciasController = TextEditingController();
+  final _dimensionesController = TextEditingController();
+  final _pesoController = TextEditingController();
+  final _linkRedSocialController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
   // Estados
   bool _isLoading = false;
   String _generatedFolio = '';
   bool _isSearchingCP = false;
+  final Set<String> _selectedMaterials = {};
+  bool _hasTransport = false;
+  bool _acceptTerms = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+
+  // Archivos seleccionados (simulado)
+  Map<String, String?> _selectedFiles = {
+    'const_sit_fis': null,
+    'comp_domicilio': null,
+    'banco_caratula': null,
+    'ine': null,
+  };
 
   // Animación
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+
+  // Lista de materiales EPF's
+  static const List<Map<String, dynamic>> _materials = [
+    {'id': 'pe_limpio', 'name': 'PE Limpio', 'color': BioWayColors.petBlue, 'desc': 'Polietileno sin contaminación'},
+    {'id': 'pe_sucio', 'name': 'PE Sucio', 'color': BioWayColors.info, 'desc': 'Polietileno con residuos'},
+    {'id': 'multicapa_pe_pp', 'name': 'Multicapa PE/PP', 'color': BioWayColors.ppOrange, 'desc': 'Laminados PE/PP'},
+    {'id': 'multicapa_pe_pet', 'name': 'Multicapa PE/PET', 'color': BioWayColors.warning, 'desc': 'Laminados PE/PET'},
+    {'id': 'multicapa_pe_pa', 'name': 'Multicapa PE/PA', 'color': BioWayColors.otherPurple, 'desc': 'PE/Poliamida'},
+    {'id': 'multicapa_pe_evoh', 'name': 'Multicapa PE/EVOH', 'color': BioWayColors.deepGreen, 'desc': 'Barrera de oxígeno'},
+    {'id': 'bopp', 'name': 'BOPP', 'color': BioWayColors.hdpeGreen, 'desc': 'Polipropileno biorientado'},
+    {'id': 'cpp', 'name': 'CPP', 'color': BioWayColors.success, 'desc': 'Polipropileno cast'},
+    {'id': 'ldpe', 'name': 'LDPE', 'color': BioWayColors.turquoise, 'desc': 'Polietileno baja densidad'},
+    {'id': 'hdpe', 'name': 'HDPE', 'color': BioWayColors.ecoceGreen, 'desc': 'Polietileno alta densidad'},
+    {'id': 'lldpe', 'name': 'LLDPE', 'color': BioWayColors.primaryGreen, 'desc': 'PE lineal baja densidad'},
+    {'id': 'metalizado', 'name': 'Film Metalizado', 'color': BioWayColors.metalGrey, 'desc': 'Con capa de aluminio'},
+    {'id': 'stretch', 'name': 'Stretch Film', 'color': BioWayColors.darkGrey, 'desc': 'Film estirable'},
+    {'id': 'termoencogible', 'name': 'Termoencogible', 'color': BioWayColors.error, 'desc': 'Film retráctil'},
+  ];
 
   @override
   void initState() {
@@ -93,7 +90,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
 
   void _setupAnimation() {
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 600),
       vsync: this,
     );
 
@@ -102,7 +99,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: Curves.easeIn,
+      curve: Curves.easeOut,
     ));
 
     _animationController.forward();
@@ -122,12 +119,17 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
     _ciudadController.dispose();
     _estadoController.dispose();
     _referenciasController.dispose();
+    _dimensionesController.dispose();
+    _pesoController.dispose();
+    _linkRedSocialController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _animationController.dispose();
     super.dispose();
   }
 
   void _generateFolio() {
-    // El folio se generará al completar el registro
     _generatedFolio = '';
   }
 
@@ -143,29 +145,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
   }
 
   void _nextStep() {
-    // Guardar datos del paso actual (sin validación por ahora - solo diseño visual)
-    switch (_currentStep) {
-      case 1:
-        _formData['nombre'] = _nombreComercialController.text;
-        _formData['rfc'] = _rfcController.text;
-        _formData['nombre_contacto'] = _nombreContactoController.text;
-        _formData['tel_contacto'] = _telefonoController.text;
-        _formData['tel_empresa'] = _telefonoOficinaController.text;
-        break;
-      case 2:
-        _formData['calle'] = _direccionController.text;
-        _formData['num_ext'] = _numExtController.text;
-        _formData['cp'] = _codigoPostalController.text;
-        _formData['colonia'] = _coloniaController.text;
-        _formData['ciudad'] = _ciudadController.text;
-        _formData['estado'] = _estadoController.text;
-        _formData['ref_ubi'] = _referenciasController.text;
-        // link_maps y poligono_loc se generarán automáticamente
-        break;
-    // Los demás casos se implementarán en los siguientes pasos
-    }
-
-    // Navegar al siguiente paso sin validación
+    // Para diseño visual - siempre permite avanzar
     if (_currentStep < _totalSteps) {
       setState(() {
         _currentStep++;
@@ -176,13 +156,11 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
   }
 
   Widget _buildProgressIndicator() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20),
+    return SizedBox(
+      height: 60,
       child: Row(
         children: List.generate(_totalSteps * 2 - 1, (index) {
-          // Índices pares son círculos, impares son líneas
           if (index % 2 == 0) {
-            // Círculo del paso
             final stepNumber = (index ~/ 2) + 1;
             final isActive = stepNumber == _currentStep;
             final isCompleted = stepNumber < _currentStep;
@@ -220,7 +198,6 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
               ),
             );
           } else {
-            // Línea conectora
             final lineIndex = index ~/ 2;
             final isCompleted = lineIndex < _currentStep - 1;
 
@@ -245,7 +222,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
       children: [
         Text(
           'Paso $_currentStep de $_totalSteps',
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 14,
             color: BioWayColors.petBlue,
             fontWeight: FontWeight.w500,
@@ -263,7 +240,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
         const SizedBox(height: 4),
         Text(
           subtitle,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 14,
             color: BioWayColors.textGrey,
           ),
@@ -291,7 +268,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
             decoration: InputDecoration(
               labelText: 'Nombre Comercial *',
               hintText: 'Ej: Centro de Acopio San Juan',
-              prefixIcon: Icon(Icons.business, color: BioWayColors.petBlue),
+              prefixIcon: const Icon(Icons.business, color: BioWayColors.petBlue),
               filled: true,
               fillColor: BioWayColors.lightGrey.withOpacity(0.5),
               border: OutlineInputBorder(
@@ -300,32 +277,19 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
+                borderSide: const BorderSide(
                   color: BioWayColors.lightGrey,
                   width: 1,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
+                borderSide: const BorderSide(
                   color: BioWayColors.petBlue,
                   width: 2,
                 ),
               ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: BioWayColors.error,
-                  width: 1,
-                ),
-              ),
             ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'El nombre comercial es obligatorio';
-              }
-              return null;
-            },
           ),
           const SizedBox(height: 20),
 
@@ -341,7 +305,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
               labelText: 'RFC (Opcional)',
               hintText: 'XXXX000000XXX',
               helperText: 'Tienes 30 días para proporcionarlo',
-              prefixIcon: Icon(Icons.article, color: BioWayColors.petBlue),
+              prefixIcon: const Icon(Icons.article, color: BioWayColors.petBlue),
               filled: true,
               fillColor: BioWayColors.lightGrey.withOpacity(0.5),
               border: OutlineInputBorder(
@@ -350,14 +314,14 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
+                borderSide: const BorderSide(
                   color: BioWayColors.lightGrey,
                   width: 1,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
+                borderSide: const BorderSide(
                   color: BioWayColors.petBlue,
                   width: 2,
                 ),
@@ -373,7 +337,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
             decoration: InputDecoration(
               labelText: 'Nombre del Contacto *',
               hintText: 'Nombre completo',
-              prefixIcon: Icon(Icons.person, color: BioWayColors.petBlue),
+              prefixIcon: const Icon(Icons.person, color: BioWayColors.petBlue),
               filled: true,
               fillColor: BioWayColors.lightGrey.withOpacity(0.5),
               border: OutlineInputBorder(
@@ -382,32 +346,19 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
+                borderSide: const BorderSide(
                   color: BioWayColors.lightGrey,
                   width: 1,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
+                borderSide: const BorderSide(
                   color: BioWayColors.petBlue,
                   width: 2,
                 ),
               ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: BioWayColors.error,
-                  width: 1,
-                ),
-              ),
             ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'El nombre del contacto es obligatorio';
-              }
-              return null;
-            },
           ),
           const SizedBox(height: 20),
 
@@ -425,7 +376,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                   decoration: InputDecoration(
                     labelText: 'Teléfono Móvil *',
                     hintText: '10 dígitos',
-                    prefixIcon: Icon(Icons.phone_android, color: BioWayColors.petBlue),
+                    prefixIcon: const Icon(Icons.phone_android, color: BioWayColors.petBlue),
                     filled: true,
                     fillColor: BioWayColors.lightGrey.withOpacity(0.5),
                     border: OutlineInputBorder(
@@ -434,32 +385,19 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
+                      borderSide: const BorderSide(
                         color: BioWayColors.lightGrey,
                         width: 1,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
+                      borderSide: const BorderSide(
                         color: BioWayColors.petBlue,
                         width: 2,
                       ),
                     ),
-                    errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: BioWayColors.error,
-                        width: 1,
-                      ),
-                    ),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Teléfono obligatorio';
-                    }
-                    return null;
-                  },
                 ),
               ),
               const SizedBox(width: 12),
@@ -474,7 +412,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                   decoration: InputDecoration(
                     labelText: 'Teléfono Oficina',
                     hintText: 'Opcional',
-                    prefixIcon: Icon(Icons.phone, color: BioWayColors.petBlue),
+                    prefixIcon: const Icon(Icons.phone, color: BioWayColors.petBlue),
                     filled: true,
                     fillColor: BioWayColors.lightGrey.withOpacity(0.5),
                     border: OutlineInputBorder(
@@ -483,14 +421,14 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
+                      borderSide: const BorderSide(
                         color: BioWayColors.lightGrey,
                         width: 1,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
+                      borderSide: const BorderSide(
                         color: BioWayColors.petBlue,
                         width: 2,
                       ),
@@ -574,7 +512,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
               children: [
                 Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.pin_drop,
                       color: BioWayColors.petBlue,
                       size: 24,
@@ -613,7 +551,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                         decoration: InputDecoration(
                           hintText: '00000',
                           counterText: '',
-                          prefixIcon: Icon(
+                          prefixIcon: const Icon(
                             Icons.location_searching,
                             color: BioWayColors.petBlue,
                           ),
@@ -625,14 +563,14 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
+                            borderSide: const BorderSide(
                               color: BioWayColors.lightGrey,
                               width: 1,
                             ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
+                            borderSide: const BorderSide(
                               color: BioWayColors.petBlue,
                               width: 2,
                             ),
@@ -640,18 +578,18 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                         ),
                         onChanged: (value) {
                           if (value.length == 5) {
-                            // Simular búsqueda de código postal
                             setState(() {
                               _isSearchingCP = true;
                             });
                             Future.delayed(const Duration(seconds: 1), () {
-                              setState(() {
-                                _isSearchingCP = false;
-                                // Simular datos encontrados
-                                _coloniaController.text = 'Centro';
-                                _ciudadController.text = 'Querétaro';
-                                _estadoController.text = 'Querétaro';
-                              });
+                              if (mounted) {
+                                setState(() {
+                                  _isSearchingCP = false;
+                                  _coloniaController.text = 'Centro';
+                                  _ciudadController.text = 'Querétaro';
+                                  _estadoController.text = 'Querétaro';
+                                });
+                              }
                             });
                           }
                         },
@@ -688,7 +626,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                   decoration: InputDecoration(
                     labelText: 'Nombre de calle *',
                     hintText: 'Ej: Av. Universidad',
-                    prefixIcon: Icon(Icons.home, color: BioWayColors.petBlue),
+                    prefixIcon: const Icon(Icons.home, color: BioWayColors.petBlue),
                     filled: true,
                     fillColor: BioWayColors.lightGrey.withOpacity(0.5),
                     border: OutlineInputBorder(
@@ -697,14 +635,14 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
+                      borderSide: const BorderSide(
                         color: BioWayColors.lightGrey,
                         width: 1,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
+                      borderSide: const BorderSide(
                         color: BioWayColors.petBlue,
                         width: 2,
                       ),
@@ -723,7 +661,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                   decoration: InputDecoration(
                     labelText: 'Núm. Exterior *',
                     hintText: '123',
-                    prefixIcon: Icon(Icons.numbers, color: BioWayColors.petBlue),
+                    prefixIcon: const Icon(Icons.numbers, color: BioWayColors.petBlue),
                     filled: true,
                     fillColor: BioWayColors.lightGrey.withOpacity(0.5),
                     border: OutlineInputBorder(
@@ -732,14 +670,14 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
+                      borderSide: const BorderSide(
                         color: BioWayColors.lightGrey,
                         width: 1,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
+                      borderSide: const BorderSide(
                         color: BioWayColors.petBlue,
                         width: 2,
                       ),
@@ -758,7 +696,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
             decoration: InputDecoration(
               labelText: 'Colonia *',
               hintText: 'Nombre de la colonia',
-              prefixIcon: Icon(Icons.location_city, color: BioWayColors.petBlue),
+              prefixIcon: const Icon(Icons.location_city, color: BioWayColors.petBlue),
               filled: true,
               fillColor: BioWayColors.lightGrey.withOpacity(0.5),
               border: OutlineInputBorder(
@@ -767,14 +705,14 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
+                borderSide: const BorderSide(
                   color: BioWayColors.lightGrey,
                   width: 1,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
+                borderSide: const BorderSide(
                   color: BioWayColors.petBlue,
                   width: 2,
                 ),
@@ -793,7 +731,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                   decoration: InputDecoration(
                     labelText: 'Ciudad *',
                     hintText: 'Ciudad',
-                    prefixIcon: Icon(Icons.location_city, color: BioWayColors.petBlue),
+                    prefixIcon: const Icon(Icons.location_city, color: BioWayColors.petBlue),
                     filled: true,
                     fillColor: BioWayColors.lightGrey.withOpacity(0.5),
                     border: OutlineInputBorder(
@@ -802,14 +740,14 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
+                      borderSide: const BorderSide(
                         color: BioWayColors.lightGrey,
                         width: 1,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
+                      borderSide: const BorderSide(
                         color: BioWayColors.petBlue,
                         width: 2,
                       ),
@@ -825,7 +763,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                   decoration: InputDecoration(
                     labelText: 'Estado *',
                     hintText: 'Estado',
-                    prefixIcon: Icon(Icons.map, color: BioWayColors.petBlue),
+                    prefixIcon: const Icon(Icons.map, color: BioWayColors.petBlue),
                     filled: true,
                     fillColor: BioWayColors.lightGrey.withOpacity(0.5),
                     border: OutlineInputBorder(
@@ -834,14 +772,14 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
+                      borderSide: const BorderSide(
                         color: BioWayColors.lightGrey,
                         width: 1,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
+                      borderSide: const BorderSide(
                         color: BioWayColors.petBlue,
                         width: 2,
                       ),
@@ -863,8 +801,8 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
               labelText: 'Referencias de ubicación *',
               hintText: 'Ej: Frente a la iglesia, entrada lateral',
               alignLabelWithHint: true,
-              prefixIcon: Padding(
-                padding: const EdgeInsets.only(bottom: 60),
+              prefixIcon: const Padding(
+                padding: EdgeInsets.only(bottom: 60),
                 child: Icon(Icons.near_me, color: BioWayColors.petBlue),
               ),
               filled: true,
@@ -875,14 +813,14 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
+                borderSide: const BorderSide(
                   color: BioWayColors.lightGrey,
                   width: 1,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
+                borderSide: const BorderSide(
                   color: BioWayColors.petBlue,
                   width: 2,
                 ),
@@ -906,7 +844,6 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
               borderRadius: BorderRadius.circular(16),
               child: Stack(
                 children: [
-                  // Placeholder del mapa
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -941,15 +878,12 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                       ),
                     ),
                   ),
-                  // Botón de ubicación exacta
                   if (_codigoPostalController.text.length == 5)
                     Positioned(
                       bottom: 16,
                       right: 16,
                       child: ElevatedButton.icon(
-                        onPressed: () {
-                          // Aquí se abriría el mapa completo
-                        },
+                        onPressed: () {},
                         icon: const Icon(Icons.my_location, size: 18),
                         label: const Text('Ubicación exacta'),
                         style: ElevatedButton.styleFrom(
@@ -972,6 +906,697 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
           const SizedBox(height: 40),
 
           // Botones de navegación
+          _buildNavigationButtons(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep3Operations() {
+    return Form(
+      key: _step3FormKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildStepTitle(
+            'Información Operativa',
+            'Materiales EPF\'s y capacidad de tu centro',
+          ),
+          const SizedBox(height: 32),
+
+          // Selección de materiales EPF's
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: BioWayColors.lightGrey.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: BioWayColors.lightGrey,
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.recycling,
+                      color: BioWayColors.petBlue,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Materiales EPF\'s que recibes *',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: BioWayColors.darkGreen,
+                            ),
+                          ),
+                          Text(
+                            'Empaques Plásticos Flexibles postconsumo',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: BioWayColors.textGrey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Selecciona todos los tipos de materiales flexibles que acopias',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: BioWayColors.textGrey,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Grid de materiales
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _materials.map((material) {
+                    return _MaterialItem(
+                      material: material,
+                      isSelected: _selectedMaterials.contains(material['id']),
+                      onTap: () {
+                        setState(() {
+                          if (_selectedMaterials.contains(material['id'])) {
+                            _selectedMaterials.remove(material['id']);
+                          } else {
+                            _selectedMaterials.add(material['id']);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Transporte propio
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: BioWayColors.lightGrey,
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.local_shipping,
+                            color: BioWayColors.petBlue,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            '¿Cuentas con transporte propio?',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: BioWayColors.darkGreen,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Para recolección de materiales',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: BioWayColors.textGrey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch(
+                  value: _hasTransport,
+                  onChanged: (value) {
+                    setState(() {
+                      _hasTransport = value;
+                    });
+                  },
+                  activeColor: BioWayColors.petBlue,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Capacidad de prensado (OBLIGATORIO para Acopiador)
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  BioWayColors.petBlue.withOpacity(0.05),
+                  BioWayColors.petBlue.withOpacity(0.02),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: BioWayColors.petBlue.withOpacity(0.3),
+                width: 2,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.compress,
+                      color: BioWayColors.petBlue,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Capacidad de Prensado',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: BioWayColors.darkGreen,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: BioWayColors.error,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        'OBLIGATORIO',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Información importante para coordinar la logística',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: BioWayColors.textGrey,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Dimensiones
+                TextFormField(
+                  controller: _dimensionesController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'Dimensiones (metros) *',
+                    hintText: 'Ej: 15.25 X 15.20',
+                    helperText: 'Formato: largo X ancho',
+                    prefixIcon: const Icon(Icons.straighten, color: BioWayColors.petBlue),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: BioWayColors.lightGrey,
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: BioWayColors.petBlue,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Peso
+                TextFormField(
+                  controller: _pesoController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,3}')),
+                  ],
+                  decoration: InputDecoration(
+                    labelText: 'Peso máximo (kg) *',
+                    hintText: 'Ej: 500.5',
+                    prefixIcon: const Icon(Icons.scale, color: BioWayColors.petBlue),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: BioWayColors.lightGrey,
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: BioWayColors.petBlue,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Link de red social (opcional)
+          TextFormField(
+            controller: _linkRedSocialController,
+            keyboardType: TextInputType.url,
+            decoration: InputDecoration(
+              labelText: 'Página web o red social (opcional)',
+              hintText: 'https://www.ejemplo.com',
+              prefixIcon: const Icon(Icons.language, color: BioWayColors.petBlue),
+              filled: true,
+              fillColor: BioWayColors.lightGrey.withOpacity(0.5),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: BioWayColors.lightGrey,
+                  width: 1,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: BioWayColors.petBlue,
+                  width: 2,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 40),
+
+          // Botones de navegación
+          _buildNavigationButtons(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep4Credentials() {
+    return Form(
+      key: _step4FormKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildStepTitle(
+            'Credenciales de Acceso',
+            'Correo, contraseña y términos',
+          ),
+          const SizedBox(height: 32),
+
+          // Sección de credenciales
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: BioWayColors.lightGrey,
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.account_circle,
+                      color: BioWayColors.petBlue,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Datos de Acceso',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: BioWayColors.darkGreen,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Correo electrónico
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    labelText: 'Correo electrónico *',
+                    hintText: 'ejemplo@correo.com',
+                    prefixIcon: const Icon(Icons.email, color: BioWayColors.petBlue),
+                    filled: true,
+                    fillColor: BioWayColors.lightGrey.withOpacity(0.5),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: BioWayColors.lightGrey,
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: BioWayColors.petBlue,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Contraseña
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
+                    labelText: 'Contraseña *',
+                    hintText: 'Mínimo 6 caracteres',
+                    prefixIcon: const Icon(Icons.lock, color: BioWayColors.petBlue),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        color: BioWayColors.textGrey,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
+                    filled: true,
+                    fillColor: BioWayColors.lightGrey.withOpacity(0.5),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: BioWayColors.lightGrey,
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: BioWayColors.petBlue,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Confirmar contraseña
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  obscureText: _obscureConfirmPassword,
+                  decoration: InputDecoration(
+                    labelText: 'Confirmar contraseña *',
+                    hintText: 'Repite tu contraseña',
+                    prefixIcon: const Icon(Icons.lock_outline, color: BioWayColors.petBlue),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                        color: BioWayColors.textGrey,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscureConfirmPassword = !_obscureConfirmPassword;
+                        });
+                      },
+                    ),
+                    filled: true,
+                    fillColor: BioWayColors.lightGrey.withOpacity(0.5),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: BioWayColors.lightGrey,
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: BioWayColors.petBlue,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Documentos fiscales opcionales
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: BioWayColors.lightGrey.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: BioWayColors.lightGrey,
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.folder_open,
+                      color: BioWayColors.petBlue,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Documentos Fiscales',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: BioWayColors.darkGreen,
+                          ),
+                        ),
+                        Text(
+                          'Opcional - Puedes subirlos después',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: BioWayColors.textGrey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Lista de documentos
+                _buildDocumentUpload(
+                  'Constancia de Situación Fiscal',
+                  'const_sit_fis',
+                  Icons.description,
+                ),
+                const SizedBox(height: 12),
+                _buildDocumentUpload(
+                  'Comprobante de Domicilio',
+                  'comp_domicilio',
+                  Icons.home_work,
+                ),
+                const SizedBox(height: 12),
+                _buildDocumentUpload(
+                  'Carátula de Estado de Cuenta',
+                  'banco_caratula',
+                  Icons.account_balance,
+                ),
+                const SizedBox(height: 12),
+                _buildDocumentUpload(
+                  'INE/Identificación Oficial',
+                  'ine',
+                  Icons.badge,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Términos y condiciones
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  BioWayColors.petBlue.withOpacity(0.05),
+                  BioWayColors.petBlue.withOpacity(0.02),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: BioWayColors.petBlue.withOpacity(0.3),
+                width: 2,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.gavel,
+                      color: BioWayColors.petBlue,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Términos y Condiciones',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: BioWayColors.darkGreen,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Checkbox(
+                      value: _acceptTerms,
+                      onChanged: (value) {
+                        setState(() {
+                          _acceptTerms = value ?? false;
+                        });
+                      },
+                      activeColor: BioWayColors.petBlue,
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'He leído y acepto los términos y condiciones de uso y el aviso de privacidad de ECOCE.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: BioWayColors.darkGreen,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 16,
+                              children: [
+                                TextButton(
+                                  onPressed: () {},
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: const Text(
+                                    'Ver términos y condiciones',
+                                    style: TextStyle(
+                                      color: BioWayColors.petBlue,
+                                      fontSize: 12,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {},
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: const Text(
+                                    'Ver aviso de privacidad',
+                                    style: TextStyle(
+                                      color: BioWayColors.petBlue,
+                                      fontSize: 12,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 40),
+
+          // Botones de navegación
           Row(
             children: [
               Expanded(
@@ -984,7 +1609,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                     });
                   },
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: BioWayColors.petBlue),
+                    side: const BorderSide(color: BioWayColors.petBlue),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -1002,9 +1627,125 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
               const SizedBox(width: 16),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: _nextStep,
+                  onPressed: () {
+                    // Generar folio al completar
+                    final timestamp = DateTime.now().millisecondsSinceEpoch;
+                    final randomDigits = (timestamp % 10000000).toString().padLeft(7, '0');
+                    final folio = 'A$randomDigits';
+
+                    // Mostrar diálogo de éxito con el folio
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (BuildContext context) {
+                        return Dialog(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.all(24),
+                            constraints: const BoxConstraints(maxWidth: 400),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    color: BioWayColors.success.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.check_circle,
+                                    size: 40,
+                                    color: BioWayColors.success,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                const Text(
+                                  '¡Registro exitoso!',
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: BioWayColors.darkGreen,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'Tu cuenta ha sido creada correctamente',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: BioWayColors.textGrey,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: BioWayColors.petBlue.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: BioWayColors.petBlue.withOpacity(0.3),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      const Text(
+                                        'Tu folio de registro es:',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: BioWayColors.darkGreen,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        folio,
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                          color: BioWayColors.darkGreen,
+                                          letterSpacing: 1.2,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                      Navigator.of(context).pop();
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: BioWayColors.petBlue,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'Continuar',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: BioWayColors.petBlue,
+                    backgroundColor: BioWayColors.success,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -1014,18 +1755,18 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      Icon(
+                        Icons.check,
+                        color: Colors.white,
+                      ),
+                      SizedBox(width: 8),
                       Text(
-                        'Continuar',
+                        'Completar Registro',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
-                      ),
-                      SizedBox(width: 8),
-                      Icon(
-                        Icons.arrow_forward,
-                        color: Colors.white,
                       ),
                     ],
                   ),
@@ -1038,337 +1779,131 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
     );
   }
 
-  Widget _buildStep3Operations() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildStepTitle(
-          'Información Operativa',
-          'Materiales y capacidad de tu centro',
-        ),
-        const SizedBox(height: 32),
+  Widget _buildDocumentUpload(String title, String key, IconData icon) {
+    final hasFile = _selectedFiles[key] != null;
 
-        // Placeholder para el paso 3
-        Container(
-          height: 300,
-          decoration: BoxDecoration(
-            color: BioWayColors.lightGrey.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: BioWayColors.lightGrey,
-              width: 2,
-            ),
-          ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.recycling,
-                  size: 48,
-                  color: BioWayColors.petBlue,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Materiales y capacidad',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: BioWayColors.textGrey,
-                  ),
-                ),
-              ],
-            ),
+    return InkWell(
+      onTap: () {
+        // Simular selección de archivo
+        setState(() {
+          _selectedFiles[key] = hasFile ? null : '$title.pdf';
+        });
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: hasFile
+              ? BioWayColors.success.withOpacity(0.1)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: hasFile
+                ? BioWayColors.success
+                : BioWayColors.lightGrey,
+            width: 1,
           ),
         ),
-        const SizedBox(height: 40),
-
-        // Botones de navegación
-        Row(
+        child: Row(
           children: [
+            Icon(
+              icon,
+              color: hasFile ? BioWayColors.success : BioWayColors.textGrey,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
             Expanded(
-              child: OutlinedButton(
-                onPressed: () {
-                  setState(() {
-                    _currentStep--;
-                    _animationController.reset();
-                    _animationController.forward();
-                  });
-                },
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: BioWayColors.petBlue),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: hasFile ? FontWeight.bold : FontWeight.normal,
+                      color: hasFile ? BioWayColors.success : BioWayColors.darkGreen,
+                    ),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Text(
-                  'Anterior',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                  Text(
+                    hasFile ? _selectedFiles[key]! : 'Toca para seleccionar archivo PDF',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: BioWayColors.textGrey,
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: _nextStep,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BioWayColors.petBlue,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 2,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Continuar',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Icon(
-                      Icons.arrow_forward,
-                      color: Colors.white,
-                    ),
-                  ],
-                ),
-              ),
+            Icon(
+              hasFile ? Icons.check_circle : Icons.upload_file,
+              color: hasFile ? BioWayColors.success : BioWayColors.textGrey,
+              size: 20,
             ),
           ],
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildStep4Credentials() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildNavigationButtons() {
+    return Row(
       children: [
-        _buildStepTitle(
-          'Credenciales de Acceso',
-          'Correo, contraseña y términos',
-        ),
-        const SizedBox(height: 32),
-
-        // Placeholder para el paso 4
-        Container(
-          height: 300,
-          decoration: BoxDecoration(
-            color: BioWayColors.lightGrey.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: BioWayColors.lightGrey,
-              width: 2,
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () {
+              setState(() {
+                _currentStep--;
+                _animationController.reset();
+                _animationController.forward();
+              });
+            },
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: BioWayColors.petBlue),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            child: const Text(
+              'Anterior',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-          child: Center(
-            child: Column(
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: _nextStep,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: BioWayColors.petBlue,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 2,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.lock,
-                  size: 48,
-                  color: BioWayColors.petBlue,
-                ),
-                const SizedBox(height: 16),
                 Text(
-                  'Credenciales y términos',
+                  'Continuar',
                   style: TextStyle(
                     fontSize: 16,
-                    color: BioWayColors.textGrey,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
+                ),
+                SizedBox(width: 8),
+                Icon(
+                  Icons.arrow_forward,
+                  color: Colors.white,
                 ),
               ],
             ),
           ),
-        ),
-        const SizedBox(height: 40),
-
-        // Botones de navegación
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () {
-                  setState(() {
-                    _currentStep--;
-                    _animationController.reset();
-                    _animationController.forward();
-                  });
-                },
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: BioWayColors.petBlue),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Text(
-                  'Anterior',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () {
-                  // Generar folio al completar
-                  final timestamp = DateTime.now().millisecondsSinceEpoch;
-                  final lastDigits = (timestamp % 10000).toString().padLeft(4, '0');
-                  final folio = 'A0000$lastDigits';
-
-                  // Mostrar diálogo de éxito con el folio
-                  showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (BuildContext context) {
-                      return Dialog(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.all(24),
-                          constraints: const BoxConstraints(maxWidth: 400),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  color: BioWayColors.success.withOpacity(0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.check_circle,
-                                  size: 40,
-                                  color: BioWayColors.success,
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              const Text(
-                                '¡Registro exitoso!',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: BioWayColors.darkGreen,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              const Text(
-                                'Tu cuenta ha sido creada correctamente',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: BioWayColors.textGrey,
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: BioWayColors.petBlue.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: BioWayColors.petBlue.withOpacity(0.3),
-                                  ),
-                                ),
-                                child: Column(
-                                  children: [
-                                    const Text(
-                                      'Tu folio de registro es:',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: BioWayColors.darkGreen,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      folio,
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: BioWayColors.darkGreen,
-                                        letterSpacing: 1.2,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                    // Aquí se navegaría a la pantalla de verificación
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: BioWayColors.petBlue,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'Continuar',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BioWayColors.success,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 2,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.check,
-                      color: Colors.white,
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      'Completar Registro',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
         ),
       ],
     );
@@ -1376,10 +1911,12 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        _navigateBack();
-        return false;
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          _navigateBack();
+        }
       },
       child: Scaffold(
         backgroundColor: BioWayColors.backgroundGrey,
@@ -1429,32 +1966,34 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                                   color: BioWayColors.petBlue.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: Icon(
+                                child: const Icon(
                                   Icons.warehouse,
                                   color: BioWayColors.petBlue,
                                   size: 24,
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Registro Acopiador',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: BioWayColors.darkGreen,
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Registro Acopiador',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: BioWayColors.darkGreen,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    'Centro de acopio de materiales',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: BioWayColors.textGrey,
+                                    Text(
+                                      'Centro de acopio de materiales',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: BioWayColors.textGrey,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ],
                           ),
@@ -1471,21 +2010,132 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
               Expanded(
                 child: FadeTransition(
                   opacity: _fadeAnimation,
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.all(20),
-                    child: _currentStep == 1
-                        ? _buildStep1BasicInfo()
-                        : _currentStep == 2
-                        ? _buildStep2Location()
-                        : _currentStep == 3
-                        ? _buildStep3Operations()
-                        : _buildStep4Credentials(),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.all(20),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight - 40,
+                          ),
+                          child: _buildCurrentStep(),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCurrentStep() {
+    switch (_currentStep) {
+      case 1:
+        return _buildStep1BasicInfo();
+      case 2:
+        return _buildStep2Location();
+      case 3:
+        return _buildStep3Operations();
+      case 4:
+        return _buildStep4Credentials();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+}
+
+// Widget optimizado para los items de material
+class _MaterialItem extends StatelessWidget {
+  final Map<String, dynamic> material;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _MaterialItem({
+    required this.material,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? material['color'].withOpacity(0.1)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? material['color']
+                : BioWayColors.lightGrey,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: material['color'],
+                  width: 2,
+                ),
+                color: isSelected
+                    ? material['color']
+                    : Colors.transparent,
+              ),
+              child: isSelected
+                  ? const Icon(
+                Icons.check,
+                size: 16,
+                color: Colors.white,
+              )
+                  : null,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    material['name'],
+                    style: TextStyle(
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w500,
+                      color: isSelected
+                          ? material['color']
+                          : BioWayColors.darkGreen,
+                      fontSize: 13,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    material['desc'],
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: BioWayColors.textGrey,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
