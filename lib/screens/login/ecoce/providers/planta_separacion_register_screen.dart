@@ -194,14 +194,14 @@ class _PlantaSeparacionRegisterScreenState extends State<PlantaSeparacionRegiste
                   child: Row(
                     children: [
                       Icon(
-                        Icons.access_time,
+                        Icons.email,
                         color: BioWayColors.info,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Tu cuenta será verificada en un plazo máximo de 48 horas',
+                          'Tu cuenta ha sido creada. Revisa tu correo para verificar tu cuenta.',
                           style: TextStyle(
                             fontSize: 13,
                             color: BioWayColors.info,

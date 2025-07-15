@@ -3,25 +3,20 @@ import 'package:flutter/services.dart';
 import '../../../../utils/colors.dart';
 import '../widgets/common_fields_form.dart';
 
-class AcopiadorRegisterScreen extends StatefulWidget {
-  const AcopiadorRegisterScreen({super.key});
+class TransportistaRegisterScreen extends StatefulWidget {
+  const TransportistaRegisterScreen({super.key});
 
   @override
-  State<AcopiadorRegisterScreen> createState() => _AcopiadorRegisterScreenState();
+  State<TransportistaRegisterScreen> createState() => _TransportistaRegisterScreenState();
 }
 
-class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
+class _TransportistaRegisterScreenState extends State<TransportistaRegisterScreen>
     with SingleTickerProviderStateMixin {
   // Form keys
   final _formKey = GlobalKey<FormState>();
-  final _capacityFormKey = GlobalKey<FormState>();
 
   // Form data
   late CommonFormData _formData;
-
-  // Campos específicos de Acopiador
-  final _dimensionesController = TextEditingController();
-  final _pesoController = TextEditingController();
 
   // Estados
   bool _isLoading = false;
@@ -34,7 +29,9 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
   @override
   void initState() {
     super.initState();
-    _formData = CommonFormData(tipoActor: 'Acopiador');
+    _formData = CommonFormData(tipoActor: 'Transportista');
+    // IMPORTANTE: Auto-asignar transporte como true para transportistas
+    _formData.transporte = true;
     _generateFolio();
     _setupAnimation();
   }
@@ -58,18 +55,15 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
 
   @override
   void dispose() {
-    _dimensionesController.dispose();
-    _pesoController.dispose();
     _animationController.dispose();
     super.dispose();
   }
 
   void _generateFolio() {
-    // Simulación de generación de folio
-    // En producción, esto vendría del backend
+    // Simulación de generación de folio para Transportista
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final lastDigits = (timestamp % 10000).toString().padLeft(4, '0');
-    _generatedFolio = 'A0000$lastDigits';
+    _generatedFolio = 'V0000$lastDigits';
   }
 
   void _navigateBack() {
@@ -78,11 +72,10 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
   }
 
   Future<void> _submitForm() async {
-    // Validar ambos formularios
-    final isCommonValid = _formKey.currentState?.validate() ?? false;
-    final isCapacityValid = _capacityFormKey.currentState?.validate() ?? false;
+    // Validar formulario
+    final isValid = _formKey.currentState?.validate() ?? false;
 
-    if (!isCommonValid || !isCapacityValid) {
+    if (!isValid) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Por favor completa todos los campos obligatorios'),
@@ -100,7 +93,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
     if (_formData.listaMateriales.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Selecciona al menos un material'),
+          content: const Text('Selecciona al menos un material que transportas'),
           backgroundColor: BioWayColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -173,7 +166,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   decoration: BoxDecoration(
-                    color: BioWayColors.petBlue.withOpacity(0.1),
+                    color: BioWayColors.info.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -181,7 +174,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: BioWayColors.petBlue,
+                      color: BioWayColors.info,
                       letterSpacing: 2,
                     ),
                   ),
@@ -221,7 +214,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                     Navigator.pop(context); // Volver al login
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: BioWayColors.petBlue,
+                    backgroundColor: BioWayColors.info,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -267,12 +260,12 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                     icon: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: BioWayColors.petBlue.withOpacity(0.1),
+                        color: BioWayColors.info.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
                         Icons.arrow_back_ios_new,
-                        color: BioWayColors.petBlue,
+                        color: BioWayColors.info,
                         size: 20,
                       ),
                     ),
@@ -290,21 +283,21 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: BioWayColors.petBlue.withOpacity(0.1),
+                                color: BioWayColors.info.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                'A',
+                                'V',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
-                                  color: BioWayColors.petBlue,
+                                  color: BioWayColors.info,
                                 ),
                               ),
                             ),
                             const SizedBox(width: 8),
                             const Text(
-                              'Registro Acopiador',
+                              'Registro Transportista',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -315,7 +308,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Centro de acopio de materiales',
+                          'Logística de materiales reciclables',
                           style: TextStyle(
                             fontSize: 12,
                             color: BioWayColors.textGrey,
@@ -325,8 +318,8 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                     ),
                   ),
                   Icon(
-                    Icons.warehouse,
-                    color: BioWayColors.petBlue,
+                    Icons.local_shipping,
+                    color: BioWayColors.info,
                     size: 32,
                   ),
                 ],
@@ -350,22 +343,22 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              BioWayColors.petBlue.withOpacity(0.1),
-                              BioWayColors.petBlue.withOpacity(0.05),
+                              BioWayColors.info.withOpacity(0.1),
+                              BioWayColors.info.withOpacity(0.05),
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: BioWayColors.petBlue.withOpacity(0.3),
+                            color: BioWayColors.info.withOpacity(0.3),
                           ),
                         ),
                         child: Column(
                           children: [
                             Icon(
                               Icons.qr_code_2,
-                              color: BioWayColors.petBlue,
+                              color: BioWayColors.info,
                               size: 40,
                             ),
                             const SizedBox(height: 8),
@@ -382,7 +375,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: BioWayColors.petBlue,
+                                color: BioWayColors.info,
                                 letterSpacing: 2,
                               ),
                             ),
@@ -392,7 +385,55 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
 
                       const SizedBox(height: 24),
 
-                      // Formulario común
+                      // Aviso especial para transportistas
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: BioWayColors.success.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: BioWayColors.success.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.local_shipping,
+                              color: BioWayColors.success,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Transporte propio confirmado',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: BioWayColors.darkGreen,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Como transportista, se registra automáticamente que cuentas con vehículos propios',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: BioWayColors.textGrey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Formulario común - Sin el campo de transporte propio
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
@@ -409,10 +450,12 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                         child: CommonFieldsForm(
                           formKey: _formKey,
                           formData: _formData,
-                          showTransportField: true,
+                          showTransportField: false, // NO mostrar campo de transporte
                           onDataChanged: (data) {
                             setState(() {
                               _formData = data;
+                              // Asegurar que siempre sea true
+                              _formData.transporte = true;
                             });
                           },
                         ),
@@ -420,97 +463,63 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
 
                       const SizedBox(height: 24),
 
-                      // Campos específicos de Acopiador
+                      // Información adicional para transportistas
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
+                          color: BioWayColors.info.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: BioWayColors.info.withOpacity(0.2),
+                          ),
                         ),
-                        child: Form(
-                          key: _capacityFormKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Título de sección
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 8,
-                                  horizontal: 16,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.directions_bus,
+                                  color: BioWayColors.info,
+                                  size: 20,
                                 ),
-                                decoration: BoxDecoration(
-                                  color: BioWayColors.petBlue.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.compress,
-                                      color: BioWayColors.petBlue,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    const Text(
-                                      'Capacidad de Prensado (Obligatorio)',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: BioWayColors.darkGreen,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-
-                              // Dimensiones
-                              _buildDimensionsField(),
-                              const SizedBox(height: 16),
-
-                              // Peso
-                              _buildWeightField(),
-
-                              // Nota informativa
-                              const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: BioWayColors.info.withOpacity(0.05),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: BioWayColors.info.withOpacity(0.2),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Servicios de Transporte ECOCE',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: BioWayColors.darkGreen,
                                   ),
                                 ),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Icon(
-                                      Icons.info_outline,
-                                      color: BioWayColors.info,
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'Estos datos son importantes para coordinar la logística de recolección',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: BioWayColors.info,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            _buildServiceItem(
+                              'Rutas optimizadas entre proveedores',
+                              Icons.route,
+                            ),
+                            _buildServiceItem(
+                              'Tarifas preferenciales por volumen',
+                              Icons.attach_money,
+                            ),
+                            _buildServiceItem(
+                              'Trazabilidad GPS en tiempo real',
+                              Icons.gps_fixed,
+                            ),
+                            _buildServiceItem(
+                              'Documentación digital automatizada',
+                              Icons.description,
+                            ),
+                            _buildServiceItem(
+                              'Seguro de carga incluido',
+                              Icons.security,
+                            ),
+                            _buildServiceItem(
+                              'Capacitación en manejo de materiales',
+                              Icons.school,
+                            ),
+                          ],
                         ),
                       ),
 
@@ -523,9 +532,9 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _submitForm,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: BioWayColors.petBlue,
+                            backgroundColor: BioWayColors.info,
                             elevation: _isLoading ? 0 : 3,
-                            shadowColor: BioWayColors.petBlue.withOpacity(0.4),
+                            shadowColor: BioWayColors.info.withOpacity(0.4),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -562,139 +571,30 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
     );
   }
 
-  Widget _buildDimensionsField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.straighten, color: BioWayColors.petBlue, size: 20),
-            const SizedBox(width: 8),
-            const Text(
-              'Dimensiones (Metros) *',
+  Widget _buildServiceItem(String text, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            color: BioWayColors.info,
+            size: 18,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
               style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: BioWayColors.darkGreen,
+                fontSize: 13,
+                color: BioWayColors.textGrey,
+                height: 1.4,
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: _dimensionesController,
-          keyboardType: TextInputType.text,
-          style: const TextStyle(fontSize: 14),
-          decoration: InputDecoration(
-            hintText: '15.25 X 15.20',
-            hintStyle: TextStyle(
-              color: Colors.grey.shade400,
-              fontSize: 14,
-            ),
-            helperText: 'Formato: largo X ancho (ejemplo: 15.25 X 15.20)',
-            helperStyle: const TextStyle(fontSize: 12),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: BioWayColors.petBlue, width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: BioWayColors.error, width: 2),
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Este campo es obligatorio';
-            }
-            // Validar formato simple: debe contener X
-            if (!value.toUpperCase().contains('X')) {
-              return 'Formato inválido. Usa: largo X ancho';
-            }
-            return null;
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWeightField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.fitness_center, color: BioWayColors.petBlue, size: 20),
-            const SizedBox(width: 8),
-            const Text(
-              'Peso máximo (Kg) *',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: BioWayColors.darkGreen,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: _pesoController,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-          ],
-          style: const TextStyle(fontSize: 14),
-          decoration: InputDecoration(
-            hintText: '500.5',
-            hintStyle: TextStyle(
-              color: Colors.grey.shade400,
-              fontSize: 14,
-            ),
-            helperText: 'Peso máximo que puede prensar en kilogramos',
-            helperStyle: const TextStyle(fontSize: 12),
-            suffixText: 'Kg',
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: BioWayColors.petBlue, width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: BioWayColors.error, width: 2),
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Este campo es obligatorio';
-            }
-            final peso = double.tryParse(value);
-            if (peso == null || peso <= 0) {
-              return 'Ingresa un peso válido';
-            }
-            return null;
-          },
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

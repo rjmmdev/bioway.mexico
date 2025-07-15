@@ -8,7 +8,6 @@ import 'providers/reciclador_register_screen.dart';
 import 'providers/transformador_register_screen.dart';
 import 'providers/transportista_register_screen.dart';
 import 'providers/laboratorio_register_screen.dart';
-import 'providers/desarrollo_mercado_register_screen.dart';
 
 /// Modelo para representar un tipo de proveedor
 class ProviderType {
@@ -38,7 +37,7 @@ class ECOCETipoProveedorSelector extends StatefulWidget {
 
 class _ECOCETipoProveedorSelectorState extends State<ECOCETipoProveedorSelector>
     with TickerProviderStateMixin {
-  // Lista de tipos de proveedores
+  // Lista de tipos de proveedores (6 tipos, sin Desarrollo de Mercado)
   final List<ProviderType> _providerTypes = [
     ProviderType(
       code: 'A',
@@ -87,14 +86,6 @@ class _ECOCETipoProveedorSelectorState extends State<ECOCETipoProveedorSelector>
       icon: Icons.science,
       color: BioWayColors.otherPurple,
       screenBuilder: () => const LaboratorioRegisterScreen(),
-    ),
-    ProviderType(
-      code: 'D',
-      name: 'Desarrollo de Mercado',
-      description: 'Comercialización de productos reciclados',
-      icon: Icons.trending_up,
-      color: BioWayColors.metalGrey,
-      screenBuilder: () => const DesarrolloMercadoRegisterScreen(),
     ),
   ];
 
@@ -412,7 +403,7 @@ class _ECOCETipoProveedorSelectorState extends State<ECOCETipoProveedorSelector>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  'Proceso de verificación',
+                                  'Proceso de registro',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -421,7 +412,7 @@ class _ECOCETipoProveedorSelectorState extends State<ECOCETipoProveedorSelector>
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Después del registro, tu información será verificada en un plazo máximo de 48 horas. Recibirás una notificación cuando tu cuenta esté activa.',
+                                  'Al completar el registro, tu cuenta será creada inmediatamente. Recibirás un correo de verificación para activar tu cuenta.',
                                   style: TextStyle(
                                     fontSize: 13,
                                     color: BioWayColors.textGrey,

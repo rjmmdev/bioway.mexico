@@ -3,25 +3,20 @@ import 'package:flutter/services.dart';
 import '../../../../utils/colors.dart';
 import '../widgets/common_fields_form.dart';
 
-class AcopiadorRegisterScreen extends StatefulWidget {
-  const AcopiadorRegisterScreen({super.key});
+class RecicladorRegisterScreen extends StatefulWidget {
+  const RecicladorRegisterScreen({super.key});
 
   @override
-  State<AcopiadorRegisterScreen> createState() => _AcopiadorRegisterScreenState();
+  State<RecicladorRegisterScreen> createState() => _RecicladorRegisterScreenState();
 }
 
-class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
+class _RecicladorRegisterScreenState extends State<RecicladorRegisterScreen>
     with SingleTickerProviderStateMixin {
   // Form keys
   final _formKey = GlobalKey<FormState>();
-  final _capacityFormKey = GlobalKey<FormState>();
 
   // Form data
   late CommonFormData _formData;
-
-  // Campos específicos de Acopiador
-  final _dimensionesController = TextEditingController();
-  final _pesoController = TextEditingController();
 
   // Estados
   bool _isLoading = false;
@@ -34,7 +29,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
   @override
   void initState() {
     super.initState();
-    _formData = CommonFormData(tipoActor: 'Acopiador');
+    _formData = CommonFormData(tipoActor: 'Reciclador');
     _generateFolio();
     _setupAnimation();
   }
@@ -58,18 +53,15 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
 
   @override
   void dispose() {
-    _dimensionesController.dispose();
-    _pesoController.dispose();
     _animationController.dispose();
     super.dispose();
   }
 
   void _generateFolio() {
-    // Simulación de generación de folio
-    // En producción, esto vendría del backend
+    // Simulación de generación de folio para Reciclador
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final lastDigits = (timestamp % 10000).toString().padLeft(4, '0');
-    _generatedFolio = 'A0000$lastDigits';
+    _generatedFolio = 'R0000$lastDigits';
   }
 
   void _navigateBack() {
@@ -78,11 +70,10 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
   }
 
   Future<void> _submitForm() async {
-    // Validar ambos formularios
-    final isCommonValid = _formKey.currentState?.validate() ?? false;
-    final isCapacityValid = _capacityFormKey.currentState?.validate() ?? false;
+    // Validar formulario
+    final isValid = _formKey.currentState?.validate() ?? false;
 
-    if (!isCommonValid || !isCapacityValid) {
+    if (!isValid) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Por favor completa todos los campos obligatorios'),
@@ -173,7 +164,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   decoration: BoxDecoration(
-                    color: BioWayColors.petBlue.withOpacity(0.1),
+                    color: BioWayColors.ecoceGreen.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -181,7 +172,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: BioWayColors.petBlue,
+                      color: BioWayColors.ecoceGreen,
                       letterSpacing: 2,
                     ),
                   ),
@@ -221,7 +212,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                     Navigator.pop(context); // Volver al login
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: BioWayColors.petBlue,
+                    backgroundColor: BioWayColors.ecoceGreen,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -267,12 +258,12 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                     icon: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: BioWayColors.petBlue.withOpacity(0.1),
+                        color: BioWayColors.ecoceGreen.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
                         Icons.arrow_back_ios_new,
-                        color: BioWayColors.petBlue,
+                        color: BioWayColors.ecoceGreen,
                         size: 20,
                       ),
                     ),
@@ -290,21 +281,21 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: BioWayColors.petBlue.withOpacity(0.1),
+                                color: BioWayColors.ecoceGreen.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                'A',
+                                'R',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
-                                  color: BioWayColors.petBlue,
+                                  color: BioWayColors.ecoceGreen,
                                 ),
                               ),
                             ),
                             const SizedBox(width: 8),
                             const Text(
-                              'Registro Acopiador',
+                              'Registro Reciclador',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -315,7 +306,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Centro de acopio de materiales',
+                          'Procesamiento de materiales',
                           style: TextStyle(
                             fontSize: 12,
                             color: BioWayColors.textGrey,
@@ -325,8 +316,8 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                     ),
                   ),
                   Icon(
-                    Icons.warehouse,
-                    color: BioWayColors.petBlue,
+                    Icons.recycling,
+                    color: BioWayColors.ecoceGreen,
                     size: 32,
                   ),
                 ],
@@ -350,22 +341,22 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              BioWayColors.petBlue.withOpacity(0.1),
-                              BioWayColors.petBlue.withOpacity(0.05),
+                              BioWayColors.ecoceGreen.withOpacity(0.1),
+                              BioWayColors.ecoceGreen.withOpacity(0.05),
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: BioWayColors.petBlue.withOpacity(0.3),
+                            color: BioWayColors.ecoceGreen.withOpacity(0.3),
                           ),
                         ),
                         child: Column(
                           children: [
                             Icon(
                               Icons.qr_code_2,
-                              color: BioWayColors.petBlue,
+                              color: BioWayColors.ecoceGreen,
                               size: 40,
                             ),
                             const SizedBox(height: 8),
@@ -382,7 +373,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: BioWayColors.petBlue,
+                                color: BioWayColors.ecoceGreen,
                                 letterSpacing: 2,
                               ),
                             ),
@@ -392,7 +383,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
 
                       const SizedBox(height: 24),
 
-                      // Formulario común
+                      // Formulario común - El Reciclador solo usa campos comunes
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
@@ -420,97 +411,43 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
 
                       const SizedBox(height: 24),
 
-                      // Campos específicos de Acopiador
+                      // Información adicional específica para Reciclador
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
+                          color: BioWayColors.info.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: BioWayColors.info.withOpacity(0.2),
+                          ),
                         ),
-                        child: Form(
-                          key: _capacityFormKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Título de sección
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 8,
-                                  horizontal: 16,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.info_outline,
+                                  color: BioWayColors.info,
+                                  size: 20,
                                 ),
-                                decoration: BoxDecoration(
-                                  color: BioWayColors.petBlue.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.compress,
-                                      color: BioWayColors.petBlue,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    const Text(
-                                      'Capacidad de Prensado (Obligatorio)',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: BioWayColors.darkGreen,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-
-                              // Dimensiones
-                              _buildDimensionsField(),
-                              const SizedBox(height: 16),
-
-                              // Peso
-                              _buildWeightField(),
-
-                              // Nota informativa
-                              const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: BioWayColors.info.withOpacity(0.05),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: BioWayColors.info.withOpacity(0.2),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Información para Recicladores',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: BioWayColors.darkGreen,
                                   ),
                                 ),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Icon(
-                                      Icons.info_outline,
-                                      color: BioWayColors.info,
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'Estos datos son importantes para coordinar la logística de recolección',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: BioWayColors.info,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            _buildInfoItem('Como reciclador podrás procesar materiales de múltiples acopiadores'),
+                            _buildInfoItem('Recibirás notificaciones de materiales disponibles en tu zona'),
+                            _buildInfoItem('Podrás establecer tarifas preferenciales según el volumen'),
+                            _buildInfoItem('Acceso a reportes de trazabilidad completa'),
+                          ],
                         ),
                       ),
 
@@ -523,9 +460,9 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _submitForm,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: BioWayColors.petBlue,
+                            backgroundColor: BioWayColors.ecoceGreen,
                             elevation: _isLoading ? 0 : 3,
-                            shadowColor: BioWayColors.petBlue.withOpacity(0.4),
+                            shadowColor: BioWayColors.ecoceGreen.withOpacity(0.4),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -562,139 +499,34 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
     );
   }
 
-  Widget _buildDimensionsField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.straighten, color: BioWayColors.petBlue, size: 20),
-            const SizedBox(width: 8),
-            const Text(
-              'Dimensiones (Metros) *',
+  Widget _buildInfoItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 2),
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: BioWayColors.info,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
               style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: BioWayColors.darkGreen,
+                fontSize: 13,
+                color: BioWayColors.textGrey,
+                height: 1.4,
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: _dimensionesController,
-          keyboardType: TextInputType.text,
-          style: const TextStyle(fontSize: 14),
-          decoration: InputDecoration(
-            hintText: '15.25 X 15.20',
-            hintStyle: TextStyle(
-              color: Colors.grey.shade400,
-              fontSize: 14,
-            ),
-            helperText: 'Formato: largo X ancho (ejemplo: 15.25 X 15.20)',
-            helperStyle: const TextStyle(fontSize: 12),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: BioWayColors.petBlue, width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: BioWayColors.error, width: 2),
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Este campo es obligatorio';
-            }
-            // Validar formato simple: debe contener X
-            if (!value.toUpperCase().contains('X')) {
-              return 'Formato inválido. Usa: largo X ancho';
-            }
-            return null;
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWeightField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.fitness_center, color: BioWayColors.petBlue, size: 20),
-            const SizedBox(width: 8),
-            const Text(
-              'Peso máximo (Kg) *',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: BioWayColors.darkGreen,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: _pesoController,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-          ],
-          style: const TextStyle(fontSize: 14),
-          decoration: InputDecoration(
-            hintText: '500.5',
-            hintStyle: TextStyle(
-              color: Colors.grey.shade400,
-              fontSize: 14,
-            ),
-            helperText: 'Peso máximo que puede prensar en kilogramos',
-            helperStyle: const TextStyle(fontSize: 12),
-            suffixText: 'Kg',
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: BioWayColors.petBlue, width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: BioWayColors.error, width: 2),
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Este campo es obligatorio';
-            }
-            final peso = double.tryParse(value);
-            if (peso == null || peso <= 0) {
-              return 'Ingresa un peso válido';
-            }
-            return null;
-          },
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
