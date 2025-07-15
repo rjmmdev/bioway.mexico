@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import 'reciclador_escaneo.dart';
+import 'reciclador_formulario_entrada.dart';
 
 // Modelo temporal para representar un lote
 class ScannedLot {
@@ -136,14 +137,13 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
 
     HapticFeedback.mediumImpact();
 
-    // TODO: Navegar a la tercera pantalla (formulario)
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Continuando con ${_scannedLots.length} lotes...'),
-        backgroundColor: BioWayColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+    // Navegar a la tercera pantalla (formulario)
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RecicladorFormularioEntrada(
+          lotIds: _scannedLots.map((lot) => lot.id).toList(),
+          totalLotes: _scannedLots.length,
         ),
       ),
     );

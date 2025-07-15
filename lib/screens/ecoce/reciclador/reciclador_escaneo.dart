@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import 'reciclador_lotes_registro.dart';
-// TODO: Importar paquete qr_code_scanner cuando se agregue al pubspec.yaml
-// import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 class QRScannerScreen extends StatefulWidget {
   final bool isAddingMore; // Indica si está agregando más lotes
@@ -18,9 +17,7 @@ class QRScannerScreen extends StatefulWidget {
 }
 
 class _QRScannerScreenState extends State<QRScannerScreen> {
-  // TODO: Descomentar cuando se agregue el paquete qr_code_scanner
-  // QRViewController? controller;
-  // final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
+  MobileScannerController controller = MobileScannerController();
 
   final TextEditingController _manualIdController = TextEditingController();
   bool _isScanning = false;
@@ -29,20 +26,19 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
 
   @override
   void dispose() {
-    // TODO: Descomentar cuando se agregue el paquete qr_code_scanner
-    // controller?.dispose();
+    controller.dispose();
     _manualIdController.dispose();
     super.dispose();
   }
 
-  void _onQRViewCreated(dynamic controller) {
-    // TODO: Implementar cuando se agregue el paquete qr_code_scanner
-    // this.controller = controller;
-    // controller.scannedDataStream.listen((scanData) {
-    //   if (_isScanning && scanData.code != null) {
-    //     _handleScannedCode(scanData.code!);
-    //   }
-    // });
+  void _onDetect(BarcodeCapture capture) {
+    final List<Barcode> barcodes = capture.barcodes;
+    if (_isScanning && barcodes.isNotEmpty) {
+      final String? code = barcodes.first.rawValue;
+      if (code != null) {
+        _handleScannedCode(code);
+      }
+    }
   }
 
   void _handleScannedCode(String code) {
@@ -124,15 +120,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       _isScanning = true;
     });
 
-    // TODO: Descomentar cuando se agregue el paquete qr_code_scanner
-    // controller?.resumeCamera();
-
-    // Simulación temporal
-    Future.delayed(const Duration(seconds: 3), () {
-      if (_isScanning && mounted) {
-        _handleScannedCode('Firebase_ID_1x7h9k3');
-      }
-    });
+    controller.start();
   }
 
   @override
@@ -235,50 +223,12 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          // TODO: Reemplazar con QRView cuando se agregue el paquete
-                          // QRView(
-                          //   key: qrKey,
-                          //   onQRViewCreated: _onQRViewCreated,
-                          // ),
-
-                          // Simulación temporal del escáner
-                          Container(
-                            color: Colors.black87,
-                            child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.qr_code_scanner,
-                                    size: 80,
-                                    color: Colors.white.withOpacity(0.3),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  if (_isScanning)
-                                    Column(
-                                      children: [
-                                        SizedBox(
-                                          width: 40,
-                                          height: 40,
-                                          child: CircularProgressIndicator(
-                                            color: BioWayColors.ecoceGreen,
-                                            strokeWidth: 3,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 12),
-                                        Text(
-                                          'Escaneando...',
-                                          style: TextStyle(
-                                            color: BioWayColors.ecoceGreen,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                ],
-                              ),
-                            ),
+                          // Escáner QR
+                          MobileScanner(
+                            controller: controller,
+                            onDetect: _onDetect,
                           ),
+
 
                           // Marco del escáner
                           if (!_isProcessing)

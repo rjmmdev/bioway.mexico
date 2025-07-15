@@ -191,24 +191,14 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(15),
                             ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.qr_code,
-                                  color: BioWayColors.ecoceGreen,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  _folioReciclador,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: BioWayColors.ecoceGreen,
-                                    letterSpacing: 1,
-                                  ),
-                                ),
-                              ],
+                            child: Text(
+                              _folioReciclador,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: BioWayColors.ecoceGreen,
+                                letterSpacing: 1,
+                              ),
                             ),
                           ),
                         ],
@@ -340,11 +330,22 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
       ),
 
       // Floating Action Button
-      floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToNewLot,
-        backgroundColor: BioWayColors.ecoceGreen,
-        child: const Icon(Icons.add, size: 28),
-        elevation: 8,
+      floatingActionButton: Container(
+        height: 60,
+        width: 60,
+        child: FittedBox(
+          child: FloatingActionButton(
+            onPressed: _navigateToNewLot,
+            backgroundColor: BioWayColors.ecoceGreen,
+            foregroundColor: Colors.white,
+            elevation: 8,
+            shape: const CircleBorder(),
+            child: const Icon(
+              Icons.add,
+              size: 32,
+            ),
+          ),
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
