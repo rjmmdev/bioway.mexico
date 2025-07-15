@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
+import 'reciclador_escaneo.dart';
 
 class RecicladorHomeScreen extends StatefulWidget {
   const RecicladorHomeScreen({super.key});
@@ -53,15 +54,11 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
   ];
 
   void _navigateToNewLot() {
-    // TODO: Implementar navegación a formulario de nuevo lote
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Navegando a crear nuevo lote...'),
-        backgroundColor: BioWayColors.ecoceGreen,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+    // Navegar a la pantalla de escaneo QR
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const QRScannerScreen(),
       ),
     );
   }
@@ -115,137 +112,137 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
     return Scaffold(
       backgroundColor: BioWayColors.backgroundGrey,
       body: SafeArea(
-        child: Column(
-          children: [
-            // Header con información del reciclador
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    BioWayColors.ecoceGreen,
-                    BioWayColors.ecoceGreen.withOpacity(0.8),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Header con información del reciclador
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      BioWayColors.ecoceGreen,
+                      BioWayColors.ecoceGreen.withOpacity(0.8),
+                    ],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(30),
+                    bottomRight: Radius.circular(30),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: BioWayColors.ecoceGreen.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
                   ],
                 ),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: BioWayColors.ecoceGreen.withOpacity(0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Información del reciclador
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _nombreReciclador,
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Text(
-                                  'Reciclador',
-                                  style: TextStyle(
-                                    fontSize: 12,
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Información del reciclador
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _nombreReciclador,
+                                  style: const TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
                                     color: Colors.white,
-                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.qr_code,
-                                color: BioWayColors.ecoceGreen,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                _folioReciclador,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: BioWayColors.ecoceGreen,
-                                  letterSpacing: 1,
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: const Text(
+                                    'Reciclador',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.qr_code,
+                                  color: BioWayColors.ecoceGreen,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  _folioReciclador,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: BioWayColors.ecoceGreen,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
 
-                    // Estadísticas
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildStatCard(
-                          icon: Icons.inventory_2,
-                          value: _lotesRecibidos.toString(),
-                          label: 'Lotes\nRecibidos',
-                        ),
-                        _buildStatCard(
-                          icon: Icons.add_box,
-                          value: _lotesCreados.toString(),
-                          label: 'Lotes\nCreados',
-                        ),
-                        _buildStatCard(
-                          icon: Icons.scale,
-                          value: '${_pesoProcesado.toStringAsFixed(1)} kg',
-                          label: 'Peso\nProcesado',
-                        ),
-                      ],
-                    ),
-                  ],
+                      // Estadísticas
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildStatCard(
+                            icon: Icons.inventory_2,
+                            value: _lotesRecibidos.toString(),
+                            label: 'Lotes\nRecibidos',
+                          ),
+                          _buildStatCard(
+                            icon: Icons.add_box,
+                            value: _lotesCreados.toString(),
+                            label: 'Lotes\nCreados',
+                          ),
+                          _buildStatCard(
+                            icon: Icons.scale,
+                            value: '${_pesoProcesado.toStringAsFixed(1)} kg',
+                            label: 'Peso\nProcesado',
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-            // Contenido principal
-            Expanded(
-              child: SingleChildScrollView(
+              // Contenido principal
+              Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
@@ -306,8 +303,8 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
 

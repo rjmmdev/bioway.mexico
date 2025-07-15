@@ -95,6 +95,11 @@ class BioWayColors {
   ];
 
   // ===== COLORES NEUTROS =====
+  /// Rojo para PVC
+  static const Color pvcRed = Color(0xFFE53935); // Rojo material
+
+  /// Amarillo para PS (Poliestireno)
+  static const Color psYellow = Color(0xFFFFB300); // Amarillo ámbar
 
   /// Gris para textos secundarios
   static const Color textGrey = Color(0xFF666666);
