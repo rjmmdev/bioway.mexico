@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import 'ecoce_tipo_proveedor_selector.dart';
+import '../../ecoce/origen/origen_inicio_screen.dart';
 
 class ECOCELoginScreen extends StatefulWidget {
   const ECOCELoginScreen({super.key});
@@ -225,120 +226,146 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
   void _handleUserTypeLogin(String userType, Color color) {
     HapticFeedback.mediumImpact();
     
-    // Mostrar diálogo de login específico para cada tipo de usuario
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    shape: BoxShape.circle,
+    // Si es Acopiador o Planta de Separación, navegar directamente a la pantalla de origen
+    if (userType == 'Acopiador' || userType == 'Planta de Separación') {
+      Navigator.push(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const OrigenInicioScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            const begin = Offset(1.0, 0.0);
+            const end = Offset.zero;
+            const curve = Curves.easeOutCubic;
+
+            var tween = Tween(begin: begin, end: end).chain(
+              CurveTween(curve: curve),
+            );
+
+            return SlideTransition(
+              position: animation.drive(tween),
+              child: child,
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 400),
+        ),
+      );
+    } else {
+      // Mostrar diálogo para otros tipos de usuario
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _getUserTypeIcon(userType),
+                      size: 40,
+                      color: color,
+                    ),
                   ),
-                  child: Icon(
-                    _getUserTypeIcon(userType),
-                    size: 40,
-                    color: color,
+                  const SizedBox(height: 20),
+                  Text(
+                    '¡Acceso como $userType!',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: BioWayColors.darkGreen,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  '¡Acceso como $userType!',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: BioWayColors.darkGreen,
+                  const SizedBox(height: 12),
+                  Text(
+                    'Has ingresado correctamente como $userType en el sistema ECOCE.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: BioWayColors.textGrey,
+                      height: 1.5,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Has ingresado correctamente como $userType en el sistema ECOCE.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: BioWayColors.textGrey,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: BioWayColors.warning.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: BioWayColors.warning,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Las pantallas específicas para $userType están en desarrollo.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: BioWayColors.warning,
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: BioWayColors.warning.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: BioWayColors.warning,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Las pantallas específicas para $userType están en desarrollo.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: BioWayColors.warning,
+                            ),
                           ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: color,
+                            side: BorderSide(color: color),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: const Text('Volver'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context); // Cerrar diálogo
+                            Navigator.pop(context); // Volver al selector
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: color,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: const Text('Continuar'),
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: color,
-                          side: BorderSide(color: color),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: const Text('Volver'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context); // Cerrar diálogo
-                          Navigator.pop(context); // Volver al selector
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: color,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: const Text('Continuar'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
-      },
-    );
+          );
+        },
+      );
+    }
   }
 
   IconData _getUserTypeIcon(String userType) {

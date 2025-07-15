@@ -164,46 +164,25 @@ class _AnimatedLogoState extends State<AnimatedLogo>
                       ),
 
                       // Logo principal
-                      Container(
+                      SvgPicture.asset(
+                        'assets/logos/bioway_logo.svg',
                         width: widget.size,
                         height: widget.size,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              BioWayColors.primaryGreen,
-                              BioWayColors.primaryGreen.withValues(alpha: 0.8),
-                            ],
-                          ),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            width: 2,
-                          ),
-                        ),
-                        child: Center(
-                          child: SvgPicture.asset(
-                            'assets/logos/bioway_logo.svg',
-                            width: widget.size * 0.7,
-                            height: widget.size * 0.7,
-                          ),
-                        ),
                       ),
 
                       // Indicador de switch animado
                       if (widget.showSwitchIndicator)
                         Positioned(
-                          right: -widget.size * 0.1,
-                          top: -widget.size * 0.1,
+                          right: -widget.size * 0.05,
+                          top: -widget.size * 0.05,
                           child: AnimatedBuilder(
                             animation: _pulseAnimation,
                             builder: (context, child) {
                               return Transform.scale(
                                 scale: _pulseAnimation.value,
                                 child: Container(
-                                  width: widget.size * 0.35,
-                                  height: widget.size * 0.35,
+                                  width: widget.size * 0.25,
+                                  height: widget.size * 0.25,
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       begin: Alignment.topLeft,
@@ -233,7 +212,7 @@ class _AnimatedLogoState extends State<AnimatedLogo>
                                         angle: _rotationAnimation.value,
                                         child: Icon(
                                           Icons.sync,
-                                          size: widget.size * 0.18,
+                                          size: widget.size * 0.12,
                                           color: Colors.white,
                                         ),
                                       );
@@ -271,7 +250,7 @@ class _AnimatedLogoState extends State<AnimatedLogo>
             ),
 
             if (widget.showText) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 6),
 
               // Texto BioWay con indicador
               AnimatedContainer(
