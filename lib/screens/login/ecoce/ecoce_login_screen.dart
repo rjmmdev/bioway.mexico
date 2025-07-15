@@ -22,14 +22,17 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
   // Estados
   bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _showUserTypeButtons = false; // Nuevo estado para mostrar/ocultar botones
 
   // Animaciones
   late AnimationController _logoController;
   late AnimationController _formController;
+  late AnimationController _userTypeController; // Nueva animación para botones
   late Animation<double> _logoScaleAnimation;
   late Animation<double> _logoFadeAnimation;
   late Animation<double> _formFadeAnimation;
   late Animation<Offset> _formSlideAnimation;
+  late Animation<double> _userTypeFadeAnimation; // Nueva animación
 
   @override
   void initState() {
@@ -82,6 +85,20 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
       parent: _formController,
       curve: Curves.easeOutCubic,
     ));
+
+    // User type buttons animation
+    _userTypeController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _userTypeFadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _userTypeController,
+      curve: Curves.easeIn,
+    ));
   }
 
   void _startAnimations() async {
@@ -100,12 +117,25 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
     _passwordFocusNode.dispose();
     _logoController.dispose();
     _formController.dispose();
+    _userTypeController.dispose();
     super.dispose();
   }
 
   void _navigateBack() {
     HapticFeedback.lightImpact();
     Navigator.pop(context);
+  }
+
+  void _toggleUserTypeButtons() {
+    setState(() {
+      _showUserTypeButtons = !_showUserTypeButtons;
+    });
+    
+    if (_showUserTypeButtons) {
+      _userTypeController.forward();
+    } else {
+      _userTypeController.reverse();
+    }
   }
 
   Future<void> _handleLogin() async {
@@ -190,6 +220,163 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         ),
       ),
     );
+  }
+
+  void _handleUserTypeLogin(String userType, Color color) {
+    HapticFeedback.mediumImpact();
+    
+    // Mostrar diálogo de login específico para cada tipo de usuario
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _getUserTypeIcon(userType),
+                    size: 40,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  '¡Acceso como $userType!',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: BioWayColors.darkGreen,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Has ingresado correctamente como $userType en el sistema ECOCE.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: BioWayColors.textGrey,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: BioWayColors.warning.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: BioWayColors.warning,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Las pantallas específicas para $userType están en desarrollo.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: BioWayColors.warning,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: color,
+                          side: BorderSide(color: color),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text('Volver'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context); // Cerrar diálogo
+                          Navigator.pop(context); // Volver al selector
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: color,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text('Continuar'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  IconData _getUserTypeIcon(String userType) {
+    switch (userType.toLowerCase()) {
+      case 'acopiador':
+        return Icons.warehouse;
+      case 'planta de separación':
+        return Icons.sort;
+      case 'reciclador':
+        return Icons.recycling;
+      case 'transformador':
+        return Icons.factory;
+      case 'transportista':
+        return Icons.local_shipping;
+      case 'laboratorio':
+        return Icons.science;
+      default:
+        return Icons.business;
+    }
+  }
+
+  Color _getUserTypeColor(String userType) {
+    switch (userType.toLowerCase()) {
+      case 'acopiador':
+        return BioWayColors.petBlue;
+      case 'planta de separación':
+        return BioWayColors.hdpeGreen;
+      case 'reciclador':
+        return BioWayColors.ecoceGreen;
+      case 'transformador':
+        return BioWayColors.ppOrange;
+      case 'transportista':
+        return BioWayColors.info;
+      case 'laboratorio':
+        return BioWayColors.otherPurple;
+      default:
+        return BioWayColors.ecoceGreen;
+    }
   }
 
   void _showTemporarySuccessDialog() {
@@ -513,15 +700,96 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
 
                                   // Botón de registro
                                   _buildRegisterButton(),
-                                  const SizedBox(height: 20),
+                                  const SizedBox(height: 16),
+
+                                  // Botón para mostrar tipos de usuario (TEMPORAL)
+                                  _buildUserTypeToggleButton(),
 
                                   // Información adicional
+                                  const SizedBox(height: 20),
                                   _buildInfoSection(),
                                 ],
                               ),
                             ),
                           ),
                         ),
+
+                        // Botones de tipos de usuario (TEMPORALES)
+                        if (_showUserTypeButtons)
+                          AnimatedBuilder(
+                            animation: _userTypeFadeAnimation,
+                            builder: (context, child) {
+                              return FadeTransition(
+                                opacity: _userTypeFadeAnimation,
+                                child: Container(
+                                  margin: const EdgeInsets.only(top: 20),
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: BioWayColors.warning.withOpacity(0.3),
+                                      width: 2,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 10),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Advertencia
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: BioWayColors.warning.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.warning_amber_rounded,
+                                              color: BioWayColors.warning,
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                'Acceso temporal - Estos botones serán removidos',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: BioWayColors.warning,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      
+                                      const Text(
+                                        'Acceso directo por tipo de usuario:',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: BioWayColors.darkGreen,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      
+                                      // Grid de botones de tipos de usuario
+                                      _buildUserTypeButtonsGrid(),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
 
                         const SizedBox(height: 40),
                       ],
@@ -797,6 +1065,86 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildUserTypeToggleButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: _toggleUserTypeButtons,
+        icon: Icon(
+          _showUserTypeButtons ? Icons.expand_less : Icons.expand_more,
+          size: 20,
+        ),
+        label: Text(
+          _showUserTypeButtons ? 'Ocultar tipos de usuario' : 'Acceso por tipo de usuario',
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: BioWayColors.warning,
+          side: BorderSide(
+            color: BioWayColors.warning.withOpacity(0.5),
+            width: 1,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserTypeButtonsGrid() {
+    final userTypes = [
+      'Acopiador',
+      'Planta de Separación',
+      'Reciclador',
+      'Transformador',
+      'Transportista',
+      'Laboratorio',
+    ];
+
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      childAspectRatio: 2.5,
+      children: userTypes.map((userType) {
+        final color = _getUserTypeColor(userType);
+        final icon = _getUserTypeIcon(userType);
+        
+        return ElevatedButton.icon(
+          onPressed: () => _handleUserTypeLogin(userType, color),
+          icon: Icon(icon, size: 18),
+          label: Text(
+            userType,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: color,
+            foregroundColor: Colors.white,
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 8,
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
