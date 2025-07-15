@@ -355,6 +355,8 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         return Icons.local_shipping;
       case 'laboratorio':
         return Icons.science;
+      case 'repositorio':
+        return Icons.storage; // Icono específico para repositorio
       default:
         return Icons.business;
     }
@@ -374,6 +376,8 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         return BioWayColors.info;
       case 'laboratorio':
         return BioWayColors.otherPurple;
+      case 'repositorio':
+        return BioWayColors.metalGrey; // Color gris metálico para repositorio
       default:
         return BioWayColors.ecoceGreen;
     }
@@ -1107,6 +1111,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
       'Transformador',
       'Transportista',
       'Laboratorio',
+      'Repositorio', // Nueva opción agregada
     ];
 
     return GridView.count(
