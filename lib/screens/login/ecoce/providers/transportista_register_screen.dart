@@ -60,7 +60,7 @@ class _TransportistaRegisterScreenState extends State<TransportistaRegisterScree
   }
 
   void _generateFolio() {
-    // Simulación de generación de folio para Transportista
+    // Simulación de generación de folio
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final lastDigits = (timestamp % 10000).toString().padLeft(4, '0');
     _generatedFolio = 'V0000$lastDigits';
@@ -112,12 +112,12 @@ class _TransportistaRegisterScreenState extends State<TransportistaRegisterScree
     if (mounted) {
       setState(() => _isLoading = false);
 
-      // Mostrar diálogo de éxito
-      _showSuccessDialog();
+      // Mostrar diálogo de verificación
+      _showVerificationDialog();
     }
   }
 
-  void _showSuccessDialog() {
+  void _showVerificationDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -189,14 +189,14 @@ class _TransportistaRegisterScreenState extends State<TransportistaRegisterScree
                   child: Row(
                     children: [
                       Icon(
-                        Icons.email,
+                        Icons.email_outlined,
                         color: BioWayColors.info,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Tu cuenta ha sido creada. Revisa tu correo para verificar tu cuenta.',
+                          'Hemos enviado un código de verificación a tu correo electrónico',
                           style: TextStyle(
                             fontSize: 13,
                             color: BioWayColors.info,
@@ -223,7 +223,7 @@ class _TransportistaRegisterScreenState extends State<TransportistaRegisterScree
                       vertical: 12,
                     ),
                   ),
-                  child: const Text('Volver al inicio'),
+                  child: const Text('Verificar cuenta'),
                 ),
               ],
             ),
@@ -385,9 +385,8 @@ class _TransportistaRegisterScreenState extends State<TransportistaRegisterScree
 
                       const SizedBox(height: 24),
 
-                      // Aviso especial para transportistas
+                      // Indicador de transporte propio confirmado
                       Container(
-                        width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: BioWayColors.success.withOpacity(0.1),
@@ -398,10 +397,18 @@ class _TransportistaRegisterScreenState extends State<TransportistaRegisterScree
                         ),
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.local_shipping,
-                              color: BioWayColors.success,
-                              size: 24,
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: BioWayColors.success.withOpacity(0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.check_circle,
+                                color: BioWayColors.success,
+                                size: 24,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -411,17 +418,18 @@ class _TransportistaRegisterScreenState extends State<TransportistaRegisterScree
                                   const Text(
                                     'Transporte propio confirmado',
                                     style: TextStyle(
-                                      fontSize: 14,
+                                      fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                       color: BioWayColors.darkGreen,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
+                                  const SizedBox(height: 2),
                                   Text(
-                                    'Como transportista, se registra automáticamente que cuentas con vehículos propios',
+                                    'Como transportista, se registra automáticamente que cuentas con vehículos propios para el servicio',
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: BioWayColors.textGrey,
+                                      height: 1.4,
                                     ),
                                   ),
                                 ],
@@ -433,7 +441,84 @@ class _TransportistaRegisterScreenState extends State<TransportistaRegisterScree
 
                       const SizedBox(height: 24),
 
-                      // Formulario común - Sin el campo de transporte propio
+                      // Información de servicios
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 16,
+                              ),
+                              decoration: BoxDecoration(
+                                color: BioWayColors.info.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.local_shipping_outlined,
+                                    color: BioWayColors.info,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Servicios de Transporte Especializado',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: BioWayColors.darkGreen,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildServiceItem(
+                              icon: Icons.route,
+                              title: 'Rutas optimizadas',
+                              description: 'Sistema de asignación inteligente de rutas para máxima eficiencia',
+                            ),
+                            _buildServiceItem(
+                              icon: Icons.track_changes,
+                              title: 'Trazabilidad en tiempo real',
+                              description: 'GPS tracking para seguimiento completo de los materiales',
+                            ),
+                            _buildServiceItem(
+                              icon: Icons.assignment_turned_in,
+                              title: 'Documentación digital',
+                              description: 'Manifiestos y guías electrónicas con firma digital',
+                            ),
+                            _buildServiceItem(
+                              icon: Icons.payment,
+                              title: 'Tarifas competitivas',
+                              description: 'Precios justos basados en volumen y distancia',
+                            ),
+                            _buildServiceItem(
+                              icon: Icons.security,
+                              title: 'Seguro de carga',
+                              description: 'Cobertura completa para los materiales transportados',
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Formulario común (sin campo de transporte)
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
@@ -458,68 +543,6 @@ class _TransportistaRegisterScreenState extends State<TransportistaRegisterScree
                               _formData.transporte = true;
                             });
                           },
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Información adicional para transportistas
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: BioWayColors.info.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: BioWayColors.info.withOpacity(0.2),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.directions_bus,
-                                  color: BioWayColors.info,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Servicios de Transporte ECOCE',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: BioWayColors.darkGreen,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            _buildServiceItem(
-                              'Rutas optimizadas entre proveedores',
-                              Icons.route,
-                            ),
-                            _buildServiceItem(
-                              'Tarifas preferenciales por volumen',
-                              Icons.attach_money,
-                            ),
-                            _buildServiceItem(
-                              'Trazabilidad GPS en tiempo real',
-                              Icons.gps_fixed,
-                            ),
-                            _buildServiceItem(
-                              'Documentación digital automatizada',
-                              Icons.description,
-                            ),
-                            _buildServiceItem(
-                              'Seguro de carga incluido',
-                              Icons.security,
-                            ),
-                            _buildServiceItem(
-                              'Capacitación en manejo de materiales',
-                              Icons.school,
-                            ),
-                          ],
                         ),
                       ),
 
@@ -571,26 +594,52 @@ class _TransportistaRegisterScreenState extends State<TransportistaRegisterScree
     );
   }
 
-  Widget _buildServiceItem(String text, IconData icon) {
+  Widget _buildServiceItem({
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            color: BioWayColors.info,
-            size: 18,
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: BioWayColors.info.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              icon,
+              color: BioWayColors.info,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 13,
-                color: BioWayColors.textGrey,
-                height: 1.4,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: BioWayColors.darkGreen,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: BioWayColors.textGrey,
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

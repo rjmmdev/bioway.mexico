@@ -66,7 +66,6 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
 
   void _generateFolio() {
     // Simulación de generación de folio
-    // En producción, esto vendría del backend
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final lastDigits = (timestamp % 10000).toString().padLeft(4, '0');
     _generatedFolio = 'A0000$lastDigits';
@@ -196,14 +195,14 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                   child: Row(
                     children: [
                       Icon(
-                        Icons.email,
+                        Icons.email_outlined,
                         color: BioWayColors.info,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Tu cuenta ha sido creada. Revisa tu correo para verificar tu cuenta.',
+                          'Hemos enviado un código de verificación a tu correo electrónico',
                           style: TextStyle(
                             fontSize: 13,
                             color: BioWayColors.info,
@@ -230,7 +229,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
                       vertical: 12,
                     ),
                   ),
-                  child: const Text('Volver al inicio'),
+                  child: const Text('Verificar cuenta'),
                 ),
               ],
             ),
@@ -420,7 +419,7 @@ class _AcopiadorRegisterScreenState extends State<AcopiadorRegisterScreen>
 
                       const SizedBox(height: 24),
 
-                      // Campos específicos de Acopiador
+                      // Campos específicos de Acopiador (OBLIGATORIOS)
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(

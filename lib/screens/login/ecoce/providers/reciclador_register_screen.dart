@@ -58,7 +58,7 @@ class _RecicladorRegisterScreenState extends State<RecicladorRegisterScreen>
   }
 
   void _generateFolio() {
-    // Simulación de generación de folio para Reciclador
+    // Simulación de generación de folio
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final lastDigits = (timestamp % 10000).toString().padLeft(4, '0');
     _generatedFolio = 'R0000$lastDigits';
@@ -110,12 +110,12 @@ class _RecicladorRegisterScreenState extends State<RecicladorRegisterScreen>
     if (mounted) {
       setState(() => _isLoading = false);
 
-      // Mostrar diálogo de éxito
-      _showSuccessDialog();
+      // Mostrar diálogo de verificación
+      _showVerificationDialog();
     }
   }
 
-  void _showSuccessDialog() {
+  void _showVerificationDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -187,14 +187,14 @@ class _RecicladorRegisterScreenState extends State<RecicladorRegisterScreen>
                   child: Row(
                     children: [
                       Icon(
-                        Icons.email,
+                        Icons.email_outlined,
                         color: BioWayColors.info,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Tu cuenta ha sido creada. Revisa tu correo para verificar tu cuenta.',
+                          'Hemos enviado un código de verificación a tu correo electrónico',
                           style: TextStyle(
                             fontSize: 13,
                             color: BioWayColors.info,
@@ -221,7 +221,7 @@ class _RecicladorRegisterScreenState extends State<RecicladorRegisterScreen>
                       vertical: 12,
                     ),
                   ),
-                  child: const Text('Volver al inicio'),
+                  child: const Text('Verificar cuenta'),
                 ),
               ],
             ),
@@ -383,7 +383,79 @@ class _RecicladorRegisterScreenState extends State<RecicladorRegisterScreen>
 
                       const SizedBox(height: 24),
 
-                      // Formulario común - El Reciclador solo usa campos comunes
+                      // Información de beneficios
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 16,
+                              ),
+                              decoration: BoxDecoration(
+                                color: BioWayColors.ecoceGreen.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.star_outline,
+                                    color: BioWayColors.ecoceGreen,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Beneficios para Recicladores',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: BioWayColors.darkGreen,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildBenefitItem(
+                              icon: Icons.inventory_2_outlined,
+                              title: 'Procesamiento múltiple',
+                              description: 'Recibe materiales de múltiples acopiadores y plantas de separación',
+                            ),
+                            _buildBenefitItem(
+                              icon: Icons.notifications_active_outlined,
+                              title: 'Notificaciones en tiempo real',
+                              description: 'Alertas de materiales disponibles en tu zona de operación',
+                            ),
+                            _buildBenefitItem(
+                              icon: Icons.attach_money,
+                              title: 'Tarifas preferenciales',
+                              description: 'Establece precios según volumen y calidad del material',
+                            ),
+                            _buildBenefitItem(
+                              icon: Icons.analytics_outlined,
+                              title: 'Trazabilidad completa',
+                              description: 'Acceso a reportes detallados de origen y destino de materiales',
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Formulario común
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
@@ -406,48 +478,6 @@ class _RecicladorRegisterScreenState extends State<RecicladorRegisterScreen>
                               _formData = data;
                             });
                           },
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Información adicional específica para Reciclador
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: BioWayColors.info.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: BioWayColors.info.withOpacity(0.2),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.info_outline,
-                                  color: BioWayColors.info,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Información para Recicladores',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: BioWayColors.darkGreen,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            _buildInfoItem('Como reciclador podrás procesar materiales de múltiples acopiadores'),
-                            _buildInfoItem('Recibirás notificaciones de materiales disponibles en tu zona'),
-                            _buildInfoItem('Podrás establecer tarifas preferenciales según el volumen'),
-                            _buildInfoItem('Acceso a reportes de trazabilidad completa'),
-                          ],
                         ),
                       ),
 
@@ -499,30 +529,52 @@ class _RecicladorRegisterScreenState extends State<RecicladorRegisterScreen>
     );
   }
 
-  Widget _buildInfoItem(String text) {
+  Widget _buildBenefitItem({
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            margin: const EdgeInsets.only(top: 2),
-            width: 6,
-            height: 6,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              color: BioWayColors.info,
-              shape: BoxShape.circle,
+              color: BioWayColors.ecoceGreen.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              icon,
+              color: BioWayColors.ecoceGreen,
+              size: 20,
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 13,
-                color: BioWayColors.textGrey,
-                height: 1.4,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: BioWayColors.darkGreen,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: BioWayColors.textGrey,
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

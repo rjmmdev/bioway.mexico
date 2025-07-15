@@ -37,7 +37,7 @@ class ECOCETipoProveedorSelector extends StatefulWidget {
 
 class _ECOCETipoProveedorSelectorState extends State<ECOCETipoProveedorSelector>
     with TickerProviderStateMixin {
-  // Lista de tipos de proveedores (6 tipos, sin Desarrollo de Mercado)
+  // Lista de tipos de proveedores (sin Desarrollo de Mercado)
   final List<ProviderType> _providerTypes = [
     ProviderType(
       code: 'A',
@@ -403,7 +403,7 @@ class _ECOCETipoProveedorSelectorState extends State<ECOCETipoProveedorSelector>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  'Proceso de registro',
+                                  'Proceso de verificación',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -412,7 +412,7 @@ class _ECOCETipoProveedorSelectorState extends State<ECOCETipoProveedorSelector>
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Al completar el registro, tu cuenta será creada inmediatamente. Recibirás un correo de verificación para activar tu cuenta.',
+                                  'Después del registro, recibirás un código de verificación por correo electrónico para activar tu cuenta.',
                                   style: TextStyle(
                                     fontSize: 13,
                                     color: BioWayColors.textGrey,

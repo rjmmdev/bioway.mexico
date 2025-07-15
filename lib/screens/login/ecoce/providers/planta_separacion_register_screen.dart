@@ -194,14 +194,14 @@ class _PlantaSeparacionRegisterScreenState extends State<PlantaSeparacionRegiste
                   child: Row(
                     children: [
                       Icon(
-                        Icons.email,
+                        Icons.email_outlined,
                         color: BioWayColors.info,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Tu cuenta ha sido creada. Revisa tu correo para verificar tu cuenta.',
+                          'Hemos enviado un código de verificación a tu correo electrónico',
                           style: TextStyle(
                             fontSize: 13,
                             color: BioWayColors.info,
@@ -228,7 +228,7 @@ class _PlantaSeparacionRegisterScreenState extends State<PlantaSeparacionRegiste
                       vertical: 12,
                     ),
                   ),
-                  child: const Text('Volver al inicio'),
+                  child: const Text('Verificar cuenta'),
                 ),
               ],
             ),
@@ -604,7 +604,7 @@ class _PlantaSeparacionRegisterScreenState extends State<PlantaSeparacionRegiste
         const SizedBox(height: 8),
         TextFormField(
           controller: _dimensionesController,
-          keyboardType: TextInputType.number,
+          keyboardType: TextInputType.text,
           style: const TextStyle(fontSize: 14),
           decoration: InputDecoration(
             hintText: '15.25 X 15.20',

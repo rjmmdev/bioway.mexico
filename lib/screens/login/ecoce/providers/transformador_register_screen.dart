@@ -58,7 +58,7 @@ class _TransformadorRegisterScreenState extends State<TransformadorRegisterScree
   }
 
   void _generateFolio() {
-    // Simulación de generación de folio para Transformador
+    // Simulación de generación de folio
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final lastDigits = (timestamp % 10000).toString().padLeft(4, '0');
     _generatedFolio = 'T0000$lastDigits';
@@ -110,12 +110,12 @@ class _TransformadorRegisterScreenState extends State<TransformadorRegisterScree
     if (mounted) {
       setState(() => _isLoading = false);
 
-      // Mostrar diálogo de éxito
-      _showSuccessDialog();
+      // Mostrar diálogo de verificación
+      _showVerificationDialog();
     }
   }
 
-  void _showSuccessDialog() {
+  void _showVerificationDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -187,14 +187,14 @@ class _TransformadorRegisterScreenState extends State<TransformadorRegisterScree
                   child: Row(
                     children: [
                       Icon(
-                        Icons.email,
+                        Icons.email_outlined,
                         color: BioWayColors.info,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Tu cuenta ha sido creada. Revisa tu correo para verificar tu cuenta.',
+                          'Hemos enviado un código de verificación a tu correo electrónico',
                           style: TextStyle(
                             fontSize: 13,
                             color: BioWayColors.info,
@@ -221,7 +221,7 @@ class _TransformadorRegisterScreenState extends State<TransformadorRegisterScree
                       vertical: 12,
                     ),
                   ),
-                  child: const Text('Volver al inicio'),
+                  child: const Text('Verificar cuenta'),
                 ),
               ],
             ),
@@ -383,7 +383,133 @@ class _TransformadorRegisterScreenState extends State<TransformadorRegisterScree
 
                       const SizedBox(height: 24),
 
-                      // Formulario común - El Transformador solo usa campos comunes
+                      // Información de beneficios
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 16,
+                              ),
+                              decoration: BoxDecoration(
+                                color: BioWayColors.ppOrange.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.star_outline,
+                                    color: BioWayColors.ppOrange,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Beneficios para Transformadores',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: BioWayColors.darkGreen,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildBenefitItem(
+                              icon: Icons.verified_outlined,
+                              title: 'Material certificado',
+                              description: 'Acceso a material reciclado con trazabilidad completa',
+                            ),
+                            _buildBenefitItem(
+                              icon: Icons.handshake_outlined,
+                              title: 'Conexión directa',
+                              description: 'Red de recicladores verificados y confiables',
+                            ),
+                            _buildBenefitItem(
+                              icon: Icons.task_alt,
+                              title: 'Cumplimiento normativo',
+                              description: 'Cumple con regulaciones de contenido reciclado (33%)',
+                            ),
+                            _buildBenefitItem(
+                              icon: Icons.assessment_outlined,
+                              title: 'Reportes de sostenibilidad',
+                              description: 'Documentación para certificaciones ambientales',
+                            ),
+                            _buildBenefitItem(
+                              icon: Icons.savings_outlined,
+                              title: 'Reducción de costos',
+                              description: 'Material reciclado competitivo vs materia prima virgen',
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Información adicional sobre el 33%
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: BioWayColors.info.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: BioWayColors.info.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: BioWayColors.info,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Composición estándar',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: BioWayColors.darkGreen,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Los productos fabricados contendrán 33% de material reciclado y 67% de material virgen, cumpliendo con los estándares de calidad.',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: BioWayColors.textGrey,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Formulario común
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
@@ -406,64 +532,6 @@ class _TransformadorRegisterScreenState extends State<TransformadorRegisterScree
                               _formData = data;
                             });
                           },
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Información adicional específica para Transformador
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: BioWayColors.ppOrange.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: BioWayColors.ppOrange.withOpacity(0.2),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.factory,
-                                  color: BioWayColors.ppOrange,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Beneficios para Transformadores',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: BioWayColors.darkGreen,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            _buildBenefitItem(
-                              'Acceso a material reciclado certificado con trazabilidad completa',
-                              Icons.verified,
-                            ),
-                            _buildBenefitItem(
-                              'Conexión directa con recicladores verificados',
-                              Icons.handshake,
-                            ),
-                            _buildBenefitItem(
-                              'Cumplimiento de normativas de contenido reciclado',
-                              Icons.gavel,
-                            ),
-                            _buildBenefitItem(
-                              'Reportes para certificaciones de sostenibilidad',
-                              Icons.eco,
-                            ),
-                            _buildBenefitItem(
-                              'Reducción de costos en materia prima',
-                              Icons.trending_down,
-                            ),
-                          ],
                         ),
                       ),
 
@@ -515,26 +583,52 @@ class _TransformadorRegisterScreenState extends State<TransformadorRegisterScree
     );
   }
 
-  Widget _buildBenefitItem(String text, IconData icon) {
+  Widget _buildBenefitItem({
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            color: BioWayColors.ppOrange,
-            size: 18,
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: BioWayColors.ppOrange.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              icon,
+              color: BioWayColors.ppOrange,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 13,
-                color: BioWayColors.textGrey,
-                height: 1.4,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: BioWayColors.darkGreen,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: BioWayColors.textGrey,
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

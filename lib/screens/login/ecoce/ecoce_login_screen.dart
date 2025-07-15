@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../utils/colors.dart'; // ACTUALIZADA
-import 'ecoce_tipo_proveedor_selector.dart'; // NUEVA - Se creará después
+import '../../../utils/colors.dart';
+import 'ecoce_tipo_proveedor_selector.dart';
 
 class ECOCELoginScreen extends StatefulWidget {
   const ECOCELoginScreen({super.key});
@@ -838,8 +838,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
 class ECOCEBackgroundPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..style = PaintingStyle.fill;
+    final paint = Paint()..style = PaintingStyle.fill;
 
     // Círculo decorativo superior
     paint.color = BioWayColors.ecoceGreen.withOpacity(0.05);
