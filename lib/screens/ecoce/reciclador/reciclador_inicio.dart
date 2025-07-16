@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import 'reciclador_escaneo.dart';
 import 'reciclador_administracion_lotes.dart';
-import 'widgets/custom_bottom_navigation.dart';
+import 'widgets/reciclador_bottom_navigation.dart';
 
 class RecicladorHomeScreen extends StatefulWidget {
   const RecicladorHomeScreen({super.key});
@@ -14,7 +14,7 @@ class RecicladorHomeScreen extends StatefulWidget {
 
 class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
   // Índice para la navegación del bottom bar
-  int _selectedIndex = 0;
+  final int _selectedIndex = 0;
 
   // Datos de ejemplo para el reciclador (en producción vendrían de la base de datos)
   final String _nombreReciclador = "Juan Pérez García";
@@ -56,108 +56,71 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
   ];
 
   void _navigateToNewLot() {
-    // Navegar a la pantalla de escaneo QR
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const QRScannerScreen(),
-      ),
+    HapticFeedback.lightImpact();
+    NavigationHelper.navigateWithSlideTransition(
+      context: context,
+      destination: const QRScannerScreen(),
     );
   }
 
   void _navigateToLotControl() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const RecicladorAdministracionLotes(),
-      ),
+    HapticFeedback.lightImpact();
+    NavigationHelper.navigateWithSlideTransition(
+      context: context,
+      destination: const RecicladorAdministracionLotes(),
     );
   }
 
   void _onBottomNavTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    if (index == 1) {
-      // Navegar a Administración de Lotes
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const RecicladorAdministracionLotes(),
-        ),
-      );
-    } else if (index != 0) {
-      // TODO: Implementar navegación a las otras pantallas
-      String destination = '';
-      switch (index) {
-        case 2:
-          destination = 'Ayuda';
-          break;
-        case 3:
-          destination = 'Perfil';
-          break;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Navegando a $destination...'),
-          backgroundColor: BioWayColors.info,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+    HapticFeedback.lightImpact();
+    
+    if (index == _selectedIndex) return;
+    
+    switch (index) {
+      case 0:
+        // Ya estamos en inicio
+        break;
+      case 1:
+        NavigationHelper.navigateWithFadeTransition(
+          context: context,
+          destination: const RecicladorAdministracionLotes(),
+        );
+        break;
+      case 2:
+        // TODO: Implementar pantalla de ayuda
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Pantalla de Ayuda en desarrollo'),
+            backgroundColor: BioWayColors.info,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            duration: const Duration(seconds: 1),
           ),
-          duration: const Duration(seconds: 1),
-        ),
-      );
+        );
+        break;
+      case 3:
+        // TODO: Implementar pantalla de perfil
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Pantalla de Perfil en desarrollo'),
+            backgroundColor: BioWayColors.info,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            duration: const Duration(seconds: 1),
+          ),
+        );
+        break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return ScaffoldWithBottomNavigation(
+    return Scaffold(
       backgroundColor: BioWayColors.backgroundGrey,
-      selectedIndex: _selectedIndex,
-      navigationItems: [
-        NavigationItem(
-          icon: Icons.home,
-          label: 'Inicio',
-          onTap: () => _onBottomNavTapped(0),
-        ),
-        NavigationItem(
-          icon: Icons.inventory,
-          label: 'Lotes',
-          onTap: () => _onBottomNavTapped(1),
-        ),
-        NavigationItem(
-          icon: Icons.help_outline,
-          label: 'Ayuda',
-          onTap: () => _onBottomNavTapped(2),
-        ),
-        NavigationItem(
-          icon: Icons.person_outline,
-          label: 'Perfil',
-          onTap: () => _onBottomNavTapped(3),
-        ),
-      ],
-      hasFloatingButton: true,
-      floatingButton: Container(
-        height: 60,
-        width: 60,
-        child: FittedBox(
-          child: FloatingActionButton(
-            onPressed: _navigateToNewLot,
-            backgroundColor: BioWayColors.ecoceGreen,
-            foregroundColor: Colors.white,
-            elevation: 8,
-            shape: const CircleBorder(),
-            child: const Icon(
-              Icons.add,
-              size: 32,
-            ),
-          ),
-        ),
-      ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -344,6 +307,15 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
           ),
         ),
       ),
+      bottomNavigationBar: RecicladorBottomNavigation(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onBottomNavTapped,
+        onFabPressed: _navigateToNewLot,
+      ),
+      floatingActionButton: RecicladorFloatingActionButton(
+        onPressed: _navigateToNewLot,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
