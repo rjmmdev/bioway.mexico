@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import 'ecoce_tipo_proveedor_selector.dart';
+import '../../ecoce/transformador/transformador_inicio.dart';
 
 class ECOCELoginScreen extends StatefulWidget {
   const ECOCELoginScreen({super.key});
@@ -225,7 +226,34 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
   void _handleUserTypeLogin(String userType, Color color) {
     HapticFeedback.mediumImpact();
     
-    // Mostrar diálogo de login específico para cada tipo de usuario
+    // Si es transformador, navegar directamente al dashboard
+    if (userType.toLowerCase() == 'transformador') {
+      Navigator.push(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+          const TransformadorInicioScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            const begin = Offset(1.0, 0.0);
+            const end = Offset.zero;
+            const curve = Curves.easeOutCubic;
+
+            var tween = Tween(begin: begin, end: end).chain(
+              CurveTween(curve: curve),
+            );
+
+            return SlideTransition(
+              position: animation.drive(tween),
+              child: child,
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 400),
+        ),
+      );
+      return;
+    }
+    
+    // Para otros tipos de usuario, mantener la funcionalidad existente
     showDialog(
       context: context,
       barrierDismissible: false,
