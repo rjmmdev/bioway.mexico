@@ -188,6 +188,7 @@ class _ECOCETipoProveedorSelectorState extends State<ECOCETipoProveedorSelector>
 
   void _navigateToProviderRegister(ProviderType provider) {
     HapticFeedback.mediumImpact();
+    // TEMPORAL: Todos los tipos de proveedor navegan a OrigenInicioScreen
     Navigator.push(
       context,
       PageRouteBuilder(

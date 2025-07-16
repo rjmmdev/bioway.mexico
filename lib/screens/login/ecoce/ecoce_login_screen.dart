@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import 'ecoce_tipo_proveedor_selector.dart';
 import '../../ecoce/reciclador/reciclador_inicio.dart';
+// TEMPORAL: Importar pantalla de inicio de origen
+import '../../ecoce/origen/origen_inicio_screen.dart';
 
 class ECOCELoginScreen extends StatefulWidget {
   const ECOCELoginScreen({super.key});
@@ -228,27 +230,28 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
 
     Widget? targetScreen;
 
+    // TEMPORAL: Todos los tipos de usuario navegan a OrigenInicioScreen
     switch (userType.toLowerCase()) {
       case 'reciclador':
-        targetScreen = const RecicladorHomeScreen();
+        targetScreen = const OrigenInicioScreen(); // TEMPORAL
         break;
       case 'acopiador':
-      // targetScreen = const AcopiadorInicio();
+        targetScreen = const OrigenInicioScreen(); // TEMPORAL
         break;
       case 'planta de separación':
-      // targetScreen = const PlantaSeparacionInicio();
+        targetScreen = const OrigenInicioScreen(); // TEMPORAL
         break;
       case 'transformador':
-      // targetScreen = const TransformadorInicio();
+        targetScreen = const OrigenInicioScreen(); // TEMPORAL
         break;
       case 'transportista':
-      // targetScreen = const TransportistaInicio();
+        targetScreen = const OrigenInicioScreen(); // TEMPORAL
         break;
       case 'laboratorio':
-      // targetScreen = const LaboratorioInicio();
+        targetScreen = const OrigenInicioScreen(); // TEMPORAL
         break;
       case 'repositorio':
-      // targetScreen = const RepositorioInicio();
+        targetScreen = const OrigenInicioScreen(); // TEMPORAL
         break;
     }
 

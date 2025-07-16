@@ -167,25 +167,25 @@ class BioWayColors {
   // ===== SOMBRAS Y OVERLAYS =====
 
   /// Color para sombras suaves
-  static Color shadowColor = Colors.black.withOpacity(0.1);
+  static Color shadowColor = Colors.black.withValues(alpha: 0.1);
 
   /// Color para overlays oscuros
-  static Color darkOverlay = Colors.black.withOpacity(0.5);
+  static Color darkOverlay = Colors.black.withValues(alpha: 0.5);
 
   /// Color para overlays claros
-  static Color lightOverlay = Colors.white.withOpacity(0.8);
+  static Color lightOverlay = Colors.white.withValues(alpha: 0.8);
 
   /// Sombra verde para elementos principales
-  static Color greenShadow = primaryGreen.withOpacity(0.3);
+  static Color greenShadow = primaryGreen.withValues(alpha: 0.3);
 
   /// Sombra turquesa para elementos secundarios
-  static Color aquaShadow = aquaGreen.withOpacity(0.3);
+  static Color aquaShadow = aquaGreen.withValues(alpha: 0.3);
 
   // ===== MÉTODOS ÚTILES =====
 
   /// Obtiene un color con opacidad
   static Color withOpacity(Color color, double opacity) {
-    return color.withOpacity(opacity);
+    return color.withValues(alpha: opacity);
   }
 
   /// Obtiene una versión más clara de un color

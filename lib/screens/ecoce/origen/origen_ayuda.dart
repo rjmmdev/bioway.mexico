@@ -16,7 +16,7 @@ class OrigenAyudaScreen extends StatefulWidget {
 
 class _OrigenAyudaScreenState extends State<OrigenAyudaScreen> with SingleTickerProviderStateMixin {
   // Índice para la navegación del bottom bar
-  int _selectedIndex = 2; // Ayuda está seleccionado
+  final int _selectedIndex = 2; // Ayuda está seleccionado
   
   // Controlador para la animación del header
   late AnimationController _animationController;
@@ -78,7 +78,6 @@ class _OrigenAyudaScreenState extends State<OrigenAyudaScreen> with SingleTicker
   
   // Estado de búsqueda
   final TextEditingController _searchController = TextEditingController();
-  bool _isSearching = false;
   
   @override
   void initState() {
@@ -299,10 +298,9 @@ class _OrigenAyudaScreenState extends State<OrigenAyudaScreen> with SingleTicker
   }
   
   void _buscarAyuda(String query) {
-    setState(() {
-      _isSearching = query.isNotEmpty;
-    });
     // TODO: Implementar búsqueda
+    // Por ahora solo actualiza el estado para mostrar/ocultar el ícono de limpiar
+    setState(() {});
   }
   
   void _navigateToNewLot() {
@@ -502,7 +500,6 @@ class _OrigenAyudaScreenState extends State<OrigenAyudaScreen> with SingleTicker
                                           onPressed: () {
                                             setState(() {
                                               _searchController.clear();
-                                              _isSearching = false;
                                             });
                                           },
                                         )
