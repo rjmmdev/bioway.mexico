@@ -230,13 +230,12 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
 
     Widget? targetScreen;
 
-    // TEMPORAL: Todos los tipos de usuario navegan a OrigenInicioScreen
     switch (userType.toLowerCase()) {
       case 'reciclador':
-        targetScreen = const OrigenInicioScreen(); // TEMPORAL
+        targetScreen = const RecicladorHomeScreen();
         break;
       case 'acopiador':
-        targetScreen = const OrigenInicioScreen(); // TEMPORAL
+        targetScreen = const OrigenInicioScreen();
         break;
       case 'planta de separación':
         targetScreen = const OrigenInicioScreen(); // TEMPORAL
