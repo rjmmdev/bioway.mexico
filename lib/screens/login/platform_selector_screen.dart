@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../utils/colors.dart';
 import '../../widgets/common/gradient_background.dart';
 import 'ecoce/ecoce_login_screen.dart'; // ACTUALIZADA
@@ -381,7 +382,11 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                                         child: Opacity(
                                           opacity: _cardAnimations[0].value,
                                           child: _buildPlatformOption(
-                                            icon: Icons.eco,
+                                            iconWidget: SvgPicture.asset(
+                                              'assets/logos/bioway_logo.svg',
+                                              width: 35,
+                                              height: 35,
+                                            ),
                                             iconColor: BioWayColors.primaryGreen,
                                             title: 'BioWay',
                                             description: 'Sistema principal de reciclaje\nBrindadores y Recicladores',
@@ -528,7 +533,8 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
 
   // Widget para construir las opciones de plataforma
   Widget _buildPlatformOption({
-    required IconData icon,
+    IconData? icon,
+    Widget? iconWidget,
     required Color iconColor,
     required String title,
     required String description,
@@ -573,8 +579,8 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                       : iconColor.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  icon,
+                child: iconWidget ?? Icon(
+                  icon!,
                   color: isDisabled ? Colors.grey.shade500 : iconColor,
                   size: 30,
                 ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../utils/colors.dart'; // ACTUALIZADA
 
 /// Logo animado de BioWay con indicador de switch para cambiar de plataforma
@@ -163,44 +164,25 @@ class _AnimatedLogoState extends State<AnimatedLogo>
                       ),
 
                       // Logo principal
-                      Container(
+                      SvgPicture.asset(
+                        'assets/logos/bioway_logo.svg',
                         width: widget.size,
                         height: widget.size,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              BioWayColors.primaryGreen,
-                              BioWayColors.primaryGreen.withOpacity(0.8),
-                            ],
-                          ),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
-                            width: 2,
-                          ),
-                        ),
-                        child: Icon(
-                          Icons.eco,
-                          size: widget.size * 0.5,
-                          color: Colors.white,
-                        ),
                       ),
 
                       // Indicador de switch animado
                       if (widget.showSwitchIndicator)
                         Positioned(
-                          right: -widget.size * 0.1,
-                          top: -widget.size * 0.1,
+                          right: -widget.size * 0.05,
+                          top: -widget.size * 0.05,
                           child: AnimatedBuilder(
                             animation: _pulseAnimation,
                             builder: (context, child) {
                               return Transform.scale(
                                 scale: _pulseAnimation.value,
                                 child: Container(
-                                  width: widget.size * 0.35,
-                                  height: widget.size * 0.35,
+                                  width: widget.size * 0.25,
+                                  height: widget.size * 0.25,
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       begin: Alignment.topLeft,
@@ -230,7 +212,7 @@ class _AnimatedLogoState extends State<AnimatedLogo>
                                         angle: _rotationAnimation.value,
                                         child: Icon(
                                           Icons.sync,
-                                          size: widget.size * 0.18,
+                                          size: widget.size * 0.12,
                                           color: Colors.white,
                                         ),
                                       );
@@ -268,7 +250,7 @@ class _AnimatedLogoState extends State<AnimatedLogo>
             ),
 
             if (widget.showText) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: 6),
 
               // Texto BioWay con indicador
               AnimatedContainer(
