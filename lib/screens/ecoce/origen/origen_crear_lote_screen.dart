@@ -341,37 +341,27 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
   }
 
   void _generarLote() {
-    if (_formKey.currentState!.validate()) {
-      if (!_hasSignature) {
-        _showErrorSnackBar('Por favor, agregue su firma');
-        return;
-      }
-      
-      if (!_hasImage) {
-        _showErrorSnackBar('Por favor, agregue una evidencia fotográfica');
-        return;
-      }
-
-      // Generar datos automáticos
-      final String firebaseId = 'FID_${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
-      final DateTime fechaCreacion = DateTime.now();
-      
-      // Navegar a la pantalla de detalle con mensaje de éxito
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => OrigenLoteDetalleScreen(
-            firebaseId: firebaseId,
-            material: _tipoPolimeroSeleccionado!,
-            peso: double.tryParse(_pesoController.text) ?? 0,
-            presentacion: _presentacionSeleccionada,
-            fuente: _fuenteController.text,
-            fechaCreacion: fechaCreacion,
-            mostrarMensajeExito: true,
-          ),
+    // Sin validaciones - Solo para diseño visual
+    
+    // Generar datos automáticos
+    final String firebaseId = 'FID_${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+    final DateTime fechaCreacion = DateTime.now();
+    
+    // Navegar a la pantalla de detalle con mensaje de éxito
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OrigenLoteDetalleScreen(
+          firebaseId: firebaseId,
+          material: _tipoPolimeroSeleccionado ?? 'Poli',
+          peso: double.tryParse(_pesoController.text) ?? 100,
+          presentacion: _presentacionSeleccionada,
+          fuente: _fuenteController.text.isEmpty ? 'Fuente de ejemplo' : _fuenteController.text,
+          fechaCreacion: fechaCreacion,
+          mostrarMensajeExito: true,
         ),
-      );
-    }
+      ),
+    );
   }
 
   @override
@@ -462,12 +452,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                           decoration: _buildInputDecoration(
                             hintText: 'Ej: Programa Escolar Norte',
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor ingrese la fuente del material';
-                            }
-                            return null;
-                          },
+                          // Sin validación para diseño visual
                         ),
                         
                         const SizedBox(height: 20),
@@ -526,12 +511,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                               _tipoPolimeroSeleccionado = newValue;
                             });
                           },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor seleccione un tipo de polímero';
-                            }
-                            return null;
-                          },
+                          // Sin validación para diseño visual
                         ),
                         
                         const SizedBox(height: 20),
@@ -551,16 +531,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                                 decoration: _buildInputDecoration(
                                   hintText: 'XXXXX.XXX',
                                 ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Por favor ingrese el peso';
-                                  }
-                                  final peso = double.tryParse(value);
-                                  if (peso == null || peso <= 0) {
-                                    return 'Ingrese un peso válido';
-                                  }
-                                  return null;
-                                },
+                                // Sin validación para diseño visual
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -618,15 +589,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                           decoration: _buildInputDecoration(
                             hintText: 'Ingresa el nombre completo',
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor ingrese el nombre del operador';
-                            }
-                            if (value.length < 3) {
-                              return 'El nombre debe tener al menos 3 caracteres';
-                            }
-                            return null;
-                          },
+                          // Sin validación para diseño visual
                         ),
                         
                         const SizedBox(height: 20),
@@ -1079,10 +1042,6 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
               svgPath,
               width: 40,
               height: 40,
-              colorFilter: ColorFilter.mode(
-                isSelected ? BioWayColors.ecoceGreen : BioWayColors.textGrey,
-                BlendMode.srcIn,
-              ),
             ),
             const SizedBox(height: 8),
             Text(

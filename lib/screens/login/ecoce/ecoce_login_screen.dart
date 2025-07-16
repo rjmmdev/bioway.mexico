@@ -5,6 +5,7 @@ import 'ecoce_tipo_proveedor_selector.dart';
 import '../../ecoce/reciclador/reciclador_inicio.dart';
 // TEMPORAL: Importar pantalla de inicio de origen
 import '../../ecoce/origen/origen_inicio_screen.dart';
+import '../../ecoce/transporte/transporte_perfil_screen.dart';
 
 class ECOCELoginScreen extends StatefulWidget {
   const ECOCELoginScreen({super.key});
@@ -244,7 +245,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         targetScreen = const OrigenInicioScreen(); // TEMPORAL
         break;
       case 'transportista':
-        targetScreen = const OrigenInicioScreen(); // TEMPORAL
+        targetScreen = const TransportePerfilScreen();
         break;
       case 'laboratorio':
         targetScreen = const OrigenInicioScreen(); // TEMPORAL
