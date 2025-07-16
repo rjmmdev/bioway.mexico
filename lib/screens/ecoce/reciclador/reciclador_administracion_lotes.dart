@@ -4,6 +4,8 @@ import '../../../utils/colors.dart';
 import 'reciclador_inicio.dart';
 import 'reciclador_escaneo.dart';
 import 'reciclador_formulario_salida.dart';
+import 'reciclador_documentacion.dart';
+import 'reciclador_lote_qr_screen.dart';
 import 'widgets/reciclador_bottom_navigation.dart';
 import 'widgets/reciclador_lote_card.dart';
 
@@ -33,7 +35,12 @@ class Lote {
 }
 
 class RecicladorAdministracionLotes extends StatefulWidget {
-  const RecicladorAdministracionLotes({super.key});
+  final int initialTab;
+  
+  const RecicladorAdministracionLotes({
+    super.key,
+    this.initialTab = 0,
+  });
 
   @override
   State<RecicladorAdministracionLotes> createState() => _RecicladorAdministracionLotesState();
@@ -125,7 +132,11 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(
+      length: 3, 
+      vsync: this,
+      initialIndex: widget.initialTab,
+    );
     _tabController.addListener(() {
       if (_tabController.indexIsChanging || _tabController.index != _tabController.previousIndex) {
         setState(() {});
@@ -192,6 +203,34 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
         return Colors.orange; // Naranja para Documentación
       case 2:
         return BioWayColors.ecoceGreen; // Verde para Finalizados
+      default:
+        return BioWayColors.ecoceGreen;
+    }
+  }
+
+  // Obtener texto del botón según el estado
+  String _getActionButtonText(String estado) {
+    switch (estado) {
+      case 'salida':
+        return 'Formulario de Salida';
+      case 'documentacion':
+        return 'Ingresar Documentación';
+      case 'finalizado':
+        return 'Ver Código QR';
+      default:
+        return '';
+    }
+  }
+
+  // Obtener color del botón según el estado
+  Color _getActionButtonColor(String estado) {
+    switch (estado) {
+      case 'salida':
+        return BioWayColors.error; // Rojo
+      case 'documentacion':
+        return BioWayColors.warning; // Naranja
+      case 'finalizado':
+        return BioWayColors.success; // Verde
       default:
         return BioWayColors.ecoceGreen;
     }
@@ -475,10 +514,25 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                       'tieneDocumentacion': lote.tieneDocumentacion,
                     };
                     
+                    // Para lotes finalizados, usar el estilo original con botón QR lateral
+                    if (lote.estado == 'finalizado') {
+                      return RecicladorLoteCard(
+                        lote: loteMap,
+                        onTap: () => _onLoteTap(lote),
+                        showActionButton: false,
+                        showActions: false,
+                        trailing: _buildQRButton(lote),
+                      );
+                    }
+                    
+                    // Para lotes en salida y documentación, mostrar botón debajo
                     return RecicladorLoteCard(
                       lote: loteMap,
-                      onTap: () => _onLoteTap(lote, tabColor),
-                      trailing: _buildCardTrailing(lote, tabColor),
+                      onTap: () => _onLoteTap(lote),
+                      showActionButton: true,
+                      actionButtonText: _getActionButtonText(lote.estado),
+                      actionButtonColor: _getActionButtonColor(lote.estado),
+                      onActionPressed: () => _onLoteTap(lote),
                     );
                   },
                 ),
@@ -568,238 +622,9 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
     );
   }
 
-  // Método legacy mantenido por compatibilidad - se puede eliminar una vez se verifique que todo funciona
-  Widget _buildLoteCard(Lote lote, Color tabColor) {
-    String buttonText = '';
-    IconData? buttonIcon;
-    
-    switch (lote.estado) {
-      case 'salida':
-        buttonText = 'Formulario de Salida';
-        break;
-      case 'documentacion':
-        buttonText = 'Ingresar Documentación';
-        break;
-      case 'finalizado':
-        buttonText = 'Ver Código QR';
-        buttonIcon = Icons.qr_code;
-        break;
-    }
-    
-    // Color del material
-    Color materialColor = BioWayColors.ecoceGreen;
-    switch (lote.material) {
-      case 'PET':
-        materialColor = BioWayColors.petBlue;
-        break;
-      case 'PP':
-        materialColor = BioWayColors.ppOrange;
-        break;
-      case 'Multi':
-        materialColor = BioWayColors.otherPurple;
-        break;
-    }
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                // Indicador de material
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: materialColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Text(
-                      lote.material,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: materialColor,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                
-                // Información del lote
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Lote ${lote.id}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: BioWayColors.darkGreen,
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              Text(
-                                '${lote.peso} kg',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: materialColor,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  lote.presentacion,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Origen: ${lote.origen}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: BioWayColors.textGrey,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Creado: ${_formatDate(lote.fechaCreacion)}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: BioWayColors.textGrey.withOpacity(0.8),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Botón de acción
-          InkWell(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              
-              switch (lote.estado) {
-                case 'salida':
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => RecicladorFormularioSalida(
-                        loteId: lote.id,
-                        pesoOriginal: lote.peso,
-                      ),
-                    ),
-                  );
-                  break;
-                case 'documentacion':
-                  // TODO: Navegar a pantalla de documentación
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Pantalla de documentación en desarrollo'),
-                      backgroundColor: BioWayColors.info,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  );
-                  break;
-                case 'finalizado':
-                  // TODO: Navegar a pantalla de código QR
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Pantalla de código QR en desarrollo'),
-                      backgroundColor: BioWayColors.info,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  );
-                  break;
-              }
-            },
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(15),
-              bottomRight: Radius.circular(15),
-            ),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: tabColor.withOpacity(0.1),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(15),
-                  bottomRight: Radius.circular(15),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (buttonIcon != null) ...[
-                    Icon(
-                      buttonIcon,
-                      color: tabColor,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  Text(
-                    buttonText,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: tabColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
 
-  void _onLoteTap(Lote lote, Color tabColor) {
+  void _onLoteTap(Lote lote) {
     HapticFeedback.lightImpact();
     
     switch (lote.estado) {
@@ -813,27 +638,29 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
         );
         break;
       case 'documentacion':
-        // TODO: Navegar a pantalla de documentación
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Pantalla de documentación en desarrollo'),
-            backgroundColor: BioWayColors.info,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RecicladorDocumentacion(
+              lotId: lote.id,
             ),
           ),
         );
         break;
       case 'finalizado':
-        // TODO: Navegar a pantalla de código QR
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Pantalla de código QR en desarrollo'),
-            backgroundColor: BioWayColors.info,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RecicladorLoteQRScreen(
+              loteId: lote.id,
+              material: lote.material,
+              pesoOriginal: lote.peso,
+              pesoFinal: lote.peso, // En producción vendría de la base de datos
+              presentacion: lote.presentacion,
+              origen: lote.origen,
+              fechaEntrada: lote.fechaCreacion,
+              fechaSalida: lote.fechaSalida,
+              documentosCargados: ['Ficha Técnica', 'Reporte de Reciclaje'], // En producción vendría de la BD
             ),
           ),
         );
@@ -841,62 +668,32 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
     }
   }
 
-  Widget? _buildCardTrailing(Lote lote, Color tabColor) {
-    String buttonText = '';
-    IconData? buttonIcon;
-    
-    switch (lote.estado) {
-      case 'salida':
-        buttonText = 'Formulario';
-        buttonIcon = Icons.description_outlined;
-        break;
-      case 'documentacion':
-        buttonText = 'Documentos';
-        buttonIcon = Icons.upload_file;
-        break;
-      case 'finalizado':
-        buttonText = 'Ver QR';
-        buttonIcon = Icons.qr_code;
-        break;
-    }
-    
+  Widget _buildQRButton(Lote lote) {
     return Container(
       decoration: BoxDecoration(
-        color: tabColor.withOpacity(0.1),
+        color: BioWayColors.ecoceGreen.withOpacity(0.1),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(10),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(10),
-          onTap: () => _onLoteTap(lote, tabColor),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  buttonIcon,
-                  color: tabColor,
-                  size: 16,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  buttonText,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: tabColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
+      child: IconButton(
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          _onLoteTap(lote);
+        },
+        icon: Icon(
+          Icons.qr_code_2,
+          color: BioWayColors.ecoceGreen,
+          size: 22,
         ),
+        padding: const EdgeInsets.all(8),
+        constraints: const BoxConstraints(
+          minWidth: 36,
+          minHeight: 36,
+        ),
+        tooltip: 'Ver QR',
       ),
     );
   }
+
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';

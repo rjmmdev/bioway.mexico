@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import '../../../utils/colors.dart';
 import '../../../services/image_service.dart';
 import 'widgets/image_preview.dart';
+import 'reciclador_documentacion.dart';
 
 class RecicladorFormularioSalida extends StatefulWidget {
   final String loteId;
@@ -431,7 +432,16 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                   ),
                 );
                 // Por ahora volvemos a administración de lotes
-                Navigator.of(context).popUntil((route) => route.isFirst);
+                // Navegar a la pantalla de documentación
+                Navigator.of(context).pop(); // Cerrar el diálogo
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => RecicladorDocumentacion(
+                      lotId: widget.loteId,
+                    ),
+                  ),
+                );
               },
               child: Text(
                 'Continuar',

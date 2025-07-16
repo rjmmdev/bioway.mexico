@@ -9,6 +9,10 @@ class RecicladorLoteCard extends StatelessWidget {
   final VoidCallback? onDetailTap;
   final bool showActions;
   final Widget? trailing;
+  final bool showActionButton;
+  final String? actionButtonText;
+  final Color? actionButtonColor;
+  final VoidCallback? onActionPressed;
 
   const RecicladorLoteCard({
     super.key,
@@ -17,6 +21,10 @@ class RecicladorLoteCard extends StatelessWidget {
     this.onDetailTap,
     this.showActions = true,
     this.trailing,
+    this.showActionButton = false,
+    this.actionButtonText,
+    this.actionButtonColor,
+    this.onActionPressed,
   });
 
   @override
@@ -28,7 +36,7 @@ class RecicladorLoteCard extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap ?? onDetailTap,
+          onTap: showActionButton ? null : (onTap ?? onDetailTap),
           borderRadius: BorderRadius.circular(16),
           child: Container(
             decoration: BoxDecoration(
@@ -42,9 +50,11 @@ class RecicladorLoteCard extends StatelessWidget {
                 ),
               ],
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
                 children: [
                   // Icono del material
                   Container(
@@ -160,11 +170,54 @@ class RecicladorLoteCard extends StatelessWidget {
                 ],
               ),
             ),
-          ),
+            // Botón de acción si se proporciona
+            if (showActionButton && actionButtonText != null && onActionPressed != null)
+              InkWell(
+                onTap: onActionPressed,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: (actionButtonColor ?? BioWayColors.ecoceGreen).withOpacity(0.1),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(16),
+                      bottomRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (lote['estado'] == 'finalizado')
+                        Icon(
+                          Icons.qr_code,
+                          color: actionButtonColor ?? BioWayColors.ecoceGreen,
+                          size: 18,
+                        ),
+                      if (lote['estado'] == 'finalizado')
+                        const SizedBox(width: 8),
+                      Text(
+                        actionButtonText!,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: actionButtonColor ?? BioWayColors.ecoceGreen,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
+    ),
+  )
     );
-  }
+}
 
   Widget _buildCompactChip(IconData icon, String text, Color color) {
     return Container(

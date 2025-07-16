@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import 'reciclador_escaneo.dart';
 import 'reciclador_administracion_lotes.dart';
+import 'reciclador_formulario_salida.dart';
+import 'reciclador_documentacion.dart';
+import 'reciclador_lote_qr_screen.dart';
 import 'widgets/reciclador_bottom_navigation.dart';
 import 'widgets/reciclador_lote_card.dart';
 
@@ -24,7 +27,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
   final int _lotesCreados = 38;
   final double _pesoProcesado = 1250.5; // en kg
 
-  // Lista de lotes finalizados recientes (datos de ejemplo)
+  // Lista de lotes con diferentes estados (datos de ejemplo)
   final List<Map<String, dynamic>> _lotesRecientes = [
     {
       'id': 'L001',
@@ -33,6 +36,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
       'material': 'PET',
       'origen': 'Acopiador Norte',
       'presentacion': 'Pacas',
+      'estado': 'salida', // Requiere formulario de salida
     },
     {
       'id': 'L002',
@@ -41,6 +45,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
       'material': 'HDPE',
       'origen': 'Planta Separación Sur',
       'presentacion': 'Sacos',
+      'estado': 'documentacion', // Requiere documentación
     },
     {
       'id': 'L003',
@@ -49,6 +54,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
       'material': 'PP',
       'origen': 'Acopiador Centro',
       'presentacion': 'Pacas',
+      'estado': 'finalizado', // Completado
     },
     {
       'id': 'L004',
@@ -57,6 +63,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
       'material': 'PET',
       'origen': 'Planta Separación Este',
       'presentacion': 'Sacos',
+      'estado': 'salida', // Requiere formulario de salida
     },
   ];
 
@@ -120,6 +127,107 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
         );
         break;
     }
+  }
+
+  // Obtener texto del botón según el estado
+  String _getActionButtonText(String estado) {
+    switch (estado) {
+      case 'salida':
+        return 'Formulario de Salida';
+      case 'documentacion':
+        return 'Ingresar Documentación';
+      case 'finalizado':
+        return 'Ver Código QR';
+      default:
+        return '';
+    }
+  }
+
+  // Obtener color del botón según el estado
+  Color _getActionButtonColor(String estado) {
+    switch (estado) {
+      case 'salida':
+        return BioWayColors.error; // Rojo
+      case 'documentacion':
+        return BioWayColors.warning; // Naranja
+      case 'finalizado':
+        return BioWayColors.success; // Verde
+      default:
+        return BioWayColors.ecoceGreen;
+    }
+  }
+
+  // Manejar tap en lote según su estado
+  void _handleLoteTap(Map<String, dynamic> lote) {
+    HapticFeedback.lightImpact();
+    
+    switch (lote['estado']) {
+      case 'salida':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RecicladorFormularioSalida(
+              loteId: lote['id'],
+              pesoOriginal: lote['peso'].toDouble(),
+            ),
+          ),
+        );
+        break;
+      case 'documentacion':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RecicladorDocumentacion(
+              lotId: lote['id'],
+            ),
+          ),
+        );
+        break;
+      case 'finalizado':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RecicladorLoteQRScreen(
+              loteId: lote['id'],
+              material: lote['material'],
+              pesoOriginal: lote['peso'].toDouble(),
+              pesoFinal: lote['peso'].toDouble(), // En producción vendría de la base de datos
+              presentacion: lote['presentacion'],
+              origen: lote['origen'],
+              fechaEntrada: DateTime.now().subtract(const Duration(days: 5)), // En producción vendría de la BD
+              fechaSalida: DateTime.now(),
+              documentosCargados: ['Ficha Técnica', 'Reporte de Reciclaje'], // En producción vendría de la BD
+            ),
+          ),
+        );
+        break;
+    }
+  }
+
+  Widget _buildQRButton(Map<String, dynamic> lote) {
+    return Container(
+      decoration: BoxDecoration(
+        color: BioWayColors.ecoceGreen.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: IconButton(
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          _handleLoteTap(lote);
+        },
+        icon: Icon(
+          Icons.qr_code_2,
+          color: BioWayColors.ecoceGreen,
+          size: 22,
+        ),
+        padding: const EdgeInsets.all(8),
+        constraints: const BoxConstraints(
+          minWidth: 36,
+          minHeight: 36,
+        ),
+        tooltip: 'Ver QR',
+      ),
+    );
   }
 
   @override
@@ -729,14 +837,29 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                       ),
                       const SizedBox(height: 16),
                       
-                      // Lista de lotes con nuevo diseño
-                      ..._lotesRecientes.map((lote) => RecicladorLoteCard(
-                        lote: lote,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          // TODO: Navegar a detalle del lote
-                        },
-                      )),
+                      // Lista de lotes con nuevo diseño y botones según estado
+                      ..._lotesRecientes.map((lote) {
+                        // Para lotes finalizados, usar el estilo con botón QR lateral
+                        if (lote['estado'] == 'finalizado') {
+                          return RecicladorLoteCard(
+                            lote: lote,
+                            onTap: () => _handleLoteTap(lote),
+                            showActionButton: false,
+                            showActions: false,
+                            trailing: _buildQRButton(lote),
+                          );
+                        }
+                        
+                        // Para otros estados, mostrar botón debajo
+                        return RecicladorLoteCard(
+                          lote: lote,
+                          onTap: () => _handleLoteTap(lote),
+                          showActionButton: true,
+                          actionButtonText: _getActionButtonText(lote['estado']),
+                          actionButtonColor: _getActionButtonColor(lote['estado']),
+                          onActionPressed: () => _handleLoteTap(lote),
+                        );
+                      }),
                       
                       const SizedBox(height: 100), // Espacio para el FAB
                     ],
