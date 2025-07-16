@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../utils/colors.dart';
 
 class LoteCard extends StatelessWidget {
@@ -121,21 +122,20 @@ class LoteCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         // Tercera línea: Peso, Presentación y Fecha
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
                           children: [
-                            _buildInfoChip(
+                            _buildCompactChip(
                               Icons.scale_outlined,
                               '${lote['peso']} kg',
                               Colors.blue,
                             ),
-                            const SizedBox(width: 12),
-                            _buildInfoChip(
-                              Icons.inventory_2_outlined,
+                            _buildPresentacionChip(
                               lote['presentacion'],
                               Colors.green,
                             ),
-                            const SizedBox(width: 12),
-                            _buildInfoChip(
+                            _buildCompactChip(
                               Icons.calendar_today_outlined,
                               lote['fecha'],
                               Colors.orange,
@@ -185,25 +185,73 @@ class LoteCard extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoChip(IconData icon, String text, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          size: 14,
-          color: color.withOpacity(0.8),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[700],
-            fontWeight: FontWeight.w500,
+  Widget _buildCompactChip(IconData icon, String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 12,
+            color: color,
           ),
-        ),
-      ],
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 11,
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPresentacionChip(String presentacion, Color color) {
+    final svgPath = presentacion == 'Pacas' 
+        ? 'assets/images/icons/pacas.svg' 
+        : 'assets/images/icons/sacos.svg';
+        
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SvgPicture.asset(
+            svgPath,
+            width: 12,
+            height: 12,
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              presentacion,
+              style: TextStyle(
+                fontSize: 11,
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -1,0 +1,83 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="128"
+    height="128"
+    viewBox="0 0 128 128"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+>
+  <!-- ========== DEFINICIONES ========= -->
+  <defs>
+    <!-- Textura interna simulando plástico/cartón comprimido -->
+    <pattern id="baleTexture" width="6" height="6" patternUnits="userSpaceOnUse">
+      <rect width="6" height="6" fill="#d8d9db"/>
+      <path d="M0 3 h6 M3 0 v6" stroke="#c4c5c7" stroke-width="0.7" opacity="0.5"/>
+    </pattern>
+
+    <!-- Gradiente principal (luz arriba-izq → sombra abajo-der) -->
+    <linearGradient id="baleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#f0f0f2"/>
+      <stop offset="35%"  stop-color="#dedee0"/>
+      <stop offset="70%"  stop-color="#c8c8ca"/>
+      <stop offset="100%" stop-color="#b2b2b4"/>
+    </linearGradient>
+
+  </defs>
+
+  <!-- ========== CUERPO DE LA PACA ========== -->
+  <!-- Base del bloque -->
+  <rect
+      id="baleBlock"
+      x="20" y="28"
+      width="88" height="70"
+      rx="6" ry="6"
+      fill="url(#baleGrad)"
+      stroke="#9fa1a4"
+      stroke-width="2.2"
+  />
+  <!-- Textura sobrepuesta -->
+  <use href="#baleBlock" fill="url(#baleTexture)" opacity="0.6"/>
+
+  <!-- ========== BANDAS METÁLICAS (cinchos) ========== -->
+  <!-- Tres bandas verticales -->
+  <g stroke="#7e8085" stroke-width="4">
+    <line x1="42" y1="28" x2="42" y2="98"/>
+    <line x1="64" y1="28" x2="64" y2="98"/>
+    <line x1="86" y1="28" x2="86" y2="98"/>
+  </g>
+
+  <!-- Remaches en las bandas (pequeños círculos) -->
+  <g fill="#5b5d61">
+    <circle cx="42" cy="63" r="2.5"/>
+    <circle cx="64" cy="63" r="2.5"/>
+    <circle cx="86" cy="63" r="2.5"/>
+  </g>
+
+  <!-- ========== DETALLES DE PLIEGUES ========== -->
+  <path
+      d="M24 50 h80"
+      stroke="#e4e4e6"
+      stroke-width="1.7"
+      stroke-dasharray="4 3"
+      opacity="0.7"
+  />
+  <path
+      d="M24 72 h80"
+      stroke="#d0d0d2"
+      stroke-width="1.7"
+      stroke-dasharray="4 3"
+      opacity="0.7"
+  />
+
+  <!-- Luces suaves para más volumen -->
+  <path
+      d="M24 40 q20 4 80 0"
+      fill="none" stroke="#ffffff" stroke-opacity="0.45" stroke-width="3"
+      style="mix-blend-mode:soft-light"
+  />
+  <path
+      d="M24 88 q20 -4 80 0"
+      fill="none" stroke="#bcbcbc" stroke-opacity="0.3" stroke-width="3"
+      style="mix-blend-mode:soft-light"
+  />
+</svg>

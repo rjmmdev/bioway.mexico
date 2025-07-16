@@ -5,10 +5,9 @@ import 'origen_crear_lote_screen.dart';
 import 'origen_lotes_screen.dart';
 import 'origen_ayuda.dart';
 import 'origen_perfil.dart';
-import 'origen_codigo_qr.dart';
+import 'origen_lote_detalle_screen.dart';
 import 'widgets/lote_card.dart';
-import 'widgets/stat_card.dart';
-import 'widgets/quick_action_card.dart';
+import 'widgets/origen_bottom_navigation.dart';
 
 class OrigenInicioScreen extends StatefulWidget {
   const OrigenInicioScreen({super.key});
@@ -19,7 +18,7 @@ class OrigenInicioScreen extends StatefulWidget {
 
 class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
   // Índice para la navegación del bottom bar
-  int _selectedIndex = 0;
+  final int _selectedIndex = 0;
 
   // Datos del centro de acopio (en producción vendrían de la base de datos)
   final String _nombreCentro = "Centro de Acopio La Esperanza";
@@ -128,13 +127,14 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            OrigenCodigoQRScreen(
+            OrigenLoteDetalleScreen(
               firebaseId: lote['firebaseId'],
               material: lote['material'],
               peso: lote['peso'].toDouble(),
               presentacion: lote['presentacion'],
               fuente: lote['fuente'],
               fechaCreacion: DateTime.now(),
+              mostrarMensajeExito: false,
             ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           const begin = Offset(0.0, 1.0);
@@ -225,7 +225,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
             // Header moderno con gradiente
             SliverToBoxAdapter(
               child: Container(
-                height: 280,
+                height: 260,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -265,7 +265,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                     ),
                     // Contenido
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -309,19 +309,19 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 10),
                           // Nombre del centro
                           Text(
                             _nombreCentro,
                             style: const TextStyle(
-                              fontSize: 28,
+                              fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                             overflow: TextOverflow.ellipsis,
                             maxLines: 2,
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           // Badge con tipo y folio
                           Row(
                             children: [
@@ -375,25 +375,206 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 30),
-                          // Tarjetas de estadísticas mejoradas
+                          const SizedBox(height: 12),
+                          // Estadísticas modernas con diseño card
                           Row(
                             children: [
+                              // Card de Lotes
                               Expanded(
-                                child: StatCard(
-                                  icon: Icons.inventory_2,
-                                  iconColor: BioWayColors.primaryGreen,
-                                  value: _lotesCreados.toString(),
-                                  label: 'Lotes Creados',
+                                child: Container(
+                                  height: 70,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        Colors.white,
+                                        Colors.blue.shade50,
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.blue.withOpacity(0.1),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 10),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Stack(
+                                    children: [
+                                      // Icono de fondo decorativo
+                                      Positioned(
+                                        right: -10,
+                                        bottom: -10,
+                                        child: Icon(
+                                          Icons.inventory_2_outlined,
+                                          size: 60,
+                                          color: Colors.blue.withOpacity(0.05),
+                                        ),
+                                      ),
+                                      // Contenido
+                                      Padding(
+                                        padding: const EdgeInsets.all(12),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  width: 32,
+                                                  height: 32,
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.blue.withOpacity(0.1),
+                                                    borderRadius: BorderRadius.circular(10),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.inventory_2,
+                                                    color: Colors.blue,
+                                                    size: 18,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Flexible(
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(
+                                                        _lotesCreados.toString(),
+                                                        style: const TextStyle(
+                                                          fontSize: 20,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: Colors.black87,
+                                                          height: 1,
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        'Lotes creados',
+                                                        style: TextStyle(
+                                                          fontSize: 11,
+                                                          color: Colors.grey[600],
+                                                          height: 1.1,
+                                                        ),
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                              const SizedBox(width: 15),
+                              const SizedBox(width: 12),
+                              // Card de Material
                               Expanded(
-                                child: StatCard(
-                                  icon: Icons.scale,
-                                  iconColor: Colors.blue,
-                                  value: '$_materialProcesado',
-                                  label: 'Toneladas',
+                                child: Container(
+                                  height: 70,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        Colors.white,
+                                        Colors.green.shade50,
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.green.withOpacity(0.1),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 10),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Stack(
+                                    children: [
+                                      // Icono de fondo decorativo
+                                      Positioned(
+                                        right: -10,
+                                        bottom: -10,
+                                        child: Icon(
+                                          Icons.scale_outlined,
+                                          size: 60,
+                                          color: Colors.green.withOpacity(0.05),
+                                        ),
+                                      ),
+                                      // Contenido
+                                      Padding(
+                                        padding: const EdgeInsets.all(12),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  width: 32,
+                                                  height: 32,
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.green.withOpacity(0.1),
+                                                    borderRadius: BorderRadius.circular(10),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.scale,
+                                                    color: Colors.green,
+                                                    size: 18,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Flexible(
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Row(
+                                                        textBaseline: TextBaseline.alphabetic,
+                                                        children: [
+                                                          Text(
+                                                            '$_materialProcesado',
+                                                            style: const TextStyle(
+                                                              fontSize: 20,
+                                                              fontWeight: FontWeight.bold,
+                                                              color: Colors.black87,
+                                                              height: 1,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(width: 4),
+                                                          const Text(
+                                                            'ton',
+                                                            style: TextStyle(
+                                                              fontSize: 14,
+                                                              fontWeight: FontWeight.w600,
+                                                              color: Colors.green,
+                                                              height: 1,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      Text(
+                                                        'Material procesado',
+                                                        style: TextStyle(
+                                                          fontSize: 11,
+                                                          color: Colors.grey[600],
+                                                          height: 1.1,
+                                                        ),
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],
@@ -408,47 +589,103 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
 
             // Contenido principal
             SliverToBoxAdapter(
-              child: Transform.translate(
-                offset: const Offset(0, -30),
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF5F5F5),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30),
-                    ),
+              child: Container(
+                margin: const EdgeInsets.only(top: 10),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(30),
+                    topRight: Radius.circular(30),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 30, 20, 20),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Acciones rápidas con nuevo diseño
-                        Row(
-                          children: [
-                            Expanded(
-                              child: QuickActionCard(
-                                icon: Icons.add_circle,
-                                title: 'Nuevo Lote',
-                                subtitle: 'Registrar material',
-                                color: BioWayColors.ecoceGreen,
-                                onTap: _navigateToNewLot,
+                        // Acción rápida única centrada más compacta
+                        Container(
+                          width: double.infinity,
+                          height: 70,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                BioWayColors.ecoceGreen,
+                                BioWayColors.ecoceGreen.withOpacity(0.8),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: BioWayColors.ecoceGreen.withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: _navigateToNewLot,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.add_circle_outline,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'Registrar Nuevo Lote',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Genera código QR para tu material',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: Colors.white.withOpacity(0.9),
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.arrow_forward_ios,
+                                      color: Colors.white.withOpacity(0.8),
+                                      size: 18,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 15),
-                            Expanded(
-                              child: QuickActionCard(
-                                icon: Icons.inventory_2,
-                                title: 'Ver Lotes',
-                                subtitle: 'Historial completo',
-                                color: Colors.blue,
-                                onTap: _navigateToLotes,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                         
-                        const SizedBox(height: 30),
+                        const SizedBox(height: 20),
                         
                         // Sección de lotes recientes
                         Row(
@@ -500,72 +737,20 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-
-      // Bottom Navigation Bar con FAB
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: BottomAppBar(
-          shape: const CircularNotchedRectangle(),
-          notchMargin: 8,
-          color: Colors.white,
-          child: SizedBox(
-            height: 65,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildBottomNavItem(Icons.home_outlined, Icons.home, 'Inicio', 0),
-                _buildBottomNavItem(Icons.inventory_2_outlined, Icons.inventory_2, 'Lotes', 1),
-                const SizedBox(width: 80), // Espacio para el FAB
-                _buildBottomNavItem(Icons.help_outline, Icons.help, 'Ayuda', 2),
-                _buildBottomNavItem(Icons.person_outline, Icons.person, 'Perfil', 3),
-              ],
-            ),
+            ],
           ),
         ),
+
+      // Bottom Navigation Bar con FAB
+      bottomNavigationBar: OrigenBottomNavigation(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onBottomNavTapped,
+        onFabPressed: _navigateToNewLot,
       ),
 
       // Floating Action Button
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              BioWayColors.ecoceGreen,
-              BioWayColors.ecoceGreen.withOpacity(0.8),
-            ],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: BioWayColors.ecoceGreen.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: FloatingActionButton(
-          onPressed: _navigateToNewLot,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: const Icon(
-            Icons.add,
-            size: 32,
-            color: Colors.white,
-          ),
-        ),
+      floatingActionButton: OrigenFloatingActionButton(
+        onPressed: _navigateToNewLot,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
@@ -575,35 +760,4 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
 
 
 
-  Widget _buildBottomNavItem(IconData icon, IconData activeIcon, String label, int index) {
-    final isSelected = _selectedIndex == index;
-
-    return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _onBottomNavTapped(index),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                isSelected ? activeIcon : icon,
-                color: isSelected ? BioWayColors.ecoceGreen : Colors.grey,
-                size: 24,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isSelected ? BioWayColors.ecoceGreen : Colors.grey,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

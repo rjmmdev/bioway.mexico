@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
-import 'origen_lote_creado_screen.dart';
+import 'origen_lote_detalle_screen.dart';
 
 class OrigenCrearLoteScreen extends StatefulWidget {
   const OrigenCrearLoteScreen({super.key});
@@ -22,13 +23,9 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
 
   // Lista de tipos de polímeros disponibles
   final List<String> _tiposPolimeros = [
-    'PET',
-    'HDPE',
-    'PVC',
-    'LDPE',
+    'PEBD',
     'PP',
-    'PS',
-    'Otros'
+    'Multi'
   ];
 
   // Flag para validación del formulario (no se usa aún pero se puede implementar después)
@@ -64,15 +61,21 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
       return;
     }
 
-    // Navegar a la pantalla de éxito
+    // Generar un ID de Firebase simulado
+    final String firebaseId = 'FID_${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+    
+    // Navegar a la pantalla de detalle con mensaje de éxito
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => OrigenLoteCreadoScreen(
-          tipoMaterial: _tipoPolimeroSeleccionado!,
+        builder: (context) => OrigenLoteDetalleScreen(
+          firebaseId: firebaseId,
+          material: _tipoPolimeroSeleccionado!,
           peso: double.tryParse(_pesoController.text) ?? 0,
           presentacion: _presentacionSeleccionada,
-          fuenteMaterial: _nombreContactoController.text,
+          fuente: _nombreContactoController.text,
+          fechaCreacion: DateTime.now(),
+          mostrarMensajeExito: true,
         ),
       ),
     );
@@ -218,7 +221,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                     children: [
                       Expanded(
                         child: _buildPresentacionOption(
-                          icon: '📦',
+                          svgPath: 'assets/images/icons/pacas.svg',
                           label: 'Pacas',
                           isSelected: _presentacionSeleccionada == 'Pacas',
                           onTap: () {
@@ -231,7 +234,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                       const SizedBox(width: 16),
                       Expanded(
                         child: _buildPresentacionOption(
-                          icon: '🛍️',
+                          svgPath: 'assets/images/icons/sacos.svg',
                           label: 'Sacos',
                           isSelected: _presentacionSeleccionada == 'Sacos',
                           onTap: () {
@@ -420,7 +423,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
   }
 
   Widget _buildPresentacionOption({
-    required String icon,
+    required String svgPath,
     required String label,
     required bool isSelected,
     required VoidCallback onTap,
@@ -439,9 +442,10 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
         ),
         child: Column(
           children: [
-            Text(
-              icon,
-              style: const TextStyle(fontSize: 32),
+            SvgPicture.asset(
+              svgPath,
+              width: 40,
+              height: 40,
             ),
             const SizedBox(height: 8),
             Text(

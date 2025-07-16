@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
-import 'origen_codigo_qr.dart';
+import 'origen_lote_detalle_screen.dart';
 import 'origen_crear_lote_screen.dart';
 import 'origen_ayuda.dart';
 import 'origen_perfil.dart';
 import 'widgets/lote_card.dart';
+import 'widgets/origen_bottom_navigation.dart';
 
 class OrigenLotesScreen extends StatefulWidget {
   const OrigenLotesScreen({super.key});
@@ -20,8 +21,11 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
 
   // Filtros
   String _filtroMaterial = 'Todos';
-  String _filtroPeriodo = 'Esta semana';
-  String _filtroTipo = 'Todos los tipos';
+  String _filtroPresentacion = 'Todas';
+  
+  // Búsqueda
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
 
   // Lista de lotes (datos de ejemplo)
   final List<Map<String, dynamic>> _lotes = [
@@ -67,33 +71,76 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
     },
   ];
 
-  // Estadísticas
-  int get totalLotes => _lotes.length;
-  double get pesoTotal => _lotes.fold(0, (sum, lote) => sum + lote['peso']);
-  String get materialPredominante {
-    Map<String, int> conteo = {};
-    for (var lote in _lotes) {
-      conteo[lote['material']] = (conteo[lote['material']] ?? 0) + 1;
-    }
-    var sorted = conteo.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-    if (sorted.isEmpty) return 'N/A';
-    int total = sorted.fold(0, (sum, entry) => sum + entry.value);
-    double porcentaje = (sorted.first.value / total) * 100;
-    return '${porcentaje.toStringAsFixed(0)}% ${sorted.first.key}';
+  List<Map<String, dynamic>> get _lotesFiltrados {
+    return _lotes.where((lote) {
+      // Filtro por material
+      if (_filtroMaterial != 'Todos' && lote['material'] != _filtroMaterial) {
+        return false;
+      }
+      
+      // Filtro por presentación
+      if (_filtroPresentacion != 'Todas' && lote['presentacion'] != _filtroPresentacion) {
+        return false;
+      }
+      
+      // Filtro por búsqueda
+      if (_searchController.text.isNotEmpty) {
+        final searchLower = _searchController.text.toLowerCase();
+        return lote['firebaseId'].toLowerCase().contains(searchLower) ||
+               lote['fuente'].toLowerCase().contains(searchLower) ||
+               lote['material'].toLowerCase().contains(searchLower);
+      }
+      
+      return true;
+    }).toList();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocus.dispose();
+    super.dispose();
   }
 
   void _verCodigoQR(Map<String, dynamic> lote) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => OrigenCodigoQRScreen(
+        builder: (context) => OrigenLoteDetalleScreen(
           firebaseId: lote['firebaseId'],
           material: lote['material'],
           peso: lote['peso'].toDouble(),
           presentacion: lote['presentacion'],
           fuente: lote['fuente'],
-          fechaCreacion: DateTime.now(), // En producción vendría de la base de datos
+          fechaCreacion: DateTime.now(),
+          mostrarMensajeExito: false,
         ),
+      ),
+    );
+  }
+
+  void _navigateToNewLot() {
+    HapticFeedback.lightImpact();
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const OrigenCrearLoteScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0.0, 1.0);
+          const end = Offset.zero;
+          const curve = Curves.easeOutCubic;
+
+          var tween = Tween(begin: begin, end: end).chain(
+            CurveTween(curve: curve),
+          );
+
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 400),
       ),
     );
   }
@@ -148,551 +195,528 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: const Text(
-          'Lotes',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: false,
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
-      ),
-      body: Column(
-        children: [
-          // Filtros
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                // Filtros de material
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildMaterialFilter('Todos', _filtroMaterial == 'Todos'),
-                      const SizedBox(width: 8),
-                      _buildMaterialFilter('PEBD', _filtroMaterial == 'PEBD'),
-                      const SizedBox(width: 8),
-                      _buildMaterialFilter('PP', _filtroMaterial == 'PP'),
-                      const SizedBox(width: 8),
-                      _buildMaterialFilter('Multi', _filtroMaterial == 'Multi'),
-                    ],
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // Header minimalista
+            Container(
+              color: Colors.white,
+              child: Column(
+                children: [
+                  // Título y acciones
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Historial de Lotes',
+                                style: TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.w800,
+                                  color: BioWayColors.darkGreen,
+                                  height: 1.1,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Gestiona y consulta tus registros',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Botón de filtros
+                        Container(
+                          decoration: BoxDecoration(
+                            color: BioWayColors.ecoceGreen.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: IconButton(
+                            icon: Stack(
+                              children: [
+                                Icon(
+                                  Icons.filter_list,
+                                  color: BioWayColors.ecoceGreen,
+                                ),
+                                if (_filtroMaterial != 'Todos' || _filtroPresentacion != 'Todas')
+                                  Positioned(
+                                    right: 0,
+                                    top: 0,
+                                    child: Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            onPressed: () {
+                              _showFilterBottomSheet();
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                
-                // Dropdowns de filtros
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildDropdownFilter(
-                        value: _filtroPeriodo,
-                        items: ['Esta semana', 'Este mes', 'Últimos 3 meses', 'Todo el año'],
-                        onChanged: (value) {
-                          setState(() {
-                            _filtroPeriodo = value!;
-                          });
-                        },
+                  
+                  // Barra de búsqueda moderna
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F6F7),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        focusNode: _searchFocus,
+                        decoration: InputDecoration(
+                          hintText: 'Buscar por ID, material o fuente',
+                          hintStyle: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 15,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: Colors.grey[500],
+                            size: 22,
+                          ),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(
+                                    Icons.clear,
+                                    color: Colors.grey[500],
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _searchController.clear();
+                                    });
+                                  },
+                                )
+                              : null,
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
+                        ),
+                        onChanged: (value) => setState(() {}),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Indicador de filtros activos
+            if (_filtroMaterial != 'Todos' || _filtroPresentacion != 'Todas')
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                color: Colors.orange.shade50,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: Colors.orange.shade700,
+                    ),
+                    const SizedBox(width: 8),
                     Expanded(
-                      child: _buildDropdownFilter(
-                        value: _filtroTipo,
-                        items: ['Todos los tipos', 'Pacas', 'Sacos'],
-                        onChanged: (value) {
-                          setState(() {
-                            _filtroTipo = value!;
-                          });
-                        },
+                      child: Text(
+                        'Filtros activos: ${_getActiveFiltersText()}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.orange.shade700,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _filtroMaterial = 'Todos';
+                          _filtroPresentacion = 'Todas';
+                        });
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        minimumSize: const Size(0, 32),
+                      ),
+                      child: Text(
+                        'Limpiar',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.orange.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-
-          // Estadísticas
-          Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: BioWayColors.lightGreen.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: BioWayColors.ecoceGreen.withOpacity(0.3),
               ),
+            
+            // Lista de lotes
+            Expanded(
+              child: _lotesFiltrados.isEmpty
+                  ? _buildEmptyState()
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                      itemCount: _lotesFiltrados.length,
+                      itemBuilder: (context, index) {
+                        final lote = _lotesFiltrados[index];
+                        final isFirst = index == 0;
+                        final isLast = index == _lotesFiltrados.length - 1;
+                        
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            top: isFirst ? 0 : 6,
+                            bottom: isLast ? 0 : 6,
+                          ),
+                          child: LoteCard(
+                            lote: lote,
+                            onQRTap: () => _verCodigoQR(lote),
+                          ),
+                        );
+                      },
+                    ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatistic(totalLotes.toString(), 'Lotes totales'),
-                _buildStatistic('${(pesoTotal / 1000).toStringAsFixed(1)} t', 'Peso total'),
-                _buildStatistic(materialPredominante, 'PET'),
-              ],
-            ),
-          ),
-
-          // Lista de lotes
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _lotes.length,
-              itemBuilder: (context, index) {
-                return LoteCard(
-                  lote: _lotes[index],
-                  onQRTap: () => _verCodigoQR(_lotes[index]),
-                );
-              },
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
 
       // Bottom Navigation Bar con FAB
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: BottomAppBar(
-          shape: const CircularNotchedRectangle(),
-          notchMargin: 8,
-          color: Colors.white,
-          child: SizedBox(
-            height: 65,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildBottomNavItem(Icons.home_outlined, Icons.home, 'Inicio', 0),
-                _buildBottomNavItem(Icons.inventory_2_outlined, Icons.inventory_2, 'Lotes', 1),
-                const SizedBox(width: 80), // Espacio para el FAB
-                _buildBottomNavItem(Icons.help_outline, Icons.help, 'Ayuda', 2),
-                _buildBottomNavItem(Icons.person_outline, Icons.person, 'Perfil', 3),
-              ],
-            ),
-          ),
-        ),
+      bottomNavigationBar: OrigenBottomNavigation(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onBottomNavTapped,
+        onFabPressed: _navigateToNewLot,
       ),
 
       // Floating Action Button
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              BioWayColors.ecoceGreen,
-              BioWayColors.ecoceGreen.withOpacity(0.8),
-            ],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: BioWayColors.ecoceGreen.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: FloatingActionButton(
-          onPressed: () {
-            HapticFeedback.lightImpact();
-            Navigator.push(
-              context,
-              PageRouteBuilder(
-                pageBuilder: (context, animation, secondaryAnimation) =>
-                    const OrigenCrearLoteScreen(),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                  const begin = Offset(0.0, 1.0);
-                  const end = Offset.zero;
-                  const curve = Curves.easeOutCubic;
-
-                  var tween = Tween(begin: begin, end: end).chain(
-                    CurveTween(curve: curve),
-                  );
-
-                  return SlideTransition(
-                    position: animation.drive(tween),
-                    child: child,
-                  );
-                },
-                transitionDuration: const Duration(milliseconds: 400),
-              ),
-            );
-          },
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: const Icon(
-            Icons.add,
-            size: 32,
-            color: Colors.white,
-          ),
-        ),
+      floatingActionButton: OrigenFloatingActionButton(
+        onPressed: _navigateToNewLot,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
-  Widget _buildMaterialFilter(String label, bool isSelected) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _filtroMaterial = label;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? BioWayColors.ecoceGreen : Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.black87,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-          ),
-        ),
-      ),
-    );
+  String _getActiveFiltersText() {
+    List<String> filters = [];
+    if (_filtroMaterial != 'Todos') filters.add(_filtroMaterial);
+    if (_filtroPresentacion != 'Todas') filters.add(_filtroPresentacion);
+    return filters.join(', ');
   }
 
-  Widget _buildDropdownFilter({
-    required String value,
-    required List<String> items,
-    required Function(String?) onChanged,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: DropdownButton<String>(
-        value: value,
-        isExpanded: true,
-        underline: const SizedBox(),
-        icon: const Icon(Icons.keyboard_arrow_down),
-        items: items.map((String item) {
-          return DropdownMenuItem<String>(
-            value: item,
-            child: Text(
-              item,
-              style: const TextStyle(fontSize: 14),
+  void _showFilterBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          );
-        }).toList(),
-        onChanged: onChanged,
-      ),
-    );
-  }
-
-  Widget _buildStatistic(String value, String label) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: BioWayColors.darkGreen,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            color: BioWayColors.darkGreen.withOpacity(0.7),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLoteCard(Map<String, dynamic> lote) {
-    final materialColor = _getMaterialColor(lote['material']);
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _verCodigoQR(lote),
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                // Header del lote
-                Row(
-                  children: [
-                    // Icono del material
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: materialColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: Icon(
-                        _getMaterialIcon(lote['material']),
-                        color: materialColor,
-                        size: 26,
-                      ),
+            
+            // Título
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Filtrar lotes',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(width: 16),
-                    // Información principal
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: materialColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  lote['material'],
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: materialColor,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.amber.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  lote['firebaseId'],
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.amber,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            lote['fuente'],
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _filtroMaterial = 'Todos';
+                        _filtroPresentacion = 'Todas';
+                      });
+                      Navigator.pop(context);
+                    },
+                    child: const Text('Restablecer'),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Filtros por material
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Material',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: ['Todos', 'PEBD', 'PP', 'Multi'].map((material) {
+                      final isSelected = _filtroMaterial == material;
+                      return ChoiceChip(
+                        label: Text(material),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          setState(() {
+                            _filtroMaterial = material;
+                          });
+                        },
+                        selectedColor: BioWayColors.ecoceGreen,
+                        backgroundColor: Colors.grey[100],
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.white : Colors.black87,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                        side: BorderSide(
+                          color: isSelected ? BioWayColors.ecoceGreen : Colors.transparent,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Filtros por presentación
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Presentación',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: ['Todas', 'Pacas', 'Sacos'].map((presentacion) {
+                      final isSelected = _filtroPresentacion == presentacion;
+                      return ChoiceChip(
+                        label: Text(presentacion),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          setState(() {
+                            _filtroPresentacion = presentacion;
+                          });
+                        },
+                        selectedColor: BioWayColors.ecoceGreen,
+                        backgroundColor: Colors.grey[100],
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.white : Colors.black87,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                        side: BorderSide(
+                          color: isSelected ? BioWayColors.ecoceGreen : Colors.transparent,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Botón aplicar
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: BioWayColors.ecoceGreen,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Aplicar filtros',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            
+            SizedBox(height: MediaQuery.of(context).padding.bottom),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Ilustración moderna
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: BioWayColors.ecoceGreen.withOpacity(0.05),
+                shape: BoxShape.circle,
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Icon(
+                    Icons.inventory_2_outlined,
+                    size: 60,
+                    color: BioWayColors.ecoceGreen.withOpacity(0.3),
+                  ),
+                  Positioned(
+                    right: 25,
+                    bottom: 25,
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.orange,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.orange.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
-                    ),
-                    // Botón de acción rápida
-                    Container(
-                      decoration: BoxDecoration(
-                        color: BioWayColors.ecoceGreen.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: IconButton(
-                        onPressed: () => _verCodigoQR(lote),
-                        icon: Icon(
-                          Icons.qr_code_2,
-                          color: BioWayColors.ecoceGreen,
-                        ),
-                        tooltip: 'Ver QR',
+                      child: const Icon(
+                        Icons.search_off,
+                        size: 20,
+                        color: Colors.white,
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                // Detalles del lote
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8F9FA),
-                    borderRadius: BorderRadius.circular(15),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildLoteDetail(
-                        icon: Icons.scale,
-                        label: 'Peso',
-                        value: '${lote['peso']} kg',
-                      ),
-                      Container(
-                        width: 1,
-                        height: 40,
-                        color: Colors.grey.withOpacity(0.3),
-                      ),
-                      _buildLoteDetail(
-                        icon: Icons.inventory_2,
-                        label: 'Presentación',
-                        value: lote['presentacion'],
-                      ),
-                      Container(
-                        width: 1,
-                        height: 40,
-                        color: Colors.grey.withOpacity(0.3),
-                      ),
-                      _buildLoteDetail(
-                        icon: Icons.calendar_today,
-                        label: 'Fecha',
-                        value: lote['fecha'],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoteDetail({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          size: 20,
-          color: Colors.grey[600],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.grey[600],
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Color _getMaterialColor(String material) {
-    switch (material) {
-      case 'PET':
-        return Colors.blue;
-      case 'HDPE':
-        return Colors.orange;
-      case 'PP':
-        return Colors.purple;
-      case 'PVC':
-        return Colors.red;
-      case 'LDPE':
-        return Colors.teal;
-      case 'PS':
-        return Colors.pink;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  IconData _getMaterialIcon(String material) {
-    switch (material) {
-      case 'PET':
-        return Icons.local_drink;
-      case 'HDPE':
-        return Icons.cleaning_services;
-      case 'PP':
-        return Icons.kitchen;
-      case 'PVC':
-        return Icons.plumbing;
-      case 'LDPE':
-        return Icons.shopping_bag;
-      case 'PS':
-        return Icons.fastfood;
-      default:
-        return Icons.recycling;
-    }
-  }
-
-
-  Widget _buildBottomNavItem(IconData icon, IconData activeIcon, String label, int index) {
-    final isSelected = _selectedIndex == index;
-
-    return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _onBottomNavTapped(index),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                isSelected ? activeIcon : icon,
-                color: isSelected ? BioWayColors.ecoceGreen : Colors.grey,
-                size: 24,
+            const SizedBox(height: 24),
+            const Text(
+              'No hay lotes que mostrar',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
               ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isSelected ? BioWayColors.ecoceGreen : Colors.grey,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _searchController.text.isNotEmpty
+                  ? 'No se encontraron resultados para tu búsqueda'
+                  : 'Comienza creando tu primer lote',
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.grey[600],
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            if (_searchController.text.isNotEmpty)
+              OutlinedButton(
+                onPressed: () {
+                  setState(() {
+                    _searchController.clear();
+                    _filtroMaterial = 'Todos';
+                    _filtroPresentacion = 'Todas';
+                  });
+                },
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: BioWayColors.ecoceGreen),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: Text(
+                  'Limpiar búsqueda',
+                  style: TextStyle(
+                    color: BioWayColors.ecoceGreen,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              )
+            else
+              ElevatedButton.icon(
+                onPressed: _navigateToNewLot,
+                icon: const Icon(Icons.add_circle_outline),
+                label: const Text('Crear nuevo lote'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: BioWayColors.ecoceGreen,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  elevation: 0,
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
