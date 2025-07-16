@@ -201,11 +201,11 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
                     tag: 'bioway_logo',
                     child: AnimatedLogo(
                       onTap: _navigateToPlatformSelector,
-                      size: 90,
+                      size: 142,
                     ),
                   ),
 
-                  const SizedBox(height: 50),
+                  const SizedBox(height: 20),
 
                   // Formulario animado
                   AnimatedBuilder(

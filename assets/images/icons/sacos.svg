@@ -1,0 +1,83 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="128"
+  height="128"
+  viewBox="0 0 128 128"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <defs>
+    <!-- Gradiente principal del cuerpo (de luz arriba-izquierda a sombra abajo-derecha) -->
+    <linearGradient id="bagBody" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"  stop-color="#f5f5f7"/>
+      <stop offset="40%" stop-color="#ececec"/>
+      <stop offset="100%" stop-color="#d0d0d2"/>
+    </linearGradient>
+
+    <!-- Gradiente para la boca (pliegue superior) -->
+    <linearGradient id="bagLip" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"  stop-color="#fafafa"/>
+      <stop offset="100%" stop-color="#dcdcdc"/>
+    </linearGradient>
+
+    <!-- Sombra elíptica del suelo -->
+    <radialGradient id="shadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#000" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Sombra proyectada -->
+  <ellipse
+    cx="64" cy="118" rx="46" ry="10"
+    fill="url(#shadow)"
+    opacity="0.25"
+  />
+
+  <!-- Cuerpo del costal -->
+  <path
+    d="
+      M26 34
+      q6 -10 38 -14
+      q32 4 38 14
+      v58
+      q0 14 -8 20
+      q-15 11 -30 11
+      q-15 0 -30 -11
+      q-8 -6 -8 -20
+      z"
+    fill="url(#bagBody)"
+    stroke="#b6b6b8"
+    stroke-width="2.5"
+  />
+
+  <!-- Pliegue/boca del costal -->
+  <path
+    d="
+      M26 34
+      q6 -10 38 -14
+      q32 4 38 14
+      l-4 12
+      q-32 16 -68 0
+      z"
+    fill="url(#bagLip)"
+    stroke="#b6b6b8"
+    stroke-width="2.5"
+  />
+
+  <!-- Costuras verticales (puntadas) -->
+  <path
+    d="M48 38 v60" stroke="#c8c8c8" stroke-width="2" stroke-dasharray="2 3" />
+  <path
+    d="M80 38 v60" stroke="#c8c8c8" stroke-width="2" stroke-dasharray="2 3" />
+
+  <!-- Plegados laterales (ligeros relieves) -->
+  <path
+    d="M34 50 q-4 10 0 20 q4 10 0 20"
+    fill="none" stroke="#e0e0e0" stroke-width="2"
+  />
+  <path
+    d="M94 50 q4 10 0 20 q-4 10 0 20"
+    fill="none" stroke="#cacaca" stroke-width="2"
+  />
+</svg>

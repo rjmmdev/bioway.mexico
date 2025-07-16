@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../utils/colors.dart';
 import 'login/bioway/bioway_login_screen.dart'; // ACTUALIZADA
 
@@ -36,7 +37,7 @@ class _SplashScreenState extends State<SplashScreen>
   void _setupAnimations() {
     // Logo Controller (escala, rotación y fade)
     _logoController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
 
@@ -58,7 +59,7 @@ class _SplashScreenState extends State<SplashScreen>
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _logoController,
-      curve: Curves.elasticOut,
+      curve: Curves.easeOutCubic,
     ));
 
     // Logo Rotation Animation - rotación suave
@@ -126,7 +127,7 @@ class _SplashScreenState extends State<SplashScreen>
     // Simular carga de datos/inicialización
     await Future.delayed(const Duration(seconds: 2));
 
-    // Navegar al login
+    // Navegar al login con transición mejorada
     if (mounted) {
       Navigator.pushReplacement(
         context,
@@ -134,12 +135,31 @@ class _SplashScreenState extends State<SplashScreen>
           pageBuilder: (context, animation, secondaryAnimation) =>
           const BioWayLoginScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            const begin = Offset(0.0, 0.03);
+            const end = Offset.zero;
+            const curve = Curves.easeInOutCubic;
+
+            var tween = Tween(begin: begin, end: end).chain(
+              CurveTween(curve: curve),
+            );
+            
+            var fadeAnimation = Tween<double>(
+              begin: 0.0,
+              end: 1.0,
+            ).animate(CurvedAnimation(
+              parent: animation,
+              curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+            ));
+
             return FadeTransition(
-              opacity: animation,
-              child: child,
+              opacity: fadeAnimation,
+              child: SlideTransition(
+                position: animation.drive(tween),
+                child: child,
+              ),
             );
           },
-          transitionDuration: const Duration(milliseconds: 800),
+          transitionDuration: const Duration(milliseconds: 1200),
         ),
       );
     }
@@ -190,58 +210,10 @@ class _SplashScreenState extends State<SplashScreen>
                         scale: _logoScaleAnimation.value,
                         child: Transform.rotate(
                           angle: _logoRotationAnimation.value,
-                          child: Container(
-                            width: 140,
-                            height: 140,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  BioWayColors.primaryGreen,
-                                  BioWayColors.primaryGreen.withOpacity(0.8),
-                                ],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: BioWayColors.primaryGreen.withOpacity(0.4),
-                                  blurRadius: 30,
-                                  spreadRadius: 10,
-                                ),
-                              ],
-                            ),
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                // Ícono principal
-                                const Icon(
-                                  Icons.eco,
-                                  size: 70,
-                                  color: Colors.white,
-                                ),
-                                // Anillo decorativo animado
-                                ...List.generate(2, (index) {
-                                  return AnimatedBuilder(
-                                    animation: _logoController,
-                                    builder: (context, child) {
-                                      return Container(
-                                        width: 140 + (index * 30),
-                                        height: 140 + (index * 30),
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: BioWayColors.primaryGreen
-                                                .withOpacity(0.2 - (index * 0.1)),
-                                            width: 2,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                }),
-                              ],
-                            ),
+                          child: SvgPicture.asset(
+                            'assets/logos/bioway_logo.svg',
+                            width: 180,
+                            height: 180,
                           ),
                         ),
                       ),
@@ -249,7 +221,7 @@ class _SplashScreenState extends State<SplashScreen>
                   },
                 ),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 20),
 
                 // Texto animado
                 AnimatedBuilder(
