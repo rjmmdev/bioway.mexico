@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import 'reciclador_escaneo.dart';
+import 'reciclador_administracion_lotes.dart';
+import 'widgets/custom_bottom_navigation.dart';
 
 class RecicladorHomeScreen extends StatefulWidget {
   const RecicladorHomeScreen({super.key});
@@ -64,10 +66,12 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
   }
 
   void _navigateToLotControl() {
-    // TODO: Implementar navegación a control de lotes
-    setState(() {
-      _selectedIndex = 1; // Cambiar al tab de lotes
-    });
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const RecicladorAdministracionLotes(),
+      ),
+    );
   }
 
   void _onBottomNavTapped(int index) {
@@ -75,24 +79,26 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
       _selectedIndex = index;
     });
 
-    // TODO: Implementar navegación a las diferentes pantallas
-    String destination = '';
-    switch (index) {
-      case 0:
-        destination = 'Inicio';
-        break;
-      case 1:
-        destination = 'Lotes';
-        break;
-      case 2:
-        destination = 'Ayuda';
-        break;
-      case 3:
-        destination = 'Perfil';
-        break;
-    }
+    if (index == 1) {
+      // Navegar a Administración de Lotes
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const RecicladorAdministracionLotes(),
+        ),
+      );
+    } else if (index != 0) {
+      // TODO: Implementar navegación a las otras pantallas
+      String destination = '';
+      switch (index) {
+        case 2:
+          destination = 'Ayuda';
+          break;
+        case 3:
+          destination = 'Perfil';
+          break;
+      }
 
-    if (index != 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Navegando a $destination...'),
@@ -109,8 +115,49 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ScaffoldWithBottomNavigation(
       backgroundColor: BioWayColors.backgroundGrey,
+      selectedIndex: _selectedIndex,
+      navigationItems: [
+        NavigationItem(
+          icon: Icons.home,
+          label: 'Inicio',
+          onTap: () => _onBottomNavTapped(0),
+        ),
+        NavigationItem(
+          icon: Icons.inventory,
+          label: 'Lotes',
+          onTap: () => _onBottomNavTapped(1),
+        ),
+        NavigationItem(
+          icon: Icons.help_outline,
+          label: 'Ayuda',
+          onTap: () => _onBottomNavTapped(2),
+        ),
+        NavigationItem(
+          icon: Icons.person_outline,
+          label: 'Perfil',
+          onTap: () => _onBottomNavTapped(3),
+        ),
+      ],
+      hasFloatingButton: true,
+      floatingButton: Container(
+        height: 60,
+        width: 60,
+        child: FittedBox(
+          child: FloatingActionButton(
+            onPressed: _navigateToNewLot,
+            backgroundColor: BioWayColors.ecoceGreen,
+            foregroundColor: Colors.white,
+            elevation: 8,
+            shape: const CircleBorder(),
+            child: const Icon(
+              Icons.add,
+              size: 32,
+            ),
+          ),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -297,57 +344,6 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
           ),
         ),
       ),
-
-      // Bottom Navigation Bar con FAB
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: BottomAppBar(
-          shape: const CircularNotchedRectangle(),
-          notchMargin: 8,
-          color: Colors.white,
-          child: SizedBox(
-            height: 65,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildBottomNavItem(Icons.home, 'Inicio', 0),
-                _buildBottomNavItem(Icons.inventory, 'Lotes', 1),
-                const SizedBox(width: 80), // Espacio para el FAB
-                _buildBottomNavItem(Icons.help_outline, 'Ayuda', 2),
-                _buildBottomNavItem(Icons.person_outline, 'Perfil', 3),
-              ],
-            ),
-          ),
-        ),
-      ),
-
-      // Floating Action Button
-      floatingActionButton: Container(
-        height: 60,
-        width: 60,
-        child: FittedBox(
-          child: FloatingActionButton(
-            onPressed: _navigateToNewLot,
-            backgroundColor: BioWayColors.ecoceGreen,
-            foregroundColor: Colors.white,
-            elevation: 8,
-            shape: const CircleBorder(),
-            child: const Icon(
-              Icons.add,
-              size: 32,
-            ),
-          ),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
@@ -561,35 +557,4 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
     );
   }
 
-  Widget _buildBottomNavItem(IconData icon, String label, int index) {
-    final isSelected = _selectedIndex == index;
-
-    return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _onBottomNavTapped(index),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                color: isSelected ? BioWayColors.ecoceGreen : Colors.grey,
-                size: 24,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isSelected ? BioWayColors.ecoceGreen : Colors.grey,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
