@@ -76,12 +76,17 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                 children: [
                   Icon(Icons.edit, color: BioWayColors.ecoceGreen),
                   const SizedBox(width: 10),
-                  const Text('Firma del Operador'),
+                  const Expanded(
+                    child: Text(
+                      'Firma del Operador',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                  ),
                 ],
               ),
               content: Container(
-                width: MediaQuery.of(context).size.width * 0.9,
-                height: 300,
+                width: MediaQuery.of(context).size.width * 0.95,
+                height: 400,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   border: Border.all(
@@ -823,15 +828,15 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                       children: [
                                         // Mostrar la firma guardada
                                         Container(
-                                          height: 200,
+                                          height: 250,
                                           width: double.infinity,
                                           color: Colors.white,
                                           child: FittedBox(
                                             fit: BoxFit.contain,
                                             alignment: Alignment.center,
                                             child: SizedBox(
-                                              width: MediaQuery.of(context).size.width * 0.9,
-                                              height: 300,
+                                              width: MediaQuery.of(context).size.width * 0.95,
+                                              height: 400,
                                               child: CustomPaint(
                                                 painter: SignaturePainter(_signaturePoints),
                                                 size: Size.infinite,

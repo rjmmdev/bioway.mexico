@@ -3,6 +3,27 @@ import 'package:flutter/services.dart';
 import 'screens/splash_screen.dart';
 import 'utils/colors.dart';
 
+// Screens - Origen
+import 'screens/ecoce/origen/origen_inicio_screen.dart';
+import 'screens/ecoce/origen/origen_lotes_screen.dart';
+import 'screens/ecoce/origen/origen_ayuda.dart';
+import 'screens/ecoce/origen/origen_crear_lote_screen.dart';
+import 'screens/ecoce/origen/origen_perfil.dart';
+
+// Screens - Reciclador
+import 'screens/ecoce/reciclador/reciclador_inicio.dart';
+import 'screens/ecoce/reciclador/reciclador_administracion_lotes.dart';
+import 'screens/ecoce/reciclador/reciclador_ayuda.dart';
+import 'screens/ecoce/reciclador/reciclador_escaneo.dart';
+import 'screens/ecoce/reciclador/reciclador_perfil.dart';
+
+// Screens - Transporte
+import 'screens/ecoce/transporte/transporte_inicio_screen.dart';
+import 'screens/ecoce/transporte/transporte_recoger_screen.dart';
+import 'screens/ecoce/transporte/transporte_entregar_screen.dart';
+import 'screens/ecoce/transporte/transporte_ayuda_screen.dart';
+import 'screens/ecoce/transporte/transporte_perfil_screen.dart';
+
 void main() {
   // Asegurar que los widgets estén inicializados
   WidgetsFlutterBinding.ensureInitialized();
@@ -168,6 +189,30 @@ class BioWayApp extends StatelessWidget {
 
       // Pantalla inicial
       home: const SplashScreen(),
+      
+      // Rutas de navegación
+      routes: {
+        // Rutas de Origen (Acopiador)
+        '/origen_inicio': (context) => const OrigenInicioScreen(),
+        '/origen_lotes': (context) => const OrigenLotesScreen(),
+        '/origen_ayuda': (context) => const OrigenAyudaScreen(),
+        '/origen_crear_lote': (context) => const OrigenCrearLoteScreen(),
+        '/origen_perfil': (context) => const OrigenPerfilScreen(),
+        
+        // Rutas de Reciclador
+        '/reciclador_inicio': (context) => const RecicladorHomeScreen(),
+        '/reciclador_lotes': (context) => const RecicladorAdministracionLotes(),
+        '/reciclador_ayuda': (context) => const RecicladorAyudaScreen(),
+        '/reciclador_escaneo': (context) => const QRScannerScreen(),
+        '/reciclador_perfil': (context) => const RecicladorPerfilScreen(),
+        
+        // Rutas de Transporte
+        '/transporte_inicio': (context) => const TransporteInicioScreen(),
+        '/transporte_recoger': (context) => const TransporteRecogerScreen(lotesSeleccionados: []),
+        '/transporte_entregar': (context) => const TransporteEntregarScreen(),
+        '/transporte_ayuda': (context) => const TransporteAyudaScreen(),
+        '/transporte_perfil': (context) => const TransportePerfilScreen(),
+      },
     );
   }
 }

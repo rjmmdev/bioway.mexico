@@ -76,8 +76,6 @@ class _OrigenAyudaScreenState extends State<OrigenAyudaScreen> with SingleTicker
     },
   ];
   
-  // Estado de búsqueda
-  final TextEditingController _searchController = TextEditingController();
   
   @override
   void initState() {
@@ -99,7 +97,6 @@ class _OrigenAyudaScreenState extends State<OrigenAyudaScreen> with SingleTicker
   @override
   void dispose() {
     _animationController.dispose();
-    _searchController.dispose();
     super.dispose();
   }
   
@@ -297,11 +294,6 @@ class _OrigenAyudaScreenState extends State<OrigenAyudaScreen> with SingleTicker
     _abrirWhatsApp();
   }
   
-  void _buscarAyuda(String query) {
-    // TODO: Implementar búsqueda
-    // Por ahora solo actualiza el estado para mostrar/ocultar el ícono de limpiar
-    setState(() {});
-  }
   
   void _navigateToNewLot() {
     HapticFeedback.lightImpact();
@@ -461,56 +453,6 @@ class _OrigenAyudaScreenState extends State<OrigenAyudaScreen> with SingleTicker
                                   ),
                                 ),
                               ],
-                            ),
-                            const SizedBox(height: 24),
-                            
-                            // Barra de búsqueda
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 5),
-                                  ),
-                                ],
-                              ),
-                              child: TextField(
-                                controller: _searchController,
-                                onChanged: _buscarAyuda,
-                                decoration: InputDecoration(
-                                  hintText: '¿Qué necesitas saber?',
-                                  hintStyle: TextStyle(
-                                    color: Colors.grey[500],
-                                    fontSize: 16,
-                                  ),
-                                  prefixIcon: Icon(
-                                    Icons.search,
-                                    color: Colors.grey[600],
-                                    size: 24,
-                                  ),
-                                  suffixIcon: _searchController.text.isNotEmpty
-                                      ? IconButton(
-                                          icon: Icon(
-                                            Icons.clear,
-                                            color: Colors.grey[600],
-                                          ),
-                                          onPressed: () {
-                                            setState(() {
-                                              _searchController.clear();
-                                            });
-                                          },
-                                        )
-                                      : null,
-                                  border: InputBorder.none,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 18,
-                                  ),
-                                ),
-                              ),
                             ),
                           ],
                         ),
