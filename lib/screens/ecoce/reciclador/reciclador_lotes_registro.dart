@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import 'reciclador_escaneo.dart';
 import 'reciclador_formulario_entrada.dart';
+import 'widgets/reciclador_lote_card.dart';
 
 // Modelo temporal para representar un lote
 class ScannedLot {
@@ -356,7 +357,36 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
               itemCount: _scannedLots.length,
               itemBuilder: (context, index) {
                 final lot = _scannedLots[index];
-                return _buildLotCard(lot, index);
+                final loteMap = {
+                  'id': lot.id,
+                  'material': lot.material,
+                  'peso': lot.weight,
+                  'presentacion': lot.format,
+                  'origen': 'Entrada Pendiente',
+                  'fecha': _formatDate(lot.dateScanned),
+                };
+                
+                return RecicladorLoteCard(
+                  lote: loteMap,
+                  onTap: () {
+                    // No hacemos nada en el tap principal
+                  },
+                  trailing: IconButton(
+                    onPressed: () => _removeLot(index),
+                    icon: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: BioWayColors.error.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.close,
+                        color: BioWayColors.error,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                );
               },
             ),
           ),
@@ -407,6 +437,11 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
     );
   }
 
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  // Método legacy mantenido por compatibilidad
   Widget _buildLotCard(ScannedLot lot, int index) {
     final materialColor = _getMaterialColor(lot.material);
 

@@ -5,6 +5,7 @@ import 'reciclador_inicio.dart';
 import 'reciclador_escaneo.dart';
 import 'reciclador_formulario_salida.dart';
 import 'widgets/reciclador_bottom_navigation.dart';
+import 'widgets/reciclador_lote_card.dart';
 
 // Modelo para los lotes
 class Lote {
@@ -461,7 +462,24 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: _lotesFiltrados.length,
                   itemBuilder: (context, index) {
-                    return _buildLoteCard(_lotesFiltrados[index], tabColor);
+                    final lote = _lotesFiltrados[index];
+                    final loteMap = {
+                      'id': lote.id,
+                      'material': lote.material,
+                      'peso': lote.peso,
+                      'presentacion': lote.presentacion,
+                      'origen': lote.origen,
+                      'fecha': _formatDate(lote.fechaCreacion),
+                      'fechaSalida': lote.fechaSalida != null ? _formatDate(lote.fechaSalida!) : null,
+                      'estado': lote.estado,
+                      'tieneDocumentacion': lote.tieneDocumentacion,
+                    };
+                    
+                    return RecicladorLoteCard(
+                      lote: loteMap,
+                      onTap: () => _onLoteTap(lote, tabColor),
+                      trailing: _buildCardTrailing(lote, tabColor),
+                    );
                   },
                 ),
         ),
@@ -550,6 +568,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
     );
   }
 
+  // Método legacy mantenido por compatibilidad - se puede eliminar una vez se verifique que todo funciona
   Widget _buildLoteCard(Lote lote, Color tabColor) {
     String buttonText = '';
     IconData? buttonIcon;
@@ -779,6 +798,105 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
     );
   }
 
+
+  void _onLoteTap(Lote lote, Color tabColor) {
+    HapticFeedback.lightImpact();
+    
+    switch (lote.estado) {
+      case 'salida':
+        NavigationHelper.navigateWithSlideTransition(
+          context: context,
+          destination: RecicladorFormularioSalida(
+            loteId: lote.id,
+            pesoOriginal: lote.peso,
+          ),
+        );
+        break;
+      case 'documentacion':
+        // TODO: Navegar a pantalla de documentación
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Pantalla de documentación en desarrollo'),
+            backgroundColor: BioWayColors.info,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+        break;
+      case 'finalizado':
+        // TODO: Navegar a pantalla de código QR
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Pantalla de código QR en desarrollo'),
+            backgroundColor: BioWayColors.info,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+        break;
+    }
+  }
+
+  Widget? _buildCardTrailing(Lote lote, Color tabColor) {
+    String buttonText = '';
+    IconData? buttonIcon;
+    
+    switch (lote.estado) {
+      case 'salida':
+        buttonText = 'Formulario';
+        buttonIcon = Icons.description_outlined;
+        break;
+      case 'documentacion':
+        buttonText = 'Documentos';
+        buttonIcon = Icons.upload_file;
+        break;
+      case 'finalizado':
+        buttonText = 'Ver QR';
+        buttonIcon = Icons.qr_code;
+        break;
+    }
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: tabColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () => _onLoteTap(lote, tabColor),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  buttonIcon,
+                  color: tabColor,
+                  size: 16,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  buttonText,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: tabColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
