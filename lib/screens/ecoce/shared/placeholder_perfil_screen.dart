@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
+import '../origen/widgets/origen_bottom_navigation.dart';
+import '../reciclador/widgets/reciclador_bottom_navigation.dart';
+import '../transporte/widgets/transporte_bottom_navigation.dart';
 
 class PlaceholderPerfilScreen extends StatefulWidget {
   final String nombreUsuario;
@@ -8,7 +11,6 @@ class PlaceholderPerfilScreen extends StatefulWidget {
   final String folioUsuario;
   final String iconCode; // 'store', 'recycling', 'local_shipping'
   final Color primaryColor;
-  final Widget bottomNavigation;
   final String? nombreEmpresa;
 
   const PlaceholderPerfilScreen({
@@ -18,7 +20,6 @@ class PlaceholderPerfilScreen extends StatefulWidget {
     required this.folioUsuario,
     required this.iconCode,
     required this.primaryColor,
-    required this.bottomNavigation,
     this.nombreEmpresa,
   });
 
@@ -94,7 +95,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
@@ -158,9 +159,10 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           SliverAppBar(
-            expandedHeight: 240,
+            expandedHeight: 140,
             floating: false,
             pinned: true,
+            automaticallyImplyLeading: false,
             backgroundColor: widget.primaryColor,
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
@@ -205,80 +207,135 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
                     ),
                   ),
                   // Contenido del header
-                  SafeArea(
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 56, // Posición desde abajo para dejar espacio para las tabs
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
                         children: [
-                          // Avatar con verificación
-                          Stack(
-                            alignment: Alignment.bottomRight,
-                            children: [
-                              Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.2),
-                                      blurRadius: 15,
-                                      offset: const Offset(0, 5),
+                          // Avatar más pequeño
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              _getIconFromCode(widget.iconCode),
+                              size: 30,
+                              color: widget.primaryColor,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          // Información del usuario
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Nombre
+                                Text(
+                                  widget.nombreUsuario,
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 6),
+                                // ID y tipo en una fila
+                                Row(
+                                  children: [
+                                    // ID
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.qr_code,
+                                            size: 14,
+                                            color: Colors.white.withOpacity(0.9),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            widget.folioUsuario,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    // Tipo
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        widget.tipoUsuario,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
-                                child: Icon(
-                                  _getIconFromCode(widget.iconCode),
-                                  size: 40,
-                                  color: widget.primaryColor,
-                                ),
-                              ),
-                              Container(
-                                width: 24,
-                                height: 24,
-                                decoration: BoxDecoration(
-                                  color: BioWayColors.success,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 3),
-                                ),
-                                child: const Icon(
-                                  Icons.check,
-                                  size: 12,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          // Nombre y tipo
-                          Text(
-                            widget.nombreUsuario,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          // Badges de información
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              _buildBadge(widget.folioUsuario, Icons.qr_code),
-                              const SizedBox(width: 8),
-                              _buildBadge(widget.tipoUsuario, Icons.category),
-                              if (_informacionUsuario['calificacion'] != null) ...[
-                                const SizedBox(width: 8),
-                                _buildBadge(
-                                  '${_metricas['calificacion']} ★',
-                                  Icons.star,
-                                  isHighlight: true,
-                                ),
+                                if (_informacionUsuario['calificacion'] != null) ...[
+                                  const SizedBox(height: 6),
+                                  // Calificación
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.amber.withOpacity(0.3),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.star,
+                                          size: 14,
+                                          color: Colors.white,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '${_metricas['calificacion']}',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
                         ],
                       ),
@@ -300,7 +357,6 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
                   tabs: const [
                     Tab(text: 'General'),
                     Tab(text: 'Documentos'),
-                    Tab(text: 'Actividad'),
                   ],
                 ),
               ),
@@ -312,51 +368,15 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
           children: [
             _buildGeneralTab(),
             _buildDocumentosTab(),
-            _buildActividadTab(),
           ],
         ),
       ),
-      bottomNavigationBar: widget.bottomNavigation,
+      bottomNavigationBar: _buildBottomNavigation(),
+      floatingActionButton: _buildFloatingActionButton(),
+      floatingActionButtonLocation: _shouldShowFab() ? FloatingActionButtonLocation.centerDocked : null,
     );
   }
 
-  Widget _buildBadge(String text, IconData icon, {bool isHighlight = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: isHighlight 
-            ? Colors.amber.withOpacity(0.9)
-            : Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 14,
-            color: isHighlight ? Colors.amber[900] : widget.primaryColor,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: isHighlight ? Colors.amber[900] : widget.primaryColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildGeneralTab() {
     return SingleChildScrollView(
@@ -364,10 +384,6 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Tarjeta de estado
-          _buildStatusCard(),
-          const SizedBox(height: 20),
-          
           // Información fiscal
           _buildInfoSection(
             titulo: 'Información Fiscal',
@@ -437,339 +453,18 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
   }
 
   Widget _buildDocumentosTab() {
-    int documentosPendientes = _documentos.where((doc) => doc['estado'] == 'Pendiente').length;
-    int documentosSubidos = _documentos.where((doc) => doc['estado'] == 'Subido').length;
-    
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          // Resumen de documentos
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: documentosPendientes > 0
-                    ? [Colors.orange.shade50, Colors.orange.shade100]
-                    : [Colors.green.shade50, Colors.green.shade100],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: documentosPendientes > 0 
-                      ? Colors.orange.withOpacity(0.2)
-                      : Colors.green.withOpacity(0.2),
-                  blurRadius: 15,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        documentosPendientes > 0 
-                            ? Icons.assignment_late
-                            : Icons.assignment_turned_in,
-                        color: documentosPendientes > 0 
-                            ? Colors.orange[700]
-                            : Colors.green[700],
-                        size: 32,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            documentosPendientes > 0 
-                                ? 'Documentos Pendientes'
-                                : '¡Documentación Completa!',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: documentosPendientes > 0 
-                                  ? Colors.orange[800]
-                                  : Colors.green[800],
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '$documentosSubidos de ${_documentos.length} documentos subidos',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: documentosPendientes > 0 
-                                  ? Colors.orange[700]
-                                  : Colors.green[700],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '${(documentosSubidos / _documentos.length * 100).toInt()}%',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: documentosPendientes > 0 
-                              ? Colors.orange[700]
-                              : Colors.green[700],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: documentosSubidos / _documentos.length,
-                    backgroundColor: Colors.white.withOpacity(0.5),
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      documentosPendientes > 0 
-                          ? Colors.orange[600]!
-                          : Colors.green[600]!,
-                    ),
-                    minHeight: 8,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: 24),
-          
           // Lista de documentos
-          ..._documentos.map((doc) => _buildDocumentoCard(doc)).toList(),
+          ..._documentos.map<Widget>((doc) => _buildDocumentoCard(doc)).toList(),
         ],
       ),
     );
   }
 
-  Widget _buildActividadTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Métricas principales
-          Row(
-            children: [
-              Expanded(
-                child: _buildMetricCard(
-                  titulo: 'Material Total',
-                  valor: '${(_metricas['materialesRecibidos'] / 1000).toStringAsFixed(1)} ton',
-                  icono: Icons.scale_outlined,
-                  color: widget.primaryColor,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildMetricCard(
-                  titulo: 'Operaciones',
-                  valor: _metricas['operacionesCompletadas'].toString(),
-                  icono: Icons.check_circle_outline,
-                  color: BioWayColors.success,
-                ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 24),
-          
-          // Actividad reciente
-          Text(
-            'Actividad Reciente',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: BioWayColors.darkGrey,
-            ),
-          ),
-          const SizedBox(height: 16),
-          
-          // Placeholder para historial
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey[300]!),
-            ),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.history,
-                  size: 48,
-                  color: Colors.grey[400],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Historial de Actividades',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Aquí se mostrará el historial completo de operaciones',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[500],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildStatusCard() {
-    final bool tieneRFC = _informacionUsuario['rfc'] != null && _informacionUsuario['rfc'].isNotEmpty;
-    
-    if (tieneRFC) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              BioWayColors.success.withOpacity(0.1),
-              BioWayColors.success.withOpacity(0.05),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: BioWayColors.success.withOpacity(0.3),
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: BioWayColors.success.withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.verified,
-                color: BioWayColors.success,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Cuenta Verificada',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: BioWayColors.darkGreen,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Tu información fiscal está completa',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: BioWayColors.success,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.orange.withOpacity(0.1),
-            Colors.orange.withOpacity(0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.orange.withOpacity(0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.warning_amber_rounded,
-              color: Colors.orange[700],
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'RFC Pendiente',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.orange[800],
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Completa tu información fiscal antes del 30 de marzo',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.orange[700],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildInfoSection({
     required String titulo,
@@ -1014,7 +709,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: materiales.map((material) {
+          children: materiales.map<Widget>((material) {
             final color = _getMaterialColor(material);
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -1130,7 +825,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
                       Text(
                         isSubido && doc['fecha'] != null
                             ? 'Subido el ${doc['fecha']}'
-                            : 'Toca para subir documento',
+                            : 'Documento pendiente',
                         style: TextStyle(
                           fontSize: 13,
                           color: isSubido 
@@ -1150,7 +845,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    isSubido ? Icons.check : Icons.upload_file,
+                    isSubido ? Icons.visibility : Icons.assignment_late,
                     color: isSubido 
                         ? Colors.green[600]
                         : Colors.orange[600],
@@ -1227,6 +922,106 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
       return '${parts[2]}/${parts[1]}/${parts[0]}';
     } catch (e) {
       return date;
+    }
+  }
+
+  bool _shouldShowFab() {
+    return widget.iconCode == 'store' || widget.iconCode == 'recycling';
+  }
+
+  Widget? _buildFloatingActionButton() {
+    switch (widget.iconCode) {
+      case 'store':
+        return OrigenFloatingActionButton(
+          onPressed: () {
+            Navigator.pushNamed(context, '/origen_crear_lote');
+          },
+        );
+      case 'recycling':
+        return RecicladorFloatingActionButton(
+          onPressed: () {
+            Navigator.pushNamed(context, '/reciclador_escaneo');
+          },
+        );
+      default:
+        return null;
+    }
+  }
+
+  Widget _buildBottomNavigation() {
+    switch (widget.iconCode) {
+      case 'store':
+        return OrigenBottomNavigation(
+          selectedIndex: 3,
+          onItemTapped: (index) {
+            if (index == 3) return; // Ya estamos en perfil
+            
+            // Navegación a otras pantallas según el índice
+            switch (index) {
+              case 0:
+                Navigator.pushReplacementNamed(context, '/origen_inicio');
+                break;
+              case 1:
+                Navigator.pushReplacementNamed(context, '/origen_lotes');
+                break;
+              case 2:
+                Navigator.pushReplacementNamed(context, '/origen_ayuda');
+                break;
+            }
+          },
+          onFabPressed: () {
+            Navigator.pushNamed(context, '/origen_crear_lote');
+          },
+        );
+      
+      case 'recycling':
+        return RecicladorBottomNavigation(
+          selectedIndex: 3,
+          onItemTapped: (index) {
+            if (index == 3) return; // Ya estamos en perfil
+            
+            // Navegación a otras pantallas según el índice
+            switch (index) {
+              case 0:
+                Navigator.pushReplacementNamed(context, '/reciclador_inicio');
+                break;
+              case 1:
+                Navigator.pushReplacementNamed(context, '/reciclador_lotes');
+                break;
+              case 2:
+                Navigator.pushReplacementNamed(context, '/reciclador_ayuda');
+                break;
+            }
+          },
+          onFabPressed: () {
+            Navigator.pushNamed(context, '/reciclador_escaneo');
+          },
+        );
+      
+      case 'local_shipping':
+        return TransporteBottomNavigation(
+          selectedIndex: 3,
+          onItemTapped: (index) {
+            if (index == 3) return; // Ya estamos en perfil
+            
+            // Navegación a otras pantallas según el índice
+            switch (index) {
+              case 0:
+                Navigator.pushReplacementNamed(context, '/transporte_inicio');
+                break;
+              case 1:
+                Navigator.pushReplacementNamed(context, '/transporte_entregar');
+                break;
+              case 2:
+                Navigator.pushReplacementNamed(context, '/transporte_ayuda');
+                break;
+            }
+          },
+        );
+      
+      default:
+        // Fallback para otros tipos de usuario
+        return Container();
     }
   }
 }

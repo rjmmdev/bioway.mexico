@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import 'ecoce_tipo_proveedor_selector.dart';
 import '../../ecoce/reciclador/reciclador_inicio.dart';
+import '../../ecoce/reciclador/reciclador_perfil.dart';
 // TEMPORAL: Importar pantalla de inicio de origen
 import '../../ecoce/origen/origen_inicio_screen.dart';
+import '../../ecoce/origen/origen_perfil.dart';
 import '../../ecoce/transporte/transporte_perfil_screen.dart';
 
 class ECOCELoginScreen extends StatefulWidget {
@@ -233,10 +235,10 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
 
     switch (userType.toLowerCase()) {
       case 'reciclador':
-        targetScreen = const RecicladorHomeScreen();
+        targetScreen = const RecicladorPerfilScreen();
         break;
       case 'acopiador':
-        targetScreen = const OrigenInicioScreen();
+        targetScreen = const OrigenPerfilScreen();
         break;
       case 'planta de separación':
         targetScreen = const OrigenInicioScreen(); // TEMPORAL
