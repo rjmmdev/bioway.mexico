@@ -3,15 +3,17 @@ import '../../../utils/colors.dart';
 import '../../../utils/optimized_navigation.dart';
 import '../shared/placeholder_ayuda_screen.dart';
 import 'widgets/origen_bottom_navigation.dart';
+import 'origen_config.dart';
 
 class OrigenAyudaScreen extends StatelessWidget {
   const OrigenAyudaScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final config = OrigenUserConfig.current;
     return PlaceholderAyudaScreen(
-      tipoUsuario: 'Centro de Acopio',
-      primaryColor: BioWayColors.ecoceGreen,
+      tipoUsuario: config.tipoUsuario,
+      primaryColor: config.color,
       bottomNavigation: OrigenBottomNavigation(
         selectedIndex: 2,
         onItemTapped: (index) {

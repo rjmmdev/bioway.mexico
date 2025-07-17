@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../utils/colors.dart';
+import '../origen_config.dart';
 
 class OrigenBottomNavigation extends StatelessWidget {
   final int selectedIndex;
@@ -69,7 +70,7 @@ class OrigenBottomNavigation extends StatelessWidget {
             children: [
               Icon(
                 isSelected ? activeIcon : icon,
-                color: isSelected ? BioWayColors.ecoceGreen : Colors.grey,
+                color: isSelected ? OrigenUserConfig.current.color : Colors.grey,
                 size: 24,
               ),
               const SizedBox(height: 4),
@@ -77,7 +78,7 @@ class OrigenBottomNavigation extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontSize: 11,
-                  color: isSelected ? BioWayColors.ecoceGreen : Colors.grey,
+                  color: isSelected ? OrigenUserConfig.current.color : Colors.grey,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
@@ -106,13 +107,13 @@ class OrigenFloatingActionButton extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            BioWayColors.ecoceGreen,
-            BioWayColors.ecoceGreen.withOpacity(0.8),
+            OrigenUserConfig.current.color,
+            OrigenUserConfig.current.color.withOpacity(0.8),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: BioWayColors.ecoceGreen.withOpacity(0.3),
+            color: OrigenUserConfig.current.color.withOpacity(0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
