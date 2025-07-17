@@ -35,7 +35,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
       'id': 'L001',
       'fecha': '14/07/2025',
       'peso': 125.5,
-      'material': 'PET',
+      'material': 'PEBD',
       'origen': 'Acopiador Norte',
       'presentacion': 'Pacas',
       'estado': 'salida', // Requiere formulario de salida
@@ -44,7 +44,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
       'id': 'L002',
       'fecha': '14/07/2025',
       'peso': 89.3,
-      'material': 'HDPE',
+      'material': 'PP',
       'origen': 'Planta Separación Sur',
       'presentacion': 'Sacos',
       'estado': 'documentacion', // Requiere documentación
@@ -53,7 +53,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
       'id': 'L003',
       'fecha': '13/07/2025',
       'peso': 200.8,
-      'material': 'PP',
+      'material': 'Multilaminado',
       'origen': 'Acopiador Centro',
       'presentacion': 'Pacas',
       'estado': 'finalizado', // Completado
@@ -62,7 +62,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
       'id': 'L004',
       'fecha': '13/07/2025',
       'peso': 156.2,
-      'material': 'PET',
+      'material': 'PEBD',
       'origen': 'Planta Separación Este',
       'presentacion': 'Sacos',
       'estado': 'salida', // Requiere formulario de salida
@@ -844,6 +844,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                           actionButtonText: _getActionButtonText(lote['estado']),
                           actionButtonColor: _getActionButtonColor(lote['estado']),
                           onActionPressed: () => _handleLoteTap(lote),
+                          showActions: true, // Mostrar flecha lateral
                         );
                       }),
                       

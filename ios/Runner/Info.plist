@@ -49,5 +49,7 @@
 	<string>Esta aplicación necesita acceso a la cámara para tomar fotografías de evidencia.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Esta aplicación necesita acceso a la galería para seleccionar imágenes de evidencia.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Esta aplicación necesita permiso para guardar códigos QR en tu galería de fotos.</string>
 </dict>
 </plist>

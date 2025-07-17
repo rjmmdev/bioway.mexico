@@ -4,9 +4,10 @@ import '../../../utils/colors.dart';
 import 'ecoce_tipo_proveedor_selector.dart';
 import '../../ecoce/reciclador/reciclador_inicio.dart';
 import '../../ecoce/reciclador/reciclador_perfil.dart';
-// TEMPORAL: Importar pantalla de inicio de origen
+// TEMPORAL: Importar pantallas de inicio
 import '../../ecoce/origen/origen_inicio_screen.dart';
 import '../../ecoce/origen/origen_perfil.dart';
+import '../../ecoce/transporte/transporte_inicio_screen.dart';
 import '../../ecoce/transporte/transporte_perfil_screen.dart';
 
 class ECOCELoginScreen extends StatefulWidget {
@@ -235,10 +236,10 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
 
     switch (userType.toLowerCase()) {
       case 'reciclador':
-        targetScreen = const RecicladorPerfilScreen();
+        targetScreen = const RecicladorHomeScreen();
         break;
       case 'acopiador':
-        targetScreen = const OrigenPerfilScreen();
+        targetScreen = const OrigenInicioScreen();
         break;
       case 'planta de separación':
         targetScreen = const OrigenInicioScreen(); // TEMPORAL
@@ -247,7 +248,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         targetScreen = const OrigenInicioScreen(); // TEMPORAL
         break;
       case 'transportista':
-        targetScreen = const TransportePerfilScreen();
+        targetScreen = const TransporteInicioScreen();
         break;
       case 'laboratorio':
         targetScreen = const OrigenInicioScreen(); // TEMPORAL

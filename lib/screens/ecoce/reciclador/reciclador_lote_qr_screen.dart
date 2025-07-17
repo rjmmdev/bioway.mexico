@@ -135,15 +135,12 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
 
   Color _getMaterialColor(String material) {
     switch (material) {
-      case 'PET':
-        return BioWayColors.petBlue;
-      case 'HDPE':
-        return BioWayColors.hdpeGreen;
+      case 'PEBD':
+        return BioWayColors.pebdPink;
       case 'PP':
-        return BioWayColors.ppOrange;
-      case 'Multi':
+        return BioWayColors.ppPurple;
       case 'Multilaminado':
-        return BioWayColors.otherPurple;
+        return BioWayColors.multilaminadoBrown;
       default:
         return BioWayColors.ecoceGreen;
     }
@@ -151,13 +148,10 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
 
   IconData _getMaterialIcon(String material) {
     switch (material) {
-      case 'PET':
-        return Icons.local_drink;
-      case 'HDPE':
-        return Icons.cleaning_services;
+      case 'PEBD':
+        return Icons.shopping_bag;
       case 'PP':
         return Icons.kitchen;
-      case 'Multi':
       case 'Multilaminado':
         return Icons.layers;
       default:

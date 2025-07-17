@@ -65,7 +65,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
     // Lotes pendientes de salida
     Lote(
       id: 'L001',
-      material: 'PET',
+      material: 'PEBD',
       peso: 125.5,
       presentacion: 'Pacas',
       fechaCreacion: DateTime.now().subtract(const Duration(days: 2)),
@@ -86,7 +86,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
     // Lotes pendientes de documentación
     Lote(
       id: 'L003',
-      material: 'PET',
+      material: 'PEBD',
       peso: 200.8,
       presentacion: 'Pacas',
       fechaCreacion: DateTime.now().subtract(const Duration(days: 5)),
@@ -97,7 +97,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
     ),
     Lote(
       id: 'L004',
-      material: 'Multi',
+      material: 'Multilaminado',
       peso: 156.2,
       presentacion: 'Sacos',
       fechaCreacion: DateTime.now().subtract(const Duration(days: 4)),
@@ -109,7 +109,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
     // Lotes finalizados
     Lote(
       id: 'L005',
-      material: 'PET',
+      material: 'PEBD',
       peso: 180.5,
       presentacion: 'Pacas',
       fechaCreacion: DateTime.now().subtract(const Duration(days: 10)),
@@ -359,7 +359,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: ['Todos', 'PET', 'PP', 'Multi'].map((material) {
+                  children: ['Todos', 'PEBD', 'PP', 'Multilaminado'].map((material) {
                     final isSelected = _selectedMaterial == material;
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
@@ -519,6 +519,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                       actionButtonText: _getActionButtonText(lote.estado),
                       actionButtonColor: _getActionButtonColor(lote.estado),
                       onActionPressed: () => _onLoteTap(lote),
+                      showActions: true, // Mostrar flecha lateral
                     );
                   },
                 ),

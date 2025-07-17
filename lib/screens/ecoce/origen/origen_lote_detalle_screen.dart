@@ -122,13 +122,11 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
   Color _getMaterialColor(String material) {
     switch (material) {
       case 'PEBD':
-      case 'Poli':
-        return const Color(0xFF2196F3);
+        return BioWayColors.pebdPink;
       case 'PP':
-        return const Color(0xFF9C27B0);
+        return BioWayColors.ppPurple;
       case 'Multilaminado':
-      case 'Multi':
-        return const Color(0xFFFF6B35);
+        return BioWayColors.multilaminadoBrown;
       default:
         return Colors.grey;
     }

@@ -8,12 +8,14 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:printing/printing.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:flutter/services.dart';
+import 'package:gal/gal.dart';
 import '../../../../utils/colors.dart';
 
 /// Widget compartido para mostrar códigos QR con información de lotes
@@ -151,14 +153,27 @@ class _QRCodeDisplayWidgetState extends State<QRCodeDisplayWidget> {
       // Verificar y solicitar permisos primero
       await _solicitarPermisos();
       
-      // Debug: Mostrar mensaje de inicio
+      // Mostrar mensaje de progreso
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('📱 Guardando en Downloads...'),
+            content: const Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text('Guardando en galería...'),
+              ],
+            ),
             backgroundColor: BioWayColors.info,
             behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 1),
+            duration: const Duration(seconds: 2),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
@@ -166,178 +181,90 @@ class _QRCodeDisplayWidgetState extends State<QRCodeDisplayWidget> {
         );
       }
       
-      bool success = false;
-      String? filePath;
+      // Guardar la imagen temporalmente primero
+      final tempDir = await getTemporaryDirectory();
+      final fileName = 'QR_${widget.loteId}_${DateTime.now().millisecondsSinceEpoch}.png';
+      final tempFile = File('${tempDir.path}/$fileName');
+      await tempFile.writeAsBytes(image);
       
-      if (Platform.isAndroid) {
-        // Para Android: guardar en Downloads usando archivo directo
-        success = await _guardarEnDownloadsAndroid(image);
-        if (success) {
-          filePath = '/storage/emulated/0/Download/QR_${widget.loteId}_${DateTime.now().millisecondsSinceEpoch}.png';
-        }
-      } else {
-        // Para iOS: guardar en documentos
-        success = await _guardarEnDocumentosIOS(image);
+      // Usar Gal para guardar directamente en la galería
+      await Gal.putImage(tempFile.path, album: 'BioWay México');
+      
+      print('✅ DEBUG - Imagen guardada en galería exitosamente');
+      
+      // Eliminar archivo temporal
+      if (await tempFile.exists()) {
+        await tempFile.delete();
       }
       
-      if (success) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('✅ QR guardado exitosamente'),
-                  Text(
-                    Platform.isAndroid 
-                      ? 'Guardado en Downloads del dispositivo'
-                      : 'Guardado en archivos de la app',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                ],
-              ),
-              backgroundColor: BioWayColors.success,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              duration: const Duration(seconds: 4),
-              action: SnackBarAction(
-                label: 'Abrir',
-                textColor: Colors.white,
-                onPressed: () async {
-                  if (Platform.isAndroid) {
-                    // Intentar abrir el administrador de archivos en Downloads
-                    try {
-                      const platform = MethodChannel('com.biowaymexico.app/file_manager');
-                      await platform.invokeMethod('openDownloads');
-                    } catch (e) {
-                      print('No se pudo abrir Downloads: $e');
-                      // Fallback: mostrar instrucciones
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('Abre tu app de Archivos > Downloads'),
-                            backgroundColor: BioWayColors.info,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        );
-                      }
-                    }
-                  }
-                },
-              ),
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white, size: 20),
+                    SizedBox(width: 8),
+                    Text('QR guardado en galería'),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  Platform.isAndroid 
+                    ? 'Guardado en el álbum "BioWay México"'
+                    : 'Guardado en tu app Fotos',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
             ),
-          );
-        }
-      } else {
-        // Si falla, usar método alternativo
-        throw Exception('No se pudo guardar en el sistema de archivos');
+            backgroundColor: BioWayColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Abrir Galería',
+              textColor: Colors.white,
+              onPressed: () async {
+                try {
+                  await Gal.open();
+                } catch (e) {
+                  print('No se pudo abrir la galería: $e');
+                }
+              },
+            ),
+          ),
+        );
       }
     } catch (e) {
-      print('❌ DEBUG - Exception en _guardarDirectamente: $e');
+      print('❌ DEBUG - Error al guardar: $e');
       // Si hay error, intentar método alternativo
-      try {
-        await _guardarConMetodoAlternativo(image);
-      } catch (e2) {
-        throw Exception('Error al guardar: ${e2.toString().replaceAll('Exception: ', '')}');
-      }
+      await _guardarConMetodoAlternativo(image);
     }
   }
   
-  Future<bool> _guardarEnDownloadsAndroid(Uint8List image) async {
-    try {
-      // Crear nombre del archivo
-      final fileName = 'QR_${widget.loteId}_${DateTime.now().millisecondsSinceEpoch}.png';
-      
-      // Intentar guardar directamente en Downloads
-      final downloadsDir = Directory('/storage/emulated/0/Download');
-      if (await downloadsDir.exists()) {
-        final file = File('${downloadsDir.path}/$fileName');
-        await file.writeAsBytes(image);
-        print('✅ DEBUG - Archivo guardado en: ${file.path}');
-        return true;
-      } else {
-        // Fallback a directorio externo de la aplicación
-        final appDir = await getExternalStorageDirectory();
-        if (appDir != null) {
-          final file = File('${appDir.path}/$fileName');
-          await file.writeAsBytes(image);
-          print('✅ DEBUG - Archivo guardado en directorio de app: ${file.path}');
-          return true;
-        }
-      }
-      return false;
-    } catch (e) {
-      print('❌ DEBUG - Error guardando en Android: $e');
-      return false;
-    }
-  }
-  
-  Future<bool> _guardarEnDocumentosIOS(Uint8List image) async {
-    try {
-      final documentsDir = await getApplicationDocumentsDirectory();
-      final fileName = 'QR_${widget.loteId}_${DateTime.now().millisecondsSinceEpoch}.png';
-      final file = File('${documentsDir.path}/$fileName');
-      await file.writeAsBytes(image);
-      print('✅ DEBUG - Archivo guardado en iOS: ${file.path}');
-      return true;
-    } catch (e) {
-      print('❌ DEBUG - Error guardando en iOS: $e');
-      return false;
-    }
-  }
   
   
   Future<void> _solicitarPermisos() async {
-    if (Platform.isAndroid) {
-      print('🔍 DEBUG - Solicitando permisos para Android...');
+    // Verificar si Gal tiene acceso
+    final hasAccess = await Gal.hasAccess();
+    print('🔍 DEBUG - Gal hasAccess: $hasAccess');
+    
+    if (!hasAccess) {
+      // Solicitar acceso
+      final granted = await Gal.requestAccess();
+      print('🔍 DEBUG - Gal requestAccess result: $granted');
       
-      // Verificar versión del SDK primero
-      final androidInfo = await Permission.storage.status;
-      print('🔍 DEBUG - Storage permission status: $androidInfo');
-      
-      // Para todas las versiones de Android, intentar storage primero
-      final storageStatus = await Permission.storage.request();
-      print('🔍 DEBUG - Storage permission después de request: $storageStatus');
-      
-      if (storageStatus.isPermanentlyDenied) {
-        throw Exception('Permiso de almacenamiento denegado permanentemente. Ve a Configuración -> Aplicaciones -> ${await _getAppName()} -> Permisos');
-      }
-      
-      if (storageStatus.isDenied) {
-        throw Exception('Permiso de almacenamiento denegado');
-      }
-      
-      // Para Android 13+ (API 33+) también necesitamos permisos específicos de media
-      final photosStatus = await Permission.photos.status;
-      print('🔍 DEBUG - Photos permission status: $photosStatus');
-      
-      if (photosStatus.isDenied) {
-        final newPhotosStatus = await Permission.photos.request();
-        print('🔍 DEBUG - Photos permission después de request: $newPhotosStatus');
-        
-        if (newPhotosStatus.isPermanentlyDenied) {
-          print('⚠️ DEBUG - Photos permission permanently denied, but continuing...');
-          // No fallar aquí, ya que storage permission puede ser suficiente
-        }
-      }
-      
-      print('✅ DEBUG - Permisos de Android verificados');
-    } else {
-      // iOS - solicitar permiso de fotos
-      print('🔍 DEBUG - Solicitando permisos para iOS...');
-      final photosStatus = await Permission.photos.request();
-      print('🔍 DEBUG - iOS Photos permission: $photosStatus');
-      
-      if (photosStatus.isDenied) {
-        throw Exception('Permiso para acceder a fotos denegado');
+      if (!granted) {
+        throw Exception('Se requiere permiso para guardar imágenes en la galería');
       }
     }
+    
+    print('✅ DEBUG - Permisos de galería verificados');
   }
   
   Future<String> _getAppName() async {
@@ -640,18 +567,12 @@ Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pes
 
   Color _getMaterialColor(String material) {
     switch (material) {
-      case 'PET':
-        return BioWayColors.petBlue;
-      case 'HDPE':
-        return BioWayColors.hdpeGreen;
-      case 'PP':
-        return BioWayColors.ppOrange;
       case 'PEBD':
-      case 'Poli':
-        return const Color(0xFF2196F3);
-      case 'Multi':
+        return BioWayColors.pebdPink;
+      case 'PP':
+        return BioWayColors.ppPurple;
       case 'Multilaminado':
-        return BioWayColors.otherPurple;
+        return BioWayColors.multilaminadoBrown;
       default:
         return Colors.grey;
     }
@@ -659,16 +580,10 @@ Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pes
 
   IconData _getMaterialIcon(String material) {
     switch (material) {
-      case 'PET':
-        return Icons.local_drink;
-      case 'HDPE':
-        return Icons.cleaning_services;
+      case 'PEBD':
+        return Icons.shopping_bag;
       case 'PP':
         return Icons.kitchen;
-      case 'PEBD':
-      case 'Poli':
-        return Icons.shopping_bag;
-      case 'Multi':
       case 'Multilaminado':
         return Icons.layers;
       default:

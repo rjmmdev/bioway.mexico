@@ -21,6 +21,8 @@ class DocumentUploadWidget extends StatefulWidget {
   final String? additionalInfoText;
   final List<String> allowedExtensions;
   final bool showCounter;
+  final int minDocuments;
+  final int maxDocuments;
 
   const DocumentUploadWidget({
     super.key,
@@ -37,6 +39,8 @@ class DocumentUploadWidget extends StatefulWidget {
     this.additionalInfoText,
     this.allowedExtensions = const ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png'],
     this.showCounter = true,
+    this.minDocuments = 1,
+    this.maxDocuments = 99,
   });
 
   @override
@@ -48,6 +52,12 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
   bool _isUploading = false;
 
   Future<void> _pickDocuments() async {
+    // Verificar si ya se alcanzó el límite máximo
+    if (_uploadedDocuments.length >= widget.maxDocuments) {
+      _showErrorSnackBar('Límite máximo de ${widget.maxDocuments} documentos alcanzado');
+      return;
+    }
+    
     try {
       final documentPickerService = DocumentPickerService();
       final result = await documentPickerService.pickDocument();
@@ -87,9 +97,9 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
   }
 
   void _submitDocumentation() {
-    if (_uploadedDocuments.length < widget.requiredDocuments.length) {
+    if (_uploadedDocuments.length < widget.minDocuments) {
       _showErrorSnackBar(
-        'Por favor carga al menos ${widget.requiredDocuments.length} documentos (${widget.requiredDocuments.join(", ")})'
+        'Por favor carga al menos ${widget.minDocuments} documento${widget.minDocuments > 1 ? 's' : ''}'
       );
       return;
     }
@@ -423,11 +433,11 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '${_uploadedDocuments.length} / ${widget.requiredDocuments.length}',
+                    '${_uploadedDocuments.length} / ${widget.maxDocuments == 99 ? widget.requiredDocuments.length : widget.maxDocuments}',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: _uploadedDocuments.length >= widget.requiredDocuments.length
+                      color: _uploadedDocuments.length >= widget.minDocuments
                           ? BioWayColors.success
                           : BioWayColors.warning,
                     ),
@@ -439,7 +449,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
           
           // Botón para cargar documentos
           InkWell(
-            onTap: _pickDocuments,
+            onTap: _uploadedDocuments.length >= widget.maxDocuments ? null : _pickDocuments,
             borderRadius: BorderRadius.circular(12),
             child: Container(
               padding: const EdgeInsets.all(20),
@@ -456,16 +466,22 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                   children: [
                     Icon(
                       Icons.cloud_upload_outlined,
-                      color: widget.primaryColor,
+                      color: _uploadedDocuments.length >= widget.maxDocuments 
+                          ? Colors.grey 
+                          : widget.primaryColor,
                       size: 48,
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Cargar Documento',
+                      _uploadedDocuments.length >= widget.maxDocuments 
+                          ? 'Límite alcanzado'
+                          : 'Cargar Documento',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: widget.primaryColor,
+                        color: _uploadedDocuments.length >= widget.maxDocuments 
+                            ? Colors.grey 
+                            : widget.primaryColor,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -672,6 +688,8 @@ class SharedDocumentUploadScreen extends StatelessWidget {
   final String loadingText;
   final String successTitle;
   final String? additionalInfoText;
+  final int minDocuments;
+  final int maxDocuments;
 
   const SharedDocumentUploadScreen({
     super.key,
@@ -686,6 +704,8 @@ class SharedDocumentUploadScreen extends StatelessWidget {
     this.loadingText = 'Procesando documentos...',
     this.successTitle = 'Documentación Completada',
     this.additionalInfoText,
+    this.minDocuments = 1,
+    this.maxDocuments = 99,
   });
 
   @override
@@ -702,6 +722,8 @@ class SharedDocumentUploadScreen extends StatelessWidget {
       loadingText: loadingText,
       successTitle: successTitle,
       additionalInfoText: additionalInfoText,
+      minDocuments: minDocuments,
+      maxDocuments: maxDocuments,
     );
   }
 }
