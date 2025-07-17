@@ -229,7 +229,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
             // Header moderno con gradiente
             SliverToBoxAdapter(
               child: Container(
-                height: 260,
+                height: 240,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -269,7 +269,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                     ),
                     // Contenido
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -312,7 +312,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 8),
                           // Nombre del centro
                           Text(
                             _nombreCentro,
@@ -324,7 +324,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                             overflow: TextOverflow.ellipsis,
                             maxLines: 2,
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 4),
                           // Badge con tipo y folio
                           Row(
                             children: [
@@ -378,14 +378,14 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 10),
                           // Estadísticas modernas con diseño card
                           Row(
                             children: [
                               // Card de Lotes
                               Expanded(
                                 child: Container(
-                                  height: 80,
+                                  height: 65,
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       begin: Alignment.topLeft,
@@ -405,7 +405,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                     ],
                                   ),
                                   child: Padding(
-                                    padding: const EdgeInsets.all(14),
+                                    padding: const EdgeInsets.all(12),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       mainAxisAlignment: MainAxisAlignment.center,
@@ -413,20 +413,20 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                         Text(
                                           _lotesCreados.toString(),
                                           style: const TextStyle(
-                                            fontSize: 18,
+                                            fontSize: 16,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.black87,
-                                            height: 1.1,
+                                            height: 1,
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                        const SizedBox(height: 2),
+                                        const SizedBox(height: 1),
                                         Text(
                                           'Lotes creados',
                                           style: TextStyle(
                                             fontSize: 10,
                                             color: Colors.grey[600],
-                                            height: 1.1,
+                                            height: 1,
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -439,7 +439,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               // Card de Material
                               Expanded(
                                 child: Container(
-                                  height: 80,
+                                  height: 65,
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       begin: Alignment.topLeft,
@@ -459,7 +459,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                     ],
                                   ),
                                   child: Padding(
-                                    padding: const EdgeInsets.all(14),
+                                    padding: const EdgeInsets.all(12),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       mainAxisAlignment: MainAxisAlignment.center,
@@ -472,33 +472,33 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                               child: Text(
                                                 '$_materialProcesado',
                                                 style: const TextStyle(
-                                                  fontSize: 18,
+                                                  fontSize: 16,
                                                   fontWeight: FontWeight.bold,
                                                   color: Colors.black87,
-                                                  height: 1.1,
+                                                  height: 1,
                                                 ),
                                                 overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
-                                            const SizedBox(width: 4),
+                                            const SizedBox(width: 3),
                                             const Text(
                                               'ton',
                                               style: TextStyle(
-                                                fontSize: 12,
+                                                fontSize: 11,
                                                 fontWeight: FontWeight.w600,
                                                 color: Colors.green,
-                                                height: 1.1,
+                                                height: 1,
                                               ),
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 2),
+                                        const SizedBox(height: 1),
                                         Text(
                                           'Material procesado',
                                           style: TextStyle(
                                             fontSize: 10,
                                             color: Colors.grey[600],
-                                            height: 1.1,
+                                            height: 1,
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
