@@ -4,6 +4,7 @@ import 'dart:io';
 import '../../../utils/colors.dart';
 import '../../../services/image_service.dart';
 import '../reciclador/widgets/image_preview.dart';
+import '../shared/widgets/signature_dialog.dart';
 
 class TransporteRecogerScreen extends StatefulWidget {
   final List<Map<String, dynamic>> lotesSeleccionados;
@@ -60,118 +61,17 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
   }
 
   void _showSignatureDialog() {
-    List<Offset?> tempSignaturePoints = List.from(_signaturePoints);
-
-    showDialog(
+    SignatureDialog.show(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Firma del Responsable'),
-              content: Container(
-                width: MediaQuery.of(context).size.width * 0.9,
-                height: 300,
-                decoration: BoxDecoration(
-                  border: Border.all(color: BioWayColors.lightGrey),
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.grey[50],
-                ),
-                child: Stack(
-                  children: [
-                    GestureDetector(
-                      onPanUpdate: (details) {
-                        setDialogState(() {
-                          RenderBox renderBox = context.findRenderObject() as RenderBox;
-                          tempSignaturePoints.add(
-                            renderBox.globalToLocal(details.globalPosition),
-                          );
-                        });
-                      },
-                      onPanEnd: (details) {
-                        tempSignaturePoints.add(null);
-                      },
-                      child: CustomPaint(
-                        painter: SignaturePainter(tempSignaturePoints),
-                        size: Size.infinite,
-                      ),
-                    ),
-                    if (tempSignaturePoints.isEmpty)
-                      Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.draw,
-                              size: 48,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Dibuja tu firma aquí',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    setDialogState(() {
-                      tempSignaturePoints.clear();
-                    });
-                  },
-                  child: Text(
-                    'Limpiar',
-                    style: TextStyle(color: BioWayColors.error),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text(
-                    'Cancelar',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: tempSignaturePoints.isNotEmpty
-                      ? () {
-                          setState(() {
-                            _signaturePoints = List.from(tempSignaturePoints);
-                            _hasSignature = true;
-                          });
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text('Firma guardada correctamente'),
-                              backgroundColor: BioWayColors.success,
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          );
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: BioWayColors.deepBlue,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Guardar'),
-                ),
-              ],
-            );
-          },
-        );
+      title: 'Firma del Responsable',
+      initialSignature: _signaturePoints,
+      onSignatureSaved: (points) {
+        setState(() {
+          _signaturePoints = List.from(points);
+          _hasSignature = points.isNotEmpty;
+        });
       },
+      primaryColor: BioWayColors.deepBlue,
     );
   }
 
@@ -888,28 +788,4 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
-}
-
-// Painter para la firma
-class SignaturePainter extends CustomPainter {
-  final List<Offset?> points;
-
-  SignaturePainter(this.points);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black87
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round;
-
-    for (int i = 0; i < points.length - 1; i++) {
-      if (points[i] != null && points[i + 1] != null) {
-        canvas.drawLine(points[i]!, points[i + 1]!, paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(SignaturePainter oldDelegate) => true;
 }
