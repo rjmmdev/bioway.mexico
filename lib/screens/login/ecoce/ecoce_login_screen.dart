@@ -5,6 +5,7 @@ import '../../../utils/colors.dart';
 import 'ecoce_tipo_proveedor_selector.dart';
 import '../../ecoce/reciclador/reciclador_inicio.dart';
 import '../../ecoce/reciclador/reciclador_perfil.dart';
+import '../../ecoce/origen/origen_config.dart';
 // TEMPORAL: Importar pantallas de inicio
 import '../../ecoce/origen/origen_inicio_screen.dart';
 import '../../ecoce/origen/origen_perfil.dart';
@@ -240,10 +241,12 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         targetScreen = const RecicladorHomeScreen();
         break;
       case 'acopiador':
+        OrigenUserConfig.current = OrigenUserConfig.acopiador;
         targetScreen = const OrigenInicioScreen();
         break;
       case 'planta de separación':
-        targetScreen = const OrigenInicioScreen(); // TEMPORAL
+        OrigenUserConfig.current = OrigenUserConfig.planta;
+        targetScreen = const OrigenInicioScreen();
         break;
       case 'transformador':
         targetScreen = const OrigenInicioScreen(); // TEMPORAL

@@ -8,6 +8,7 @@ import 'origen_ayuda.dart';
 import 'origen_perfil.dart';
 import '../shared/widgets/lote_card.dart';
 import 'widgets/origen_bottom_navigation.dart';
+import 'origen_config.dart';
 
 class OrigenLotesScreen extends StatefulWidget {
   const OrigenLotesScreen({super.key});
@@ -19,6 +20,8 @@ class OrigenLotesScreen extends StatefulWidget {
 class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
   // Índice para la navegación del bottom bar
   int _selectedIndex = 1; // Lotes está seleccionado
+
+  Color get _primaryColor => OrigenUserConfig.current.color;
 
   // Filtros
   String _filtroMaterial = 'Todos';
@@ -251,7 +254,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                         // Botón de filtros
                         Container(
                           decoration: BoxDecoration(
-                            color: BioWayColors.ecoceGreen.withOpacity(0.1),
+                            color: _primaryColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: IconButton(
@@ -259,7 +262,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                               children: [
                                 Icon(
                                   Icons.filter_list,
-                                  color: BioWayColors.ecoceGreen,
+                                  color: _primaryColor,
                                 ),
                                 if (_filtroMaterial != 'Todos' || _filtroPresentacion != 'Todas')
                                   Positioned(
@@ -515,14 +518,14 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                             _filtroMaterial = material;
                           });
                         },
-                        selectedColor: BioWayColors.ecoceGreen,
+                        selectedColor: _primaryColor,
                         backgroundColor: Colors.grey[100],
                         labelStyle: TextStyle(
                           color: isSelected ? Colors.white : Colors.black87,
                           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                         ),
                         side: BorderSide(
-                          color: isSelected ? BioWayColors.ecoceGreen : Colors.transparent,
+                          color: isSelected ? _primaryColor : Colors.transparent,
                         ),
                       );
                     }).toList(),
@@ -561,14 +564,14 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                             _filtroPresentacion = presentacion;
                           });
                         },
-                        selectedColor: BioWayColors.ecoceGreen,
+                        selectedColor: _primaryColor,
                         backgroundColor: Colors.grey[100],
                         labelStyle: TextStyle(
                           color: isSelected ? Colors.white : Colors.black87,
                           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                         ),
                         side: BorderSide(
-                          color: isSelected ? BioWayColors.ecoceGreen : Colors.transparent,
+                          color: isSelected ? _primaryColor : Colors.transparent,
                         ),
                       );
                     }).toList(),
@@ -587,7 +590,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                     Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: BioWayColors.ecoceGreen,
+                    backgroundColor: _primaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -625,7 +628,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: BioWayColors.ecoceGreen.withOpacity(0.05),
+                color: _primaryColor.withOpacity(0.05),
                 shape: BoxShape.circle,
               ),
               child: Stack(
@@ -634,7 +637,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                   Icon(
                     Icons.inventory_2_outlined,
                     size: 60,
-                    color: BioWayColors.ecoceGreen.withOpacity(0.3),
+                    color: _primaryColor.withOpacity(0.3),
                   ),
                   Positioned(
                     right: 25,
@@ -695,7 +698,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                   });
                 },
                 style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: BioWayColors.ecoceGreen),
+                  side: BorderSide(color: _primaryColor),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
                     vertical: 12,
@@ -707,7 +710,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                 child: Text(
                   'Limpiar búsqueda',
                   style: TextStyle(
-                    color: BioWayColors.ecoceGreen,
+                    color: _primaryColor,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -718,7 +721,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                 icon: const Icon(Icons.add_circle_outline),
                 label: const Text('Crear nuevo lote'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: BioWayColors.ecoceGreen,
+                  backgroundColor: _primaryColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,

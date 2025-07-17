@@ -9,6 +9,7 @@ import 'origen_perfil.dart';
 import 'origen_lote_detalle_screen.dart';
 import '../shared/widgets/lote_card.dart';
 import 'widgets/origen_bottom_navigation.dart';
+import 'origen_config.dart';
 
 class OrigenInicioScreen extends StatefulWidget {
   const OrigenInicioScreen({super.key});
@@ -21,9 +22,11 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
   // Índice para la navegación del bottom bar
   final int _selectedIndex = 0;
 
-  // Datos del centro de acopio (en producción vendrían de la base de datos)
-  final String _nombreCentro = "Centro de Acopio La Esperanza";
-  final String _folioCentro = "A0000001";
+  String get _nombreCentro => OrigenUserConfig.current.nombre;
+  String get _folioCentro => OrigenUserConfig.current.folio;
+  String get _tipoCentro => OrigenUserConfig.current.tipoUsuario;
+  Color get _primaryColor => OrigenUserConfig.current.color;
+
   final int _lotesCreados = 127;
   final double _materialProcesado = 4.5; // en toneladas
 
@@ -232,8 +235,8 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      BioWayColors.ecoceGreen,
-                      BioWayColors.ecoceGreen.withOpacity(0.8),
+                      _primaryColor,
+                      _primaryColor.withOpacity(0.8),
                     ],
                   ),
                 ),
@@ -340,15 +343,15 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                     Icon(
                                       Icons.store,
                                       size: 16,
-                                      color: BioWayColors.ecoceGreen,
+                                      color: _primaryColor,
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
-                                      'Centro de Acopio',
+                                      _tipoCentro,
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
-                                        color: BioWayColors.ecoceGreen,
+                                        color: _primaryColor,
                                       ),
                                     ),
                                   ],
@@ -621,14 +624,14 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [
-                                BioWayColors.ecoceGreen,
-                                BioWayColors.ecoceGreen.withOpacity(0.8),
+                                _primaryColor,
+                                _primaryColor.withOpacity(0.8),
                               ],
                             ),
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: BioWayColors.ecoceGreen.withOpacity(0.3),
+                                color: _primaryColor.withOpacity(0.3),
                                 blurRadius: 12,
                                 offset: const Offset(0, 6),
                               ),
@@ -716,7 +719,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                     'Ver todos',
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: BioWayColors.ecoceGreen,
+                                      color: _primaryColor,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -724,7 +727,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                   Icon(
                                     Icons.arrow_forward,
                                     size: 16,
-                                    color: BioWayColors.ecoceGreen,
+                                    color: _primaryColor,
                                   ),
                                 ],
                               ),
