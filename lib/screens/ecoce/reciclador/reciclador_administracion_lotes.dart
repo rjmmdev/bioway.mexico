@@ -6,6 +6,8 @@ import 'reciclador_escaneo.dart';
 import 'reciclador_formulario_salida.dart';
 import 'reciclador_documentacion.dart';
 import 'reciclador_lote_qr_screen.dart';
+import 'reciclador_ayuda.dart';
+import 'reciclador_perfil.dart';
 import 'widgets/reciclador_bottom_navigation.dart';
 import 'widgets/reciclador_lote_card.dart';
 
@@ -266,31 +268,15 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
         // Ya estamos en lotes
         break;
       case 2:
-        // TODO: Implementar pantalla de ayuda
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Pantalla de Ayuda en desarrollo'),
-            backgroundColor: BioWayColors.info,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            duration: const Duration(seconds: 1),
-          ),
+        NavigationHelper.navigateWithReplacement(
+          context: context,
+          destination: const RecicladorAyudaScreen(),
         );
         break;
       case 3:
-        // TODO: Implementar pantalla de perfil
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Pantalla de Perfil en desarrollo'),
-            backgroundColor: BioWayColors.info,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            duration: const Duration(seconds: 1),
-          ),
+        NavigationHelper.navigateWithReplacement(
+          context: context,
+          destination: const RecicladorPerfilScreen(),
         );
         break;
     }
