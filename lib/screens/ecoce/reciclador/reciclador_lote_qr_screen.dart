@@ -133,31 +133,6 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
     );
   }
 
-  Color _getMaterialColor(String material) {
-    switch (material) {
-      case 'PEBD':
-        return BioWayColors.pebdPink;
-      case 'PP':
-        return BioWayColors.ppPurple;
-      case 'Multilaminado':
-        return BioWayColors.multilaminadoBrown;
-      default:
-        return BioWayColors.ecoceGreen;
-    }
-  }
-
-  IconData _getMaterialIcon(String material) {
-    switch (material) {
-      case 'PEBD':
-        return Icons.shopping_bag;
-      case 'PP':
-        return Icons.kitchen;
-      case 'Multilaminado':
-        return Icons.layers;
-      default:
-        return Icons.recycling;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

@@ -6,7 +6,7 @@ import 'origen_lote_detalle_screen.dart';
 import 'origen_crear_lote_screen.dart';
 import 'origen_ayuda.dart';
 import 'origen_perfil.dart';
-import 'widgets/lote_card.dart';
+import '../shared/widgets/lote_card.dart';
 import 'widgets/origen_bottom_navigation.dart';
 
 class OrigenLotesScreen extends StatefulWidget {
