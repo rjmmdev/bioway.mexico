@@ -9,6 +9,7 @@ import 'widgets/transporte_bottom_navigation.dart';
 import 'transporte_inicio_screen.dart';
 import 'transporte_ayuda_screen.dart';
 import 'transporte_perfil_screen.dart';
+import '../shared/widgets/signature_dialog.dart';
 import '../reciclador/widgets/reciclador_bottom_navigation.dart';
 
 class TransporteEntregarScreen extends StatefulWidget {
@@ -193,108 +194,17 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
   }
 
   void _showSignatureDialog() {
-    List<Offset?> tempSignaturePoints = List.from(_signaturePoints);
-
-    showDialog(
+    SignatureDialog.show(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Firma del Receptor'),
-              content: Container(
-                width: MediaQuery.of(context).size.width * 0.9,
-                height: 300,
-                decoration: BoxDecoration(
-                  border: Border.all(color: BioWayColors.lightGrey),
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.grey[50],
-                ),
-                child: Stack(
-                  children: [
-                    GestureDetector(
-                      onPanUpdate: (details) {
-                        setDialogState(() {
-                          RenderBox renderBox = context.findRenderObject() as RenderBox;
-                          tempSignaturePoints.add(
-                            renderBox.globalToLocal(details.globalPosition),
-                          );
-                        });
-                      },
-                      onPanEnd: (details) {
-                        tempSignaturePoints.add(null);
-                      },
-                      child: CustomPaint(
-                        painter: SignaturePainter(tempSignaturePoints),
-                        size: Size.infinite,
-                      ),
-                    ),
-                    if (tempSignaturePoints.isEmpty)
-                      Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.draw,
-                              size: 48,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Dibuja tu firma aquí',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    setDialogState(() {
-                      tempSignaturePoints.clear();
-                    });
-                  },
-                  child: Text(
-                    'Limpiar',
-                    style: TextStyle(color: BioWayColors.error),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text(
-                    'Cancelar',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: tempSignaturePoints.isNotEmpty
-                      ? () {
-                          setState(() {
-                            _signaturePoints = List.from(tempSignaturePoints);
-                            _hasSignature = true;
-                          });
-                          Navigator.of(context).pop();
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: BioWayColors.deepBlue,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Guardar'),
-                ),
-              ],
-            );
-          },
-        );
+      title: 'Firma del Receptor',
+      initialSignature: _signaturePoints,
+      onSignatureSaved: (points) {
+        setState(() {
+          _signaturePoints = List.from(points);
+          _hasSignature = points.isNotEmpty;
+        });
       },
+      primaryColor: BioWayColors.deepBlue,
     );
   }
 
@@ -1553,28 +1463,4 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
     }
     return origenes.toList();
   }
-}
-
-// Painter para la firma
-class SignaturePainter extends CustomPainter {
-  final List<Offset?> points;
-
-  SignaturePainter(this.points);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black87
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round;
-
-    for (int i = 0; i < points.length - 1; i++) {
-      if (points[i] != null && points[i + 1] != null) {
-        canvas.drawLine(points[i]!, points[i + 1]!, paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(SignaturePainter oldDelegate) => true;
 }
