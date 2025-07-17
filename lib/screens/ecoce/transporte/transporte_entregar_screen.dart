@@ -9,6 +9,7 @@ import 'widgets/transporte_bottom_navigation.dart';
 import 'transporte_inicio_screen.dart';
 import 'transporte_ayuda_screen.dart';
 import 'transporte_perfil_screen.dart';
+import '../reciclador/widgets/reciclador_bottom_navigation.dart';
 
 class TransporteEntregarScreen extends StatefulWidget {
   const TransporteEntregarScreen({super.key});
@@ -75,54 +76,24 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
     
     switch (index) {
       case 0:
-        Navigator.push(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const TransporteInicioScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
+        NavigationHelper.navigateWithReplacement(
+          context: context,
+          destination: const TransporteInicioScreen(),
         );
         break;
       case 1:
         // Ya estamos en entregar
         break;
       case 2:
-        Navigator.push(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const TransporteAyudaScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
+        NavigationHelper.navigateWithReplacement(
+          context: context,
+          destination: const TransporteAyudaScreen(),
         );
         break;
       case 3:
-        Navigator.push(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const TransportePerfilScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
+        NavigationHelper.navigateWithReplacement(
+          context: context,
+          destination: const TransportePerfilScreen(),
         );
         break;
     }
@@ -438,19 +409,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
             color: Colors.white,
           ),
         ),
-        leading: _currentStep > 0 
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-                onPressed: () {
-                  setState(() {
-                    if (_currentStep == 1) {
-                      _qrTimer?.cancel();
-                    }
-                    _currentStep--;
-                  });
-                },
-              )
-            : null,
+        automaticallyImplyLeading: false,
       ),
       body: _buildCurrentStep(),
       bottomNavigationBar: _currentStep == 0 

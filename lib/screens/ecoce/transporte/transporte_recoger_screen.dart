@@ -257,22 +257,24 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: BioWayColors.backgroundGrey,
+      appBar: AppBar(
+        backgroundColor: BioWayColors.deepBlue,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: const Text(
+          'Formulario de Carga',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      ),
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-                child: Text(
-                  'Formulario de Carga',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: BioWayColors.deepBlue,
-                  ),
-                ),
-              ),
               // Resumen de lotes seleccionados
               Container(
                 width: double.infinity,

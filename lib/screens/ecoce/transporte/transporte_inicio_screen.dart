@@ -8,6 +8,7 @@ import 'transporte_entregar_screen.dart';
 import 'transporte_ayuda_screen.dart';
 import 'transporte_perfil_screen.dart';
 import '../shared/widgets/qr_scanner_widget.dart';
+import '../reciclador/widgets/reciclador_bottom_navigation.dart';
 
 class TransporteInicioScreen extends StatefulWidget {
   const TransporteInicioScreen({super.key});
@@ -63,51 +64,21 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> with Si
         // Ya estamos en inicio/recoger
         break;
       case 1:
-        Navigator.push(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const TransporteEntregarScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
+        NavigationHelper.navigateWithReplacement(
+          context: context,
+          destination: const TransporteEntregarScreen(),
         );
         break;
       case 2:
-        Navigator.push(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const TransporteAyudaScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
+        NavigationHelper.navigateWithReplacement(
+          context: context,
+          destination: const TransporteAyudaScreen(),
         );
         break;
       case 3:
-        Navigator.push(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const TransportePerfilScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
+        NavigationHelper.navigateWithReplacement(
+          context: context,
+          destination: const TransportePerfilScreen(),
         );
         break;
     }
@@ -195,13 +166,23 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> with Si
       appBar: AppBar(
         backgroundColor: BioWayColors.deepBlue,
         elevation: 0,
-        title: const Text(
-          'Escanear para Recoger',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+        title: Row(
+          children: [
+            SvgPicture.asset(
+              'assets/logos/ecoce_logo.svg',
+              width: 60,
+              height: 30,
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Escanear para Recoger',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(

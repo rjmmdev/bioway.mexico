@@ -159,7 +159,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           SliverAppBar(
-            expandedHeight: 140,
+            expandedHeight: 160,
             floating: false,
             pinned: true,
             automaticallyImplyLeading: false,

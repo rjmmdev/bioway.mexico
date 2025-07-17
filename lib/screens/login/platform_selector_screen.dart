@@ -412,7 +412,11 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                                         child: Opacity(
                                           opacity: _cardAnimations[1].value,
                                           child: _buildPlatformOption(
-                                            icon: Icons.recycling,
+                                            iconWidget: SvgPicture.asset(
+                                              'assets/logos/ecoce_logo.svg',
+                                              width: 35,
+                                              height: 35,
+                                            ),
                                             iconColor: BioWayColors.ecoceGreen,
                                             title: 'ECOCE',
                                             description: 'Sistema de trazabilidad\nde materiales reciclables',

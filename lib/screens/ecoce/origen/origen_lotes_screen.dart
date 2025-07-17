@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
+import 'origen_inicio_screen.dart';
 import 'origen_lote_detalle_screen.dart';
 import 'origen_crear_lote_screen.dart';
 import 'origen_ayuda.dart';
@@ -152,7 +153,20 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
     
     switch (index) {
       case 0:
-        Navigator.pop(context);
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const OrigenInicioScreen(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 300),
+          ),
+        );
         break;
       case 1:
         // Ya estamos en lotes
