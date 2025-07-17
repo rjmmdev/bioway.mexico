@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
 import 'ecoce_tipo_proveedor_selector.dart';
 import '../../ecoce/reciclador/reciclador_inicio.dart';
@@ -518,47 +519,10 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                               opacity: _logoFadeAnimation,
                               child: Transform.scale(
                                 scale: _logoScaleAnimation.value,
-                                child: Container(
+                                child: SvgPicture.asset(
+                                  'assets/logos/ecoce_logo.svg',
                                   width: 120,
                                   height: 120,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: BioWayColors.ecoceGreen
-                                            .withOpacity(0.3),
-                                        blurRadius: 30,
-                                        spreadRadius: 5,
-                                      ),
-                                    ],
-                                  ),
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      Container(
-                                        width: 100,
-                                        height: 100,
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                            colors: [
-                                              BioWayColors.ecoceGreen,
-                                              BioWayColors.ecoceGreen
-                                                  .withOpacity(0.8),
-                                            ],
-                                          ),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.recycling,
-                                          size: 50,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
                                 ),
                               ),
                             );

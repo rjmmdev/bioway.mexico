@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
 import 'origen_crear_lote_screen.dart';
 import 'origen_lotes_screen.dart';
@@ -165,7 +166,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
         // Ya estamos en inicio
         break;
       case 1:
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
@@ -181,7 +182,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
         );
         break;
       case 2:
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
@@ -197,7 +198,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
         );
         break;
       case 3:
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
@@ -269,16 +270,15 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Saludo y fecha
+                          // Logo ECOCE y fecha
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'Buen día 👋',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white.withOpacity(0.9),
-                                ),
+                              // Logo ECOCE
+                              SvgPicture.asset(
+                                'assets/logos/ecoce_logo.svg',
+                                width: 80,
+                                height: 40,
                               ),
                               Container(
                                 padding: const EdgeInsets.symmetric(
@@ -382,7 +382,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               // Card de Lotes
                               Expanded(
                                 child: Container(
-                                  height: 70,
+                                  height: 80,
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       begin: Alignment.topLeft,
@@ -415,7 +415,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                       ),
                                       // Contenido
                                       Padding(
-                                        padding: const EdgeInsets.all(12),
+                                        padding: const EdgeInsets.all(14),
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           mainAxisAlignment: MainAxisAlignment.center,
@@ -436,23 +436,26 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                                   ),
                                                 ),
                                                 const SizedBox(width: 10),
-                                                Flexible(
+                                                Expanded(
                                                   child: Column(
                                                     crossAxisAlignment: CrossAxisAlignment.start,
+                                                    mainAxisSize: MainAxisSize.min,
                                                     children: [
                                                       Text(
                                                         _lotesCreados.toString(),
                                                         style: const TextStyle(
-                                                          fontSize: 20,
+                                                          fontSize: 18,
                                                           fontWeight: FontWeight.bold,
                                                           color: Colors.black87,
-                                                          height: 1,
+                                                          height: 1.1,
                                                         ),
+                                                        overflow: TextOverflow.ellipsis,
                                                       ),
+                                                      const SizedBox(height: 2),
                                                       Text(
                                                         'Lotes creados',
                                                         style: TextStyle(
-                                                          fontSize: 11,
+                                                          fontSize: 10,
                                                           color: Colors.grey[600],
                                                           height: 1.1,
                                                         ),
@@ -474,7 +477,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               // Card de Material
                               Expanded(
                                 child: Container(
-                                  height: 70,
+                                  height: 80,
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       begin: Alignment.topLeft,
@@ -507,7 +510,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                       ),
                                       // Contenido
                                       Padding(
-                                        padding: const EdgeInsets.all(12),
+                                        padding: const EdgeInsets.all(14),
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           mainAxisAlignment: MainAxisAlignment.center,
@@ -528,38 +531,44 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                                   ),
                                                 ),
                                                 const SizedBox(width: 10),
-                                                Flexible(
+                                                Expanded(
                                                   child: Column(
                                                     crossAxisAlignment: CrossAxisAlignment.start,
+                                                    mainAxisSize: MainAxisSize.min,
                                                     children: [
                                                       Row(
+                                                        crossAxisAlignment: CrossAxisAlignment.baseline,
                                                         textBaseline: TextBaseline.alphabetic,
                                                         children: [
-                                                          Text(
-                                                            '$_materialProcesado',
-                                                            style: const TextStyle(
-                                                              fontSize: 20,
-                                                              fontWeight: FontWeight.bold,
-                                                              color: Colors.black87,
-                                                              height: 1,
+                                                          Flexible(
+                                                            child: Text(
+                                                              '$_materialProcesado',
+                                                              style: const TextStyle(
+                                                                fontSize: 18,
+                                                                fontWeight: FontWeight.bold,
+                                                                color: Colors.black87,
+                                                                height: 1.1,
+                                                              ),
+                                                              overflow: TextOverflow.ellipsis,
                                                             ),
                                                           ),
                                                           const SizedBox(width: 4),
                                                           const Text(
                                                             'ton',
                                                             style: TextStyle(
-                                                              fontSize: 14,
+                                                              fontSize: 12,
                                                               fontWeight: FontWeight.w600,
                                                               color: Colors.green,
-                                                              height: 1,
+                                                              height: 1.1,
                                                             ),
                                                           ),
                                                         ],
                                                       ),
+                                                      const SizedBox(height: 2),
                                                       Text(
                                                         'Material procesado',
                                                         style: TextStyle(
-                                                          fontSize: 11,
+                                                          fontSize: 10,
                                                           color: Colors.grey[600],
                                                           height: 1.1,
                                                         ),

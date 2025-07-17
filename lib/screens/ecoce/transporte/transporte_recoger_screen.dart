@@ -260,13 +260,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
       appBar: AppBar(
         backgroundColor: BioWayColors.deepBlue,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () {
-            HapticFeedback.lightImpact();
-            Navigator.pop(context);
-          },
-        ),
+        automaticallyImplyLeading: false,
         title: const Text(
           'Formulario de Carga',
           style: TextStyle(

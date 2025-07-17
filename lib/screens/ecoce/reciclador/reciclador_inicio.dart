@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
 import 'reciclador_escaneo.dart';
 import 'reciclador_administracion_lotes.dart';
@@ -93,7 +94,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
         // Ya estamos en inicio
         break;
       case 1:
-        NavigationHelper.navigateWithFadeTransition(
+        NavigationHelper.navigateWithReplacement(
           context: context,
           destination: const RecicladorAdministracionLotes(),
         );
@@ -284,16 +285,15 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Saludo y fecha
+                          // Logo ECOCE y fecha
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'Buen día 👋',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white.withOpacity(0.9),
-                                ),
+                              // Logo ECOCE
+                              SvgPicture.asset(
+                                'assets/logos/ecoce_logo.svg',
+                                width: 80,
+                                height: 40,
                               ),
                               Container(
                                 padding: const EdgeInsets.symmetric(
@@ -397,7 +397,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                               // Card de Lotes Recibidos
                               Expanded(
                                 child: Container(
-                                  height: 70,
+                                  height: 80,
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       begin: Alignment.topLeft,
@@ -430,7 +430,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                                       ),
                                       // Contenido
                                       Padding(
-                                        padding: const EdgeInsets.all(12),
+                                        padding: const EdgeInsets.all(14),
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           mainAxisAlignment: MainAxisAlignment.center,
@@ -489,7 +489,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                               // Card de Lotes Creados
                               Expanded(
                                 child: Container(
-                                  height: 70,
+                                  height: 80,
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       begin: Alignment.topLeft,
@@ -522,7 +522,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                                       ),
                                       // Contenido
                                       Padding(
-                                        padding: const EdgeInsets.all(12),
+                                        padding: const EdgeInsets.all(14),
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           mainAxisAlignment: MainAxisAlignment.center,

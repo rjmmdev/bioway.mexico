@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/optimized_navigation.dart';
 import '../shared/placeholder_ayuda_screen.dart';
 import 'widgets/reciclador_bottom_navigation.dart';
 
@@ -9,7 +10,7 @@ class RecicladorAyudaScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PlaceholderAyudaScreen(
-      tipoUsuario: "Reciclador",
+      tipoUsuario: 'Reciclador',
       primaryColor: BioWayColors.primaryGreen,
       bottomNavigation: RecicladorBottomNavigation(
         selectedIndex: 2,
@@ -19,20 +20,26 @@ class RecicladorAyudaScreen extends StatelessWidget {
           // Navegación a otras pantallas según el índice
           switch (index) {
             case 0:
-              Navigator.pushReplacementNamed(context, '/reciclador_inicio');
+              OptimizedNavigation.navigateToNamed(context, '/reciclador_inicio', replacement: true, duration: const Duration(milliseconds: 200));
               break;
             case 1:
-              Navigator.pushReplacementNamed(context, '/reciclador_lotes');
+              OptimizedNavigation.navigateToNamed(context, '/reciclador_lotes', replacement: true, duration: const Duration(milliseconds: 200));
               break;
             case 3:
-              Navigator.pushReplacementNamed(context, '/reciclador_perfil');
+              OptimizedNavigation.navigateToNamed(context, '/reciclador_perfil', replacement: true, duration: const Duration(milliseconds: 200));
               break;
           }
         },
         onFabPressed: () {
-          Navigator.pushNamed(context, '/reciclador_escaneo');
+          OptimizedNavigation.navigateToNamed(context, '/reciclador_escaneo');
         },
       ),
+      floatingActionButton: RecicladorFloatingActionButton(
+        onPressed: () {
+          OptimizedNavigation.navigateToNamed(context, '/reciclador_escaneo');
+        },
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }
