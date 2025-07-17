@@ -157,26 +157,24 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: BioWayColors.backgroundGrey,
-      appBar: AppBar(
-        backgroundColor: BioWayColors.deepBlue,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: const Text(
-          'Formulario de Carga',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-      ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              // Resumen de lotes seleccionados
-              Container(
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                const SizedBox(height: 16),
+                Text(
+                  'Formulario de Carga',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: BioWayColors.deepBlue,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Resumen de lotes seleccionados
+                Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 color: Colors.white,
@@ -678,7 +676,8 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildLoteCompacto(Map<String, dynamic> lote) {
