@@ -229,7 +229,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
             // Header moderno con gradiente
             SliverToBoxAdapter(
               child: Container(
-                height: 240,
+                height: 230,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -280,8 +280,8 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               // Logo ECOCE
                               SvgPicture.asset(
                                 'assets/logos/ecoce_logo.svg',
-                                width: 80,
-                                height: 40,
+                                width: 70,
+                                height: 35,
                               ),
                               Container(
                                 padding: const EdgeInsets.symmetric(
@@ -312,19 +312,19 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           // Nombre del centro
                           Text(
                             _nombreCentro,
                             style: const TextStyle(
-                              fontSize: 24,
+                              fontSize: 26,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                             overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
+                            maxLines: 1,
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 3),
                           // Badge con tipo y folio
                           Row(
                             children: [
@@ -378,14 +378,14 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 8),
                           // Estadísticas modernas con diseño card
                           Row(
                             children: [
                               // Card de Lotes
                               Expanded(
                                 child: Container(
-                                  height: 65,
+                                  height: 60,
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       begin: Alignment.topLeft,
@@ -405,7 +405,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                     ],
                                   ),
                                   child: Padding(
-                                    padding: const EdgeInsets.all(12),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       mainAxisAlignment: MainAxisAlignment.center,
@@ -413,7 +413,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                         Text(
                                           _lotesCreados.toString(),
                                           style: const TextStyle(
-                                            fontSize: 16,
+                                            fontSize: 20,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.black87,
                                             height: 1,
@@ -439,7 +439,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               // Card de Material
                               Expanded(
                                 child: Container(
-                                  height: 65,
+                                  height: 60,
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       begin: Alignment.topLeft,
@@ -459,7 +459,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                     ],
                                   ),
                                   child: Padding(
-                                    padding: const EdgeInsets.all(12),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       mainAxisAlignment: MainAxisAlignment.center,
@@ -472,7 +472,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                               child: Text(
                                                 '$_materialProcesado',
                                                 style: const TextStyle(
-                                                  fontSize: 16,
+                                                  fontSize: 20,
                                                   fontWeight: FontWeight.bold,
                                                   color: Colors.black87,
                                                   height: 1,
