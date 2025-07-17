@@ -3,9 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:io';
 import '../../../utils/colors.dart';
-import '../../../services/image_service.dart';
-import '../reciclador/widgets/image_preview.dart';
 import '../shared/widgets/signature_dialog.dart';
+import '../shared/widgets/photo_evidence_widget.dart';
 import 'origen_lote_detalle_screen.dart';
 
 class OrigenCrearLoteScreen extends StatefulWidget {
@@ -41,10 +40,6 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
   List<Offset?> _signaturePoints = [];
   bool _hasSignature = false;
   
-  // Variables para la imagen
-  File? _selectedImage;
-  bool _hasImage = false;
-
 
   @override
   void initState() {
@@ -76,149 +71,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
     );
   }
 
-  void _showImageOptions() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Seleccionar imagen',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 20),
-              ListTile(
-                leading: Icon(Icons.camera_alt, color: BioWayColors.ecoceGreen),
-                title: const Text('Tomar foto'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _takePhoto();
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.photo_library, color: BioWayColors.ecoceGreen),
-                title: const Text('Seleccionar de galería'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _selectFromGallery();
-                },
-              ),
-              if (_hasImage)
-                ListTile(
-                  leading: Icon(Icons.delete, color: BioWayColors.error),
-                  title: const Text('Eliminar imagen'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    setState(() {
-                      _selectedImage = null;
-                      _hasImage = false;
-                    });
-                  },
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _takePhoto() async {
-    try {
-      final File? photo = await ImageService.takePhoto();
-      if (photo != null && mounted) {
-        setState(() {
-          _selectedImage = photo;
-          _hasImage = true;
-        });
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Foto capturada correctamente'),
-              backgroundColor: BioWayColors.success,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Error al acceder a la cámara'),
-            backgroundColor: BioWayColors.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-      }
-    }
-  }
-
-  void _selectFromGallery() async {
-    try {
-      final File? image = await ImageService.pickFromGallery();
-      if (image != null && mounted) {
-        setState(() {
-          _selectedImage = image;
-          _hasImage = true;
-        });
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Imagen seleccionada correctamente'),
-              backgroundColor: BioWayColors.success,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Error al acceder a la galería'),
-            backgroundColor: BioWayColors.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-      }
-    }
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: BioWayColors.error,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-    );
-  }
+  // Sección de foto ahora manejada por PhotoEvidenceFormField del módulo shared
 
   void _generarLote() {
     // Sin validaciones - Solo para diseño visual
@@ -484,12 +337,12 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                     const SizedBox(height: 20),
                     
                     // Sección: Evidencia Fotográfica
-                    _buildSectionCard(
-                      icon: '📷',
+                    PhotoEvidenceFormField(
                       title: 'Evidencia Fotográfica',
-                      children: [
-                        _buildImageArea(),
-                      ],
+                      maxPhotos: 1,
+                      minPhotos: 0,
+                      onPhotosChanged: (_) {},
+                      primaryColor: BioWayColors.ecoceGreen,
                     ),
                     
                     const SizedBox(height: 20),
@@ -757,146 +610,6 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
     );
   }
 
-  Widget _buildImageArea() {
-    return InkWell(
-      onTap: _showImageOptions,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        height: 200,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: BioWayColors.backgroundGrey,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: _hasImage
-                ? BioWayColors.ecoceGreen
-                : BioWayColors.ecoceGreen.withOpacity(0.3),
-            width: _hasImage ? 2 : 1,
-          ),
-        ),
-        child: _hasImage && _selectedImage != null
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(11),
-                child: Stack(
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        // Mostrar imagen en pantalla completa
-                        showDialog(
-                          context: context,
-                          builder: (context) => ImagePreviewDialog(
-                            image: _selectedImage!,
-                            title: 'Evidencia fotográfica',
-                          ),
-                        );
-                      },
-                      child: Image.file(
-                        _selectedImage!,
-                        width: double.infinity,
-                        height: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Row(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                            child: IconButton(
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => ImagePreviewDialog(
-                                    image: _selectedImage!,
-                                    title: 'Evidencia fotográfica',
-                                  ),
-                                );
-                              },
-                              icon: const Icon(
-                                Icons.fullscreen,
-                                color: Colors.grey,
-                                size: 20,
-                              ),
-                              constraints: const BoxConstraints(
-                                minWidth: 36,
-                                minHeight: 36,
-                              ),
-                              padding: EdgeInsets.zero,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                            child: IconButton(
-                              onPressed: _showImageOptions,
-                              icon: Icon(
-                                Icons.edit,
-                                color: BioWayColors.ecoceGreen,
-                                size: 20,
-                              ),
-                              constraints: const BoxConstraints(
-                                minWidth: 36,
-                                minHeight: 36,
-                              ),
-                              padding: EdgeInsets.zero,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.add_a_photo,
-                    size: 50,
-                    color: BioWayColors.ecoceGreen.withOpacity(0.5),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Agregar evidencia',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: BioWayColors.ecoceGreen,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Toca para tomar foto o seleccionar',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-      ),
-    );
-  }
 
   Widget _buildPresentacionOption({
     required String svgPath,
