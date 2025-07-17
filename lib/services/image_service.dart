@@ -1,6 +1,10 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
 
 class ImageService {
   static final ImagePicker _picker = ImagePicker();
@@ -100,5 +104,155 @@ class ImageService {
     int sizeInBytes = image.lengthSync();
     double sizeInMB = sizeInBytes / (1024 * 1024);
     return double.parse(sizeInMB.toStringAsFixed(2));
+  }
+
+  /// Comprime y optimiza una imagen para su almacenamiento en base de datos
+  /// Garantiza que la imagen no exceda 50KB
+  static Future<File?> optimizeImageForDatabase(
+    File imageFile, {
+    int maxWidth = 800,
+    int quality = 60,
+    CompressFormat format = CompressFormat.jpeg,
+    int maxSizeKB = 50, // Máximo 50KB
+  }) async {
+    try {
+      // Obtener directorio temporal
+      final Directory tempDir = await getTemporaryDirectory();
+      String targetPath;
+      File? compressedFile;
+      
+      // Variables para el algoritmo iterativo
+      int currentQuality = quality;
+      int currentWidth = maxWidth;
+      int attempts = 0;
+      const int maxAttempts = 5;
+      
+      // Intentar comprimir hasta alcanzar el tamaño objetivo
+      while (attempts < maxAttempts) {
+        targetPath = path.join(
+          tempDir.path,
+          'optimized_${DateTime.now().millisecondsSinceEpoch}_${attempts}.jpg',
+        );
+        
+        // Comprimir la imagen
+        final XFile? result = await FlutterImageCompress.compressAndGetFile(
+          imageFile.absolute.path,
+          targetPath,
+          minWidth: currentWidth,
+          minHeight: (currentWidth * 0.75).round(), // Mantener proporción 4:3
+          quality: currentQuality,
+          format: CompressFormat.jpeg, // JPEG es más eficiente para fotos
+          autoCorrectionAngle: true,
+          keepExif: false,
+        );
+        
+        if (result == null) break;
+        
+        compressedFile = File(result.path);
+        final int sizeInBytes = await compressedFile.length();
+        final double sizeInKB = sizeInBytes / 1024;
+        
+        debugPrint('Intento ${attempts + 1}: ${sizeInKB.toStringAsFixed(1)}KB (quality: $currentQuality, width: $currentWidth)');
+        
+        // Si el tamaño es aceptable, terminar
+        if (sizeInKB <= maxSizeKB) {
+          final double originalSize = getImageSizeInMB(imageFile);
+          final double compressedSize = sizeInKB / 1024;
+          
+          debugPrint('✓ Imagen optimizada: ${originalSize.toStringAsFixed(1)}MB -> ${sizeInKB.toStringAsFixed(1)}KB');
+          return compressedFile;
+        }
+        
+        // Si es muy grande, ajustar parámetros
+        if (sizeInKB > maxSizeKB * 2) {
+          // Si es más del doble, reducir agresivamente
+          currentWidth = (currentWidth * 0.7).round();
+          currentQuality = (currentQuality * 0.7).round();
+        } else {
+          // Si está cerca, reducir gradualmente
+          currentWidth = (currentWidth * 0.85).round();
+          currentQuality = (currentQuality * 0.85).round();
+        }
+        
+        // Límites mínimos
+        if (currentWidth < 400) currentWidth = 400;
+        if (currentQuality < 30) currentQuality = 30;
+        
+        attempts++;
+        
+        // Limpiar archivo temporal si no es el último intento
+        if (attempts < maxAttempts && compressedFile.existsSync()) {
+          await compressedFile.delete();
+        }
+      }
+      
+      // Si no se logró el tamaño objetivo, usar la última compresión
+      if (compressedFile != null && compressedFile.existsSync()) {
+        final double sizeInKB = await compressedFile.length() / 1024;
+        debugPrint('⚠️ No se alcanzó el objetivo de ${maxSizeKB}KB, tamaño final: ${sizeInKB.toStringAsFixed(1)}KB');
+        return compressedFile;
+      }
+      
+      return null;
+    } catch (e) {
+      debugPrint('Error al optimizar imagen: $e');
+      return null;
+    }
+  }
+
+  /// Comprime múltiples imágenes en lote
+  static Future<List<File>> optimizeMultipleImages(
+    List<File> images, {
+    int maxWidth = 800,
+    int quality = 60,
+    int maxSizeKB = 50,
+    Function(int current, int total)? onProgress,
+  }) async {
+    List<File> optimizedImages = [];
+    
+    for (int i = 0; i < images.length; i++) {
+      onProgress?.call(i + 1, images.length);
+      
+      final File? optimized = await optimizeImageForDatabase(
+        images[i],
+        maxWidth: maxWidth,
+        quality: quality,
+        maxSizeKB: maxSizeKB,
+      );
+      
+      if (optimized != null) {
+        optimizedImages.add(optimized);
+      } else {
+        // Si falla la optimización, usar la imagen original
+        optimizedImages.add(images[i]);
+      }
+    }
+    
+    return optimizedImages;
+  }
+
+  /// Calcula el tamaño total de una lista de imágenes
+  static double getTotalSizeInMB(List<File> images) {
+    double totalSize = 0;
+    for (File image in images) {
+      totalSize += getImageSizeInMB(image);
+    }
+    return double.parse(totalSize.toStringAsFixed(2));
+  }
+
+  /// Limpia las imágenes temporales optimizadas
+  static Future<void> cleanupTempImages() async {
+    try {
+      final Directory tempDir = await getTemporaryDirectory();
+      final List<FileSystemEntity> files = tempDir.listSync();
+      
+      for (FileSystemEntity file in files) {
+        if (file is File && file.path.contains('optimized_')) {
+          await file.delete();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error al limpiar imágenes temporales: $e');
+    }
   }
 }

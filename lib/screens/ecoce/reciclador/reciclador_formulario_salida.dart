@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
-import 'dart:ui' as ui;
 import '../../../utils/colors.dart';
-import '../../../services/image_service.dart';
-import 'widgets/image_preview.dart';
 import 'reciclador_documentacion.dart';
+import '../shared/widgets/photo_evidence_widget.dart';
 
 class RecicladorFormularioSalida extends StatefulWidget {
   final String loteId;
@@ -36,9 +34,8 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
   List<Offset?> _signaturePoints = [];
   bool _hasSignature = false;
   
-  // Variables para la imagen
-  File? _selectedImage;
-  bool _hasImage = false;
+  // Variables para las imágenes
+  bool _hasImages = false;
 
   @override
   void initState() {
@@ -63,296 +60,26 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
   }
 
   void _showSignatureDialog() {
-    List<Offset?> tempSignaturePoints = [];
-    
     showDialog(
       context: context,
-      barrierDismissible: false,
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Row(
-                children: [
-                  Icon(Icons.edit, color: BioWayColors.ecoceGreen),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text(
-                      'Firma del Operador',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                  ),
-                ],
-              ),
-              content: Container(
-                width: MediaQuery.of(context).size.width * 0.95,
-                height: 400,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(
-                    color: BioWayColors.ecoceGreen.withOpacity(0.5),
-                    width: 2,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Stack(
-                    children: [
-                      GestureDetector(
-                        onPanStart: (details) {
-                          setDialogState(() {
-                            tempSignaturePoints.add(details.localPosition);
-                          });
-                        },
-                        onPanUpdate: (details) {
-                          setDialogState(() {
-                            tempSignaturePoints.add(details.localPosition);
-                          });
-                        },
-                        onPanEnd: (details) {
-                          tempSignaturePoints.add(null);
-                        },
-                        child: CustomPaint(
-                          painter: SignaturePainter(tempSignaturePoints),
-                          size: Size.infinite,
-                        ),
-                      ),
-                      if (tempSignaturePoints.isEmpty)
-                        Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.draw,
-                                color: Colors.grey.shade400,
-                                size: 50,
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                'Dibuja tu firma aquí',
-                                style: TextStyle(
-                                  color: Colors.grey.shade400,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    setDialogState(() {
-                      tempSignaturePoints.clear();
-                    });
-                  },
-                  child: Text(
-                    'Limpiar',
-                    style: TextStyle(color: BioWayColors.error),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text(
-                    'Cancelar',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: tempSignaturePoints.isNotEmpty
-                      ? () {
-                          setState(() {
-                            _signaturePoints = List.from(tempSignaturePoints);
-                            _hasSignature = true;
-                          });
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text('Firma guardada correctamente'),
-                              backgroundColor: BioWayColors.success,
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          );
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: BioWayColors.ecoceGreen,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Guardar'),
-                ),
-              ],
-            );
+        return SignatureDialog(
+          onSignatureComplete: (points) {
+            setState(() {
+              _signaturePoints = points;
+              _hasSignature = points.isNotEmpty;
+            });
           },
         );
       },
     );
   }
 
-  void _showImageOptions() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Seleccionar imagen',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 20),
-              ListTile(
-                leading: Icon(Icons.camera_alt, color: BioWayColors.ecoceGreen),
-                title: const Text('Tomar foto'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _takePhoto();
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.photo_library, color: BioWayColors.ecoceGreen),
-                title: const Text('Seleccionar de galería'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _selectFromGallery();
-                },
-              ),
-              if (_hasImage)
-                ListTile(
-                  leading: Icon(Icons.delete, color: BioWayColors.error),
-                  title: const Text('Eliminar imagen'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    setState(() {
-                      _selectedImage = null;
-                      _hasImage = false;
-                    });
-                  },
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
-  void _takePhoto() async {
-    try {
-      final File? photo = await ImageService.takePhoto();
-      if (photo != null) {
-        setState(() {
-          _selectedImage = photo;
-          _hasImage = true;
-        });
-        
-        // Mostrar mensaje de éxito
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Foto capturada correctamente'),
-            backgroundColor: BioWayColors.success,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-        
-        // Mostrar tamaño de la imagen si es muy grande
-        final double sizeInMB = ImageService.getImageSizeInMB(photo);
-        if (sizeInMB > 5) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Nota: La imagen pesa ${sizeInMB}MB'),
-              backgroundColor: BioWayColors.warning,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Error al acceder a la cámara'),
-          backgroundColor: BioWayColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-    }
-  }
-
-  void _selectFromGallery() async {
-    try {
-      final File? image = await ImageService.pickFromGallery();
-      if (image != null) {
-        setState(() {
-          _selectedImage = image;
-          _hasImage = true;
-        });
-        
-        // Mostrar mensaje de éxito
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Imagen seleccionada correctamente'),
-            backgroundColor: BioWayColors.success,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-        
-        // Mostrar tamaño de la imagen si es muy grande
-        final double sizeInMB = ImageService.getImageSizeInMB(image);
-        if (sizeInMB > 5) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Nota: La imagen pesa ${sizeInMB}MB'),
-              backgroundColor: BioWayColors.warning,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Error al acceder a la galería'),
-          backgroundColor: BioWayColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-    }
+  void _onPhotosChanged(List<File> photos) {
+    setState(() {
+      _hasImages = photos.isNotEmpty;
+    });
   }
 
   void _submitForm() {
@@ -362,8 +89,8 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
         return;
       }
       
-      if (!_hasImage) {
-        _showErrorSnackBar('Por favor, agregue una evidencia fotográfica');
+      if (!_hasImages) {
+        _showErrorSnackBar('Por favor, agregue al menos una evidencia fotográfica');
         return;
       }
 
@@ -796,55 +523,104 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                           const SizedBox(height: 20),
                           
                           // Firma del Operador
-                          Text(
-                            'Firma del Operador',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: BioWayColors.textGrey,
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                'Firma del Operador',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: BioWayColors.textGrey,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '*',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: BioWayColors.error,
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 8),
-                          
-                          // Área de visualización de firma o botón
-                          Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: _hasSignature 
-                                  ? Colors.white 
-                                  : BioWayColors.backgroundGrey,
-                              border: Border.all(
+                          GestureDetector(
+                            onTap: _hasSignature ? null : () => _showSignatureDialog(),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              height: _hasSignature ? 150 : 100,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
                                 color: _hasSignature 
-                                    ? BioWayColors.ecoceGreen 
-                                    : BioWayColors.ecoceGreen.withOpacity(0.3),
-                                width: 1,
+                                    ? BioWayColors.ecoceGreen.withOpacity(0.05)
+                                    : Colors.grey[100],
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: _hasSignature 
+                                      ? BioWayColors.ecoceGreen 
+                                      : Colors.grey[300]!,
+                                  width: _hasSignature ? 2 : 1,
+                                ),
                               ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: _hasSignature
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(11),
-                                    child: Stack(
+                              child: _signaturePoints.isEmpty
+                                  ? Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.draw,
+                                            size: 32,
+                                            color: Colors.grey[400],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Toca para firmar',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : Stack(
                                       children: [
-                                        // Mostrar la firma guardada
                                         Container(
-                                          height: 250,
-                                          width: double.infinity,
-                                          color: Colors.white,
-                                          child: FittedBox(
-                                            fit: BoxFit.contain,
-                                            alignment: Alignment.center,
-                                            child: SizedBox(
-                                              width: MediaQuery.of(context).size.width * 0.95,
-                                              height: 400,
-                                              child: CustomPaint(
-                                                painter: SignaturePainter(_signaturePoints),
-                                                size: Size.infinite,
+                                          padding: const EdgeInsets.all(12),
+                                          child: Center(
+                                            child: AspectRatio(
+                                              aspectRatio: 2.0, // Proporción ancho:alto de 2:1
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  border: Border.all(
+                                                    color: Colors.grey[200]!,
+                                                    width: 1,
+                                                  ),
+                                                ),
+                                                child: ClipRRect(
+                                                  borderRadius: BorderRadius.circular(7),
+                                                  child: FittedBox(
+                                                    fit: BoxFit.contain,
+                                                    child: SizedBox(
+                                                      width: 300, // Mismo ancho que el diálogo
+                                                      height: 300, // Misma altura que el diálogo
+                                                      child: CustomPaint(
+                                                        painter: SignaturePainter(
+                                                          points: _signaturePoints,
+                                                          color: BioWayColors.darkGreen,
+                                                          strokeWidth: 2.0,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
                                               ),
                                             ),
                                           ),
                                         ),
-                                        // Botón para editar firma
                                         Positioned(
                                           top: 8,
                                           right: 8,
@@ -852,261 +628,62 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Container(
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 4,
-                                                ),
                                                 decoration: BoxDecoration(
-                                                  color: BioWayColors.success.withOpacity(0.1),
-                                                  borderRadius: BorderRadius.circular(12),
-                                                ),
-                                                child: Row(
-                                                  children: [
-                                                    Icon(
-                                                      Icons.check_circle,
-                                                      color: BioWayColors.success,
-                                                      size: 16,
-                                                    ),
-                                                    const SizedBox(width: 4),
-                                                    Text(
-                                                      'Firmado',
-                                                      style: TextStyle(
-                                                        color: BioWayColors.success,
-                                                        fontSize: 12,
-                                                        fontWeight: FontWeight.w600,
-                                                      ),
+                                                  color: Colors.white,
+                                                  shape: BoxShape.circle,
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black.withOpacity(0.1),
+                                                      blurRadius: 4,
                                                     ),
                                                   ],
                                                 ),
+                                                child: IconButton(
+                                                  onPressed: () => _showSignatureDialog(),
+                                                  icon: Icon(
+                                                    Icons.edit,
+                                                    color: BioWayColors.ecoceGreen,
+                                                    size: 20,
+                                                  ),
+                                                  constraints: const BoxConstraints(
+                                                    minWidth: 32,
+                                                    minHeight: 32,
+                                                  ),
+                                                  padding: EdgeInsets.zero,
+                                                ),
                                               ),
                                               const SizedBox(width: 8),
-                                              IconButton(
-                                                onPressed: _showSignatureDialog,
-                                                icon: Icon(
-                                                  Icons.edit,
-                                                  color: BioWayColors.ecoceGreen,
-                                                  size: 20,
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  shape: BoxShape.circle,
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black.withOpacity(0.1),
+                                                      blurRadius: 4,
+                                                    ),
+                                                  ],
                                                 ),
-                                                constraints: const BoxConstraints(
-                                                  minWidth: 32,
-                                                  minHeight: 32,
-                                                ),
-                                                padding: EdgeInsets.zero,
-                                                style: IconButton.styleFrom(
-                                                  backgroundColor: Colors.white,
-                                                  elevation: 2,
+                                                child: IconButton(
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _signaturePoints = [];
+                                                      _hasSignature = false;
+                                                    });
+                                                  },
+                                                  icon: const Icon(
+                                                    Icons.clear,
+                                                    color: Colors.red,
+                                                    size: 20,
+                                                  ),
+                                                  constraints: const BoxConstraints(
+                                                    minWidth: 32,
+                                                    minHeight: 32,
+                                                  ),
+                                                  padding: EdgeInsets.zero,
                                                 ),
                                               ),
                                             ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                : InkWell(
-                                    onTap: _showSignatureDialog,
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Container(
-                                      height: 56,
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Icon(
-                                            Icons.edit,
-                                            color: BioWayColors.ecoceGreen,
-                                            size: 24,
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Text(
-                                            'Firmar',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              color: BioWayColors.ecoceGreen,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 20),
-                    
-                    // Tarjeta de Evidencia Fotográfica
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Text(
-                                '📷',
-                                style: TextStyle(fontSize: 24),
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                'Evidencia Fotográfica',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: BioWayColors.darkGreen,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          
-                          // Área de imagen
-                          InkWell(
-                            onTap: _showImageOptions,
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              height: 200,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: BioWayColors.backgroundGrey,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: _hasImage
-                                      ? BioWayColors.ecoceGreen
-                                      : BioWayColors.ecoceGreen.withOpacity(0.3),
-                                  width: _hasImage ? 2 : 1,
-                                  style: _hasImage ? BorderStyle.solid : BorderStyle.solid,
-                                ),
-                              ),
-                              child: _hasImage && _selectedImage != null
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(11),
-                                      child: Stack(
-                                        children: [
-                                          GestureDetector(
-                                            onTap: () {
-                                              // Mostrar imagen en pantalla completa
-                                              showDialog(
-                                                context: context,
-                                                builder: (context) => ImagePreviewDialog(
-                                                  image: _selectedImage!,
-                                                  title: 'Evidencia fotográfica',
-                                                ),
-                                              );
-                                            },
-                                            child: Image.file(
-                                              _selectedImage!,
-                                              width: double.infinity,
-                                              height: double.infinity,
-                                              fit: BoxFit.cover,
-                                            ),
-                                          ),
-                                          Positioned(
-                                            top: 8,
-                                            right: 8,
-                                            child: Row(
-                                              children: [
-                                                Container(
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.white,
-                                                    borderRadius: BorderRadius.circular(20),
-                                                    boxShadow: [
-                                                      BoxShadow(
-                                                        color: Colors.black.withOpacity(0.2),
-                                                        blurRadius: 4,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  child: IconButton(
-                                                    onPressed: () {
-                                                      showDialog(
-                                                        context: context,
-                                                        builder: (context) => ImagePreviewDialog(
-                                                          image: _selectedImage!,
-                                                          title: 'Evidencia fotográfica',
-                                                        ),
-                                                      );
-                                                    },
-                                                    icon: const Icon(
-                                                      Icons.fullscreen,
-                                                      color: Colors.grey,
-                                                      size: 20,
-                                                    ),
-                                                    constraints: const BoxConstraints(
-                                                      minWidth: 36,
-                                                      minHeight: 36,
-                                                    ),
-                                                    padding: EdgeInsets.zero,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Container(
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.white,
-                                                    borderRadius: BorderRadius.circular(20),
-                                                    boxShadow: [
-                                                      BoxShadow(
-                                                        color: Colors.black.withOpacity(0.2),
-                                                        blurRadius: 4,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  child: IconButton(
-                                                    onPressed: _showImageOptions,
-                                                    icon: Icon(
-                                                      Icons.edit,
-                                                      color: BioWayColors.ecoceGreen,
-                                                      size: 20,
-                                                    ),
-                                                    constraints: const BoxConstraints(
-                                                      minWidth: 36,
-                                                      minHeight: 36,
-                                                    ),
-                                                    padding: EdgeInsets.zero,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.add_a_photo,
-                                          size: 50,
-                                          color: BioWayColors.ecoceGreen.withOpacity(0.5),
-                                        ),
-                                        const SizedBox(height: 12),
-                                        Text(
-                                          'Agregar evidencia',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            color: BioWayColors.ecoceGreen,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Toca para tomar foto o seleccionar',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey[600],
                                           ),
                                         ),
                                       ],
@@ -1115,6 +692,18 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                           ),
                         ],
                       ),
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // Tarjeta de Evidencia Fotográfica usando el widget compartido
+                    PhotoEvidenceFormField(
+                      title: 'Evidencia Fotográfica',
+                      maxPhotos: 5,
+                      minPhotos: 1,
+                      isRequired: true,
+                      onPhotosChanged: _onPhotosChanged,
+                      primaryColor: BioWayColors.ecoceGreen,
                     ),
                     
                     const SizedBox(height: 20),
@@ -1226,18 +815,24 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
   }
 }
 
-// Painter para la firma
+/// Painter personalizado para dibujar la firma
 class SignaturePainter extends CustomPainter {
   final List<Offset?> points;
+  final Color color;
+  final double strokeWidth;
 
-  SignaturePainter(this.points);
+  SignaturePainter({
+    required this.points,
+    required this.color,
+    this.strokeWidth = 2.0,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.black
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round;
+      ..color = color
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = strokeWidth;
 
     for (int i = 0; i < points.length - 1; i++) {
       if (points[i] != null && points[i + 1] != null) {
@@ -1248,4 +843,150 @@ class SignaturePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(SignaturePainter oldDelegate) => true;
+}
+
+/// Diálogo para captura de firma
+class SignatureDialog extends StatefulWidget {
+  final Function(List<Offset?>) onSignatureComplete;
+
+  const SignatureDialog({super.key, required this.onSignatureComplete});
+
+  @override
+  State<SignatureDialog> createState() => _SignatureDialogState();
+}
+
+class _SignatureDialogState extends State<SignatureDialog> {
+  List<Offset?> _points = [];
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Firma del Operador',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close),
+                  constraints: const BoxConstraints(
+                    minWidth: 40,
+                    minHeight: 40,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              height: 300,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.grey[300]!,
+                  width: 2,
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: GestureDetector(
+                  onPanStart: (details) {
+                    setState(() {
+                      _points.add(details.localPosition);
+                    });
+                  },
+                  onPanUpdate: (details) {
+                    setState(() {
+                      _points.add(details.localPosition);
+                    });
+                  },
+                  onPanEnd: (details) {
+                    setState(() {
+                      _points.add(null);
+                    });
+                  },
+                  child: CustomPaint(
+                    size: const Size(double.infinity, double.infinity),
+                    painter: SignaturePainter(
+                      points: _points,
+                      color: BioWayColors.darkGreen,
+                    ),
+                    child: _points.isEmpty
+                        ? Center(
+                            child: Text(
+                              'Dibuja tu firma aquí',
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 16,
+                              ),
+                            ),
+                          )
+                        : null,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _points.clear();
+                    });
+                  },
+                  child: Text(
+                    'Limpiar',
+                    style: TextStyle(
+                      color: BioWayColors.error,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: _points.isEmpty
+                      ? null
+                      : () {
+                          widget.onSignatureComplete(_points);
+                          Navigator.of(context).pop();
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: BioWayColors.ecoceGreen,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                  ),
+                  child: const Text(
+                    'Confirmar',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

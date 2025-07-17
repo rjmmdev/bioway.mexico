@@ -39,143 +39,16 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
     super.dispose();
   }
 
-  void _clearSignature() {
-    setState(() {
-      _signaturePoints = [];
-      _hasSignature = false;
-    });
-  }
-
   void _showSignatureDialog() {
-    List<Offset?> tempSignaturePoints = [];
-    
     showDialog(
       context: context,
-      barrierDismissible: false,
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Row(
-                children: [
-                  Icon(Icons.edit, color: BioWayColors.ecoceGreen),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text(
-                      'Firma del Operador',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                  ),
-                ],
-              ),
-              content: Container(
-                width: MediaQuery.of(context).size.width * 0.95,
-                height: 400,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(
-                    color: BioWayColors.ecoceGreen.withOpacity(0.5),
-                    width: 2,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Stack(
-                    children: [
-                      GestureDetector(
-                        onPanStart: (details) {
-                          setDialogState(() {
-                            tempSignaturePoints.add(details.localPosition);
-                          });
-                        },
-                        onPanUpdate: (details) {
-                          setDialogState(() {
-                            tempSignaturePoints.add(details.localPosition);
-                          });
-                        },
-                        onPanEnd: (details) {
-                          tempSignaturePoints.add(null);
-                        },
-                        child: CustomPaint(
-                          painter: SignaturePainter(tempSignaturePoints),
-                          size: Size.infinite,
-                        ),
-                      ),
-                      if (tempSignaturePoints.isEmpty)
-                        Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.draw,
-                                color: Colors.grey.shade400,
-                                size: 50,
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                'Dibuja tu firma aquí',
-                                style: TextStyle(
-                                  color: Colors.grey.shade400,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    setDialogState(() {
-                      tempSignaturePoints.clear();
-                    });
-                  },
-                  child: Text(
-                    'Limpiar',
-                    style: TextStyle(color: BioWayColors.error),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text(
-                    'Cancelar',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: tempSignaturePoints.isNotEmpty
-                      ? () {
-                          setState(() {
-                            _signaturePoints = List.from(tempSignaturePoints);
-                            _hasSignature = true;
-                          });
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text('Firma guardada correctamente'),
-                              backgroundColor: BioWayColors.success,
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          );
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: BioWayColors.ecoceGreen,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Guardar'),
-                ),
-              ],
-            );
+        return SignatureDialog(
+          onSignatureComplete: (points) {
+            setState(() {
+              _signaturePoints = points;
+              _hasSignature = points.isNotEmpty;
+            });
           },
         );
       },
@@ -601,139 +474,172 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                           const SizedBox(height: 20),
                           
                           // Firma del Operador
-                          Text(
-                            'Firma del Operador',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: BioWayColors.textGrey,
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                'Firma del Operador',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: BioWayColors.textGrey,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '*',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: BioWayColors.error,
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 8),
-                          
-                          // Área de visualización de firma o botón
-                          Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: _hasSignature 
-                                  ? Colors.white 
-                                  : BioWayColors.backgroundGrey,
-                              border: Border.all(
+                          GestureDetector(
+                            onTap: _hasSignature ? null : () => _showSignatureDialog(),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              height: _hasSignature ? 150 : 100,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
                                 color: _hasSignature 
-                                    ? BioWayColors.ecoceGreen 
-                                    : BioWayColors.ecoceGreen.withOpacity(0.3),
-                                width: 1,
+                                    ? BioWayColors.ecoceGreen.withOpacity(0.05)
+                                    : Colors.grey[100],
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: _hasSignature 
+                                      ? BioWayColors.ecoceGreen 
+                                      : Colors.grey[300]!,
+                                  width: _hasSignature ? 2 : 1,
+                                ),
                               ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: _hasSignature
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(11),
-                                    child: Stack(
-                                      children: [
-                                        // Mostrar la firma guardada
-                                        Container(
-                                          height: 250,
-                                          width: double.infinity,
-                                          color: Colors.white,
-                                          child: FittedBox(
-                                            fit: BoxFit.contain,
-                                            alignment: Alignment.center,
-                                            child: SizedBox(
-                                              width: MediaQuery.of(context).size.width * 0.95,
-                                              height: 400,
-                                              child: CustomPaint(
-                                                painter: SignaturePainter(_signaturePoints),
-                                                size: Size.infinite,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      // Botón para editar firma
-                                      Positioned(
-                                        top: 8,
-                                        right: 8,
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 8,
-                                                vertical: 4,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: BioWayColors.success.withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-                                              child: Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.check_circle,
-                                                    color: BioWayColors.success,
-                                                    size: 16,
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Text(
-                                                    'Firmado',
-                                                    style: TextStyle(
-                                                      color: BioWayColors.success,
-                                                      fontSize: 12,
-                                                      fontWeight: FontWeight.w600,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            IconButton(
-                                              onPressed: _showSignatureDialog,
-                                              icon: Icon(
-                                                Icons.edit,
-                                                color: BioWayColors.ecoceGreen,
-                                                size: 20,
-                                              ),
-                                              constraints: const BoxConstraints(
-                                                minWidth: 32,
-                                                minHeight: 32,
-                                              ),
-                                              padding: EdgeInsets.zero,
-                                              style: IconButton.styleFrom(
-                                                backgroundColor: Colors.white,
-                                                elevation: 2,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      ],
-                                    ),
-                                  )
-                                : InkWell(
-                                    onTap: _showSignatureDialog,
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Container(
-                                      height: 56,
-                                      child: Row(
+                              child: _signaturePoints.isEmpty
+                                  ? Center(
+                                      child: Column(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
                                           Icon(
-                                            Icons.edit,
-                                            color: BioWayColors.ecoceGreen,
-                                            size: 24,
+                                            Icons.draw,
+                                            size: 32,
+                                            color: Colors.grey[400],
                                           ),
-                                          const SizedBox(width: 12),
+                                          const SizedBox(height: 8),
                                           Text(
-                                            'Firmar',
+                                            'Toca para firmar',
                                             style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              color: BioWayColors.ecoceGreen,
+                                              fontSize: 14,
+                                              color: Colors.grey[600],
                                             ),
                                           ),
                                         ],
                                       ),
+                                    )
+                                  : Stack(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          child: Center(
+                                            child: AspectRatio(
+                                              aspectRatio: 2.0, // Proporción ancho:alto de 2:1
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  border: Border.all(
+                                                    color: Colors.grey[200]!,
+                                                    width: 1,
+                                                  ),
+                                                ),
+                                                child: ClipRRect(
+                                                  borderRadius: BorderRadius.circular(7),
+                                                  child: FittedBox(
+                                                    fit: BoxFit.contain,
+                                                    child: SizedBox(
+                                                      width: 300, // Mismo ancho que el diálogo
+                                                      height: 300, // Misma altura que el diálogo
+                                                      child: CustomPaint(
+                                                        painter: SignaturePainter(
+                                                          points: _signaturePoints,
+                                                          color: BioWayColors.darkGreen,
+                                                          strokeWidth: 2.0,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        Positioned(
+                                          top: 8,
+                                          right: 8,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  shape: BoxShape.circle,
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black.withOpacity(0.1),
+                                                      blurRadius: 4,
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: IconButton(
+                                                  onPressed: () => _showSignatureDialog(),
+                                                  icon: Icon(
+                                                    Icons.edit,
+                                                    color: BioWayColors.ecoceGreen,
+                                                    size: 20,
+                                                  ),
+                                                  constraints: const BoxConstraints(
+                                                    minWidth: 32,
+                                                    minHeight: 32,
+                                                  ),
+                                                  padding: EdgeInsets.zero,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  shape: BoxShape.circle,
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black.withOpacity(0.1),
+                                                      blurRadius: 4,
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: IconButton(
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _signaturePoints = [];
+                                                      _hasSignature = false;
+                                                    });
+                                                  },
+                                                  icon: const Icon(
+                                                    Icons.clear,
+                                                    color: Colors.red,
+                                                    size: 20,
+                                                  ),
+                                                  constraints: const BoxConstraints(
+                                                    minWidth: 32,
+                                                    minHeight: 32,
+                                                  ),
+                                                  padding: EdgeInsets.zero,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
+                            ),
                           ),
                         ],
                       ),
@@ -777,18 +683,24 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
   }
 }
 
-// Painter para la firma
+/// Painter personalizado para dibujar la firma
 class SignaturePainter extends CustomPainter {
   final List<Offset?> points;
+  final Color color;
+  final double strokeWidth;
 
-  SignaturePainter(this.points);
+  SignaturePainter({
+    required this.points,
+    required this.color,
+    this.strokeWidth = 2.0,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.black
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round;
+      ..color = color
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = strokeWidth;
 
     for (int i = 0; i < points.length - 1; i++) {
       if (points[i] != null && points[i + 1] != null) {
@@ -799,4 +711,150 @@ class SignaturePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(SignaturePainter oldDelegate) => true;
+}
+
+/// Diálogo para captura de firma
+class SignatureDialog extends StatefulWidget {
+  final Function(List<Offset?>) onSignatureComplete;
+
+  const SignatureDialog({super.key, required this.onSignatureComplete});
+
+  @override
+  State<SignatureDialog> createState() => _SignatureDialogState();
+}
+
+class _SignatureDialogState extends State<SignatureDialog> {
+  List<Offset?> _points = [];
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Firma del Operador',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close),
+                  constraints: const BoxConstraints(
+                    minWidth: 40,
+                    minHeight: 40,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              height: 300,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.grey[300]!,
+                  width: 2,
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: GestureDetector(
+                  onPanStart: (details) {
+                    setState(() {
+                      _points.add(details.localPosition);
+                    });
+                  },
+                  onPanUpdate: (details) {
+                    setState(() {
+                      _points.add(details.localPosition);
+                    });
+                  },
+                  onPanEnd: (details) {
+                    setState(() {
+                      _points.add(null);
+                    });
+                  },
+                  child: CustomPaint(
+                    size: const Size(double.infinity, double.infinity),
+                    painter: SignaturePainter(
+                      points: _points,
+                      color: BioWayColors.darkGreen,
+                    ),
+                    child: _points.isEmpty
+                        ? Center(
+                            child: Text(
+                              'Dibuja tu firma aquí',
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 16,
+                              ),
+                            ),
+                          )
+                        : null,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _points.clear();
+                    });
+                  },
+                  child: Text(
+                    'Limpiar',
+                    style: TextStyle(
+                      color: BioWayColors.error,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: _points.isEmpty
+                      ? null
+                      : () {
+                          widget.onSignatureComplete(_points);
+                          Navigator.of(context).pop();
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: BioWayColors.ecoceGreen,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                  ),
+                  child: const Text(
+                    'Confirmar',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

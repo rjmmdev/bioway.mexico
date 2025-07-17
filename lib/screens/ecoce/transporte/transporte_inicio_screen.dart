@@ -7,6 +7,7 @@ import 'transporte_recoger_screen.dart';
 import 'transporte_entregar_screen.dart';
 import 'transporte_ayuda_screen.dart';
 import 'transporte_perfil_screen.dart';
+import '../shared/widgets/qr_scanner_widget.dart';
 
 class TransporteInicioScreen extends StatefulWidget {
   const TransporteInicioScreen({super.key});
@@ -113,16 +114,24 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> with Si
   }
 
   void _iniciarEscaneo() {
-    setState(() {
-      _isScanning = true;
-    });
-    
-    // Simulación de escaneo exitoso después de 2 segundos
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        _procesarEscaneoExitoso('FID_1234567');
-      }
-    });
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SharedQRScannerScreen(
+          title: 'Escanear Lote',
+          subtitle: 'Escanea el código QR del lote',
+          onCodeScanned: (code) {
+            Navigator.pop(context);
+            _procesarEscaneoExitoso(code);
+          },
+          primaryColor: BioWayColors.deepBlue,
+          headerLabel: 'Transportista',
+          headerValue: 'T0000001',
+          userType: 'transportista',
+          scanPrompt: 'Apunta al código QR del lote',
+        ),
+      ),
+    );
   }
 
   void _procesarEscaneoExitoso(String loteId) {
@@ -222,116 +231,50 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> with Si
           children: [
             const SizedBox(height: 40),
             
-            // Área de escaneo
+            // Ilustración de escáner
             Container(
               height: 300,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: Colors.black87,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    BioWayColors.deepBlue.withOpacity(0.1),
+                    BioWayColors.deepBlue.withOpacity(0.05),
+                  ],
+                ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: _isScanning ? BioWayColors.success : BioWayColors.deepBlue,
-                  width: 3,
+                  color: BioWayColors.deepBlue.withOpacity(0.2),
+                  width: 2,
                 ),
               ),
-              child: Stack(
-                alignment: Alignment.center,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Marco de enfoque
-                  Container(
-                    width: 200,
-                    height: 200,
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 2,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
+                  Icon(
+                    Icons.qr_code_scanner,
+                    size: 80,
+                    color: BioWayColors.deepBlue,
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Escanea el código QR',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: BioWayColors.darkGreen,
                     ),
                   ),
-                  
-                  // Línea de escaneo animada
-                  if (_isScanning)
-                    TweenAnimationBuilder<double>(
-                      tween: Tween(begin: -100, end: 100),
-                      duration: const Duration(seconds: 2),
-                      builder: (context, value, child) {
-                        return Positioned(
-                          top: 150 + value,
-                          child: Container(
-                            width: 180,
-                            height: 2,
-                            color: BioWayColors.success,
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 20,
-                                  height: 2,
-                                  decoration: BoxDecoration(
-                                    color: BioWayColors.success,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: BioWayColors.success.withOpacity(0.8),
-                                        blurRadius: 8,
-                                        spreadRadius: 2,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                      onEnd: () {
-                        if (_isScanning && mounted) {
-                          setState(() {
-                            // Reiniciar animación
-                          });
-                        }
-                      },
+                  const SizedBox(height: 8),
+                  Text(
+                    'Apunta al código del lote para iniciar',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: BioWayColors.textGrey,
                     ),
-                  
-                  // Ícono de QR
-                  if (!_isScanning)
-                    Icon(
-                      Icons.qr_code_scanner,
-                      size: 80,
-                      color: Colors.white.withOpacity(0.3),
-                    ),
-                  
-                  // Indicador de escaneo activo
-                  if (_isScanning)
-                    Positioned(
-                      bottom: 20,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(BioWayColors.success),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Escaneando...',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  ),
                 ],
               ),
             ),
@@ -342,8 +285,16 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> with Si
             SizedBox(
               width: double.infinity,
               height: 56,
-              child: ElevatedButton(
-                onPressed: _isScanning ? null : _iniciarEscaneo,
+              child: ElevatedButton.icon(
+                onPressed: _iniciarEscaneo,
+                icon: const Icon(Icons.camera_alt),
+                label: const Text(
+                  'Iniciar Escaneo',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: BioWayColors.deepBlue,
                   foregroundColor: Colors.white,
@@ -351,13 +302,6 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> with Si
                     borderRadius: BorderRadius.circular(16),
                   ),
                   elevation: 2,
-                ),
-                child: Text(
-                  _isScanning ? 'Escaneando...' : 'Iniciar Escaneo',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
                 ),
               ),
             ),

@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
 import 'reciclador_inicio.dart';
 import 'widgets/reciclador_lote_card.dart';
+import '../shared/widgets/qr_code_display_widget.dart';
 
 class RecicladorLoteQRScreen extends StatefulWidget {
   final String loteId;
@@ -89,25 +90,6 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
     return '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}/${fecha.year}';
   }
 
-  String get _qrData {
-    // Generar datos para el código QR incluyendo todos los datos del proceso
-    final Map<String, dynamic> qrInfo = {
-      'loteId': widget.loteId,
-      'material': widget.material,
-      'pesoOriginal': widget.pesoOriginal,
-      'pesoFinal': widget.pesoFinal ?? widget.pesoOriginal,
-      'presentacion': widget.presentacion,
-      'origen': widget.origen,
-      'fechaEntrada': _fechaEntradaFormateada,
-      'fechaSalida': _fechaSalidaFormateada,
-      'procesoReciclaje': widget.datosFormularioSalida ?? {},
-      'documentacion': widget.documentosCargados ?? [],
-      'estadoFinal': 'Completado',
-      'certificado': true,
-    };
-    
-    return qrInfo.toString();
-  }
 
   Future<void> _descargarCodigoQR() async {
     HapticFeedback.lightImpact();
@@ -324,217 +306,31 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
                 ),
               ),
 
-              // Código QR con información de reciclaje
-              Container(
-                padding: const EdgeInsets.all(32),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.recycling,
-                          color: BioWayColors.ecoceGreen,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Certificado de Material Reciclado',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey[800],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    // QR Container
-                    Container(
-                      width: 200,
-                      height: 200,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: BioWayColors.ecoceGreen.withOpacity(0.3),
-                          width: 2,
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.qr_code_2,
-                            size: 120,
-                            color: BioWayColors.ecoceGreen,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Código QR',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: BioWayColors.ecoceGreen,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // ID del lote
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: BioWayColors.ecoceGreen.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: BioWayColors.ecoceGreen.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.verified,
-                            color: BioWayColors.ecoceGreen,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            widget.loteId,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: BioWayColors.darkGreen,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 32),
-                    
-                    // Información del proceso de reciclaje
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8F9FA),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        children: [
-                          // Sección de información básica
-                          _buildSectionTitle('Información del Lote'),
-                          const SizedBox(height: 12),
-                          _buildInfoRow(
-                            icon: _getMaterialIcon(widget.material),
-                            label: 'Material',
-                            value: widget.material,
-                            color: _getMaterialColor(widget.material),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildInfoRow(
-                            icon: Icons.scale_outlined,
-                            label: 'Peso Original',
-                            value: '${widget.pesoOriginal} kg',
-                            color: Colors.blue,
-                          ),
-                          if (widget.pesoFinal != null) ...[
-                            const SizedBox(height: 16),
-                            _buildInfoRow(
-                              icon: Icons.compress,
-                              label: 'Peso Final',
-                              value: '${widget.pesoFinal} kg',
-                              color: Colors.indigo,
-                            ),
-                          ],
-                          const SizedBox(height: 16),
-                          _buildPresentacionRow(
-                            label: 'Presentación',
-                            value: widget.presentacion,
-                            color: Colors.green,
-                          ),
-                          const SizedBox(height: 16),
-                          _buildInfoRow(
-                            icon: Icons.location_on_outlined,
-                            label: 'Origen',
-                            value: widget.origen,
-                            color: Colors.purple,
-                          ),
-                          
-                          const SizedBox(height: 24),
-                          const Divider(),
-                          const SizedBox(height: 24),
-                          
-                          // Sección de fechas del proceso
-                          _buildSectionTitle('Proceso de Reciclaje'),
-                          const SizedBox(height: 12),
-                          _buildInfoRow(
-                            icon: Icons.login,
-                            label: 'Fecha de Entrada',
-                            value: _fechaEntradaFormateada,
-                            color: Colors.orange,
-                          ),
-                          const SizedBox(height: 16),
-                          _buildInfoRow(
-                            icon: Icons.logout,
-                            label: 'Fecha de Salida',
-                            value: _fechaSalidaFormateada,
-                            color: BioWayColors.success,
-                          ),
-                          
-                          // Información adicional del proceso
-                          if (widget.datosFormularioSalida != null) ...[
-                            const SizedBox(height: 24),
-                            const Divider(),
-                            const SizedBox(height: 24),
-                            _buildSectionTitle('Detalles del Proceso'),
-                            const SizedBox(height: 12),
-                            if (widget.datosFormularioSalida!['tipoProceso'] != null)
-                              _buildInfoRow(
-                                icon: Icons.engineering,
-                                label: 'Tipo de Proceso',
-                                value: widget.datosFormularioSalida!['tipoProceso'],
-                                color: Colors.teal,
-                              ),
-                          ],
-                          
-                          // Documentación
-                          if (widget.documentosCargados != null && widget.documentosCargados!.isNotEmpty) ...[
-                            const SizedBox(height: 24),
-                            const Divider(),
-                            const SizedBox(height: 24),
-                            _buildSectionTitle('Documentación Técnica'),
-                            const SizedBox(height: 12),
-                            _buildInfoRow(
-                              icon: Icons.folder_copy,
-                              label: 'Documentos Cargados',
-                              value: '${widget.documentosCargados!.length} archivos',
-                              color: BioWayColors.info,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+              // Código QR usando el widget compartido
+              QRCodeDisplayWidget(
+                loteId: widget.loteId,
+                material: widget.material,
+                peso: widget.pesoOriginal,
+                pesoFinal: widget.pesoFinal,
+                presentacion: widget.presentacion,
+                origen: widget.origen,
+                fechaCreacion: widget.fechaEntrada,
+                fechaSalida: widget.fechaSalida,
+                titulo: 'Certificado de Material Reciclado',
+                colorPrincipal: BioWayColors.ecoceGreen,
+                iconoPrincipal: Icons.recycling,
+                tipoUsuario: 'reciclador',
+                mostrarPesoFinal: true,
+                mostrarSeccionDocumentos: true,
+                documentos: widget.documentosCargados,
+                datosAdicionales: {
+                  'estadoFinal': 'Completado',
+                  'certificado': true,
+                  if (widget.datosFormularioSalida != null) ...widget.datosFormularioSalida!,
+                },
+                onDescargar: _descargarCodigoQR,
+                onImprimir: _imprimirEtiqueta,
+                onCompartir: _compartir,
               ),
 
               const SizedBox(height: 24),
@@ -610,130 +406,4 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Row(
-      children: [
-        Container(
-          width: 4,
-          height: 20,
-          decoration: BoxDecoration(
-            color: BioWayColors.ecoceGreen,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoRow({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(
-            icon,
-            color: color,
-            size: 22,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPresentacionRow({
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    final svgPath = value == 'Pacas' 
-        ? 'assets/images/icons/pacas.svg' 
-        : 'assets/images/icons/sacos.svg';
-        
-    return Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Center(
-            child: SvgPicture.asset(
-              svgPath,
-              width: 22,
-              height: 22,
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
 }
