@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../utils/colors.dart';
+import '../utils/material_utils.dart';
 
 class LoteCard extends StatelessWidget {
   final Map<String, dynamic> lote;
@@ -21,7 +22,7 @@ class LoteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final materialColor = _getMaterialColor(lote['material']);
+    final materialColor = getMaterialColor(lote['material']);
     
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -62,7 +63,7 @@ class LoteCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
-                      _getMaterialIcon(lote['material']),
+                      getMaterialIcon(lote['material']),
                       color: materialColor,
                       size: 24,
                     ),
@@ -255,29 +256,4 @@ class LoteCard extends StatelessWidget {
     );
   }
 
-  Color _getMaterialColor(String material) {
-    switch (material) {
-      case 'PEBD':
-        return BioWayColors.pebdPink; // Rosa
-      case 'PP':
-        return BioWayColors.ppPurple; // Morado
-      case 'Multilaminado':
-        return BioWayColors.multilaminadoBrown; // Café
-      default:
-        return Colors.grey;
-    }
-  }
-
-  IconData _getMaterialIcon(String material) {
-    switch (material) {
-      case 'PEBD':
-        return Icons.shopping_bag; // Bolsas plásticas
-      case 'PP':
-        return Icons.kitchen; // Contenedores
-      case 'Multilaminado':
-        return Icons.layers; // Capas múltiples
-      default:
-        return Icons.recycling;
-    }
-  }
 }

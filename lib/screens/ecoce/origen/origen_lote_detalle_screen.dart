@@ -3,8 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
 import 'origen_inicio_screen.dart';
-import 'widgets/lote_card.dart';
+import '../shared/widgets/lote_card.dart';
 import '../shared/widgets/qr_code_display_widget.dart';
+import '../shared/utils/material_utils.dart';
 
 class OrigenLoteDetalleScreen extends StatefulWidget {
   final String firebaseId;
@@ -119,33 +120,6 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
     );
   }
 
-  Color _getMaterialColor(String material) {
-    switch (material) {
-      case 'PEBD':
-        return BioWayColors.pebdPink;
-      case 'PP':
-        return BioWayColors.ppPurple;
-      case 'Multilaminado':
-        return BioWayColors.multilaminadoBrown;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  IconData _getMaterialIcon(String material) {
-    switch (material) {
-      case 'PEBD':
-      case 'Poli':
-        return Icons.shopping_bag;
-      case 'PP':
-        return Icons.kitchen;
-      case 'Multilaminado':
-      case 'Multi':
-        return Icons.layers;
-      default:
-        return Icons.recycling;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

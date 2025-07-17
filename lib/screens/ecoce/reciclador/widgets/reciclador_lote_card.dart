@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../utils/colors.dart';
+import '../../shared/utils/material_utils.dart';
 
 class RecicladorLoteCard extends StatelessWidget {
   final Map<String, dynamic> lote;
@@ -29,7 +30,7 @@ class RecicladorLoteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final materialColor = _getMaterialColor(lote['material'] ?? '');
+    final materialColor = getMaterialColor(lote['material'] ?? '');
     
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -72,7 +73,7 @@ class RecicladorLoteCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
-                      _getMaterialIcon(lote['material'] ?? ''),
+                      getMaterialIcon(lote['material'] ?? ''),
                       color: materialColor,
                       size: 24,
                     ),
@@ -296,31 +297,6 @@ class RecicladorLoteCard extends StatelessWidget {
     );
   }
 
-  Color _getMaterialColor(String material) {
-    switch (material) {
-      case 'PEBD':
-        return BioWayColors.pebdPink;
-      case 'PP':
-        return BioWayColors.ppPurple;
-      case 'Multilaminado':
-        return BioWayColors.multilaminadoBrown;
-      default:
-        return BioWayColors.ecoceGreen;
-    }
-  }
-
-  IconData _getMaterialIcon(String material) {
-    switch (material) {
-      case 'PEBD':
-        return Icons.shopping_bag; // Bolsas
-      case 'PP':
-        return Icons.kitchen; // Contenedores
-      case 'Multilaminado':
-        return Icons.layers; // Capas múltiples
-      default:
-        return Icons.recycling;
-    }
-  }
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
