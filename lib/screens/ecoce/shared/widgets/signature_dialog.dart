@@ -80,8 +80,8 @@ class _SignatureDialogState extends State<SignatureDialog> {
     return AlertDialog(
       title: Text(widget.title),
       content: Container(
-        width: MediaQuery.of(context).size.width * 0.9,
-        height: 300,
+        width: MediaQuery.of(context).size.width * 0.95,
+        height: 400,
         decoration: BoxDecoration(
           border: Border.all(color: BioWayColors.lightGrey),
           borderRadius: BorderRadius.circular(8),
@@ -93,10 +93,7 @@ class _SignatureDialogState extends State<SignatureDialog> {
             GestureDetector(
               onPanUpdate: (details) {
                 setState(() {
-                  RenderBox renderBox = context.findRenderObject() as RenderBox;
-                  _tempSignaturePoints.add(
-                    renderBox.globalToLocal(details.globalPosition),
-                  );
+                  _tempSignaturePoints.add(details.localPosition);
                 });
               },
               onPanEnd: (details) {
