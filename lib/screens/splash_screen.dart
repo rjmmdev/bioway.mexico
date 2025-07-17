@@ -271,6 +271,8 @@ class _SplashScreenState extends State<SplashScreen>
                                 ),
                               ),
                             ),
+                            const SizedBox(height: 8),
+                            const Icon(Icons.eco, color: BioWayColors.darkGreen),
                           ],
                         ),
                       ),

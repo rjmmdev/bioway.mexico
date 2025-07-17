@@ -404,75 +404,34 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                       ),
                                     ],
                                   ),
-                                  child: Stack(
-                                    children: [
-                                      // Icono de fondo decorativo
-                                      Positioned(
-                                        right: -10,
-                                        bottom: -10,
-                                        child: Icon(
-                                          Icons.inventory_2_outlined,
-                                          size: 60,
-                                          color: Colors.blue.withOpacity(0.05),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(14),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          _lotesCreados.toString(),
+                                          style: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
+                                            height: 1.1,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                      ),
-                                      // Contenido
-                                      Padding(
-                                        padding: const EdgeInsets.all(14),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Container(
-                                                  width: 32,
-                                                  height: 32,
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.blue.withOpacity(0.1),
-                                                    borderRadius: BorderRadius.circular(10),
-                                                  ),
-                                                  child: const Icon(
-                                                    Icons.inventory_2,
-                                                    color: Colors.blue,
-                                                    size: 18,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 10),
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    children: [
-                                                      Text(
-                                                        _lotesCreados.toString(),
-                                                        style: const TextStyle(
-                                                          fontSize: 18,
-                                                          fontWeight: FontWeight.bold,
-                                                          color: Colors.black87,
-                                                          height: 1.1,
-                                                        ),
-                                                        overflow: TextOverflow.ellipsis,
-                                                      ),
-                                                      const SizedBox(height: 2),
-                                                      Text(
-                                                        'Lotes creados',
-                                                        style: TextStyle(
-                                                          fontSize: 10,
-                                                          color: Colors.grey[600],
-                                                          height: 1.1,
-                                                        ),
-                                                        overflow: TextOverflow.ellipsis,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Lotes creados',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: Colors.grey[600],
+                                            height: 1.1,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -499,93 +458,52 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                       ),
                                     ],
                                   ),
-                                  child: Stack(
-                                    children: [
-                                      // Icono de fondo decorativo
-                                      Positioned(
-                                        right: -10,
-                                        bottom: -10,
-                                        child: Icon(
-                                          Icons.scale_outlined,
-                                          size: 60,
-                                          color: Colors.green.withOpacity(0.05),
-                                        ),
-                                      ),
-                                      // Contenido
-                                      Padding(
-                                        padding: const EdgeInsets.all(14),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(14),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Row(
+                                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                                          textBaseline: TextBaseline.alphabetic,
                                           children: [
-                                            Row(
-                                              children: [
-                                                Container(
-                                                  width: 32,
-                                                  height: 32,
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.green.withOpacity(0.1),
-                                                    borderRadius: BorderRadius.circular(10),
-                                                  ),
-                                                  child: const Icon(
-                                                    Icons.scale,
-                                                    color: Colors.green,
-                                                    size: 18,
-                                                  ),
+                                            Flexible(
+                                              child: Text(
+                                                '$_materialProcesado',
+                                                style: const TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.black87,
+                                                  height: 1.1,
                                                 ),
-                                                const SizedBox(width: 10),
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    children: [
-                                                      Row(
-                                                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                                                        textBaseline: TextBaseline.alphabetic,
-                                                        children: [
-                                                          Flexible(
-                                                            child: Text(
-                                                              '$_materialProcesado',
-                                                              style: const TextStyle(
-                                                                fontSize: 18,
-                                                                fontWeight: FontWeight.bold,
-                                                                color: Colors.black87,
-                                                                height: 1.1,
-                                                              ),
-                                                              overflow: TextOverflow.ellipsis,
-                                                            ),
-                                                          ),
-                                                          const SizedBox(width: 4),
-                                                          const Text(
-                                                            'ton',
-                                                            style: TextStyle(
-                                                              fontSize: 12,
-                                                              fontWeight: FontWeight.w600,
-                                                              color: Colors.green,
-                                                              height: 1.1,
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                      const SizedBox(height: 2),
-                                                      Text(
-                                                        'Material procesado',
-                                                        style: TextStyle(
-                                                          fontSize: 10,
-                                                          color: Colors.grey[600],
-                                                          height: 1.1,
-                                                        ),
-                                                        overflow: TextOverflow.ellipsis,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            const Text(
+                                              'ton',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.green,
+                                                height: 1.1,
+                                              ),
                                             ),
                                           ],
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Material procesado',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: Colors.grey[600],
+                                            height: 1.1,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
