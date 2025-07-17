@@ -161,10 +161,17 @@ class RecicladorLoteCard extends StatelessWidget {
                     trailing!
                   else if (showActions) ...[
                     const SizedBox(width: 12),
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      color: Colors.grey.shade400,
-                      size: 16,
+                    InkWell(
+                      onTap: onActionPressed ?? onTap,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(
+                          Icons.arrow_forward_ios,
+                          color: Colors.grey.shade400,
+                          size: 16,
+                        ),
+                      ),
                     ),
                   ],
                 ],
@@ -291,15 +298,12 @@ class RecicladorLoteCard extends StatelessWidget {
 
   Color _getMaterialColor(String material) {
     switch (material) {
-      case 'PET':
-        return BioWayColors.petBlue;
-      case 'HDPE':
-        return BioWayColors.hdpeGreen;
+      case 'PEBD':
+        return BioWayColors.pebdPink;
       case 'PP':
-        return BioWayColors.ppOrange;
-      case 'Multi':
+        return BioWayColors.ppPurple;
       case 'Multilaminado':
-        return BioWayColors.otherPurple;
+        return BioWayColors.multilaminadoBrown;
       default:
         return BioWayColors.ecoceGreen;
     }
@@ -307,13 +311,10 @@ class RecicladorLoteCard extends StatelessWidget {
 
   IconData _getMaterialIcon(String material) {
     switch (material) {
-      case 'PET':
-        return Icons.local_drink; // Botellas
-      case 'HDPE':
-        return Icons.cleaning_services; // Productos de limpieza
+      case 'PEBD':
+        return Icons.shopping_bag; // Bolsas
       case 'PP':
         return Icons.kitchen; // Contenedores
-      case 'Multi':
       case 'Multilaminado':
         return Icons.layers; // Capas múltiples
       default:

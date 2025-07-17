@@ -135,15 +135,12 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
 
   Color _getMaterialColor(String material) {
     switch (material) {
-      case 'PET':
-        return BioWayColors.petBlue;
-      case 'HDPE':
-        return BioWayColors.hdpeGreen;
+      case 'PEBD':
+        return BioWayColors.pebdPink;
       case 'PP':
-        return BioWayColors.ppOrange;
-      case 'Multi':
+        return BioWayColors.ppPurple;
       case 'Multilaminado':
-        return BioWayColors.otherPurple;
+        return BioWayColors.multilaminadoBrown;
       default:
         return BioWayColors.ecoceGreen;
     }
@@ -151,13 +148,10 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
 
   IconData _getMaterialIcon(String material) {
     switch (material) {
-      case 'PET':
-        return Icons.local_drink;
-      case 'HDPE':
-        return Icons.cleaning_services;
+      case 'PEBD':
+        return Icons.shopping_bag;
       case 'PP':
         return Icons.kitchen;
-      case 'Multi':
       case 'Multilaminado':
         return Icons.layers;
       default:
@@ -189,12 +183,6 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
             fontWeight: FontWeight.w600,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share_outlined, color: Colors.black87),
-            onPressed: _compartir,
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -333,49 +321,8 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
                 onCompartir: _compartir,
               ),
 
-              const SizedBox(height: 24),
-
-              // Botones de acción
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _descargarCodigoQR,
-                      icon: const Icon(Icons.download),
-                      label: const Text('Descargar QR'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: BioWayColors.ecoceGreen,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _imprimirEtiqueta,
-                      icon: const Icon(Icons.print),
-                      label: const Text('Imprimir'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        side: BorderSide(
-                          color: Colors.grey[400]!,
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
               if (widget.mostrarMensajeExito) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
                   child: TextButton(

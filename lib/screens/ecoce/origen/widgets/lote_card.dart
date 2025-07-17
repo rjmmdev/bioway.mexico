@@ -258,13 +258,11 @@ class LoteCard extends StatelessWidget {
   Color _getMaterialColor(String material) {
     switch (material) {
       case 'PEBD':
-      case 'Poli':
-        return const Color(0xFF2196F3); // Azul
+        return BioWayColors.pebdPink; // Rosa
       case 'PP':
-        return const Color(0xFF9C27B0); // Morado
+        return BioWayColors.ppPurple; // Morado
       case 'Multilaminado':
-      case 'Multi':
-        return const Color(0xFFFF6B35); // Naranja
+        return BioWayColors.multilaminadoBrown; // Café
       default:
         return Colors.grey;
     }
@@ -273,12 +271,10 @@ class LoteCard extends StatelessWidget {
   IconData _getMaterialIcon(String material) {
     switch (material) {
       case 'PEBD':
-      case 'Poli':
         return Icons.shopping_bag; // Bolsas plásticas
       case 'PP':
         return Icons.kitchen; // Contenedores
       case 'Multilaminado':
-      case 'Multi':
         return Icons.layers; // Capas múltiples
       default:
         return Icons.recycling;

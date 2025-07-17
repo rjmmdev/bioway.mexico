@@ -87,7 +87,7 @@ class RecicladorDocumentacion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SharedDocumentUploadScreen(
+    return DocumentUploadWidget(
       title: 'Documentación Técnica',
       subtitle: 'Carga los documentos técnicos',
       lotId: lotId,
@@ -98,7 +98,9 @@ class RecicladorDocumentacion extends StatelessWidget {
       onDocumentsSubmitted: (documents) => _onDocumentsSubmitted(context, documents),
       primaryColor: BioWayColors.ecoceGreen,
       userType: 'reciclador',
-      additionalInfoText: 'Puedes cargar documentos adicionales si lo consideras necesario',
+      additionalInfoText: 'Mínimo 1 documento requerido, máximo 2 documentos permitidos',
+      minDocuments: 1,
+      maxDocuments: 2,
     );
   }
 }

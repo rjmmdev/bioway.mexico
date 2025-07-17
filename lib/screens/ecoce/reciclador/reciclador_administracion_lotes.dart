@@ -6,6 +6,8 @@ import 'reciclador_escaneo.dart';
 import 'reciclador_formulario_salida.dart';
 import 'reciclador_documentacion.dart';
 import 'reciclador_lote_qr_screen.dart';
+import 'reciclador_ayuda.dart';
+import 'reciclador_perfil.dart';
 import 'widgets/reciclador_bottom_navigation.dart';
 import 'widgets/reciclador_lote_card.dart';
 
@@ -63,7 +65,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
     // Lotes pendientes de salida
     Lote(
       id: 'L001',
-      material: 'PET',
+      material: 'PEBD',
       peso: 125.5,
       presentacion: 'Pacas',
       fechaCreacion: DateTime.now().subtract(const Duration(days: 2)),
@@ -84,7 +86,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
     // Lotes pendientes de documentación
     Lote(
       id: 'L003',
-      material: 'PET',
+      material: 'PEBD',
       peso: 200.8,
       presentacion: 'Pacas',
       fechaCreacion: DateTime.now().subtract(const Duration(days: 5)),
@@ -95,7 +97,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
     ),
     Lote(
       id: 'L004',
-      material: 'Multi',
+      material: 'Multilaminado',
       peso: 156.2,
       presentacion: 'Sacos',
       fechaCreacion: DateTime.now().subtract(const Duration(days: 4)),
@@ -107,7 +109,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
     // Lotes finalizados
     Lote(
       id: 'L005',
-      material: 'PET',
+      material: 'PEBD',
       peso: 180.5,
       presentacion: 'Pacas',
       fechaCreacion: DateTime.now().subtract(const Duration(days: 10)),
@@ -266,31 +268,15 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
         // Ya estamos en lotes
         break;
       case 2:
-        // TODO: Implementar pantalla de ayuda
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Pantalla de Ayuda en desarrollo'),
-            backgroundColor: BioWayColors.info,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            duration: const Duration(seconds: 1),
-          ),
+        NavigationHelper.navigateWithReplacement(
+          context: context,
+          destination: const RecicladorAyudaScreen(),
         );
         break;
       case 3:
-        // TODO: Implementar pantalla de perfil
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Pantalla de Perfil en desarrollo'),
-            backgroundColor: BioWayColors.info,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            duration: const Duration(seconds: 1),
-          ),
+        NavigationHelper.navigateWithReplacement(
+          context: context,
+          destination: const RecicladorPerfilScreen(),
         );
         break;
     }
@@ -373,7 +359,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: ['Todos', 'PET', 'PP', 'Multi'].map((material) {
+                  children: ['Todos', 'PEBD', 'PP', 'Multilaminado'].map((material) {
                     final isSelected = _selectedMaterial == material;
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
@@ -533,6 +519,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                       actionButtonText: _getActionButtonText(lote.estado),
                       actionButtonColor: _getActionButtonColor(lote.estado),
                       onActionPressed: () => _onLoteTap(lote),
+                      showActions: true, // Mostrar flecha lateral
                     );
                   },
                 ),

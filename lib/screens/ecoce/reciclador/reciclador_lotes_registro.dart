@@ -65,7 +65,7 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
 
   // Métodos temporales para simular datos
   String _getMaterialForDemo(String id) {
-    final materials = ['PET', 'HDPE', 'PP', 'PVC', 'PS'];
+    final materials = ['PEBD', 'PP', 'Multilaminado'];
     return materials[id.length % materials.length];
   }
 
@@ -152,18 +152,14 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
 
   Color _getMaterialColor(String material) {
     switch (material) {
-      case 'PET':
-        return BioWayColors.petBlue;
-      case 'HDPE':
-        return BioWayColors.hdpeGreen;
+      case 'PEBD':
+        return BioWayColors.pebdPink;
       case 'PP':
-        return BioWayColors.ppOrange;
-      case 'PVC':
-        return BioWayColors.pvcRed;
-      case 'PS':
-        return BioWayColors.psYellow;
+        return BioWayColors.ppPurple;
+      case 'Multilaminado':
+        return BioWayColors.multilaminadoBrown;
       default:
-        return BioWayColors.otherPurple;
+        return Colors.grey;
     }
   }
 

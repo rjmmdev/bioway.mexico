@@ -30,9 +30,9 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
 
   // Lista de tipos de polímeros disponibles
   final List<String> _tiposPolimeros = [
-    'Poli',
+    'PEBD',
     'PP',
-    'Multi'
+    'Multilaminado'
   ];
 
 

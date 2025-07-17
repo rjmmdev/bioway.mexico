@@ -8,12 +8,12 @@ class RecicladorPerfilScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PlaceholderPerfilScreen(
-      nombreUsuario: "María González Hernández",
+      nombreUsuario: "Juan Pérez García",
       tipoUsuario: "Reciclador",
-      folioUsuario: "R0000001",
+      folioUsuario: "R0001234",
       iconCode: "recycling",
-      primaryColor: BioWayColors.primaryGreen,
-      nombreEmpresa: "Reciclaje Sustentable MX",
+      primaryColor: BioWayColors.ecoceGreen,
+      nombreEmpresa: "Planta Recicladora Ecológica del Norte S.A. de C.V.",
     );
   }
 }

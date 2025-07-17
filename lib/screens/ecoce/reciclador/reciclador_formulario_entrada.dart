@@ -21,12 +21,13 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
   final _formKey = GlobalKey<FormState>();
   
   // Controladores
-  final TextEditingController _pesoController = TextEditingController();
+  final TextEditingController _pesoBrutoController = TextEditingController();
+  final TextEditingController _pesoNetoController = TextEditingController();
   final TextEditingController _operadorController = TextEditingController();
   
   // Variables del formulario
   String? _selectedPolimero;
-  final List<String> _polimeros = ['PET', 'PP', 'Multi'];
+  final List<String> _polimeros = ['PEBD', 'PP', 'Multilaminado'];
   
   // Variables para la firma
   List<Offset?> _signaturePoints = [];
@@ -34,25 +35,32 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
 
   @override
   void dispose() {
-    _pesoController.dispose();
+    _pesoBrutoController.dispose();
+    _pesoNetoController.dispose();
     _operadorController.dispose();
     super.dispose();
   }
 
   void _showSignatureDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return SignatureDialog(
-          onSignatureComplete: (points) {
-            setState(() {
-              _signaturePoints = points;
-              _hasSignature = points.isNotEmpty;
-            });
-          },
-        );
-      },
-    );
+    // Cerrar el teclado antes de mostrar el diálogo
+    FocusScope.of(context).unfocus();
+    
+    // Pequeño delay para asegurar que el teclado se cierre completamente
+    Future.delayed(const Duration(milliseconds: 300), () {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return SignatureDialog(
+            onSignatureComplete: (points) {
+              setState(() {
+                _signaturePoints = points;
+                _hasSignature = points.isNotEmpty;
+              });
+            },
+          );
+        },
+      );
+    });
   }
 
   void _submitForm() {
@@ -249,13 +257,26 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                           const SizedBox(height: 20),
                           
                           // Tipo de Polímero
-                          Text(
-                            'Tipo de Polímero',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: BioWayColors.textGrey,
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                'Tipo de Polímero',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: BioWayColors.textGrey,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '*',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: BioWayColors.error,
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 8),
                           DropdownButtonFormField<String>(
@@ -304,21 +325,34 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                           
                           const SizedBox(height: 20),
                           
-                          // Peso total recibido
-                          Text(
-                            'Peso total recibido',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: BioWayColors.textGrey,
-                            ),
+                          // Peso Bruto Recibido
+                          Row(
+                            children: [
+                              Text(
+                                'Peso Bruto Recibido',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: BioWayColors.textGrey,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '*',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: BioWayColors.error,
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 8),
                           Row(
                             children: [
                               Expanded(
                                 child: TextFormField(
-                                  controller: _pesoController,
+                                  controller: _pesoBrutoController,
                                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                   inputFormatters: [
                                     FilteringTextInputFormatter.allow(RegExp(r'^\d{0,5}\.?\d{0,3}')),
@@ -353,6 +387,95 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                                     final peso = double.tryParse(value);
                                     if (peso == null || peso <= 0) {
                                       return 'Ingresa un peso válido';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                                decoration: BoxDecoration(
+                                  color: BioWayColors.ecoceGreen.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: BioWayColors.ecoceGreen.withOpacity(0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  'kg',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: BioWayColors.ecoceGreen,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          
+                          const SizedBox(height: 20),
+                          
+                          // Peso Neto Aprovechable
+                          Row(
+                            children: [
+                              Text(
+                                'Peso Neto Aprovechable',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: BioWayColors.textGrey,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '*',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: BioWayColors.error,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _pesoNetoController,
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.allow(RegExp(r'^\d{0,5}\.?\d{0,3}')),
+                                  ],
+                                  decoration: InputDecoration(
+                                    hintText: 'XXXXX.XXX',
+                                    filled: true,
+                                    fillColor: BioWayColors.backgroundGrey,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: BioWayColors.lightGrey,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: BioWayColors.ecoceGreen,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    counterText: '',
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Por favor ingresa el peso neto';
                                     }
                                     return null;
                                   },
@@ -424,13 +547,26 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                           const SizedBox(height: 20),
                           
                           // Nombre del Operador
-                          Text(
-                            'Nombre del Operador',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: BioWayColors.textGrey,
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                'Nombre del Operador',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: BioWayColors.textGrey,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '*',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: BioWayColors.error,
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 8),
                           TextFormField(

@@ -48,7 +48,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
     },
     {
       'firebaseId': 'FID_3z9k1m5',
-      'material': 'Multi',
+      'material': 'Multilaminado',
       'peso': 150,
       'fecha': '14/07/2025',
       'presentacion': 'Pacas',
@@ -505,7 +505,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: ['Todos', 'PEBD', 'PP', 'Multi'].map((material) {
+                    children: ['Todos', 'PEBD', 'PP', 'Multilaminado'].map((material) {
                       final isSelected = _filtroMaterial == material;
                       return ChoiceChip(
                         label: Text(material),

@@ -95,11 +95,6 @@ class BioWayColors {
   ];
 
   // ===== COLORES NEUTROS =====
-  /// Rojo para PVC
-  static const Color pvcRed = Color(0xFFE53935); // Rojo material
-
-  /// Amarillo para PS (Poliestireno)
-  static const Color psYellow = Color(0xFFFFB300); // Amarillo ámbar
 
   /// Gris para textos secundarios
   static const Color textGrey = Color(0xFF666666);
@@ -132,17 +127,14 @@ class BioWayColors {
 
   // ===== COLORES DE MATERIALES (RECICLAJE) - ACTUALIZADOS =====
 
-  /// Color para PET - azul más vibrante
-  static const Color petBlue = Color(0xFF0085FF);
+  /// Color para PEBD - rosa
+  static const Color pebdPink = Color(0xFFEC4899); // Rosa
 
-  /// Color para HDPE - verde reciclaje
-  static const Color hdpeGreen = Color(0xFF00A854);
+  /// Color para PP - morado
+  static const Color ppPurple = Color(0xFF9333EA); // Morado
 
-  /// Color para PP - naranja vibrante
-  static const Color ppOrange = Color(0xFFFF7A00);
-
-  /// Color para otros materiales - morado vibrante
-  static const Color otherPurple = Color(0xFF9333EA);
+  /// Color para Multilaminado - café
+  static const Color multilaminadoBrown = Color(0xFF92400E); // Café
 
   /// Color para vidrio - verde esmeralda
   static const Color glassGreen = Color(0xFF00D665);
@@ -157,6 +149,15 @@ class BioWayColors {
 
   /// Rosa para elementos destacados (como se ve en la imagen)
   static const Color accentPink = Color(0xFFFF6B9D);
+  
+  // ===== COLORES LEGACY (para compatibilidad) =====
+  /// Estos colores se mantienen para evitar errores en código existente
+  static const Color petBlue = Color(0xFF0085FF);
+  static const Color hdpeGreen = Color(0xFF00A854);
+  static const Color ppOrange = Color(0xFFFF7A00);
+  static const Color otherPurple = Color(0xFF9333EA);
+  static const Color pvcRed = Color(0xFFE53935);
+  static const Color psYellow = Color(0xFFFFB300);
 
   /// Amarillo vibrante para notificaciones
   static const Color brightYellow = Color(0xFFFFD93D);
