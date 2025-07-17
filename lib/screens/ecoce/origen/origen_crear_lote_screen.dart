@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:io';
 import '../../../utils/colors.dart';
+import 'origen_config.dart';
 import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
 import 'origen_lote_detalle_screen.dart';
@@ -16,6 +17,8 @@ class OrigenCrearLoteScreen extends StatefulWidget {
 
 class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  Color get _primaryColor => OrigenUserConfig.current.color;
   
   // Controladores para los campos de texto
   final TextEditingController _fuenteController = TextEditingController();
@@ -67,7 +70,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
           _hasSignature = points.isNotEmpty;
         });
       },
-      primaryColor: BioWayColors.ecoceGreen,
+      primaryColor: _primaryColor,
     );
   }
 
@@ -102,7 +105,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
     return Scaffold(
       backgroundColor: BioWayColors.backgroundGrey,
       appBar: AppBar(
-        backgroundColor: BioWayColors.ecoceGreen,
+        backgroundColor: _primaryColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
@@ -127,7 +130,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
-              color: BioWayColors.ecoceGreen,
+              color: _primaryColor,
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(30),
                 bottomRight: Radius.circular(30),
@@ -271,10 +274,10 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
                               decoration: BoxDecoration(
-                                color: BioWayColors.ecoceGreen.withOpacity(0.1),
+                                color: _primaryColor.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: BioWayColors.ecoceGreen.withOpacity(0.3),
+                                  color: _primaryColor.withOpacity(0.3),
                                   width: 1,
                                 ),
                               ),
@@ -283,7 +286,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: BioWayColors.ecoceGreen,
+                                  color: _primaryColor,
                                 ),
                               ),
                             ),
@@ -342,7 +345,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                       maxPhotos: 1,
                       minPhotos: 0,
                       onPhotosChanged: (_) {},
-                      primaryColor: BioWayColors.ecoceGreen,
+                      primaryColor: _primaryColor,
                     ),
                     
                     const SizedBox(height: 20),
@@ -372,7 +375,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                       child: ElevatedButton(
                         onPressed: _generarLote,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: BioWayColors.ecoceGreen,
+                          backgroundColor: _primaryColor,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(28),
@@ -469,14 +472,14 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(
-          color: BioWayColors.ecoceGreen.withOpacity(0.3),
+          color: _primaryColor.withOpacity(0.3),
           width: 1,
         ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(
-          color: BioWayColors.ecoceGreen,
+          color: _primaryColor,
           width: 2,
         ),
       ),
@@ -493,8 +496,8 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
             : BioWayColors.backgroundGrey,
         border: Border.all(
           color: _hasSignature 
-              ? BioWayColors.ecoceGreen 
-              : BioWayColors.ecoceGreen.withOpacity(0.3),
+              ? _primaryColor 
+              : _primaryColor.withOpacity(0.3),
           width: 1,
         ),
         borderRadius: BorderRadius.circular(12),
@@ -562,7 +565,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                           onPressed: _showSignatureDialog,
                           icon: Icon(
                             Icons.edit,
-                            color: BioWayColors.ecoceGreen,
+                            color: _primaryColor,
                             size: 20,
                           ),
                           constraints: const BoxConstraints(
@@ -591,7 +594,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                   children: [
                     Icon(
                       Icons.edit,
-                      color: BioWayColors.ecoceGreen,
+                      color: _primaryColor,
                       size: 24,
                     ),
                     const SizedBox(width: 12),
@@ -600,7 +603,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: BioWayColors.ecoceGreen,
+                        color: _primaryColor,
                       ),
                     ),
                   ],
@@ -622,10 +625,10 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-          color: isSelected ? BioWayColors.ecoceGreen.withOpacity(0.1) : BioWayColors.backgroundGrey,
+          color: isSelected ? _primaryColor.withOpacity(0.1) : BioWayColors.backgroundGrey,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? BioWayColors.ecoceGreen : BioWayColors.ecoceGreen.withOpacity(0.3),
+            color: isSelected ? _primaryColor : _primaryColor.withOpacity(0.3),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -642,7 +645,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected ? BioWayColors.ecoceGreen : BioWayColors.textGrey,
+                color: isSelected ? _primaryColor : BioWayColors.textGrey,
               ),
             ),
           ],
