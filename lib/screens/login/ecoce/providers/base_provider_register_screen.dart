@@ -176,8 +176,12 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
       
       // Generar link de Google Maps si hay ubicación seleccionada
       String? linkMaps;
+      double? latitud;
+      double? longitud;
       if (_selectedLocation != null) {
         linkMaps = 'https://www.google.com/maps/search/?api=1&query=${_selectedLocation!.latitude},${_selectedLocation!.longitude}';
+        latitud = _selectedLocation!.latitude;
+        longitud = _selectedLocation!.longitude;
       }
       
       // Crear perfil en Firebase
@@ -204,6 +208,8 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
         pesoCapacidad: pesoCapacidad,
         documentos: _selectedFiles,
         linkMaps: linkMaps,
+        latitud: latitud,
+        longitud: longitud,
       );
       
       setState(() {
@@ -245,7 +251,12 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
       return 'La contraseña debe tener al menos 6 caracteres';
     } else if (error.contains('invalid-email')) {
       return 'El correo no es válido';
+    } else if (error.contains('network-request-failed')) {
+      return 'Error de conexión. Verifica tu internet';
+    } else if (error.contains('too-many-requests')) {
+      return 'Demasiados intentos. Intenta más tarde';
     } else {
+      print('Error completo: $error'); // Para debugging
       return 'Error al registrar. Intenta nuevamente.';
     }
   }
@@ -254,12 +265,203 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => SuccessDialog(
-        folio: folio,
-        onContinue: () {
-          Navigator.of(context).pop();
-          Navigator.of(context).pop();
-        },
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icono de éxito
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: BioWayColors.success.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.check_circle_outline,
+                  size: 50,
+                  color: BioWayColors.success,
+                ),
+              ),
+              SizedBox(height: 20),
+              
+              // Título
+              Text(
+                '¡Registro exitoso!',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: BioWayColors.darkGreen,
+                ),
+              ),
+              SizedBox(height: 12),
+              
+              // Folio
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: BioWayColors.lightGreen.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Folio: $folio',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: BioWayColors.primaryGreen,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+              
+              // Mensaje de aprobación pendiente
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: BioWayColors.warning.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: BioWayColors.warning.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.pending_actions,
+                      color: BioWayColors.warning,
+                      size: 32,
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      'Cuenta pendiente de aprobación',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: BioWayColors.darkGreen,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Tu cuenta ha sido creada exitosamente, pero necesita ser aprobada por ECOCE antes de que puedas acceder.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: BioWayColors.textGrey,
+                        height: 1.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 12),
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: BioWayColors.lightGrey),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Próximos pasos:',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: BioWayColors.darkGreen,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          _buildStep('1', 'ECOCE revisará tus documentos'),
+                          _buildStep('2', 'Recibirás una notificación por correo'),
+                          _buildStep('3', 'Una vez aprobado, podrás iniciar sesión'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 20),
+              
+              // Información adicional
+              Text(
+                'Guarda tu folio para futuras referencias',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: BioWayColors.textGrey,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+              SizedBox(height: 24),
+              
+              // Botón
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: BioWayColors.primaryGreen,
+                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Entendido',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStep(String number, String text) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: BioWayColors.petBlue.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                number,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: BioWayColors.petBlue,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 13,
+                color: BioWayColors.textGrey,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

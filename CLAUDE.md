@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-BioWay México is a Flutter-based mobile application for recycling and waste management with multiple user roles in a supply chain tracking system. The app supports both iOS and Android platforms and includes two main platforms: BioWay and ECOCE. Currently in prototype/early development stage with mock data and no backend integration.
+BioWay México is a Flutter-based mobile application for recycling and waste management with dual-platform support (BioWay and ECOCE). The app implements a complete supply chain tracking system for recyclable materials with role-based access and multi-tenant Firebase architecture.
 
 ## Commands
 
@@ -21,6 +21,12 @@ flutter run
 
 # Run with verbose output
 flutter run -v
+
+# Hot reload (when app is running)
+r
+
+# Hot restart (when app is running)
+R
 ```
 
 ### Building
@@ -31,8 +37,14 @@ flutter build apk --debug
 # Build release APK
 flutter build apk --release
 
+# Build app bundle for Play Store
+flutter build appbundle
+
 # Build iOS (macOS only)
 flutter build ios
+
+# Build with obfuscation (release)
+flutter build apk --obfuscate --split-debug-info=./symbols
 ```
 
 ### Testing
@@ -43,216 +55,268 @@ flutter test
 # Run tests with coverage
 flutter test --coverage
 
-# Run a specific test file
+# Run specific test file
 flutter test test/widget_test.dart
 
-# Run tests with verbose output
-flutter test -v
+# Run tests matching pattern
+flutter test --name="Login"
+
+# Run integration tests
+flutter drive --target=test_driver/app.dart
 ```
 
 ### Code Quality
 ```bash
-# Analyze code
+# Analyze code for issues
 flutter analyze
 
-# Format code
+# Format all Dart files
 dart format .
+
+# Format specific file
+dart format lib/main.dart
+
+# Check for outdated packages
+flutter pub outdated
+
+# Upgrade packages
+flutter pub upgrade
 ```
 
-### Convenience Scripts
+### Debugging
 ```bash
-# PowerShell script for building debug APK
-./build_debug.ps1
+# Run with observatory debugger
+flutter run --observatory-port=8888
 
-# PowerShell script for clean, get dependencies, and run
-./run_app.ps1
+# Run with specific build flavor
+flutter run --flavor development
 
-# Batch file alternatives
-./compile_debug.bat  # Run on emulator
-./run_app.bat       # Clean, get dependencies, and run
+# Clear build cache
+flutter clean && rm -rf build/
+
+# Regenerate platform files
+flutter create --platforms=android,ios .
 ```
 
 ## Architecture
 
-The application follows a feature-based folder structure with clear separation of concerns. Currently uses Flutter's built-in state management (StatefulWidget + setState) with no external state management libraries.
+### Multi-Tenant Firebase Setup
+The app uses a sophisticated multi-tenant Firebase architecture to separate BioWay and ECOCE data:
 
-- **lib/screens/** - UI screens organized by feature modules:
-  - `splash_screen.dart` - Initial splash screen
-  - `login/` - Authentication screens
-    - `platform_selector_screen.dart` - Main platform selection (BioWay/ECOCE)
-    - `bioway/` - BioWay login and registration
-    - `ecoce/` - ECOCE login and provider selection
-      - `providers/` - Registration screens for each provider type
-  - `ecoce/` - ECOCE platform screens by user role:
-    - `origen/` - Origin collector (Acopiador) screens
-    - `reciclador/` - Recycler screens with lot management
-    - `transporte/` - Transport screens for pickup/delivery
-    - `planta_separacion/` - Material classification screens
-    - `transformador/` - Manufacturing screens
-    - `laboratorio/` - Laboratory analysis screens
-    - `shared/` - Shared ECOCE components
-      - `widgets/` - Reusable widgets (signature_dialog, weight_input_widget, qr_scanner_widget, etc.)
-      - `utils/` - Shared utilities (material_utils, input_decorations, navigation_utils)
-    
-- **lib/widgets/** - Reusable UI components
-  - `common/` - Shared widgets like gradient backgrounds
-  - Platform-specific reusable components
+- **FirebaseManager** (`lib/services/firebase/firebase_manager.dart`): Manages multiple Firebase app instances
+- **FirebaseConfig** (`lib/services/firebase/firebase_config.dart`): Stores platform-specific Firebase configurations
+- **Platform Initialization**: Each platform (BioWay/ECOCE) initializes its own Firebase instance at login
+- **Data Isolation**: Complete separation between BioWay and ECOCE data
 
-- **lib/services/** - Business logic and external integrations
-  - `image_service.dart` - Image handling and compression (max 50KB for DB storage)
-  - Document services for file management
+### Screen Organization
+Screens follow a feature-based structure with clear separation by platform and role:
 
-- **lib/utils/** - Helper functions and constants
-  - `colors.dart` - Centralized color definitions (BioWayColors)
+```
+lib/screens/
+├── splash_screen.dart              # Entry point with animation
+├── platform_selector_screen.dart   # BioWay vs ECOCE selection
+├── login/
+│   ├── bioway/                    # BioWay authentication
+│   └── ecoce/                     # ECOCE authentication
+│       └── providers/             # Role-specific registration
+└── ecoce/
+    ├── origen/                    # Acopiador screens
+    ├── reciclador/               # Recycler screens
+    ├── transporte/               # Transport screens
+    ├── planta_separacion/        # Separation plant screens
+    ├── transformador/            # Transformer screens
+    ├── laboratorio/              # Laboratory screens
+    └── shared/                   # Shared ECOCE components
+```
 
-## Key Features
+### Service Layer Architecture
+Services handle business logic and external integrations:
 
-- **Multi-Platform Support**: 
-  - BioWay: Main recycling system for collectors and recyclers
-  - ECOCE: Traceability system with 6 provider types (Acopiador, Planta de Separación, Reciclador, Transformador, Transportista, Laboratorio)
+- **AuthService**: Multi-tenant authentication with platform switching
+- **EcoceProfileService**: ECOCE user profile management with role-based data
+- **ImageService**: Image compression (max 50KB) and management
+- **FirebaseManager**: Centralized Firebase instance management
 
-- **QR Code Management**: 
-  - Scanning (`mobile_scanner`) for lot tracking
-  - Generation (`qr_flutter`) for lot identification
-  - Shared scanner widget for consistency
+### Widget Reusability Pattern
+Common widgets are organized for maximum reusability:
 
-- **Document Management**: 
-  - File upload/download (`file_picker`, `open_file`)
-  - Multi-file selection support
-  - Shared document upload widget
+- `lib/widgets/common/`: Platform-agnostic widgets (gradients, maps, etc.)
+- `lib/screens/ecoce/shared/widgets/`: ECOCE-specific shared components
+- Widget naming convention: `[Feature][Type]Widget` (e.g., `LocationPickerWidget`)
 
-- **Photo Evidence**: 
-  - Camera/gallery integration (`image_picker`)
-  - Image compression (`flutter_image_compress`) - max 50KB for DB storage
-  - Gallery saving (`gal`)
+## Key Features & Implementation
 
-- **Permissions**: 
-  - Comprehensive permission handling (`permission_handler`)
-  - Camera, storage, and location permissions
+### QR Code System
+- **Scanner**: `QrScannerWidget` using `mobile_scanner` package
+- **Generator**: `qr_flutter` for creating QR codes
+- **Format**: `LOTE-[MATERIAL]-[ID]` for lot tracking
 
-- **Material Tracking**: 
-  - Lot/batch management system
-  - Material type selection (PET, HDPE, PP, etc.)
-  - Weight and quantity tracking
-  - Color-coded material system
+### Document Management
+- **Upload**: `DocumentUploadWidget` with multi-file support
+- **Storage**: Firebase Storage with compressed paths
+- **Supported Types**: PDF, images (auto-compressed)
 
-## Navigation Flow
+### Location Services
+- **No GPS Required**: Uses geocoding without device location permissions
+- **Map Dialog**: `MapSelectorDialog` with fixed center pin
+- **Address Search**: `SimpleMapWidget` for address-based location selection
 
-1. **Splash Screen** → Platform Selector
-2. **Platform Selector** → BioWay Login or ECOCE Login
-3. **ECOCE Login** → Provider Type Selector → Registration → Role-specific Dashboard
-4. **BioWay Login** → Registration → Dashboard
+### Material Tracking
+Materials are role-specific:
+- **Origen**: EPF types (Poli, PP, Multi)
+- **Reciclador**: Processing states (separados, pacas, sacos)
+- **Transformador**: Pellets and flakes
+- **Laboratorio**: Sample types
 
-Key named routes in `main.dart`:
-- **Origen (Acopiador)**:
-  - `/origen_inicio` - Dashboard
-  - `/origen_lotes` - Lot management
-  - `/origen_crear_lote` - Create new lot
-  - `/origen_ayuda` - Help screen
-  - `/origen_perfil` - Profile
-- **Reciclador**:
-  - `/reciclador_inicio` - Dashboard
-  - `/reciclador_lotes` - Lot administration
-  - `/reciclador_escaneo` - QR scanner
-  - `/reciclador_ayuda` - Help
-  - `/reciclador_perfil` - Profile
-- **Transporte**:
-  - `/transporte_inicio` - Scanner screen (entry point)
-  - `/transporte_recoger` - Pickup form
-  - `/transporte_entregar` - Delivery
-  - `/transporte_ayuda` - Help
-  - `/transporte_perfil` - Profile
-- **Laboratorio**:
-  - `/laboratorio_inicio` - Dashboard
-  - `/laboratorio_muestras` - Sample management
-  - `/laboratorio_registro` - Sample registration
-  - `/laboratorio_analisis` - Analysis forms
+## Navigation & Routing
 
-## Firebase Integration
+### Named Routes Pattern
+All routes are defined in `main.dart` following the pattern: `/[role]_[screen]`
 
-Firebase is configured with:
-- Firebase Analytics for tracking
-- Google Services JSON in `android/app/google-services.json`
-- Firebase project ID: `trazabilidad-ecoce`
-- Multidex enabled for Android
-- Firebase BoM version: 33.6.0
-- Mock Firebase IDs format: 'FID_1x7h9k3' (for demo data)
+Example flows:
+- ECOCE Origen: `/origen_inicio` → `/origen_lotes` → `/origen_crear_lote`
+- Transport: `/transporte_inicio` → `/transporte_recoger` → `/transporte_entregar`
 
-## ECOCE Provider Types
-
-The ECOCE platform supports 6 provider types, each with specific roles:
-- **Acopiador (A)**: Collection centers for recyclable materials
-- **Planta de Separación (PS)**: Material classification and separation
-- **Reciclador (R)**: Processing of recyclable materials
-- **Transformador (T)**: Manufacturing with recycled materials
-- **Transportista (TR)**: Logistics and material transport
-- **Laboratorio (L)**: Quality analysis and certification
-
-## Assets
-
-The app includes the following asset structure:
-- `assets/logos/` - Platform logos (bioway_logo.svg, ecoce_logo.svg)
-- `assets/images/` - General images
-- `assets/images/icons/` - Icon files (pacas.svg, sacos.svg)
-
-Assets are declared in `pubspec.yaml` and loaded using Flutter's asset system.
+### Navigation Utilities
+- `NavigationUtils.navigateWithFade()`: Consistent fade transitions
+- `Navigator.pushReplacementNamed()`: For login flows
+- `PopScope`: For handling back button behavior
 
 ## State Management
 
-- Uses Flutter's built-in StatefulWidget + setState()
-- No external state management library (Provider, Riverpod, Bloc, etc.)
-- Each screen manages its own local state
-- Data passed between screens via constructor parameters
-- Configuration stored in classes like `OrigenUserConfig`
-- Shared navigation utility: `NavigationUtils.navigateWithFade()` for consistent transitions
+### Current Approach
+- Pure StatefulWidget + setState()
+- No external state management libraries
+- State passed via constructor parameters
+- Form validation in widget state
 
-## Development Notes
+### Data Flow
+1. Parent widgets pass callbacks to children
+2. Children call callbacks with data
+3. Parent updates state and rebuilds
+4. Shared state stored in route-level widgets
 
-- Flutter SDK: ^3.8.1
-- Dart SDK: Compatible with Flutter version
-- Package name: `com.biowaymexico.app`
-- Min SDK: Android 21 (Lollipop)
-- Target SDK: Android 34 (API 34)
-- Material Design 3 theming implemented
-- Portrait-only orientation locked in main()
-- SVG support via `flutter_svg` for scalable graphics
-- Comprehensive permission handling for camera, storage access
-- Screenshot and sharing capabilities via `screenshot` and `share_plus`
-- Print functionality support via `printing`
-- Gallery saving functionality for images/videos via `gal`
-- No backend integration - currently uses mock/hardcoded data
+## Firebase Integration
 
-## Performance Optimization Guidelines
+### Configuration Files
+- Android: `android/app/google-services.json` (contains both ECOCE and BioWay configs)
+- iOS: `ios/Runner/GoogleService-Info.plist` (per platform)
 
-- Use const constructors wherever possible
-- Implement caching for expensive operations (e.g., InputDecoration cache)
-- Use adaptive sizing with MediaQuery percentages instead of fixed pixels
-- Minimize widget rebuilds by checking state changes before setState()
-- Prefer ClampingScrollPhysics for better scroll performance
-- Set resizeToAvoidBottomInset: false to avoid keyboard animation issues
-- Image compression: Automatically compress images to max 50KB for database storage
-- Use FittedBox and Flexible widgets for responsive text scaling
+### Collection Structure
+```
+ecoce_profiles/
+├── [userId]
+│   ├── ecoce_tipo_actor: "A"/"P"/"R"/"T"/"V"/"L"
+│   ├── ecoce_folio: "A0000001"
+│   └── ... profile data
 
-## Responsive Design Patterns
+bioway_users/ (future)
+├── [userId]
+│   └── ... user data
+```
 
-- All sizing should use MediaQuery-based calculations:
-  - Padding: `screenWidth * 0.03` (3% of screen width)
-  - Border radius: `screenWidth * 0.02-0.04`
-  - Font sizes: `screenWidth * 0.035-0.05`
-- Check for tablet vs phone: `screenWidth > 600`
-- Check for small screens: `screenWidth < 360`
-- Check for compact height: `screenHeight < 700`
-- Use percentage-based sizing for dialogs and modals
-- Bottom navigation adapts height based on screen size and system padding
+### Security Rules
+- Platform-based data isolation
+- Role-based access control
+- No cross-platform data access
 
-## Code Style
+## Google Maps Integration
 
-- Follow Flutter's official style guide
-- Use meaningful variable and function names
-- Group related widgets in shared/widgets folder
-- Extract reusable components (e.g., SectionCard, FieldLabel)
-- Use const for static lists and data
-- Implement proper error handling
-- Add appropriate comments for complex logic
-- Mock data patterns: Use Firebase ID format (e.g., 'FID_1x7h9k3') for consistency
-- Color usage: Always use BioWayColors constants, never hardcode colors
+### API Configuration
+- API Key: Stored in `GoogleMapsConfig` class
+- Required APIs: Maps SDK, Geocoding API
+- No location permissions required
+
+### Map Components
+- `MapSelectorDialog`: Full-screen map with draggable viewport
+- `SimpleMapWidget`: Address search and confirmation flow
+- Coordinate format: 6 decimal places precision
+
+## Development Guidelines
+
+### Color Management
+- Always use `BioWayColors` constants
+- Never hardcode colors
+- Platform-specific colors: `ecoceGreen`, `primaryGreen`
+
+### Responsive Design
+```dart
+// Use MediaQuery percentages
+final screenWidth = MediaQuery.of(context).size.width;
+padding: EdgeInsets.all(screenWidth * 0.04),
+fontSize: screenWidth * 0.045,
+
+// Breakpoints
+isTablet: screenWidth > 600
+isCompact: screenHeight < 700
+```
+
+### Image Handling
+- Auto-compression to 50KB for storage
+- Use `ImageService.compressImage()`
+- Support camera and gallery sources
+
+### Form Validation
+- Validate on field level with TextEditingController
+- Show inline error messages
+- Disable submit until valid
+
+### Mock Data Patterns
+- Firebase IDs: `FID_${random}` (e.g., 'FID_1x7h9k3')
+- Folios: `[PREFIX]0000001` format
+- Timestamps: Use `DateTime.now()` for demos
+
+## Performance Optimization
+
+### Widget Optimization
+- Use `const` constructors wherever possible
+- Implement `InputDecorationCache` for forms
+- Minimize rebuilds with targeted setState()
+
+### List Performance
+- Use `ListView.builder` for long lists
+- Implement `ClampingScrollPhysics`
+- Add `key` to list items for better diffing
+
+### Image Performance
+- Compress before upload (50KB max)
+- Use `cached_network_image` for remote images
+- Implement progressive loading
+
+## Common Tasks
+
+### Adding a New ECOCE Provider Type
+1. Create registration screen in `lib/screens/login/ecoce/providers/`
+2. Extend `BaseProviderRegisterScreen`
+3. Override required properties (type, title, icon, etc.)
+4. Add route in `main.dart`
+5. Update provider selector screen
+
+### Adding a New Material Type
+1. Update material lists in `BaseProviderRegisterScreen._getMaterialesByTipo()`
+2. Add color in `BioWayColors` if needed
+3. Update `material_utils.dart` helpers
+
+### Implementing a New Screen
+1. Create in appropriate feature folder
+2. Follow naming convention: `[Feature][Action]Screen`
+3. Use shared widgets from `ecoce/shared/widgets/`
+4. Add named route in `main.dart`
+5. Update navigation in parent screen
+
+## Troubleshooting
+
+### Firebase Issues
+- "Default app already exists": Check for duplicate initialization
+- "No Firebase app": Ensure platform initialization before use
+- Auth errors: Verify Firebase project configuration
+
+### Build Issues
+- Clean build: `flutter clean && flutter pub get`
+- iOS pods: `cd ios && pod install`
+- Android gradle: `cd android && ./gradlew clean`
+
+### Map Issues
+- Verify API key in `google_maps_config.dart`
+- Check API enablement in Google Cloud Console
+- Ensure internet connectivity for geocoding

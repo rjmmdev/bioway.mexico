@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geocoding/geocoding.dart';
 import '../../utils/colors.dart';
 
 class MapSelectorDialog extends StatefulWidget {
@@ -20,6 +21,8 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
   GoogleMapController? _mapController;
   LatLng _currentPosition;
   bool _isMoving = false;
+  Map<String, String>? _addressComponents;
+  bool _isLoadingAddress = false;
 
   _MapSelectorDialogState() : _currentPosition = LatLng(0, 0);
 
@@ -27,6 +30,10 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
   void initState() {
     super.initState();
     _currentPosition = widget.initialPosition;
+    // Trigger initial geocoding after the widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _getAddressFromLatLng();
+    });
   }
 
   void _onCameraMove(CameraPosition position) {
@@ -40,6 +47,41 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
     setState(() {
       _isMoving = false;
     });
+    _getAddressFromLatLng();
+  }
+
+  Future<void> _getAddressFromLatLng() async {
+    setState(() {
+      _isLoadingAddress = true;
+    });
+
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        _currentPosition.latitude,
+        _currentPosition.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        
+        setState(() {
+          _addressComponents = {
+            'calle': place.street ?? '',
+            'colonia': place.subLocality ?? '',
+            'municipio': place.locality ?? '',
+            'estado': place.administrativeArea ?? '',
+            'cp': place.postalCode ?? '',
+            'pais': place.country ?? '',
+          };
+          _isLoadingAddress = false;
+        });
+      }
+    } catch (e) {
+      print('Error al obtener dirección: $e');
+      setState(() {
+        _isLoadingAddress = false;
+      });
+    }
   }
 
   @override
@@ -180,45 +222,112 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
                     ),
                   ),
                   
-                  // Información de coordenadas
+                  // Información de coordenadas y dirección
                   Positioned(
                     top: 10,
                     left: 10,
                     right: 10,
-                    child: Container(
-                      padding: EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.gps_fixed,
-                            size: 16,
-                            color: BioWayColors.darkGreen,
-                          ),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Lat: ${_currentPosition.latitude.toStringAsFixed(6)}, '
-                              'Lng: ${_currentPosition.longitude.toStringAsFixed(6)}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: BioWayColors.darkGreen,
-                                fontFamily: 'monospace',
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
                               ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.gps_fixed,
+                                size: 16,
+                                color: BioWayColors.darkGreen,
+                              ),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Lat: ${_currentPosition.latitude.toStringAsFixed(6)}, '
+                                  'Lng: ${_currentPosition.longitude.toStringAsFixed(6)}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: BioWayColors.darkGreen,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (_addressComponents != null) ...[
+                          SizedBox(height: 8),
+                          Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              borderRadius: BorderRadius.circular(10),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 4,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
                             ),
+                            child: _isLoadingAddress
+                                ? Center(
+                                    child: SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          BioWayColors.primaryGreen,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.location_on,
+                                            size: 16,
+                                            color: BioWayColors.darkGreen,
+                                          ),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            'Dirección detectada:',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: BioWayColors.darkGreen,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        '${_addressComponents!['calle']}, ${_addressComponents!['colonia']}, '
+                                        '${_addressComponents!['municipio']}, ${_addressComponents!['estado']} '
+                                        '${_addressComponents!['cp']}',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: BioWayColors.textGrey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                           ),
                         ],
-                      ),
+                      ],
                     ),
                   ),
                 ],
@@ -261,7 +370,10 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.of(context).pop(_currentPosition);
+                        Navigator.of(context).pop({
+                          'position': _currentPosition,
+                          'addressComponents': _addressComponents,
+                        });
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: BioWayColors.primaryGreen,

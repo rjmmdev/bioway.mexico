@@ -1,5 +1,24 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Estados de aprobación para perfiles ECOCE
+enum EcoceApprovalStatus {
+  pending(0, 'Pendiente'),
+  approved(1, 'Aprobado'),
+  rejected(2, 'Rechazado');
+
+  final int value;
+  final String label;
+  
+  const EcoceApprovalStatus(this.value, this.label);
+  
+  static EcoceApprovalStatus fromValue(int value) {
+    return EcoceApprovalStatus.values.firstWhere(
+      (status) => status.value == value,
+      orElse: () => EcoceApprovalStatus.pending,
+    );
+  }
+}
+
 enum EcoceTipoActor {
   A, // Acopiador
   P, // Planta de selección  
@@ -36,12 +55,20 @@ class EcoceProfileModel {
   final String? ecoce_ref_ubi; // Referencias adicionales (max 150 chars)
   final String? ecoce_link_maps; // Link de Google Maps generado automáticamente
   final String? ecoce_poligono_loc; // Zona asignada (max 50 chars)
+  final double? ecoce_latitud; // Coordenada latitud
+  final double? ecoce_longitud; // Coordenada longitud
   
   // Información operativa
   final DateTime ecoce_fecha_reg; // Fecha de registro (AAAA-MM-DD)
   final List<String> ecoce_lista_materiales; // Materiales que maneja (checkboxes múltiples)
   final bool? ecoce_transporte; // Si cuenta con transporte propio
   final String? ecoce_link_red_social; // Link a red social (max 150 chars)
+  
+  // Estado de aprobación
+  final int ecoce_estatus_aprobacion; // 0 = Pendiente, 1 = Aprobado, 2 = Rechazado
+  final DateTime? ecoce_fecha_aprobacion; // Fecha cuando fue aprobado/rechazado
+  final String? ecoce_aprobado_por; // ID del usuario maestro que aprobó
+  final String? ecoce_comentarios_revision; // Comentarios de la revisión
   
   // Documentos fiscales (archivos PDF)
   final String? ecoce_const_sit_fis; // URL/referencia Constancia de Situación Fiscal
@@ -76,10 +103,16 @@ class EcoceProfileModel {
     this.ecoce_ref_ubi,
     this.ecoce_link_maps,
     this.ecoce_poligono_loc,
+    this.ecoce_latitud,
+    this.ecoce_longitud,
     required this.ecoce_fecha_reg,
     required this.ecoce_lista_materiales,
     this.ecoce_transporte,
     this.ecoce_link_red_social,
+    this.ecoce_estatus_aprobacion = 0, // Por defecto pendiente
+    this.ecoce_fecha_aprobacion,
+    this.ecoce_aprobado_por,
+    this.ecoce_comentarios_revision,
     this.ecoce_const_sit_fis,
     this.ecoce_comp_domicilio,
     this.ecoce_banco_caratula,
@@ -113,10 +146,18 @@ class EcoceProfileModel {
       ecoce_ref_ubi: data['ecoce_ref_ubi'],
       ecoce_link_maps: data['ecoce_link_maps'],
       ecoce_poligono_loc: data['ecoce_poligono_loc'],
+      ecoce_latitud: data['ecoce_latitud']?.toDouble(),
+      ecoce_longitud: data['ecoce_longitud']?.toDouble(),
       ecoce_fecha_reg: (data['ecoce_fecha_reg'] as Timestamp).toDate(),
       ecoce_lista_materiales: List<String>.from(data['ecoce_lista_materiales'] ?? []),
       ecoce_transporte: data['ecoce_transporte'],
       ecoce_link_red_social: data['ecoce_link_red_social'],
+      ecoce_estatus_aprobacion: data['ecoce_estatus_aprobacion'] ?? 0,
+      ecoce_fecha_aprobacion: data['ecoce_fecha_aprobacion'] != null 
+          ? (data['ecoce_fecha_aprobacion'] as Timestamp).toDate() 
+          : null,
+      ecoce_aprobado_por: data['ecoce_aprobado_por'],
+      ecoce_comentarios_revision: data['ecoce_comentarios_revision'],
       ecoce_const_sit_fis: data['ecoce_const_sit_fis'],
       ecoce_comp_domicilio: data['ecoce_comp_domicilio'],
       ecoce_banco_caratula: data['ecoce_banco_caratula'],
@@ -150,10 +191,18 @@ class EcoceProfileModel {
       'ecoce_ref_ubi': ecoce_ref_ubi,
       'ecoce_link_maps': ecoce_link_maps,
       'ecoce_poligono_loc': ecoce_poligono_loc,
+      'ecoce_latitud': ecoce_latitud,
+      'ecoce_longitud': ecoce_longitud,
       'ecoce_fecha_reg': Timestamp.fromDate(ecoce_fecha_reg),
       'ecoce_lista_materiales': ecoce_lista_materiales,
       'ecoce_transporte': ecoce_transporte,
       'ecoce_link_red_social': ecoce_link_red_social,
+      'ecoce_estatus_aprobacion': ecoce_estatus_aprobacion,
+      'ecoce_fecha_aprobacion': ecoce_fecha_aprobacion != null 
+          ? Timestamp.fromDate(ecoce_fecha_aprobacion!) 
+          : null,
+      'ecoce_aprobado_por': ecoce_aprobado_por,
+      'ecoce_comentarios_revision': ecoce_comentarios_revision,
       'ecoce_const_sit_fis': ecoce_const_sit_fis,
       'ecoce_comp_domicilio': ecoce_comp_domicilio,
       'ecoce_banco_caratula': ecoce_banco_caratula,
@@ -167,6 +216,33 @@ class EcoceProfileModel {
 
   // Método para verificar si es usuario Origen (Acopiador o Planta de Separación)
   bool get isOrigen => ecoce_tipo_actor == 'A' || ecoce_tipo_actor == 'P';
+
+  // Métodos auxiliares para estado de aprobación
+  bool get isPending => ecoce_estatus_aprobacion == 0;
+  bool get isApproved => ecoce_estatus_aprobacion == 1;
+  bool get isRejected => ecoce_estatus_aprobacion == 2;
+  
+  EcoceApprovalStatus get approvalStatus => EcoceApprovalStatus.fromValue(ecoce_estatus_aprobacion);
+  
+  // Método para obtener el nombre del tipo de actor
+  String get tipoActorLabel {
+    switch (ecoce_tipo_actor) {
+      case 'A':
+        return 'Acopiador';
+      case 'P':
+        return 'Planta de Separación';
+      case 'R':
+        return 'Reciclador';
+      case 'T':
+        return 'Transformador';
+      case 'V':
+        return 'Transportista';
+      case 'L':
+        return 'Laboratorio';
+      default:
+        return 'Desconocido';
+    }
+  }
 
   // Obtener lista de materiales según el tipo de usuario
   static List<Map<String, String>> getMaterialesByTipo(String tipoActor) {

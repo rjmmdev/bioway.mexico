@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
+import '../../../services/firebase/ecoce_profile_service.dart';
 import 'ecoce_tipo_proveedor_selector.dart';
 import '../../ecoce/reciclador/reciclador_inicio.dart';
 import '../../ecoce/reciclador/reciclador_perfil.dart';
@@ -48,6 +49,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
 
   // Instancia del servicio de autenticación
   final AuthService _authService = AuthService();
+  final EcoceProfileService _profileService = EcoceProfileService();
 
   @override
   void initState() {
@@ -200,12 +202,36 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
           );
 
           if (userCredential.user != null && mounted) {
-            // Login exitoso con Firebase
+            // Verificar el estado de aprobación del usuario
+            final userId = userCredential.user!.uid;
+            final profile = await _profileService.getProfile(userId);
+            
             setState(() {
               _isLoading = false;
             });
 
-            // Mostrar mensaje de éxito
+            if (profile == null) {
+              // No se encontró el perfil del usuario
+              _showErrorDialog(
+                'Perfil no encontrado',
+                'No se encontró información de tu cuenta. Contacta al administrador.',
+              );
+              await _authService.signOut();
+              return;
+            }
+
+            // Verificar estado de aprobación
+            if (profile.isPending) {
+              _showPendingApprovalDialog();
+              await _authService.signOut();
+              return;
+            } else if (profile.isRejected) {
+              _showRejectedDialog(profile.ecoce_comentarios_revision ?? 'Tu solicitud ha sido rechazada.');
+              await _authService.signOut();
+              return;
+            }
+
+            // Usuario aprobado - mostrar mensaje de éxito
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: const Row(
@@ -225,9 +251,8 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
               ),
             );
 
-            // TODO: Navegar según el tipo de usuario desde Firestore
-            // Por ahora, mostramos el diálogo de selección temporal
-            _showTemporarySuccessDialog();
+            // Navegar según el tipo de usuario
+            _navigateToUserScreen(profile.ecoce_tipo_actor);
           }
         } catch (firebaseError) {
           // Si Firebase falla, usar login temporal para desarrollo
@@ -449,6 +474,234 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         return BioWayColors.ecoceGreen; // Color verde ECOCE para Usuario Maestro
       default:
         return BioWayColors.ecoceGreen;
+    }
+  }
+
+  void _showPendingApprovalDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icono
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: BioWayColors.warning.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.hourglass_empty,
+                  size: 50,
+                  color: BioWayColors.warning,
+                ),
+              ),
+              SizedBox(height: 20),
+              
+              // Título
+              Text(
+                'Aprobación Pendiente',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: BioWayColors.darkGreen,
+                ),
+              ),
+              SizedBox(height: 12),
+              
+              // Mensaje
+              Text(
+                'Tu cuenta está siendo revisada por ECOCE.',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: BioWayColors.textGrey,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Recibirás una notificación por correo cuando tu cuenta sea aprobada.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: BioWayColors.textGrey,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 24),
+              
+              // Botón
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: BioWayColors.ecoceGreen,
+                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Entendido',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showRejectedDialog(String reason) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icono
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: BioWayColors.error.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.cancel_outlined,
+                  size: 50,
+                  color: BioWayColors.error,
+                ),
+              ),
+              SizedBox(height: 20),
+              
+              // Título
+              Text(
+                'Solicitud Rechazada',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: BioWayColors.darkGreen,
+                ),
+              ),
+              SizedBox(height: 12),
+              
+              // Razón
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: BioWayColors.error.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: BioWayColors.error.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Text(
+                  reason,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: BioWayColors.darkGreen,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              SizedBox(height: 16),
+              
+              // Información de contacto
+              Text(
+                'Para más información, contacta a:\nsoporte@ecoce.mx',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: BioWayColors.textGrey,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 24),
+              
+              // Botón
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: BioWayColors.ecoceGreen,
+                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Cerrar',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showErrorDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToUserScreen(String tipoActor) {
+    // Navegar según el tipo de usuario
+    switch (tipoActor) {
+      case 'A': // Acopiador
+      case 'P': // Planta de Separación
+        Navigator.pushReplacementNamed(context, '/origen_inicio');
+        break;
+      case 'R': // Reciclador
+        Navigator.pushReplacementNamed(context, '/reciclador_inicio');
+        break;
+      case 'V': // Transportista
+        Navigator.pushReplacementNamed(context, '/transporte_inicio');
+        break;
+      case 'T': // Transformador
+        Navigator.pushReplacementNamed(context, '/transformador_inicio');
+        break;
+      case 'L': // Laboratorio
+        Navigator.pushReplacementNamed(context, '/laboratorio_inicio');
+        break;
+      default:
+        _showTemporarySuccessDialog();
     }
   }
 

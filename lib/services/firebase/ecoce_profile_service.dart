@@ -94,6 +94,8 @@ class EcoceProfileService {
     double? pesoCapacidad,
     Map<String, String?>? documentos,
     String? linkMaps,
+    double? latitud,
+    double? longitud,
   }) async {
     try {
       // Inicializar Firebase para ECOCE si no está inicializado
@@ -112,8 +114,8 @@ class EcoceProfileService {
       // Generar folio único
       final folio = await _generateFolio(tipoActor);
 
-      // Generar link de Google Maps (simplificado)
-      final linkMaps = 'https://maps.google.com/?q=$calle+$numExt,$colonia,$municipio,$estado,$cp';
+      // Usar el linkMaps proporcionado o generar uno simple si no se proporciona
+      final finalLinkMaps = linkMaps ?? 'https://maps.google.com/?q=$calle+$numExt,$colonia,$municipio,$estado,$cp';
 
       // Crear modelo de perfil
       final profile = EcoceProfileModel(
@@ -133,8 +135,10 @@ class EcoceProfileService {
         ecoce_municipio: municipio,
         ecoce_colonia: colonia,
         ecoce_ref_ubi: referencias,
-        ecoce_link_maps: linkMaps,
+        ecoce_link_maps: finalLinkMaps,
         ecoce_poligono_loc: null, // Se asignará posteriormente
+        ecoce_latitud: latitud,
+        ecoce_longitud: longitud,
         ecoce_fecha_reg: DateTime.now(),
         ecoce_lista_materiales: materiales,
         ecoce_transporte: transporte,
@@ -202,5 +206,154 @@ class EcoceProfileService {
     // Aquí se implementaría la lógica para subir archivos a Firebase Storage
     // Por ahora retornamos una URL simulada
     return 'https://firebasestorage.googleapis.com/v0/b/trazabilidad-ecoce.appspot.com/o/documents%2F$userId%2F$documentType?alt=media';
+  }
+
+  // Obtener perfiles pendientes de aprobación
+  Future<List<EcoceProfileModel>> getPendingProfiles() async {
+    try {
+      final query = await _profilesCollection
+          .where('ecoce_estatus_aprobacion', isEqualTo: 0)
+          .orderBy('ecoce_fecha_reg', descending: true)
+          .get();
+      
+      return query.docs
+          .map((doc) => EcoceProfileModel.fromFirestore(doc))
+          .toList();
+    } catch (e) {
+      print('Error al obtener perfiles pendientes: $e');
+      return [];
+    }
+  }
+
+  // Aprobar perfil
+  Future<void> approveProfile({
+    required String profileId,
+    required String approvedById,
+    String? comments,
+  }) async {
+    try {
+      await _profilesCollection.doc(profileId).update({
+        'ecoce_estatus_aprobacion': 1,
+        'ecoce_fecha_aprobacion': Timestamp.fromDate(DateTime.now()),
+        'ecoce_aprobado_por': approvedById,
+        'ecoce_comentarios_revision': comments,
+        'updatedAt': Timestamp.fromDate(DateTime.now()),
+      });
+    } catch (e) {
+      print('Error al aprobar perfil: $e');
+      rethrow;
+    }
+  }
+
+  // Rechazar perfil
+  Future<void> rejectProfile({
+    required String profileId,
+    required String rejectedById,
+    required String reason,
+  }) async {
+    try {
+      await _profilesCollection.doc(profileId).update({
+        'ecoce_estatus_aprobacion': 2,
+        'ecoce_fecha_aprobacion': Timestamp.fromDate(DateTime.now()),
+        'ecoce_aprobado_por': rejectedById,
+        'ecoce_comentarios_revision': reason,
+        'updatedAt': Timestamp.fromDate(DateTime.now()),
+      });
+    } catch (e) {
+      print('Error al rechazar perfil: $e');
+      rethrow;
+    }
+  }
+
+  // Eliminar perfil rechazado y sus datos asociados
+  Future<void> deleteRejectedProfile(String profileId) async {
+    try {
+      // Obtener el perfil para tener el email
+      final profileDoc = await _profilesCollection.doc(profileId).get();
+      if (!profileDoc.exists) return;
+      
+      final profileData = profileDoc.data() as Map<String, dynamic>;
+      final email = profileData['ecoce_correo_contacto'] as String?;
+      
+      // Eliminar el perfil de Firestore
+      await _profilesCollection.doc(profileId).delete();
+      
+      // Eliminar el usuario de Auth si existe
+      if (email != null) {
+        try {
+          // Obtener el usuario por email
+          final methods = await _auth.fetchSignInMethodsForEmail(email);
+          if (methods.isNotEmpty) {
+            // Nota: Para eliminar un usuario de Auth, necesitamos que esté autenticado
+            // o usar el Admin SDK desde un backend
+            // Por ahora solo marcamos el perfil como eliminado
+            print('Usuario de Auth encontrado pero no se puede eliminar desde el cliente');
+          }
+        } catch (e) {
+          print('Error al verificar usuario en Auth: $e');
+        }
+      }
+      
+      // TODO: Eliminar archivos de Storage asociados al usuario
+      // Esto requeriría implementar la lógica de Storage
+      
+    } catch (e) {
+      print('Error al eliminar perfil rechazado: $e');
+      rethrow;
+    }
+  }
+
+  // Obtener estadísticas de perfiles
+  Future<Map<String, int>> getProfileStatistics() async {
+    try {
+      final allProfiles = await _profilesCollection.get();
+      
+      int pending = 0;
+      int approved = 0;
+      int rejected = 0;
+      
+      for (final doc in allProfiles.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final status = data['ecoce_estatus_aprobacion'] ?? 0;
+        
+        switch (status) {
+          case 0:
+            pending++;
+            break;
+          case 1:
+            approved++;
+            break;
+          case 2:
+            rejected++;
+            break;
+        }
+      }
+      
+      return {
+        'pending': pending,
+        'approved': approved,
+        'rejected': rejected,
+        'total': allProfiles.docs.length,
+      };
+    } catch (e) {
+      print('Error al obtener estadísticas: $e');
+      return {
+        'pending': 0,
+        'approved': 0,
+        'rejected': 0,
+        'total': 0,
+      };
+    }
+  }
+
+  // Verificar si un usuario está aprobado
+  Future<bool> isUserApproved(String userId) async {
+    try {
+      final profile = await getProfile(userId);
+      return profile?.isApproved ?? false;
+    } catch (e) {
+      print('Error al verificar aprobación: $e');
+      return false;
+    }
   }
 }
