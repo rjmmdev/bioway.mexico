@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
-import '../origen/widgets/origen_bottom_navigation.dart';
-import '../reciclador/widgets/reciclador_bottom_navigation.dart';
 import 'widgets/ecoce_bottom_navigation.dart';
 import 'utils/navigation_utils.dart';
+import 'utils/material_utils.dart';
 import '../transporte/transporte_inicio_screen.dart';
 import '../transporte/transporte_entregar_screen.dart';
 import '../transporte/transporte_ayuda_screen.dart';
@@ -395,7 +394,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
             children: [
               _buildInfoItem('RFC', _informacionUsuario['rfc'] ?? 'Pendiente de registro'),
               _buildInfoItem('Razón Social', widget.nombreEmpresa ?? widget.nombreUsuario),
-              _buildInfoItem('Fecha de Registro', _formatDate(_informacionUsuario['fecha_reg'])),
+              _buildInfoItem('Fecha de Registro', MaterialUtils.formatDateString(_informacionUsuario['fecha_reg'])),
             ],
           ),
           
@@ -920,14 +919,6 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
     );
   }
 
-  String _formatDate(String date) {
-    try {
-      final parts = date.split('-');
-      return '${parts[2]}/${parts[1]}/${parts[0]}';
-    } catch (e) {
-      return date;
-    }
-  }
 
   bool _shouldShowFab() {
     return widget.iconCode == 'store' || widget.iconCode == 'recycling';
@@ -936,16 +927,21 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
   Widget? _buildFloatingActionButton() {
     switch (widget.iconCode) {
       case 'store':
-        return OrigenFloatingActionButton(
+        return EcoceFloatingActionButton(
           onPressed: () {
             Navigator.pushNamed(context, '/origen_crear_lote');
           },
+          icon: Icons.add,
+          backgroundColor: BioWayColors.ecoceGreen,
+          tooltip: 'Nuevo Lote',
         );
       case 'recycling':
-        return RecicladorFloatingActionButton(
+        return EcoceFloatingActionButton(
           onPressed: () {
             Navigator.pushNamed(context, '/reciclador_escaneo');
           },
+          icon: Icons.add,
+          backgroundColor: BioWayColors.ecoceGreen,
         );
       default:
         return null;
@@ -955,7 +951,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
   Widget _buildBottomNavigation() {
     switch (widget.iconCode) {
       case 'store':
-        return OrigenBottomNavigation(
+        return EcoceBottomNavigation(
           selectedIndex: 3,
           onItemTapped: (index) {
             if (index == 3) return; // Ya estamos en perfil
@@ -973,13 +969,19 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
                 break;
             }
           },
-          onFabPressed: () {
-            Navigator.pushNamed(context, '/origen_crear_lote');
-          },
+          primaryColor: BioWayColors.ecoceGreen,
+          items: EcoceNavigationConfigs.origenItems,
+          fabConfig: FabConfig(
+            icon: Icons.add,
+            onPressed: () {
+              Navigator.pushNamed(context, '/origen_crear_lote');
+            },
+            tooltip: 'Nuevo Lote',
+          ),
         );
       
       case 'recycling':
-        return RecicladorBottomNavigation(
+        return EcoceBottomNavigation(
           selectedIndex: 3,
           onItemTapped: (index) {
             if (index == 3) return; // Ya estamos en perfil
@@ -997,9 +999,14 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
                 break;
             }
           },
-          onFabPressed: () {
-            Navigator.pushNamed(context, '/reciclador_escaneo');
-          },
+          primaryColor: BioWayColors.ecoceGreen,
+          items: EcoceNavigationConfigs.recicladorItems,
+          fabConfig: FabConfig(
+            icon: Icons.add,
+            onPressed: () {
+              Navigator.pushNamed(context, '/reciclador_escaneo');
+            },
+          ),
         );
       
       case 'local_shipping':

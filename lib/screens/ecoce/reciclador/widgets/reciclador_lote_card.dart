@@ -30,7 +30,7 @@ class RecicladorLoteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final materialColor = getMaterialColor(lote['material'] ?? '');
+    final materialColor = _getMaterialColor(lote['material'] ?? '');
     
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -73,7 +73,7 @@ class RecicladorLoteCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
-                      getMaterialIcon(lote['material'] ?? ''),
+                      _getMaterialIcon(lote['material'] ?? ''),
                       color: materialColor,
                       size: 24,
                     ),
@@ -149,7 +149,7 @@ class RecicladorLoteCard extends StatelessWidget {
                               ),
                             _buildCompactChip(
                               Icons.calendar_today_outlined,
-                              lote['fecha'] ?? _formatDate(lote['fechaCreacion'] ?? DateTime.now()),
+                              lote['fecha'] ?? MaterialUtils.formatDate(lote['fechaCreacion'] ?? DateTime.now()),
                               Colors.orange,
                             ),
                           ],
@@ -297,8 +297,30 @@ class RecicladorLoteCard extends StatelessWidget {
     );
   }
 
-
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  Color _getMaterialColor(String material) {
+    switch (material) {
+      case 'PEBD':
+        return BioWayColors.pebdPink;
+      case 'PP':
+        return BioWayColors.ppPurple;
+      case 'Multilaminado':
+        return BioWayColors.multilaminadoBrown;
+      default:
+        return BioWayColors.ecoceGreen;
+    }
   }
+
+  IconData _getMaterialIcon(String material) {
+    switch (material) {
+      case 'PEBD':
+        return Icons.shopping_bag; // Bolsas
+      case 'PP':
+        return Icons.kitchen; // Contenedores
+      case 'Multilaminado':
+        return Icons.layers; // Capas múltiples
+      default:
+        return Icons.recycling;
+    }
+  }
+
 }

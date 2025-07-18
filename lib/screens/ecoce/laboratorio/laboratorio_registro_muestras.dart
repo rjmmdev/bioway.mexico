@@ -2,19 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import '../shared/utils/material_utils.dart';
-import 'reciclador_escaneo.dart';
-import 'reciclador_formulario_entrada.dart';
-import 'widgets/reciclador_lote_card.dart';
+import 'laboratorio_escaneo.dart';
+import 'laboratorio_gestion_muestras.dart';
+import 'widgets/laboratorio_muestra_card.dart';
 
-// Modelo temporal para representar un lote
-class ScannedLot {
+// Modelo temporal para representar una muestra
+class ScannedMuestra {
   final String id;
   final String material;
   final double weight;
-  final String format; // 'Pacas' o 'Sacos'
+  final String format; // 'Muestra'
   final DateTime dateScanned;
 
-  ScannedLot({
+  ScannedMuestra({
     required this.id,
     required this.material,
     required this.weight,
@@ -23,44 +23,44 @@ class ScannedLot {
   });
 }
 
-class ScannedLotsScreen extends StatefulWidget {
-  final String? initialLotId;
+class LaboratorioRegistroMuestrasScreen extends StatefulWidget {
+  final String? initialMuestraId;
 
-  const ScannedLotsScreen({
+  const LaboratorioRegistroMuestrasScreen({
     super.key,
-    this.initialLotId,
+    this.initialMuestraId,
   });
 
   @override
-  State<ScannedLotsScreen> createState() => _ScannedLotsScreenState();
+  State<LaboratorioRegistroMuestrasScreen> createState() => _LaboratorioRegistroMuestrasScreenState();
 }
 
-class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
-  // Lista de lotes escaneados
-  List<ScannedLot> _scannedLots = [];
+class _LaboratorioRegistroMuestrasScreenState extends State<LaboratorioRegistroMuestrasScreen> {
+  // Lista de muestras escaneadas
+  List<ScannedMuestra> _scannedMuestras = [];
 
   @override
   void initState() {
     super.initState();
     // Si viene con un ID inicial, agregarlo a la lista
-    if (widget.initialLotId != null) {
-      _addLotFromId(widget.initialLotId!);
+    if (widget.initialMuestraId != null) {
+      _addMuestraFromId(widget.initialMuestraId!);
     }
   }
 
-  void _addLotFromId(String lotId) {
+  void _addMuestraFromId(String muestraId) {
     // TODO: Aquí se consultaría la base de datos con el ID
     // Por ahora simulamos datos
-    final newLot = ScannedLot(
-      id: lotId,
-      material: _getMaterialForDemo(lotId),
+    final newMuestra = ScannedMuestra(
+      id: muestraId,
+      material: _getMaterialForDemo(muestraId),
       weight: _getWeightForDemo(),
-      format: _getFormatForDemo(),
+      format: 'Muestra',
       dateScanned: DateTime.now(),
     );
 
     setState(() {
-      _scannedLots.add(newLot);
+      _scannedMuestras.add(newMuestra);
     });
   }
 
@@ -71,23 +71,20 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
   }
 
   double _getWeightForDemo() {
-    return 100 + (DateTime.now().millisecondsSinceEpoch % 200);
+    // Para muestras, pesos más pequeños (1-5 kg)
+    return 1 + (DateTime.now().millisecondsSinceEpoch % 40) / 10;
   }
 
-  String _getFormatForDemo() {
-    return DateTime.now().millisecondsSinceEpoch % 2 == 0 ? 'Pacas' : 'Sacos';
-  }
-
-  void _removeLot(int index) {
+  void _removeMuestra(int index) {
     HapticFeedback.lightImpact();
 
     setState(() {
-      _scannedLots.removeAt(index);
+      _scannedMuestras.removeAt(index);
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Lote eliminado'),
+        content: const Text('Muestra eliminada'),
         backgroundColor: BioWayColors.warning,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
@@ -105,28 +102,28 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
     );
   }
 
-  void _addMoreLots() async {
+  void _addMoreMuestras() async {
     HapticFeedback.lightImpact();
 
-    // Navegar al escáner indicando que estamos agregando más lotes
+    // Navegar al escáner indicando que estamos agregando más muestras
     final result = await Navigator.push<String>(
       context,
       MaterialPageRoute(
-        builder: (context) => const QRScannerScreen(isAddingMore: true),
+        builder: (context) => const LaboratorioEscaneoScreen(isAddingMore: true),
       ),
     );
 
     // Si regresa con un ID, agregarlo
     if (result != null && result.isNotEmpty) {
-      _addLotFromId(result);
+      _addMuestraFromId(result);
     }
   }
 
-  void _continueWithLots() {
-    if (_scannedLots.isEmpty) {
+  void _continueWithMuestras() {
+    if (_scannedMuestras.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Debe escanear al menos un lote'),
+          content: const Text('Debe escanear al menos una muestra'),
           backgroundColor: BioWayColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -139,30 +136,17 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
 
     HapticFeedback.mediumImpact();
 
-    // Navegar a la tercera pantalla (formulario)
-    Navigator.push(
+    // Navegar directamente a la Gestión de Muestras en la pestaña de Formulario
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => RecicladorFormularioEntrada(
-          lotIds: _scannedLots.map((lot) => lot.id).toList(),
-          totalLotes: _scannedLots.length,
+        builder: (context) => const LaboratorioGestionMuestras(
+          initialTab: 0, // Pestaña de Formulario
         ),
       ),
     );
   }
 
-  Color _getMaterialColor(String material) {
-    switch (material) {
-      case 'PEBD':
-        return BioWayColors.pebdPink;
-      case 'PP':
-        return BioWayColors.ppPurple;
-      case 'Multilaminado':
-        return BioWayColors.multilaminadoBrown;
-      default:
-        return Colors.grey;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -179,7 +163,7 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
           },
         ),
         title: const Text(
-          'Lotes Escaneados',
+          'Muestras Escaneadas',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -248,7 +232,7 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
             child: Column(
               children: [
                 const Text(
-                  'Resumen de Carga',
+                  'Resumen de Muestras',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w500,
@@ -257,7 +241,7 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  _scannedLots.length.toString(),
+                  _scannedMuestras.length.toString(),
                   style: const TextStyle(
                     fontSize: 48,
                     fontWeight: FontWeight.bold,
@@ -265,7 +249,7 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
                   ),
                 ),
                 const Text(
-                  'Lotes',
+                  'Muestras',
                   style: TextStyle(
                     fontSize: 18,
                     color: Colors.white70,
@@ -282,7 +266,7 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Lotes Escaneados',
+                  'Muestras Escaneadas',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -290,7 +274,7 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
                   ),
                 ),
                 TextButton.icon(
-                  onPressed: _addMoreLots,
+                  onPressed: _addMoreMuestras,
                   icon: Icon(
                     Icons.add,
                     color: BioWayColors.ecoceGreen,
@@ -315,21 +299,21 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
             ),
           ),
 
-          // Lista de lotes
+          // Lista de muestras
           Expanded(
-            child: _scannedLots.isEmpty
+            child: _scannedMuestras.isEmpty
                 ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.inventory_2_outlined,
+                    Icons.science_outlined,
                     size: 80,
                     color: Colors.grey.shade300,
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'No hay lotes escaneados',
+                    'No hay muestras escaneadas',
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey.shade500,
@@ -337,9 +321,9 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
                   ),
                   const SizedBox(height: 8),
                   TextButton(
-                    onPressed: _addMoreLots,
+                    onPressed: _addMoreMuestras,
                     child: Text(
-                      'Escanear primer lote',
+                      'Escanear primera muestra',
                       style: TextStyle(
                         color: BioWayColors.ecoceGreen,
                         fontWeight: FontWeight.bold,
@@ -351,25 +335,26 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
             )
                 : ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              itemCount: _scannedLots.length,
+              itemCount: _scannedMuestras.length,
               itemBuilder: (context, index) {
-                final lot = _scannedLots[index];
-                final loteMap = {
-                  'id': lot.id,
-                  'material': lot.material,
-                  'peso': lot.weight,
-                  'presentacion': lot.format,
-                  'origen': 'Entrada Pendiente',
-                  'fecha': MaterialUtils.formatDate(lot.dateScanned),
+                final muestra = _scannedMuestras[index];
+                final muestraMap = {
+                  'id': muestra.id,
+                  'material': muestra.material,
+                  'peso': muestra.weight,
+                  'presentacion': muestra.format,
+                  'origen': 'Reciclador',
+                  'fecha': MaterialUtils.formatDate(muestra.dateScanned),
+                  'estado': 'registro', // Estado temporal para registro
                 };
                 
-                return RecicladorLoteCard(
-                  lote: loteMap,
+                return LaboratorioMuestraCard(
+                  muestra: muestraMap,
                   onTap: () {
                     // No hacemos nada en el tap principal
                   },
                   trailing: IconButton(
-                    onPressed: () => _removeLot(index),
+                    onPressed: () => _removeMuestra(index),
                     icon: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
@@ -406,7 +391,7 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _scannedLots.isNotEmpty ? _continueWithLots : null,
+                  onPressed: _scannedMuestras.isNotEmpty ? _continueWithMuestras : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: BioWayColors.ecoceGreen,
                     foregroundColor: Colors.white,
@@ -414,12 +399,12 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(28),
                     ),
-                    elevation: _scannedLots.isNotEmpty ? 3 : 0,
+                    elevation: _scannedMuestras.isNotEmpty ? 3 : 0,
                   ),
                   child: Text(
-                    _scannedLots.isEmpty
-                        ? 'Escanea al menos un lote'
-                        : 'Continuar con ${_scannedLots.length} lote${_scannedLots.length > 1 ? 's' : ''}',
+                    _scannedMuestras.isEmpty
+                        ? 'Escanea al menos una muestra'
+                        : 'Continuar con ${_scannedMuestras.length} muestra${_scannedMuestras.length > 1 ? 's' : ''}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -434,171 +419,4 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
     );
   }
 
-
-  // Método legacy mantenido por compatibilidad
-  Widget _buildLotCard(ScannedLot lot, int index) {
-    final materialColor = _getMaterialColor(lot.material);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header del lote
-            Row(
-              children: [
-                // Ícono del material
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: materialColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.inventory_2,
-                    color: materialColor,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 12),
-
-                // ID del lote
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Lote Identificado',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: BioWayColors.textGrey,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        lot.id,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: BioWayColors.darkGreen,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Botón eliminar
-                IconButton(
-                  onPressed: () => _removeLot(index),
-                  icon: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: BioWayColors.error.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.close,
-                      color: BioWayColors.error,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-            Container(
-              height: 1,
-              color: Colors.grey.shade200,
-            ),
-            const SizedBox(height: 16),
-
-            // Detalles del lote
-            Row(
-              children: [
-                // Material
-                Expanded(
-                  child: _buildLotDetail(
-                    icon: Icons.recycling,
-                    label: lot.material,
-                    sublabel: 'MATERIAL',
-                    color: materialColor,
-                  ),
-                ),
-
-                // Peso
-                Expanded(
-                  child: _buildLotDetail(
-                    icon: Icons.scale,
-                    label: '${lot.weight.toStringAsFixed(0)} kg',
-                    sublabel: 'PESO',
-                    color: BioWayColors.warning,
-                  ),
-                ),
-
-                // Formato
-                Expanded(
-                  child: _buildLotDetail(
-                    icon: lot.format == 'Pacas' ? Icons.inventory : Icons.shopping_bag,
-                    label: lot.format,
-                    sublabel: 'PRESENTACIÓN',
-                    color: BioWayColors.info,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLotDetail({
-    required IconData icon,
-    required String label,
-    required String sublabel,
-    required Color color,
-  }) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          color: color,
-          size: 24,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: BioWayColors.darkGreen,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          sublabel,
-          style: TextStyle(
-            fontSize: 10,
-            color: BioWayColors.textGrey,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ],
-    );
-  }
 }

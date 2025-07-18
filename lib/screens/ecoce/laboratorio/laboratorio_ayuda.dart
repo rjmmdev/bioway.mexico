@@ -2,20 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
-import '../shared/utils/navigation_utils.dart';
-import 'reciclador_inicio.dart';
-import 'reciclador_administracion_lotes.dart';
-import 'reciclador_perfil.dart';
-import 'reciclador_escaneo.dart';
+import 'laboratorio_inicio.dart';
+import 'laboratorio_gestion_muestras.dart';
+import 'laboratorio_perfil.dart';
+import 'laboratorio_escaneo.dart';
 
-class RecicladorAyudaScreen extends StatefulWidget {
-  const RecicladorAyudaScreen({super.key});
+class LaboratorioAyudaScreen extends StatefulWidget {
+  const LaboratorioAyudaScreen({super.key});
 
   @override
-  State<RecicladorAyudaScreen> createState() => _RecicladorAyudaScreenState();
+  State<LaboratorioAyudaScreen> createState() => _LaboratorioAyudaScreenState();
 }
 
-class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with SingleTickerProviderStateMixin {
+class _LaboratorioAyudaScreenState extends State<LaboratorioAyudaScreen> with SingleTickerProviderStateMixin {
   // Índice para la navegación del bottom bar
   final int _selectedIndex = 2; // Ayuda está seleccionado
   
@@ -23,57 +22,57 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   
-  // Videos tutoriales específicos para reciclador
+  // Videos tutoriales específicos para laboratorio
   final List<Map<String, dynamic>> _videosTutoriales = [
     {
-      'titulo': 'Escaneo de lotes entrantes',
-      'descripcion': 'Cómo recibir y registrar material',
-      'duracion': '4:15',
-      'vistas': '3.2k',
+      'titulo': 'Análisis de muestras',
+      'descripcion': 'Proceso completo de laboratorio',
+      'duracion': '5:45',
+      'vistas': '1.8k',
       'nuevo': true,
     },
     {
-      'titulo': 'Proceso de clasificación',
-      'descripcion': 'Separa materiales por tipo',
-      'duracion': '6:30',
-      'vistas': '2.8k',
+      'titulo': 'Registro de resultados',
+      'descripcion': 'Documenta análisis correctamente',
+      'duracion': '4:20',
+      'vistas': '1.5k',
       'nuevo': false,
     },
     {
-      'titulo': 'Pesaje y documentación',
-      'descripcion': 'Registra pesos y genera reportes',
-      'duracion': '5:20',
-      'vistas': '2.1k',
+      'titulo': 'Técnicas de muestreo',
+      'descripcion': 'Mejores prácticas en laboratorio',
+      'duracion': '6:15',
+      'vistas': '1.2k',
       'nuevo': false,
     },
     {
-      'titulo': 'Proceso de salida',
-      'descripcion': 'Completa el ciclo de reciclaje',
-      'duracion': '3:45',
-      'vistas': '1.9k',
+      'titulo': 'Generación de reportes',
+      'descripcion': 'Exporta resultados en PDF',
+      'duracion': '3:30',
+      'vistas': '980',
       'nuevo': true,
     },
   ];
   
-  // FAQs populares para reciclador
+  // FAQs populares para laboratorio
   final List<Map<String, dynamic>> _faqsPopulares = [
     {
-      'pregunta': '¿Cómo escaneo múltiples lotes a la vez?',
-      'respuesta': 'En la pantalla de escaneo, puedes agregar varios lotes antes de procesar. Simplemente escanea cada código QR y se irán agregando a la lista.',
-      'votos': 245,
-      'categoria': 'Escaneo',
-    },
-    {
-      'pregunta': '¿Qué diferencia hay entre peso bruto y peso neto?',
-      'respuesta': 'El peso bruto incluye el material con impurezas, mientras que el peso neto es el material aprovechable después de limpieza.',
-      'votos': 189,
-      'categoria': 'Pesaje',
-    },
-    {
-      'pregunta': '¿Cómo calculo la merma del material?',
-      'respuesta': 'La merma se calcula automáticamente al ingresar el peso resultante. Es la diferencia entre el peso neto aprovechable y el peso final.',
+      'pregunta': '¿Cómo registro múltiples análisis de una muestra?',
+      'respuesta': 'Puedes agregar varios análisis para la misma muestra desde la pantalla de gestión. Cada análisis tendrá su propio formulario y documentación.',
       'votos': 156,
-      'categoria': 'Procesos',
+      'categoria': 'Análisis',
+    },
+    {
+      'pregunta': '¿Qué parámetros son obligatorios en el formulario?',
+      'respuesta': 'Los campos obligatorios están marcados con asterisco (*). Incluyen: humedad, pellets por gramo, tipo de polímero, temperatura de fusión, y contenidos orgánico/inorgánico.',
+      'votos': 134,
+      'categoria': 'Formularios',
+    },
+    {
+      'pregunta': '¿Cómo interpreto los resultados del análisis?',
+      'respuesta': 'En la sección de observaciones debes incluir tu interpretación técnica basada en los valores obtenidos y las normas de referencia aplicables.',
+      'votos': 98,
+      'categoria': 'Resultados',
     },
   ];
   
@@ -104,7 +103,7 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
     HapticFeedback.lightImpact();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Descargando Manual del Reciclador...'),
+        content: const Text('Descargando Manual del Laboratorio...'),
         backgroundColor: BioWayColors.info,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
@@ -265,39 +264,16 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
                             ),
                           ),
                           const Spacer(),
-                          OutlinedButton.icon(
+                          TextButton(
                             onPressed: () {
                               Navigator.pop(context);
                               _contactarSoporte();
                             },
-                            icon: const Icon(Icons.help_outline, size: 18),
-                            label: const Text('Necesito más ayuda'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: BioWayColors.ecoceGreen,
-                              side: BorderSide(color: BioWayColors.ecoceGreen),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                Navigator.pop(context);
-                                _contactarSoporte();
-                              },
-                              icon: const Icon(Icons.headset_mic_outlined),
-                              label: const Text('Contactar'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: BioWayColors.ecoceGreen,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: 0,
+                            child: Text(
+                              'Necesito más ayuda',
+                              style: TextStyle(
+                                color: BioWayColors.ecoceGreen,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
@@ -318,13 +294,13 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
     _abrirWhatsApp();
   }
   
-  void _navigateToNewLot() {
+  void _navigateToNewSample() {
     HapticFeedback.lightImpact();
     Navigator.push(
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            const QRScannerScreen(),
+            const LaboratorioEscaneoScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           const begin = Offset(0.0, 1.0);
           const end = Offset.zero;
@@ -355,7 +331,7 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
           context,
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
-                const RecicladorHomeScreen(),
+                const LaboratorioInicioScreen(),
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
               return FadeTransition(
                 opacity: animation,
@@ -371,7 +347,7 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
           context,
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
-                const RecicladorAdministracionLotes(),
+                const LaboratorioGestionMuestras(),
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
               return FadeTransition(
                 opacity: animation,
@@ -390,7 +366,7 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
           context,
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
-                const RecicladorPerfilScreen(),
+                const LaboratorioPerfilScreen(),
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
               return FadeTransition(
                 opacity: animation,
@@ -466,7 +442,7 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        'Todo para gestionar tu centro',
+                                        'Guías para análisis de laboratorio',
                                         style: TextStyle(
                                           fontSize: 16,
                                           color: Colors.white.withOpacity(0.9),
@@ -549,7 +525,7 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Aprende los procesos de reciclaje paso a paso',
+                            'Aprende técnicas de análisis paso a paso',
                             style: TextStyle(
                               fontSize: 15,
                               color: Colors.grey[600],
@@ -595,7 +571,7 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
                                 child: _buildQuickAccessCard(
                                   icon: Icons.picture_as_pdf,
                                   title: 'Manual PDF',
-                                  subtitle: 'Guía del reciclador',
+                                  subtitle: 'Guía del laboratorista',
                                   color: Colors.deepOrange,
                                   onTap: _descargarManual,
                                 ),
@@ -683,19 +659,43 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
       bottomNavigationBar: EcoceBottomNavigation(
         selectedIndex: _selectedIndex,
         onItemTapped: _onBottomNavTapped,
-        primaryColor: BioWayColors.ecoceGreen,
-        items: EcoceNavigationConfigs.recicladorItems,
+        primaryColor: const Color(0xFF9333EA), // Purple color for laboratorio
+        items: const [
+          NavigationItem(
+            icon: Icons.home,
+            label: 'Inicio',
+            testKey: 'laboratorio_nav_inicio',
+          ),
+          NavigationItem(
+            icon: Icons.science,
+            label: 'Muestras',
+            testKey: 'laboratorio_nav_muestras',
+          ),
+          NavigationItem(
+            icon: Icons.help_outline,
+            label: 'Ayuda',
+            testKey: 'laboratorio_nav_ayuda',
+          ),
+          NavigationItem(
+            icon: Icons.person,
+            label: 'Perfil',
+            testKey: 'laboratorio_nav_perfil',
+          ),
+        ],
         fabConfig: FabConfig(
           icon: Icons.add,
-          onPressed: _navigateToNewLot,
+          onPressed: _navigateToNewSample,
+          tooltip: 'Nueva muestra',
         ),
       ),
 
       // Floating Action Button
       floatingActionButton: EcoceFloatingActionButton(
-        onPressed: _navigateToNewLot,
+        onPressed: _navigateToNewSample,
         icon: Icons.add,
-        backgroundColor: BioWayColors.ecoceGreen,
+        backgroundColor: const Color(0xFF9333EA), // Purple color for laboratorio
+        tooltip: 'Nueva muestra',
+        heroTag: 'laboratorio_fab',
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
