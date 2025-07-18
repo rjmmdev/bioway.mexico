@@ -46,22 +46,45 @@ class EcoceBottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final isSmallScreen = screenWidth < 360;
-    final isTablet = screenWidth > 600;
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
+    final screenHeight = mediaQuery.size.height;
+    final bottomPadding = mediaQuery.padding.bottom;
+    final viewPadding = mediaQuery.viewPadding.bottom;
     
-    // Adaptive heights based on screen size
-    final bottomBarHeight = isTablet ? 75.0 : (isSmallScreen ? 55.0 : 65.0);
-    final notchMargin = fabConfig != null ? (isTablet ? 10.0 : 8.0) : 0.0;
+    // Detectar diferentes tamaños de pantalla
+    final isTablet = screenWidth > 600;
+    final isSmallScreen = screenWidth < 360;
+    final isVerySmallScreen = screenWidth < 320;
+    final isCompactHeight = screenHeight < 700;
+    final isVeryCompactHeight = screenHeight < 600;
+    
+    // Calcular altura adaptativa con más márgenes de seguridad
+    double baseHeight;
+    if (isVeryCompactHeight) {
+      baseHeight = 56.0;
+    } else if (isCompactHeight) {
+      baseHeight = 60.0;
+    } else if (isTablet) {
+      baseHeight = 80.0;
+    } else if (isSmallScreen) {
+      baseHeight = 64.0;
+    } else {
+      baseHeight = 70.0;
+    }
+    
+    // Ajustar el notch margin según el tamaño
+    final notchMargin = fabConfig != null 
+        ? (isTablet ? 12.0 : (isSmallScreen ? 6.0 : 8.0)) 
+        : 0.0;
     
     return Container(
       decoration: BoxDecoration(
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
@@ -70,13 +93,18 @@ class EcoceBottomNavigation extends StatelessWidget {
         elevation: 0,
         notchMargin: notchMargin,
         shape: fabConfig != null ? const CircularNotchedRectangle() : null,
+        height: baseHeight + bottomPadding,
+        padding: EdgeInsets.zero,
         child: Container(
-          height: bottomBarHeight,
-          padding: EdgeInsets.symmetric(
-            horizontal: isTablet ? 16 : (isSmallScreen ? 4 : 8),
+          height: baseHeight + bottomPadding,
+          padding: EdgeInsets.only(
+            bottom: bottomPadding,
+            left: isVerySmallScreen ? 2 : (isSmallScreen ? 4 : 8),
+            right: isVerySmallScreen ? 2 : (isSmallScreen ? 4 : 8),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: _buildNavigationItems(context),
           ),
         ),
@@ -90,16 +118,18 @@ class EcoceBottomNavigation extends StatelessWidget {
     for (int i = 0; i < items.length; i++) {
       // Si hay FAB y estamos en el medio de los items, agregar espacio
       if (fabConfig != null && i == items.length ~/ 2) {
-        widgets.add(const SizedBox(width: 40));
+        widgets.add(const SizedBox(width: 56)); // Espacio para el FAB
       }
       
       widgets.add(
-        _buildNavItem(
-          context: context,
-          icon: items[i].icon,
-          label: items[i].label,
-          index: i,
-          testKey: items[i].testKey,
+        Expanded(
+          child: _buildNavItem(
+            context: context,
+            icon: items[i].icon,
+            label: items[i].label,
+            index: i,
+            testKey: items[i].testKey,
+          ),
         ),
       );
     }
@@ -115,19 +145,57 @@ class EcoceBottomNavigation extends StatelessWidget {
     String? testKey,
   }) {
     final isSelected = selectedIndex == index;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallScreen = screenWidth < 360;
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
+    final screenHeight = mediaQuery.size.height;
+    
+    // Detectar tamaños de pantalla
     final isTablet = screenWidth > 600;
+    final isSmallScreen = screenWidth < 360;
+    final isVerySmallScreen = screenWidth < 320;
+    final isCompactHeight = screenHeight < 700;
+    final isVeryCompactHeight = screenHeight < 600;
     
-    // Adaptive sizes
-    final iconSize = isTablet ? 28.0 : (isSmallScreen ? 20.0 : 24.0);
-    final fontSize = isTablet ? 14.0 : (isSmallScreen ? 10.0 : 12.0);
-    final horizontalPadding = isSelected 
-        ? (isTablet ? 24.0 : (isSmallScreen ? 16.0 : 20.0))
-        : (isTablet ? 16.0 : (isSmallScreen ? 8.0 : 12.0));
-    final verticalPadding = isTablet ? 10.0 : (isSmallScreen ? 6.0 : 8.0);
+    // Tamaños adaptativos optimizados para prevenir overflow
+    double iconSize;
+    double fontSize;
+    double containerPadding;
+    double spaceBetweenIconAndText;
     
-    return Expanded(
+    if (isVeryCompactHeight) {
+      iconSize = 18.0;
+      fontSize = 9.0;
+      containerPadding = 4.0;
+      spaceBetweenIconAndText = 2.0;
+    } else if (isCompactHeight) {
+      iconSize = 20.0;
+      fontSize = 10.0;
+      containerPadding = 6.0;
+      spaceBetweenIconAndText = 2.0;
+    } else if (isVerySmallScreen) {
+      iconSize = 20.0;
+      fontSize = 10.0;
+      containerPadding = 6.0;
+      spaceBetweenIconAndText = 3.0;
+    } else if (isSmallScreen) {
+      iconSize = 22.0;
+      fontSize = 11.0;
+      containerPadding = 8.0;
+      spaceBetweenIconAndText = 3.0;
+    } else if (isTablet) {
+      iconSize = 28.0;
+      fontSize = 13.0;
+      containerPadding = 12.0;
+      spaceBetweenIconAndText = 4.0;
+    } else {
+      iconSize = 24.0;
+      fontSize = 12.0;
+      containerPadding = 10.0;
+      spaceBetweenIconAndText = 4.0;
+    }
+    
+    return Material(
+      color: Colors.transparent,
       child: InkWell(
         onTap: () {
           HapticFeedback.lightImpact();
@@ -137,40 +205,42 @@ class EcoceBottomNavigation extends StatelessWidget {
         child: Container(
           key: testKey != null ? Key(testKey) : null,
           padding: EdgeInsets.symmetric(
-            vertical: isSmallScreen ? 4 : 8,
+            vertical: containerPadding,
+            horizontal: 4,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Icono
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: EdgeInsets.symmetric(
-                  horizontal: horizontalPadding,
-                  vertical: verticalPadding,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected ? primaryColor.withOpacity(0.1) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(20),
-                ),
                 child: Icon(
                   icon,
-                  color: isSelected ? primaryColor : Colors.grey,
+                  color: isSelected ? primaryColor : Colors.grey[600],
                   size: iconSize,
                 ),
               ),
-              SizedBox(height: isSmallScreen ? 2 : 4),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
+              
+              // Espacio entre icono y texto
+              SizedBox(height: spaceBetweenIconAndText),
+              
+              // Texto con manejo de overflow
+              Flexible(
+                child: AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 200),
                   style: TextStyle(
-                    color: isSelected ? primaryColor : Colors.grey,
+                    color: isSelected ? primaryColor : Colors.grey[600],
                     fontSize: fontSize,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    height: 1.0, // Reducir altura de línea
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
             ],
@@ -200,6 +270,9 @@ class EcoceFloatingActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    
     return Container(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
@@ -230,7 +303,7 @@ class EcoceFloatingActionButton extends StatelessWidget {
         child: Icon(
           icon,
           color: Colors.white,
-          size: 28,
+          size: isSmallScreen ? 24 : 28,
         ),
         shape: const CircleBorder(),
         tooltip: tooltip,
@@ -243,22 +316,27 @@ class EcoceFloatingActionButton extends StatelessWidget {
 class EcoceNavigationConfigs {
   static List<NavigationItem> get origenItems => const [
     NavigationItem(
-      icon: Icons.home,
+      icon: Icons.home_rounded,
       label: 'Inicio',
       testKey: 'origen_nav_inicio',
     ),
     NavigationItem(
-      icon: Icons.inventory_2,
+      icon: Icons.inventory_2_rounded,
       label: 'Lotes',
       testKey: 'origen_nav_lotes',
     ),
     NavigationItem(
-      icon: Icons.help_outline,
+      icon: Icons.storage_rounded,
+      label: 'Repositorio',
+      testKey: 'origen_nav_repositorio',
+    ),
+    NavigationItem(
+      icon: Icons.help_outline_rounded,
       label: 'Ayuda',
       testKey: 'origen_nav_ayuda',
     ),
     NavigationItem(
-      icon: Icons.person,
+      icon: Icons.person_rounded,
       label: 'Perfil',
       testKey: 'origen_nav_perfil',
     ),
@@ -266,22 +344,27 @@ class EcoceNavigationConfigs {
 
   static List<NavigationItem> get recicladorItems => const [
     NavigationItem(
-      icon: Icons.home,
+      icon: Icons.home_rounded,
       label: 'Inicio',
       testKey: 'reciclador_nav_inicio',
     ),
     NavigationItem(
-      icon: Icons.inventory_2,
+      icon: Icons.inventory_2_rounded,
       label: 'Lotes',
       testKey: 'reciclador_nav_lotes',
     ),
     NavigationItem(
-      icon: Icons.help_outline,
+      icon: Icons.storage_rounded,
+      label: 'Repositorio',
+      testKey: 'reciclador_nav_repositorio',
+    ),
+    NavigationItem(
+      icon: Icons.help_outline_rounded,
       label: 'Ayuda',
       testKey: 'reciclador_nav_ayuda',
     ),
     NavigationItem(
-      icon: Icons.person,
+      icon: Icons.person_rounded,
       label: 'Perfil',
       testKey: 'reciclador_nav_perfil',
     ),
@@ -289,24 +372,98 @@ class EcoceNavigationConfigs {
 
   static List<NavigationItem> get transporteItems => const [
     NavigationItem(
-      icon: Icons.qr_code_scanner,
+      icon: Icons.qr_code_scanner_rounded,
       label: 'Recoger',
       testKey: 'transporte_nav_recoger',
     ),
     NavigationItem(
-      icon: Icons.local_shipping,
+      icon: Icons.local_shipping_rounded,
       label: 'Entregar',
       testKey: 'transporte_nav_entregar',
     ),
     NavigationItem(
-      icon: Icons.help_outline,
+      icon: Icons.storage_rounded,
+      label: 'Repositorio',
+      testKey: 'transporte_nav_repositorio',
+    ),
+    NavigationItem(
+      icon: Icons.help_outline_rounded,
       label: 'Ayuda',
       testKey: 'transporte_nav_ayuda',
     ),
     NavigationItem(
-      icon: Icons.person,
+      icon: Icons.person_rounded,
       label: 'Perfil',
       testKey: 'transporte_nav_perfil',
+    ),
+  ];
+  
+  static List<NavigationItem> get plantaSeparacionItems => const [
+    NavigationItem(
+      icon: Icons.home_rounded,
+      label: 'Inicio',
+      testKey: 'planta_nav_inicio',
+    ),
+    NavigationItem(
+      icon: Icons.sort_rounded,
+      label: 'Clasificar',
+      testKey: 'planta_nav_clasificar',
+    ),
+    NavigationItem(
+      icon: Icons.help_outline_rounded,
+      label: 'Ayuda',
+      testKey: 'planta_nav_ayuda',
+    ),
+    NavigationItem(
+      icon: Icons.person_rounded,
+      label: 'Perfil',
+      testKey: 'planta_nav_perfil',
+    ),
+  ];
+  
+  static List<NavigationItem> get transformadorItems => const [
+    NavigationItem(
+      icon: Icons.home_rounded,
+      label: 'Inicio',
+      testKey: 'transformador_nav_inicio',
+    ),
+    NavigationItem(
+      icon: Icons.factory_rounded,
+      label: 'Producción',
+      testKey: 'transformador_nav_produccion',
+    ),
+    NavigationItem(
+      icon: Icons.help_outline_rounded,
+      label: 'Ayuda',
+      testKey: 'transformador_nav_ayuda',
+    ),
+    NavigationItem(
+      icon: Icons.person_rounded,
+      label: 'Perfil',
+      testKey: 'transformador_nav_perfil',
+    ),
+  ];
+  
+  static List<NavigationItem> get laboratorioItems => const [
+    NavigationItem(
+      icon: Icons.home_rounded,
+      label: 'Inicio',
+      testKey: 'lab_nav_inicio',
+    ),
+    NavigationItem(
+      icon: Icons.science_rounded,
+      label: 'Muestras',
+      testKey: 'lab_nav_muestras',
+    ),
+    NavigationItem(
+      icon: Icons.help_outline_rounded,
+      label: 'Ayuda',
+      testKey: 'lab_nav_ayuda',
+    ),
+    NavigationItem(
+      icon: Icons.person_rounded,
+      label: 'Perfil',
+      testKey: 'lab_nav_perfil',
     ),
   ];
 }

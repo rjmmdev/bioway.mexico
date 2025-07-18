@@ -87,21 +87,23 @@ The application follows a feature-based folder structure with clear separation o
     - `origen/` - Origin collector (Acopiador) screens
     - `reciclador/` - Recycler screens with lot management
     - `transporte/` - Transport screens for pickup/delivery
+    - `planta_separacion/` - Material classification screens
+    - `transformador/` - Manufacturing screens
+    - `laboratorio/` - Laboratory analysis screens
     - `shared/` - Shared ECOCE components
-      - `widgets/` - Reusable widgets (signature_dialog, weight_input_widget, etc.)
-      - `utils/` - Shared utilities (material_utils, input_decorations)
+      - `widgets/` - Reusable widgets (signature_dialog, weight_input_widget, qr_scanner_widget, etc.)
+      - `utils/` - Shared utilities (material_utils, input_decorations, navigation_utils)
     
 - **lib/widgets/** - Reusable UI components
   - `common/` - Shared widgets like gradient backgrounds
   - Platform-specific reusable components
 
 - **lib/services/** - Business logic and external integrations
-  - `image_service.dart` - Image handling and compression
+  - `image_service.dart` - Image handling and compression (max 50KB for DB storage)
   - Document services for file management
 
 - **lib/utils/** - Helper functions and constants
   - `colors.dart` - Centralized color definitions (BioWayColors)
-  - `optimized_navigation.dart` - Navigation utilities
 
 ## Key Features
 
@@ -112,14 +114,16 @@ The application follows a feature-based folder structure with clear separation o
 - **QR Code Management**: 
   - Scanning (`mobile_scanner`) for lot tracking
   - Generation (`qr_flutter`) for lot identification
+  - Shared scanner widget for consistency
 
 - **Document Management**: 
   - File upload/download (`file_picker`, `open_file`)
   - Multi-file selection support
+  - Shared document upload widget
 
 - **Photo Evidence**: 
   - Camera/gallery integration (`image_picker`)
-  - Image compression (`flutter_image_compress`)
+  - Image compression (`flutter_image_compress`) - max 50KB for DB storage
   - Gallery saving (`gal`)
 
 - **Permissions**: 
@@ -130,6 +134,7 @@ The application follows a feature-based folder structure with clear separation o
   - Lot/batch management system
   - Material type selection (PET, HDPE, PP, etc.)
   - Weight and quantity tracking
+  - Color-coded material system
 
 ## Navigation Flow
 
@@ -152,11 +157,16 @@ Key named routes in `main.dart`:
   - `/reciclador_ayuda` - Help
   - `/reciclador_perfil` - Profile
 - **Transporte**:
-  - `/transporte_inicio` - Dashboard
-  - `/transporte_recoger` - Pickup screen
+  - `/transporte_inicio` - Scanner screen (entry point)
+  - `/transporte_recoger` - Pickup form
   - `/transporte_entregar` - Delivery
   - `/transporte_ayuda` - Help
   - `/transporte_perfil` - Profile
+- **Laboratorio**:
+  - `/laboratorio_inicio` - Dashboard
+  - `/laboratorio_muestras` - Sample management
+  - `/laboratorio_registro` - Sample registration
+  - `/laboratorio_analisis` - Analysis forms
 
 ## Firebase Integration
 
@@ -166,6 +176,7 @@ Firebase is configured with:
 - Firebase project ID: `trazabilidad-ecoce`
 - Multidex enabled for Android
 - Firebase BoM version: 33.6.0
+- Mock Firebase IDs format: 'FID_1x7h9k3' (for demo data)
 
 ## ECOCE Provider Types
 
@@ -193,6 +204,7 @@ Assets are declared in `pubspec.yaml` and loaded using Flutter's asset system.
 - Each screen manages its own local state
 - Data passed between screens via constructor parameters
 - Configuration stored in classes like `OrigenUserConfig`
+- Shared navigation utility: `NavigationUtils.navigateWithFade()` for consistent transitions
 
 ## Development Notes
 
@@ -218,6 +230,8 @@ Assets are declared in `pubspec.yaml` and loaded using Flutter's asset system.
 - Minimize widget rebuilds by checking state changes before setState()
 - Prefer ClampingScrollPhysics for better scroll performance
 - Set resizeToAvoidBottomInset: false to avoid keyboard animation issues
+- Image compression: Automatically compress images to max 50KB for database storage
+- Use FittedBox and Flexible widgets for responsive text scaling
 
 ## Responsive Design Patterns
 
@@ -226,7 +240,10 @@ Assets are declared in `pubspec.yaml` and loaded using Flutter's asset system.
   - Border radius: `screenWidth * 0.02-0.04`
   - Font sizes: `screenWidth * 0.035-0.05`
 - Check for tablet vs phone: `screenWidth > 600`
+- Check for small screens: `screenWidth < 360`
+- Check for compact height: `screenHeight < 700`
 - Use percentage-based sizing for dialogs and modals
+- Bottom navigation adapts height based on screen size and system padding
 
 ## Code Style
 
@@ -237,3 +254,5 @@ Assets are declared in `pubspec.yaml` and loaded using Flutter's asset system.
 - Use const for static lists and data
 - Implement proper error handling
 - Add appropriate comments for complex logic
+- Mock data patterns: Use Firebase ID format (e.g., 'FID_1x7h9k3') for consistency
+- Color usage: Always use BioWayColors constants, never hardcode colors

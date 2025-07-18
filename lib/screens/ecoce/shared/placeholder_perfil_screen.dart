@@ -7,6 +7,7 @@ import 'utils/material_utils.dart';
 import '../transporte/transporte_escaneo.dart';
 import '../transporte/transporte_entregar_screen.dart';
 import '../transporte/transporte_ayuda_screen.dart';
+import '../../login/platform_selector_screen.dart';
 
 class PlaceholderPerfilScreen extends StatefulWidget {
   final String nombreUsuario;
@@ -449,7 +450,10 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
             ],
           ),
           
-          const SizedBox(height: 20),
+          const SizedBox(height: 32),
+          
+          // Botones de cerrar sesión y eliminar cuenta
+          _buildAccountActionsSection(),
         ],
       ),
     );
@@ -913,6 +917,197 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
               fontSize: 14,
               color: Colors.grey[600],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildAccountActionsSection() {
+    return Column(
+      children: [
+        // Botón de Cerrar Sesión
+        Container(
+          width: double.infinity,
+          height: 56,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.grey[300]!,
+              width: 1.5,
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _handleLogout,
+              borderRadius: BorderRadius.circular(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.logout_rounded,
+                    color: Colors.grey[700],
+                    size: 22,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Cerrar Sesión',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // Botón de Eliminar Cuenta
+        Container(
+          width: double.infinity,
+          height: 56,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Colors.red[50],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _handleDeleteAccount,
+              borderRadius: BorderRadius.circular(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.delete_forever_rounded,
+                    color: Colors.red[700],
+                    size: 22,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Eliminar Cuenta',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.red[700],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // Texto de advertencia
+        Text(
+          'Al eliminar tu cuenta, todos tus datos serán borrados permanentemente.',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+          textAlign: TextAlign.center,
+        ),
+        
+        const SizedBox(height: 32),
+      ],
+    );
+  }
+  
+  void _handleLogout() {
+    HapticFeedback.lightImpact();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cerrar Sesión'),
+        content: const Text('¿Estás seguro que deseas cerrar sesión?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (context) => const PlatformSelectorScreen(),
+                ),
+                (route) => false,
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: widget.primaryColor,
+            ),
+            child: const Text('Cerrar Sesión'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  void _handleDeleteAccount() {
+    HapticFeedback.mediumImpact();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(
+          'Eliminar Cuenta',
+          style: TextStyle(color: Colors.red),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Esta acción es irreversible. Se eliminarán:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            const Text('• Tu perfil y toda la información personal'),
+            const Text('• Historial de lotes y transacciones'),
+            const Text('• Documentos y certificados'),
+            const Text('• Acceso a la plataforma'),
+            const SizedBox(height: 16),
+            const Text(
+              '¿Estás seguro de continuar?',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // TODO: Implementar eliminación de cuenta en el backend
+              Navigator.pop(context);
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Tu solicitud de eliminación ha sido enviada. Te contactaremos pronto.'),
+                  backgroundColor: Colors.orange,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  duration: const Duration(seconds: 4),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Eliminar Cuenta'),
           ),
         ],
       ),
