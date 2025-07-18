@@ -55,20 +55,45 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
   final TextEditingController _condicionesController = TextEditingController();
   final TextEditingController _operadorController = TextEditingController();
   final TextEditingController _comentariosController = TextEditingController();
+  final TextEditingController _otraPresentacionController = TextEditingController();
 
   // Variables para los selectores
   String? _tipoPolimeroSeleccionado;
   String _presentacionSeleccionada = 'Pacas';
   String? _fuenteMaterialSeleccionada;
+  String? _otraPresentacion;
+  bool _isPostConsumo = false;
+  bool _isPreConsumo = false;
 
   // Variables para la firma
   List<Offset?> _signaturePoints = [];
   bool _hasSignature = false;
   
+  // ScrollController para manejar el auto-scroll
+  final ScrollController _scrollController = ScrollController();
+  
+  // FocusNodes para los campos
+  final FocusNode _condicionesFocus = FocusNode();
+  final FocusNode _operadorFocus = FocusNode();
+  final FocusNode _comentariosFocus = FocusNode();
 
   @override
   void initState() {
     super.initState();
+    
+    // Listener para el campo de comentarios
+    _comentariosFocus.addListener(() {
+      if (_comentariosFocus.hasFocus) {
+        // Esperar un momento para que el teclado aparezca
+        Future.delayed(const Duration(milliseconds: 300), () {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        });
+      }
+    });
   }
 
   @override
@@ -77,6 +102,11 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
     _condicionesController.dispose();
     _operadorController.dispose();
     _comentariosController.dispose();
+    _otraPresentacionController.dispose();
+    _scrollController.dispose();
+    _condicionesFocus.dispose();
+    _operadorFocus.dispose();
+    _comentariosFocus.dispose();
     super.dispose();
   }
 
@@ -104,6 +134,12 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
     final String firebaseId = 'FID_${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
     final DateTime fechaCreacion = DateTime.now();
     
+    // Determinar la presentación a mostrar
+    String presentacionFinal = _presentacionSeleccionada;
+    if (_presentacionSeleccionada == 'Otro' && _otraPresentacionController.text.isNotEmpty) {
+      presentacionFinal = _otraPresentacionController.text;
+    }
+    
     // Navegar a la pantalla de detalle con mensaje de éxito
     Navigator.push(
       context,
@@ -112,7 +148,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
           firebaseId: firebaseId,
           material: _tipoPolimeroSeleccionado ?? 'Poli',
           peso: double.tryParse(_pesoController.text) ?? 100,
-          presentacion: _presentacionSeleccionada,
+          presentacion: presentacionFinal,
           fuente: _fuenteMaterialSeleccionada ?? 'Fuente no especificada',
           fechaCreacion: fechaCreacion,
           mostrarMensajeExito: true,
@@ -149,11 +185,12 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
             ),
           ),
         ),
-        resizeToAvoidBottomInset: false,
-        body: Column(
-        children: [
-          // Header verde
-          Container(
+        resizeToAvoidBottomInset: true,
+        body: SafeArea(
+          child: Column(
+          children: [
+            // Header verde
+            Container(
             width: double.infinity,
             padding: EdgeInsets.symmetric(
               horizontal: horizontalPadding,
@@ -202,11 +239,13 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
           // Formulario
           Expanded(
             child: SingleChildScrollView(
+              controller: _scrollController,
               physics: const ClampingScrollPhysics(),
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: EdgeInsets.symmetric(
-                horizontal: horizontalPadding,
-                vertical: verticalPadding * 0.8,
+              padding: EdgeInsets.only(
+                left: horizontalPadding,
+                right: horizontalPadding,
+                top: verticalPadding * 0.8,
+                bottom: 20,
               ),
               child: Form(
                 key: _formKey,
@@ -217,6 +256,46 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                       icon: '📦',
                       title: 'Información del Material',
                       children: [
+                        // Origen del Material
+                        const FieldLabel(text: 'Origen del Material'),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CheckboxListTile(
+                                title: const Text('Post-consumo'),
+                                value: _isPostConsumo,
+                                onChanged: (bool? value) {
+                                  setState(() {
+                                    _isPostConsumo = value ?? false;
+                                  });
+                                },
+                                contentPadding: EdgeInsets.zero,
+                                controlAffinity: ListTileControlAffinity.leading,
+                                activeColor: _primaryColor,
+                                dense: true,
+                              ),
+                            ),
+                            Expanded(
+                              child: CheckboxListTile(
+                                title: const Text('Pre-consumo'),
+                                value: _isPreConsumo,
+                                onChanged: (bool? value) {
+                                  setState(() {
+                                    _isPreConsumo = value ?? false;
+                                  });
+                                },
+                                contentPadding: EdgeInsets.zero,
+                                controlAffinity: ListTileControlAffinity.leading,
+                                activeColor: _primaryColor,
+                                dense: true,
+                              ),
+                            ),
+                          ],
+                        ),
+                        
+                        const SizedBox(height: 20),
+                        
                         // Fuente del Material
                         const FieldLabel(text: 'Fuente del Material'),
                         const SizedBox(height: 8),
@@ -301,12 +380,13 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                                   if (_presentacionSeleccionada != 'Pacas') {
                                     setState(() {
                                       _presentacionSeleccionada = 'Pacas';
+                                      _otraPresentacionController.clear();
                                     });
                                   }
                                 },
                               ),
                             ),
-                            const SizedBox(width: 16),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: _buildPresentacionOption(
                                 svgPath: 'assets/images/icons/sacos.svg',
@@ -316,6 +396,22 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                                   if (_presentacionSeleccionada != 'Sacos') {
                                     setState(() {
                                       _presentacionSeleccionada = 'Sacos';
+                                      _otraPresentacionController.clear();
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildPresentacionOption(
+                                icon: Icons.more_horiz,
+                                label: 'Otro',
+                                isSelected: _presentacionSeleccionada == 'Otro',
+                                onTap: () {
+                                  if (_presentacionSeleccionada != 'Otro') {
+                                    setState(() {
+                                      _presentacionSeleccionada = 'Otro';
                                     });
                                   }
                                 },
@@ -323,6 +419,23 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                             ),
                           ],
                         ),
+                        
+                        // Campo de texto para "Otro"
+                        if (_presentacionSeleccionada == 'Otro') ...[
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _otraPresentacionController,
+                            decoration: _buildInputDecoration(
+                              hintText: 'Especifica la presentación',
+                            ),
+                            textCapitalization: TextCapitalization.sentences,
+                            onChanged: (value) {
+                              setState(() {
+                                _otraPresentacion = value;
+                              });
+                            },
+                          ),
+                        ],
                         
                         const SizedBox(height: 20),
                         
@@ -365,10 +478,14 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _condicionesController,
+                          focusNode: _condicionesFocus,
                           maxLength: 100,
                           maxLines: 3,
                           keyboardType: TextInputType.multiline,
                           textInputAction: TextInputAction.newline,
+                          enableInteractiveSelection: true,
+                          autocorrect: false,
+                          enableSuggestions: false,
                           decoration: _buildInputDecoration(
                             hintText: 'Describe el estado del material: limpieza, compactación, contaminación, etc.',
                           ),
@@ -388,9 +505,12 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _operadorController,
+                          focusNode: _operadorFocus,
                           maxLength: 50,
                           keyboardType: TextInputType.name,
                           textInputAction: TextInputAction.next,
+                          autocorrect: false,
+                          enableSuggestions: false,
                           decoration: _buildInputDecoration(
                             hintText: 'Ingresa el nombre completo',
                           ),
@@ -426,10 +546,13 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                       children: [
                         TextFormField(
                           controller: _comentariosController,
+                          focusNode: _comentariosFocus,
                           maxLength: 150,
                           maxLines: 4,
                           keyboardType: TextInputType.multiline,
-                          textInputAction: TextInputAction.newline,
+                          textInputAction: TextInputAction.done,
+                          autocorrect: false,
+                          enableSuggestions: false,
                           decoration: _buildInputDecoration(
                             hintText: 'Ingresa comentarios adicionales (opcional)',
                           ),
@@ -471,6 +594,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
           ),
         ],
       ),
+        ),
     );
   }
 
@@ -533,6 +657,9 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
         horizontal: 16,
         vertical: 16,
       ),
+      hintMaxLines: 1,
+      errorMaxLines: 1,
+      isDense: true,
     );
     
     // Guardar en caché
@@ -673,7 +800,8 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
 
 
   Widget _buildPresentacionOption({
-    required String svgPath,
+    String? svgPath,
+    IconData? icon,
     required String label,
     required bool isSelected,
     required VoidCallback onTap,
@@ -695,15 +823,18 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SvgPicture.asset(
-              svgPath,
-              width: screenWidth * 0.1,
-              height: screenWidth * 0.1,
-              colorFilter: ColorFilter.mode(
-                isSelected ? _primaryColor : BioWayColors.textGrey,
-                BlendMode.srcIn,
+            if (svgPath != null)
+              SvgPicture.asset(
+                svgPath,
+                width: screenWidth * 0.1,
+                height: screenWidth * 0.1,
+              )
+            else if (icon != null)
+              Icon(
+                icon,
+                size: screenWidth * 0.1,
+                color: isSelected ? _primaryColor : BioWayColors.textGrey,
               ),
-            ),
             SizedBox(height: screenWidth * 0.02),
             Text(
               label,

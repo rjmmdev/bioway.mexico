@@ -27,6 +27,11 @@ import 'screens/ecoce/transporte/transporte_perfil_screen.dart';
 void main() {
   // Asegurar que los widgets estén inicializados
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Desactivar animaciones del teclado
+  SystemChannels.textInput.invokeMethod('TextInput.setClientFeatures', <String, dynamic>{
+    'enableAnimations': false,
+  });
 
   // Configurar la orientación de la app (solo vertical)
   SystemChrome.setPreferredOrientations([
