@@ -693,8 +693,7 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                                                       height: 300, // Misma altura que el diálogo
                                                       child: CustomPaint(
                                                         painter: SignaturePainter(
-                                                          points: _signaturePoints,
-                                                          color: BioWayColors.darkGreen,
+                                                          _signaturePoints,
                                                           strokeWidth: 2.0,
                                                         ),
                                                       ),

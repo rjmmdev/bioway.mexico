@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
-import '../shared/widgets/ecoce_bottom_navigation.dart';
-import '../shared/utils/navigation_utils.dart';
 import '../../../utils/colors.dart';
-import 'transporte_inicio_screen.dart';
+import '../shared/utils/material_utils.dart';
+import '../reciclador/widgets/reciclador_lote_card.dart';
+import 'transporte_escaneo.dart';
 import 'transporte_recoger_screen.dart';
-import 'transporte_entregar_screen.dart';
-import 'transporte_ayuda_screen.dart';
-import 'transporte_perfil_screen.dart';
 
 class TransporteResumenCargaScreen extends StatefulWidget {
   final Map<String, dynamic> loteInicial;
@@ -23,8 +20,7 @@ class TransporteResumenCargaScreen extends StatefulWidget {
 }
 
 class _TransporteResumenCargaScreenState extends State<TransporteResumenCargaScreen> {
-  final int _selectedIndex = 0;
-  List<Map<String, dynamic>> lotesTemp = [];
+  List<Map<String, dynamic>> _scannedLots = [];
   bool _showSuccessBanner = true;
   Timer? _bannerTimer;
 
@@ -32,9 +28,9 @@ class _TransporteResumenCargaScreenState extends State<TransporteResumenCargaScr
   void initState() {
     super.initState();
     // Agregar el lote inicial
-    lotesTemp.add(widget.loteInicial);
+    _scannedLots.add(widget.loteInicial);
     
-    // Configurar el timer para ocultar el banner
+    // Configurar el timer para ocultar el banner después de 3 segundos
     _bannerTimer = Timer(const Duration(seconds: 3), () {
       if (mounted) {
         setState(() {
@@ -50,68 +46,99 @@ class _TransporteResumenCargaScreenState extends State<TransporteResumenCargaScr
     super.dispose();
   }
 
-  double get pesoTotal => lotesTemp.fold(0.0, (sum, lote) => sum + (lote['peso'] as double));
+  double get _pesoTotal => _scannedLots.fold(0.0, (sum, lote) => sum + (lote['peso'] as double));
 
-  void _onItemTapped(int index) {
-    switch (index) {
-      case 0:
-        // Ya estamos en inicio/recoger
-        break;
-      case 1:
-        NavigationUtils.navigateWithFade(
-          context,
-          const TransporteEntregarScreen(),
-          replacement: true,
-        );
-        break;
-      case 2:
-        NavigationUtils.navigateWithFade(
-          context,
-          const TransporteAyudaScreen(),
-          replacement: true,
-        );
-        break;
-      case 3:
-        NavigationUtils.navigateWithFade(
-          context,
-          const TransportePerfilScreen(),
-          replacement: true,
-        );
-        break;
-    }
-  }
-
-  void _removerLote(int index) {
+  void _removeLot(int index) {
     HapticFeedback.lightImpact();
-    setState(() {
-      lotesTemp.removeAt(index);
-    });
-    
-    if (lotesTemp.isEmpty) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const TransporteInicioScreen(),
-        ),
-      );
-    }
-  }
 
-  void _escanearOtroLote() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const TransporteInicioScreen(),
+    setState(() {
+      _scannedLots.removeAt(index);
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Lote eliminado'),
+        backgroundColor: BioWayColors.warning,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        duration: const Duration(seconds: 2),
+        action: SnackBarAction(
+          label: 'Deshacer',
+          textColor: Colors.white,
+          onPressed: () {
+            // TODO: Implementar deshacer eliminación
+          },
+        ),
       ),
     );
   }
 
-  void _continuarAlFormulario() {
+  void _addMoreLots() async {
+    HapticFeedback.lightImpact();
+
+    // Navegar al escáner indicando que estamos agregando más lotes
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const TransporteEscaneoScreen(isAddingMore: true),
+      ),
+    );
+
+    // Si regresa con un ID, agregarlo
+    if (result != null && result.isNotEmpty) {
+      setState(() {
+        _scannedLots.add({
+          'id': result,
+          'firebaseId': 'Firebase_ID_$result',
+          'material': _getMaterialForDemo(result),
+          'peso': _getWeightForDemo(),
+          'presentacion': _getFormatForDemo(),
+          'origen': 'Centro de Acopio ${["Norte", "Sur", "Este", "Oeste"][DateTime.now().millisecondsSinceEpoch % 4]}',
+          'fecha': MaterialUtils.formatDate(DateTime.now()),
+        });
+      });
+    }
+  }
+
+  // Métodos temporales para simular datos
+  String _getMaterialForDemo(String id) {
+    final materials = ['PET', 'HDPE', 'LDPE', 'PP', 'PS', 'PVC', 'Otros'];
+    return materials[id.length % materials.length];
+  }
+
+  double _getWeightForDemo() {
+    return 30 + (DateTime.now().millisecondsSinceEpoch % 70);
+  }
+
+  String _getFormatForDemo() {
+    return DateTime.now().millisecondsSinceEpoch % 2 == 0 ? 'Pacas' : 'Sacos';
+  }
+
+  void _continueWithLots() {
+    if (_scannedLots.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Debe escanear al menos un lote'),
+          backgroundColor: BioWayColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+      return;
+    }
+
+    HapticFeedback.mediumImpact();
+
+    // Navegar al formulario de carga
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => TransporteRecogerScreen(
-          lotesSeleccionados: lotesTemp,
+          lotesSeleccionados: _scannedLots,
         ),
       ),
     );
@@ -119,410 +146,304 @@ class _TransporteResumenCargaScreenState extends State<TransporteResumenCargaScr
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header con gradiente verde
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(
-                horizontal: screenWidth * 0.04,
-                vertical: screenHeight * 0.02,
-              ),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF3AA45B),
-                    Color(0xFF68C76A),
+      backgroundColor: BioWayColors.backgroundGrey,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios, color: BioWayColors.darkGreen),
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            Navigator.pop(context);
+          },
+        ),
+        title: const Text(
+          'Lotes para Transportar',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: BioWayColors.darkGreen,
+          ),
+        ),
+        centerTitle: true,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            height: 1,
+            color: Colors.grey.shade200,
+          ),
+        ),
+      ),
+      body: Column(
+        children: [
+          // Banner de confirmación animado
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            height: _showSuccessBanner ? null : 0,
+            child: AnimatedOpacity(
+              opacity: _showSuccessBanner ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                color: Colors.white,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      color: BioWayColors.success,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Lote escaneado correctamente',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: BioWayColors.darkGreen,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Resumen de Carga',
-                    style: TextStyle(
-                      fontSize: screenWidth * 0.06,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  SizedBox(height: screenHeight * 0.005),
-                  Text(
-                    'Lotes listos para transportar',
-                    style: TextStyle(
-                      fontSize: screenWidth * 0.04,
-                      color: Colors.white.withOpacity(0.9),
-                    ),
-                  ),
-                ],
               ),
             ),
+          ),
 
-            // Contenido principal
-            Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: EdgeInsets.all(screenWidth * 0.04),
-                  child: Column(
-                    children: [
-                      // Banner de confirmación
-                      AnimatedOpacity(
-                        opacity: _showSuccessBanner ? 1.0 : 0.0,
-                        duration: const Duration(milliseconds: 500),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 500),
-                          height: _showSuccessBanner ? null : 0,
-                          margin: EdgeInsets.only(bottom: screenHeight * 0.02),
-                          padding: EdgeInsets.all(screenWidth * 0.04),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE8F5E9),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: const Color(0xFF4CAF50).withOpacity(0.3),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.check_circle,
-                                color: Color(0xFF4CAF50),
-                                size: 24,
-                              ),
-                              SizedBox(width: screenWidth * 0.03),
-                              const Expanded(
-                                child: Text(
-                                  'Lote escaneado correctamente',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF2E7D32),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      // Tarjeta de resumen
-                      Container(
-                        padding: EdgeInsets.all(screenWidth * 0.04),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            // Columna de Lotes
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  Text(
-                                    'Lotes',
-                                    style: TextStyle(
-                                      fontSize: screenWidth * 0.035,
-                                      color: const Color(0xFF606060),
-                                    ),
-                                  ),
-                                  SizedBox(height: screenHeight * 0.01),
-                                  Text(
-                                    lotesTemp.length.toString(),
-                                    style: TextStyle(
-                                      fontSize: screenWidth * 0.08,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            
-                            // Divisor
-                            Container(
-                              height: screenHeight * 0.06,
-                              width: 1,
-                              color: Colors.grey[300],
-                            ),
-                            
-                            // Columna de Kg Total
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  Text(
-                                    'Kg Total',
-                                    style: TextStyle(
-                                      fontSize: screenWidth * 0.035,
-                                      color: const Color(0xFF606060),
-                                    ),
-                                  ),
-                                  SizedBox(height: screenHeight * 0.01),
-                                  Text(
-                                    pesoTotal.toStringAsFixed(1),
-                                    style: TextStyle(
-                                      fontSize: screenWidth * 0.08,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      SizedBox(height: screenHeight * 0.03),
-
-                      // Sección de Lotes Escaneados
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'Lotes Escaneados',
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.045,
+          // Resumen de carga con gradiente azul transportista
+          Container(
+            margin: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  BioWayColors.deepBlue,
+                  BioWayColors.deepBlue.withOpacity(0.8),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: BioWayColors.deepBlue.withOpacity(0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                const Text(
+                  'Resumen de Carga',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Column(
+                      children: [
+                        Text(
+                          _scannedLots.length.toString(),
+                          style: const TextStyle(
+                            fontSize: 48,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            color: Colors.white,
                           ),
                         ),
-                      ),
-
-                      SizedBox(height: screenHeight * 0.02),
-
-                      // Lista de lotes
-                      ...lotesTemp.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final lote = entry.value;
-                        
-                        return Container(
-                          margin: EdgeInsets.only(bottom: screenHeight * 0.015),
-                          padding: EdgeInsets.all(screenWidth * 0.04),
-                          decoration: BoxDecoration(
+                        const Text(
+                          'Lotes',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      height: 60,
+                      width: 1,
+                      color: Colors.white24,
+                    ),
+                    Column(
+                      children: [
+                        Text(
+                          _pesoTotal.toStringAsFixed(1),
+                          style: const TextStyle(
+                            fontSize: 48,
+                            fontWeight: FontWeight.bold,
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
                           ),
-                          child: Column(
-                            children: [
-                              // Header del lote con chip y botón X
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Container(
-                                    key: Key('chip_lote_$index'),
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: screenWidth * 0.03,
-                                      vertical: screenHeight * 0.005,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFFFF9C4),
-                                      borderRadius: BorderRadius.circular(4),
-                                      border: Border.all(
-                                        color: const Color(0xFFF9A825),
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      lote['firebaseId'] ?? lote['id'],
-                                      style: TextStyle(
-                                        fontSize: screenWidth * 0.03,
-                                        fontWeight: FontWeight.w600,
-                                        color: const Color(0xFF6F4E37),
-                                      ),
-                                    ),
-                                  ),
-                                  IconButton(
-                                    key: Key('btn_remove_lote_$index'),
-                                    onPressed: () => _removerLote(index),
-                                    icon: const Icon(
-                                      Icons.close,
-                                      color: Color(0xFFE74C3C),
-                                      size: 20,
-                                    ),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                  ),
-                                ],
-                              ),
-
-                              SizedBox(height: screenHeight * 0.015),
-
-                              // Información del lote
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                children: [
-                                  _buildLoteInfo('Material', lote['material']),
-                                  _buildLoteInfo('Peso', '${lote['peso']} kg'),
-                                  _buildLoteInfo('Presentación', lote['presentacion']),
-                                ],
-                              ),
-
-                              SizedBox(height: screenHeight * 0.015),
-
-                              // Sub-panel de origen
-                              Container(
-                                width: double.infinity,
-                                padding: EdgeInsets.all(screenWidth * 0.03),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF5F5F5),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Origen',
-                                      style: TextStyle(
-                                        fontSize: screenWidth * 0.03,
-                                        fontWeight: FontWeight.w600,
-                                        color: const Color(0xFF606060),
-                                      ),
-                                    ),
-                                    SizedBox(height: screenHeight * 0.005),
-                                    Text(
-                                      lote['origen'],
-                                      style: TextStyle(
-                                        fontSize: screenWidth * 0.035,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                        ),
+                        const Text(
+                          'Kg Total',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white70,
                           ),
-                        );
-                      }).toList(),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
 
-                      SizedBox(height: screenHeight * 0.03),
+          // Header de la lista
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Lotes Escaneados',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: BioWayColors.darkGreen,
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: _addMoreLots,
+                  icon: Icon(
+                    Icons.add,
+                    color: BioWayColors.deepBlue,
+                    size: 20,
+                  ),
+                  label: Text(
+                    'Agregar',
+                    style: TextStyle(
+                      color: BioWayColors.deepBlue,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    backgroundColor: BioWayColors.deepBlue.withOpacity(0.1),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
 
-                      // Botones de acción
-                      Row(
-                        children: [
-                          // Botón "Escanear Otro Lote"
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              key: const Key('btn_scan_another'),
-                              onPressed: _escanearOtroLote,
-                              icon: const Icon(Icons.qr_code_scanner),
-                              label: const Text('Escanear Otro Lote'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF3AA45B),
-                                side: const BorderSide(
-                                  color: Color(0xFF3AA45B),
-                                  width: 2,
-                                ),
-                                padding: EdgeInsets.symmetric(
-                                  vertical: screenHeight * 0.02,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
+          // Lista de lotes
+          Expanded(
+            child: _scannedLots.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inventory_2_outlined,
+                          size: 80,
+                          color: Colors.grey.shade300,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No hay lotes escaneados',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: _addMoreLots,
+                          child: Text(
+                            'Escanear primer lote',
+                            style: TextStyle(
+                              color: BioWayColors.deepBlue,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ],
-                      ),
-
-                      SizedBox(height: screenHeight * 0.015),
-
-                      // Botón "Continuar al Formulario"
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton(
-                          key: const Key('btn_continue_form'),
-                          onPressed: _continuarAlFormulario,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF3AA45B),
-                            shape: RoundedRectangleBorder(
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    itemCount: _scannedLots.length,
+                    itemBuilder: (context, index) {
+                      final lot = _scannedLots[index];
+                      
+                      return RecicladorLoteCard(
+                        lote: lot,
+                        onTap: () {
+                          // No hacemos nada en el tap principal
+                        },
+                        trailing: IconButton(
+                          onPressed: () => _removeLot(index),
+                          icon: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: BioWayColors.error.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            elevation: 2,
-                          ),
-                          child: const Text(
-                            'Continuar al Formulario',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                            child: Icon(
+                              Icons.close,
+                              color: BioWayColors.error,
+                              size: 20,
                             ),
                           ),
                         ),
-                      ),
+                      );
+                    },
+                  ),
+          ),
 
-                      SizedBox(height: screenHeight * 0.1), // Espacio para el bottom nav
-                    ],
+          // Botón continuar
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -5),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              child: SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _scannedLots.isNotEmpty ? _continueWithLots : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: BioWayColors.deepBlue,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey.shade300,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    elevation: _scannedLots.isNotEmpty ? 3 : 0,
+                  ),
+                  child: Text(
+                    _scannedLots.isEmpty
+                        ? 'Escanea al menos un lote'
+                        : 'Continuar con ${_scannedLots.length} lote${_scannedLots.length > 1 ? 's' : ''}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: EcoceBottomNavigation(
-        selectedIndex: _selectedIndex,
-        onItemTapped: _onItemTapped,
-        primaryColor: BioWayColors.deepBlue,
-        items: EcoceNavigationConfigs.transporteItems,
-      ),
-    );
-  }
-
-  Widget _buildLoteInfo(String label, String value) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    
-    return Column(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: screenWidth * 0.03,
-            color: const Color(0xFF606060),
           ),
-        ),
-        SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: screenWidth * 0.035,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

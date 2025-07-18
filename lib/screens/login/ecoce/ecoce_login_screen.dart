@@ -9,8 +9,9 @@ import '../../ecoce/origen/origen_config.dart';
 // TEMPORAL: Importar pantallas de inicio
 import '../../ecoce/origen/origen_inicio_screen.dart';
 import '../../ecoce/origen/origen_perfil.dart';
-import '../../ecoce/transporte/transporte_inicio_screen.dart';
+import '../../ecoce/transporte/transporte_escaneo.dart';
 import '../../ecoce/transporte/transporte_perfil_screen.dart';
+import '../../ecoce/maestro/maestro_aprobacion.dart';
 
 class ECOCELoginScreen extends StatefulWidget {
   const ECOCELoginScreen({super.key});
@@ -252,13 +253,16 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         targetScreen = const OrigenInicioScreen(); // TEMPORAL
         break;
       case 'transportista':
-        targetScreen = const TransporteInicioScreen();
+        targetScreen = const TransporteEscaneoScreen();
         break;
       case 'laboratorio':
         targetScreen = const OrigenInicioScreen(); // TEMPORAL
         break;
       case 'repositorio':
         targetScreen = const OrigenInicioScreen(); // TEMPORAL
+        break;
+      case 'maestro ecoce':
+        targetScreen = const MaestroAprobacionScreen();
         break;
     }
 
@@ -315,6 +319,8 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         return Icons.science;
       case 'repositorio':
         return Icons.storage; // Icono específico para repositorio
+      case 'maestro ecoce':
+        return Icons.admin_panel_settings; // Icono para Usuario Maestro
       default:
         return Icons.business;
     }
@@ -336,6 +342,8 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         return BioWayColors.otherPurple;
       case 'repositorio':
         return BioWayColors.metalGrey; // Color gris metálico para repositorio
+      case 'maestro ecoce':
+        return BioWayColors.ecoceGreen; // Color verde ECOCE para Usuario Maestro
       default:
         return BioWayColors.ecoceGreen;
     }
@@ -1033,6 +1041,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
       'Transportista',
       'Laboratorio',
       'Repositorio', // Nueva opción agregada
+      'Maestro ECOCE', // Usuario Maestro ECOCE
     ];
 
     return GridView.count(
