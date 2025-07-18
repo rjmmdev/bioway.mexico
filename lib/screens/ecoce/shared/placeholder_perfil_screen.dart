@@ -4,6 +4,9 @@ import '../../../utils/colors.dart';
 import '../origen/widgets/origen_bottom_navigation.dart';
 import '../reciclador/widgets/reciclador_bottom_navigation.dart';
 import '../transporte/widgets/transporte_bottom_navigation.dart';
+import '../transporte/transporte_inicio_screen.dart';
+import '../transporte/transporte_entregar_screen.dart';
+import '../transporte/transporte_ayuda_screen.dart';
 
 class PlaceholderPerfilScreen extends StatefulWidget {
   final String nombreUsuario;
@@ -1007,13 +1010,52 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
             // Navegación a otras pantallas según el índice
             switch (index) {
               case 0:
-                Navigator.pushReplacementNamed(context, '/transporte_inicio');
+                Navigator.pushReplacement(
+                  context,
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        const TransporteInicioScreen(),
+                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: child,
+                      );
+                    },
+                    transitionDuration: const Duration(milliseconds: 300),
+                  ),
+                );
                 break;
               case 1:
-                Navigator.pushReplacementNamed(context, '/transporte_entregar');
+                Navigator.pushReplacement(
+                  context,
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        const TransporteEntregarScreen(),
+                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: child,
+                      );
+                    },
+                    transitionDuration: const Duration(milliseconds: 300),
+                  ),
+                );
                 break;
               case 2:
-                Navigator.pushReplacementNamed(context, '/transporte_ayuda');
+                Navigator.pushReplacement(
+                  context,
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        const TransporteAyudaScreen(),
+                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: child,
+                      );
+                    },
+                    transitionDuration: const Duration(milliseconds: 300),
+                  ),
+                );
                 break;
             }
           },
