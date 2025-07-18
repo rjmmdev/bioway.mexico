@@ -1,92 +1,87 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
-import 'reciclador_escaneo.dart';
-import 'reciclador_administracion_lotes.dart';
-import 'reciclador_formulario_salida.dart';
-import 'reciclador_documentacion.dart';
-import 'reciclador_lote_qr_screen.dart';
-import 'reciclador_ayuda.dart';
-import 'reciclador_perfil.dart';
+import 'laboratorio_escaneo.dart';
+import 'laboratorio_gestion_muestras.dart';
+import 'laboratorio_formulario.dart';
+import 'laboratorio_documentacion.dart';
+import 'laboratorio_ayuda.dart';
+import 'laboratorio_perfil.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
-import '../shared/utils/navigation_utils.dart';
-import 'widgets/reciclador_lote_card.dart';
+import 'widgets/laboratorio_muestra_card.dart';
 import '../shared/widgets/statistic_card.dart';
-import '../shared/widgets/gradient_header.dart';
-import '../shared/widgets/quick_action_button.dart';
-import '../shared/utils/material_utils.dart';
+import '../shared/utils/navigation_utils.dart';
 
-class RecicladorHomeScreen extends StatefulWidget {
-  const RecicladorHomeScreen({super.key});
+class LaboratorioInicioScreen extends StatefulWidget {
+  const LaboratorioInicioScreen({super.key});
 
   @override
-  State<RecicladorHomeScreen> createState() => _RecicladorHomeScreenState();
+  State<LaboratorioInicioScreen> createState() => _LaboratorioInicioScreenState();
 }
 
-class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
+class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
   // Índice para la navegación del bottom bar
   final int _selectedIndex = 0;
 
-  // Datos de ejemplo para el reciclador (en producción vendrían de la base de datos)
-  final String _nombreReciclador = "Juan Pérez García";
-  final String _folioReciclador = "R0001234";
-  final int _lotesRecibidos = 45;
-  final int _lotesCreados = 38;
-  final double _pesoProcesado = 1250.5; // en kg
+  // Datos de ejemplo para el laboratorio (en producción vendrían de la base de datos)
+  final String _nombreLaboratorio = "Laboratorio Central de Análisis";
+  final String _folioLaboratorio = "L0000001";
+  final int _muestrasRecibidas = 128;
+  final double _materialAnalizado = 856.5; // en kg
 
-  // Lista de lotes con diferentes estados (datos de ejemplo)
-  final List<Map<String, dynamic>> _lotesRecientes = [
+  // Lista de muestras con diferentes estados (datos de ejemplo)
+  final List<Map<String, dynamic>> _muestrasRecientes = [
     {
-      'id': 'L001',
+      'id': 'M001',
       'fecha': '14/07/2025',
-      'peso': 125.5,
+      'peso': 2.5,
       'material': 'PEBD',
-      'origen': 'Acopiador Norte',
-      'presentacion': 'Pacas',
-      'estado': 'salida', // Requiere formulario de salida
+      'origen': 'Reciclador Norte',
+      'presentacion': 'Muestra',
+      'estado': 'formulario', // Requiere formulario
     },
     {
-      'id': 'L002',
+      'id': 'M002',
       'fecha': '14/07/2025',
-      'peso': 89.3,
+      'peso': 1.8,
       'material': 'PP',
-      'origen': 'Planta Separación Sur',
-      'presentacion': 'Sacos',
+      'origen': 'Reciclador Sur',
+      'presentacion': 'Muestra',
       'estado': 'documentacion', // Requiere documentación
     },
     {
-      'id': 'L003',
+      'id': 'M003',
       'fecha': '13/07/2025',
-      'peso': 200.8,
+      'peso': 3.2,
       'material': 'Multilaminado',
-      'origen': 'Acopiador Centro',
-      'presentacion': 'Pacas',
+      'origen': 'Reciclador Centro',
+      'presentacion': 'Muestra',
       'estado': 'finalizado', // Completado
     },
     {
-      'id': 'L004',
+      'id': 'M004',
       'fecha': '13/07/2025',
-      'peso': 156.2,
+      'peso': 2.0,
       'material': 'PEBD',
-      'origen': 'Planta Separación Este',
-      'presentacion': 'Sacos',
-      'estado': 'salida', // Requiere formulario de salida
+      'origen': 'Reciclador Este',
+      'presentacion': 'Muestra',
+      'estado': 'formulario', // Requiere formulario
     },
   ];
 
-  void _navigateToNewLot() {
+  void _navigateToNewMuestra() {
     HapticFeedback.lightImpact();
     NavigationUtils.navigateWithSlide(
       context,
-      const QRScannerScreen(),
+      const LaboratorioEscaneoScreen(),
     );
   }
 
-  void _navigateToLotControl() {
+  void _navigateToMuestrasControl() {
     HapticFeedback.lightImpact();
     NavigationUtils.navigateWithSlide(
       context,
-      const RecicladorAdministracionLotes(),
+      const LaboratorioGestionMuestras(),
     );
   }
 
@@ -102,19 +97,19 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
       case 1:
         NavigationUtils.navigateWithFade(
           context,
-          const RecicladorAdministracionLotes(),
+          const LaboratorioGestionMuestras(),
         );
         break;
       case 2:
         NavigationUtils.navigateWithFade(
           context,
-          const RecicladorAyudaScreen(),
+          const LaboratorioAyudaScreen(),
         );
         break;
       case 3:
         NavigationUtils.navigateWithFade(
           context,
-          const RecicladorPerfilScreen(),
+          const LaboratorioPerfilScreen(),
         );
         break;
     }
@@ -123,12 +118,12 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
   // Obtener texto del botón según el estado
   String _getActionButtonText(String estado) {
     switch (estado) {
-      case 'salida':
-        return 'Formulario de Salida';
+      case 'formulario':
+        return 'Formulario';
       case 'documentacion':
         return 'Ingresar Documentación';
       case 'finalizado':
-        return 'Ver Código QR';
+        return '';
       default:
         return '';
     }
@@ -137,7 +132,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
   // Obtener color del botón según el estado
   Color _getActionButtonColor(String estado) {
     switch (estado) {
-      case 'salida':
+      case 'formulario':
         return BioWayColors.error; // Rojo
       case 'documentacion':
         return BioWayColors.warning; // Naranja
@@ -148,18 +143,18 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
     }
   }
 
-  // Manejar tap en lote según su estado
-  void _handleLoteTap(Map<String, dynamic> lote) {
+  // Manejar tap en muestra según su estado
+  void _handleMuestraTap(Map<String, dynamic> muestra) {
     HapticFeedback.lightImpact();
     
-    switch (lote['estado']) {
-      case 'salida':
+    switch (muestra['estado']) {
+      case 'formulario':
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => RecicladorFormularioSalida(
-              loteId: lote['id'],
-              pesoOriginal: lote['peso'].toDouble(),
+            builder: (context) => LaboratorioFormulario(
+              muestraId: muestra['id'],
+              peso: muestra['peso'].toDouble(),
             ),
           ),
         );
@@ -168,57 +163,16 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => RecicladorDocumentacion(
-              lotId: lote['id'],
+            builder: (context) => LaboratorioDocumentacion(
+              muestraId: muestra['id'],
             ),
           ),
         );
         break;
       case 'finalizado':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => RecicladorLoteQRScreen(
-              loteId: lote['id'],
-              material: lote['material'],
-              pesoOriginal: lote['peso'].toDouble(),
-              pesoFinal: lote['peso'].toDouble(), // En producción vendría de la base de datos
-              presentacion: lote['presentacion'],
-              origen: lote['origen'],
-              fechaEntrada: DateTime.now().subtract(const Duration(days: 5)), // En producción vendría de la BD
-              fechaSalida: DateTime.now(),
-              documentosCargados: ['Ficha Técnica', 'Reporte de Reciclaje'], // En producción vendría de la BD
-            ),
-          ),
-        );
+        // No hacer nada para muestras finalizadas
         break;
     }
-  }
-
-  Widget _buildQRButton(Map<String, dynamic> lote) {
-    return Container(
-      decoration: BoxDecoration(
-        color: BioWayColors.ecoceGreen.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: IconButton(
-        onPressed: () {
-          HapticFeedback.lightImpact();
-          _handleLoteTap(lote);
-        },
-        icon: Icon(
-          Icons.qr_code_2,
-          color: BioWayColors.ecoceGreen,
-          size: 22,
-        ),
-        padding: const EdgeInsets.all(8),
-        constraints: const BoxConstraints(
-          minWidth: 36,
-          minHeight: 36,
-        ),
-        tooltip: 'Ver QR',
-      ),
-    );
   }
 
   @override
@@ -231,7 +185,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
             // Header moderno con gradiente
             SliverToBoxAdapter(
               child: Container(
-                height: 320,
+                height: 280,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -316,9 +270,9 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                             ],
                           ),
                           const SizedBox(height: 8),
-                          // Nombre del reciclador
+                          // Nombre del laboratorio
                           Text(
-                            _nombreReciclador,
+                            _nombreLaboratorio,
                             style: const TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
@@ -344,13 +298,13 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
-                                      Icons.recycling,
+                                      Icons.science,
                                       size: 16,
                                       color: BioWayColors.ecoceGreen,
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
-                                      'Reciclador',
+                                      'Laboratorio',
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
@@ -371,7 +325,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  _folioReciclador,
+                                  _folioLaboratorio,
                                   style: const TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
@@ -382,46 +336,28 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                             ],
                           ),
                           const SizedBox(height: 10),
-                          // Primera fila de estadísticas
+                          // Estadísticas
                           Row(
                             children: [
-                              // Card de Lotes Recibidos
+                              // Card de Muestras Recibidas
                               Expanded(
                                 child: StatisticCard(
-                                  title: 'Lotes recibidos',
-                                  value: _lotesRecibidos.toString(),
-                                  icon: Icons.inbox,
+                                  title: 'Muestras recibidas',
+                                  value: _muestrasRecibidas.toString(),
+                                  icon: Icons.science,
                                   color: Colors.blue,
                                   height: 70,
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              // Card de Lotes Creados
+                              // Card de Material Analizado
                               Expanded(
                                 child: StatisticCard(
-                                  title: 'Lotes creados',
-                                  value: _lotesCreados.toString(),
-                                  icon: Icons.add_box,
+                                  title: 'Material analizado',
+                                  value: _materialAnalizado.toStringAsFixed(1),
+                                  unit: 'kg',
+                                  icon: Icons.analytics,
                                   color: Colors.purple,
-                                  height: 70,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          // Segunda fila con Material Procesado centrado
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              // Card de Peso Procesado centrada
-                              Container(
-                                width: MediaQuery.of(context).size.width * 0.45,
-                                child: StatisticCard(
-                                  title: 'Material procesado',
-                                  value: '${(_pesoProcesado / 1000).toStringAsFixed(1)}',
-                                  unit: 'ton',
-                                  icon: Icons.scale,
-                                  color: Colors.green,
                                   height: 70,
                                 ),
                               ),
@@ -478,7 +414,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                           borderRadius: BorderRadius.circular(16),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(16),
-                            onTap: _navigateToNewLot,
+                            onTap: _navigateToNewMuestra,
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                               child: Row(
@@ -503,7 +439,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         const Text(
-                                          'Escanear Nuevo Lote',
+                                          'Escanear Nueva Muestra',
                                           style: TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.bold,
@@ -511,7 +447,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                                           ),
                                         ),
                                         Text(
-                                          'Registra entrada de material',
+                                          'Registra entrada de muestra',
                                           style: TextStyle(
                                             fontSize: 13,
                                             color: Colors.white.withOpacity(0.9),
@@ -535,12 +471,12 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                       
                       const SizedBox(height: 20),
                       
-                      // Sección de lotes recientes
+                      // Sección de muestras recientes
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text(
-                            'Lotes Recientes',
+                            'Muestras Recientes',
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -548,7 +484,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                             ),
                           ),
                           TextButton(
-                            onPressed: _navigateToLotControl,
+                            onPressed: _navigateToMuestrasControl,
                             child: Row(
                               children: [
                                 Text(
@@ -572,27 +508,26 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                       ),
                       const SizedBox(height: 16),
                       
-                      // Lista de lotes con nuevo diseño y botones según estado
-                      ..._lotesRecientes.map((lote) {
-                        // Para lotes finalizados, usar el estilo con botón QR lateral
-                        if (lote['estado'] == 'finalizado') {
-                          return RecicladorLoteCard(
-                            lote: lote,
-                            onTap: () => _handleLoteTap(lote),
+                      // Lista de muestras con nuevo diseño y botones según estado
+                      ..._muestrasRecientes.map((muestra) {
+                        // Para muestras finalizadas, no mostrar botón de acción
+                        if (muestra['estado'] == 'finalizado') {
+                          return LaboratorioMuestraCard(
+                            muestra: muestra,
+                            onTap: null,
                             showActionButton: false,
                             showActions: false,
-                            trailing: _buildQRButton(lote),
                           );
                         }
                         
                         // Para otros estados, mostrar botón debajo
-                        return RecicladorLoteCard(
-                          lote: lote,
-                          onTap: () => _handleLoteTap(lote),
+                        return LaboratorioMuestraCard(
+                          muestra: muestra,
+                          onTap: () => _handleMuestraTap(muestra),
                           showActionButton: true,
-                          actionButtonText: _getActionButtonText(lote['estado']),
-                          actionButtonColor: _getActionButtonColor(lote['estado']),
-                          onActionPressed: () => _handleLoteTap(lote),
+                          actionButtonText: _getActionButtonText(muestra['estado']),
+                          actionButtonColor: _getActionButtonColor(muestra['estado']),
+                          onActionPressed: () => _handleMuestraTap(muestra),
                           showActions: true, // Mostrar flecha lateral
                         );
                       }),
@@ -611,19 +546,43 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
       bottomNavigationBar: EcoceBottomNavigation(
         selectedIndex: _selectedIndex,
         onItemTapped: _onBottomNavTapped,
-        primaryColor: BioWayColors.ecoceGreen,
-        items: EcoceNavigationConfigs.recicladorItems,
+        primaryColor: const Color(0xFF9333EA), // Purple color for laboratorio
+        items: const [
+          NavigationItem(
+            icon: Icons.home,
+            label: 'Inicio',
+            testKey: 'laboratorio_nav_inicio',
+          ),
+          NavigationItem(
+            icon: Icons.science,
+            label: 'Muestras',
+            testKey: 'laboratorio_nav_muestras',
+          ),
+          NavigationItem(
+            icon: Icons.help_outline,
+            label: 'Ayuda',
+            testKey: 'laboratorio_nav_ayuda',
+          ),
+          NavigationItem(
+            icon: Icons.person,
+            label: 'Perfil',
+            testKey: 'laboratorio_nav_perfil',
+          ),
+        ],
         fabConfig: FabConfig(
           icon: Icons.add,
-          onPressed: _navigateToNewLot,
+          onPressed: _navigateToNewMuestra,
+          tooltip: 'Nueva muestra',
         ),
       ),
       
       // Floating Action Button
       floatingActionButton: EcoceFloatingActionButton(
-        onPressed: _navigateToNewLot,
+        onPressed: _navigateToNewMuestra,
         icon: Icons.add,
-        backgroundColor: BioWayColors.ecoceGreen,
+        backgroundColor: const Color(0xFF9333EA), // Purple color for laboratorio
+        tooltip: 'Nueva muestra',
+        heroTag: 'laboratorio_fab',
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );

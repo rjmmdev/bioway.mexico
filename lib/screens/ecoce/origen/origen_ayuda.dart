@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/optimized_navigation.dart';
 import '../shared/placeholder_ayuda_screen.dart';
-import 'widgets/origen_bottom_navigation.dart';
+import '../shared/widgets/ecoce_bottom_navigation.dart';
 import 'origen_config.dart';
 
 class OrigenAyudaScreen extends StatelessWidget {
@@ -14,7 +14,7 @@ class OrigenAyudaScreen extends StatelessWidget {
     return PlaceholderAyudaScreen(
       tipoUsuario: config.tipoUsuario,
       primaryColor: config.color,
-      bottomNavigation: OrigenBottomNavigation(
+      bottomNavigation: EcoceBottomNavigation(
         selectedIndex: 2,
         onItemTapped: (index) {
           if (index == 2) return; // Ya estamos en ayuda
@@ -32,14 +32,23 @@ class OrigenAyudaScreen extends StatelessWidget {
               break;
           }
         },
-        onFabPressed: () {
-          OptimizedNavigation.navigateToNamed(context, '/origen_crear_lote');
-        },
+        primaryColor: BioWayColors.ecoceGreen,
+        items: EcoceNavigationConfigs.origenItems,
+        fabConfig: FabConfig(
+          icon: Icons.add,
+          onPressed: () {
+            OptimizedNavigation.navigateToNamed(context, '/origen_crear_lote');
+          },
+          tooltip: 'Nuevo Lote',
+        ),
       ),
-      floatingActionButton: OrigenFloatingActionButton(
+      floatingActionButton: EcoceFloatingActionButton(
         onPressed: () {
           OptimizedNavigation.navigateToNamed(context, '/origen_crear_lote');
         },
+        icon: Icons.add,
+        backgroundColor: BioWayColors.ecoceGreen,
+        tooltip: 'Nuevo Lote',
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );

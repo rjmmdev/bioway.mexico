@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:ui' as ui;
 import '../../../utils/colors.dart';
-import '../shared/widgets/signature_dialog.dart';
-import '../shared/widgets/weight_input_widget.dart';
 
 class RecicladorFormularioEntrada extends StatefulWidget {
   final List<String> lotIds;
@@ -43,20 +42,23 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
   }
 
   void _showSignatureDialog() {
+    // Cerrar el teclado antes de mostrar el diálogo
     FocusScope.of(context).unfocus();
-
+    
+    // Pequeño delay para asegurar que el teclado se cierre completamente
     Future.delayed(const Duration(milliseconds: 300), () {
-      SignatureDialog.show(
+      showDialog(
         context: context,
-        title: 'Firma del Operador',
-        initialSignature: _signaturePoints,
-        onSignatureSaved: (points) {
-          setState(() {
-            _signaturePoints = points;
-            _hasSignature = points.isNotEmpty;
-          });
+        builder: (BuildContext context) {
+          return SignatureDialog(
+            onSignatureComplete: (points) {
+              setState(() {
+                _signaturePoints = points;
+                _hasSignature = points.isNotEmpty;
+              });
+            },
+          );
         },
-        primaryColor: BioWayColors.ecoceGreen,
       );
     });
   }
@@ -145,11 +147,6 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final horizontalPadding = screenWidth * 0.03;
-    final verticalPadding = screenHeight * 0.02;
-    
     return Scaffold(
       backgroundColor: BioWayColors.backgroundGrey,
       appBar: AppBar(
@@ -176,15 +173,12 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
           // Header verde
           Container(
             width: double.infinity,
-            padding: EdgeInsets.symmetric(
-              horizontal: horizontalPadding,
-              vertical: verticalPadding,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
               color: BioWayColors.ecoceGreen,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(screenWidth * 0.08),
-                bottomRight: Radius.circular(screenWidth * 0.08),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
               ),
             ),
             child: Column(
@@ -220,10 +214,7 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
           // Formulario
           Expanded(
             child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(
-                horizontal: horizontalPadding,
-                vertical: verticalPadding,
-              ),
+              padding: const EdgeInsets.all(20),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -231,10 +222,10 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                     // Tarjeta de Características del Lote
                     Container(
                       width: double.infinity,
-                      padding: EdgeInsets.all(screenWidth * 0.035),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(screenWidth * 0.04),
+                        borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.05),
@@ -335,41 +326,182 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                           const SizedBox(height: 20),
                           
                           // Peso Bruto Recibido
-                          WeightInputWidget(
-                            controller: _pesoBrutoController,
-                            label: 'Peso Bruto Recibido *',
-                            primaryColor: BioWayColors.ecoceGreen,
-                            quickAddValues: const [50, 100, 250, 500],
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Por favor ingresa el peso';
-                              }
-                              final peso = double.tryParse(value);
-                              if (peso == null || peso <= 0) {
-                                return 'Ingresa un peso válido';
-                              }
-                              return null;
-                            },
+                          Row(
+                            children: [
+                              Text(
+                                'Peso Bruto Recibido',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: BioWayColors.textGrey,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '*',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: BioWayColors.error,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _pesoBrutoController,
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.allow(RegExp(r'^\d{0,5}\.?\d{0,3}')),
+                                  ],
+                                  decoration: InputDecoration(
+                                    hintText: 'XXXXX.XXX',
+                                    filled: true,
+                                    fillColor: BioWayColors.backgroundGrey,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: BioWayColors.ecoceGreen.withOpacity(0.3),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: BioWayColors.ecoceGreen,
+                                        width: 2,
+                                      ),
+                                    ),
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Por favor ingresa el peso';
+                                    }
+                                    final peso = double.tryParse(value);
+                                    if (peso == null || peso <= 0) {
+                                      return 'Ingresa un peso válido';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                                decoration: BoxDecoration(
+                                  color: BioWayColors.ecoceGreen.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: BioWayColors.ecoceGreen.withOpacity(0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  'kg',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: BioWayColors.ecoceGreen,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                           
                           const SizedBox(height: 20),
                           
                           // Peso Neto Aprovechable
-                          WeightInputWidget(
-                            controller: _pesoNetoController,
-                            label: 'Peso Neto Aprovechable *',
-                            primaryColor: BioWayColors.ecoceGreen,
-                            quickAddValues: const [50, 100, 250, 500],
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Por favor ingresa el peso neto';
-                              }
-                              final peso = double.tryParse(value);
-                              if (peso == null || peso <= 0) {
-                                return 'Ingresa un peso válido';
-                              }
-                              return null;
-                            },
+                          Row(
+                            children: [
+                              Text(
+                                'Peso Neto Aprovechable',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: BioWayColors.textGrey,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '*',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: BioWayColors.error,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _pesoNetoController,
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.allow(RegExp(r'^\d{0,5}\.?\d{0,3}')),
+                                  ],
+                                  decoration: InputDecoration(
+                                    hintText: 'XXXXX.XXX',
+                                    filled: true,
+                                    fillColor: BioWayColors.backgroundGrey,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: BioWayColors.lightGrey,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: BioWayColors.ecoceGreen,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    counterText: '',
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Por favor ingresa el peso neto';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                                decoration: BoxDecoration(
+                                  color: BioWayColors.ecoceGreen.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: BioWayColors.ecoceGreen.withOpacity(0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  'kg',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: BioWayColors.ecoceGreen,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -380,10 +512,10 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                     // Tarjeta de Datos del Responsable
                     Container(
                       width: double.infinity,
-                      padding: EdgeInsets.all(screenWidth * 0.035),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(screenWidth * 0.04),
+                        borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.05),
@@ -563,7 +695,11 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                                                       width: 300, // Mismo ancho que el diálogo
                                                       height: 300, // Misma altura que el diálogo
                                                       child: CustomPaint(
-                                                        painter: SignaturePainter(_signaturePoints),
+                                                        painter: SignaturePainter(
+                                                          points: _signaturePoints,
+                                                          color: BioWayColors.darkGreen,
+                                                          strokeWidth: 2.0,
+                                                        ),
                                                       ),
                                                     ),
                                                   ),
@@ -678,6 +814,182 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Painter personalizado para dibujar la firma
+class SignaturePainter extends CustomPainter {
+  final List<Offset?> points;
+  final Color color;
+  final double strokeWidth;
+
+  SignaturePainter({
+    required this.points,
+    required this.color,
+    this.strokeWidth = 2.0,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = strokeWidth;
+
+    for (int i = 0; i < points.length - 1; i++) {
+      if (points[i] != null && points[i + 1] != null) {
+        canvas.drawLine(points[i]!, points[i + 1]!, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(SignaturePainter oldDelegate) => true;
+}
+
+/// Diálogo para captura de firma
+class SignatureDialog extends StatefulWidget {
+  final Function(List<Offset?>) onSignatureComplete;
+
+  const SignatureDialog({super.key, required this.onSignatureComplete});
+
+  @override
+  State<SignatureDialog> createState() => _SignatureDialogState();
+}
+
+class _SignatureDialogState extends State<SignatureDialog> {
+  List<Offset?> _points = [];
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Firma del Operador',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close),
+                  constraints: const BoxConstraints(
+                    minWidth: 40,
+                    minHeight: 40,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              height: 300,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.grey[300]!,
+                  width: 2,
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: GestureDetector(
+                  onPanStart: (details) {
+                    setState(() {
+                      _points.add(details.localPosition);
+                    });
+                  },
+                  onPanUpdate: (details) {
+                    setState(() {
+                      _points.add(details.localPosition);
+                    });
+                  },
+                  onPanEnd: (details) {
+                    setState(() {
+                      _points.add(null);
+                    });
+                  },
+                  child: CustomPaint(
+                    size: const Size(double.infinity, double.infinity),
+                    painter: SignaturePainter(
+                      points: _points,
+                      color: BioWayColors.darkGreen,
+                    ),
+                    child: _points.isEmpty
+                        ? Center(
+                            child: Text(
+                              'Dibuja tu firma aquí',
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 16,
+                              ),
+                            ),
+                          )
+                        : null,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _points.clear();
+                    });
+                  },
+                  child: Text(
+                    'Limpiar',
+                    style: TextStyle(
+                      color: BioWayColors.error,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: _points.isEmpty
+                      ? null
+                      : () {
+                          widget.onSignatureComplete(_points);
+                          Navigator.of(context).pop();
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: BioWayColors.ecoceGreen,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                  ),
+                  child: const Text(
+                    'Confirmar',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

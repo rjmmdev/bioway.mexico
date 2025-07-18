@@ -4,7 +4,6 @@ import 'dart:io';
 import '../../../utils/colors.dart';
 import 'reciclador_documentacion.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
-import '../shared/widgets/signature_dialog.dart';
 
 class RecicladorFormularioSalida extends StatefulWidget {
   final String loteId;
@@ -73,20 +72,23 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
   }
 
   void _showSignatureDialog() {
+    // Cerrar el teclado antes de mostrar el diálogo
     FocusScope.of(context).unfocus();
-
+    
+    // Pequeño delay para asegurar que el teclado se cierre completamente
     Future.delayed(const Duration(milliseconds: 300), () {
-      SignatureDialog.show(
+      showDialog(
         context: context,
-        title: 'Firma del Operador',
-        initialSignature: _signaturePoints,
-        onSignatureSaved: (points) {
-          setState(() {
-            _signaturePoints = points;
-            _hasSignature = points.isNotEmpty;
-          });
+        builder: (BuildContext context) {
+          return SignatureDialog(
+            onSignatureComplete: (points) {
+              setState(() {
+                _signaturePoints = points;
+                _hasSignature = points.isNotEmpty;
+              });
+            },
+          );
         },
-        primaryColor: BioWayColors.ecoceGreen,
       );
     });
   }
@@ -749,7 +751,11 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                                       width: 300, // Mismo ancho que el diálogo
                                                       height: 300, // Misma altura que el diálogo
                                                       child: CustomPaint(
-                                                        painter: SignaturePainter(_signaturePoints),
+                                                        painter: SignaturePainter(
+                                                          points: _signaturePoints,
+                                                          color: BioWayColors.darkGreen,
+                                                          strokeWidth: 2.0,
+                                                        ),
                                                       ),
                                                     ),
                                                   ),
@@ -1061,6 +1067,182 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Painter personalizado para dibujar la firma
+class SignaturePainter extends CustomPainter {
+  final List<Offset?> points;
+  final Color color;
+  final double strokeWidth;
+
+  SignaturePainter({
+    required this.points,
+    required this.color,
+    this.strokeWidth = 2.0,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = strokeWidth;
+
+    for (int i = 0; i < points.length - 1; i++) {
+      if (points[i] != null && points[i + 1] != null) {
+        canvas.drawLine(points[i]!, points[i + 1]!, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(SignaturePainter oldDelegate) => true;
+}
+
+/// Diálogo para captura de firma
+class SignatureDialog extends StatefulWidget {
+  final Function(List<Offset?>) onSignatureComplete;
+
+  const SignatureDialog({super.key, required this.onSignatureComplete});
+
+  @override
+  State<SignatureDialog> createState() => _SignatureDialogState();
+}
+
+class _SignatureDialogState extends State<SignatureDialog> {
+  List<Offset?> _points = [];
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Firma del Operador',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close),
+                  constraints: const BoxConstraints(
+                    minWidth: 40,
+                    minHeight: 40,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              height: 300,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.grey[300]!,
+                  width: 2,
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: GestureDetector(
+                  onPanStart: (details) {
+                    setState(() {
+                      _points.add(details.localPosition);
+                    });
+                  },
+                  onPanUpdate: (details) {
+                    setState(() {
+                      _points.add(details.localPosition);
+                    });
+                  },
+                  onPanEnd: (details) {
+                    setState(() {
+                      _points.add(null);
+                    });
+                  },
+                  child: CustomPaint(
+                    size: const Size(double.infinity, double.infinity),
+                    painter: SignaturePainter(
+                      points: _points,
+                      color: BioWayColors.darkGreen,
+                    ),
+                    child: _points.isEmpty
+                        ? Center(
+                            child: Text(
+                              'Dibuja tu firma aquí',
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 16,
+                              ),
+                            ),
+                          )
+                        : null,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _points.clear();
+                    });
+                  },
+                  child: Text(
+                    'Limpiar',
+                    style: TextStyle(
+                      color: BioWayColors.error,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: _points.isEmpty
+                      ? null
+                      : () {
+                          widget.onSignatureComplete(_points);
+                          Navigator.of(context).pop();
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: BioWayColors.ecoceGreen,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                  ),
+                  child: const Text(
+                    'Confirmar',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

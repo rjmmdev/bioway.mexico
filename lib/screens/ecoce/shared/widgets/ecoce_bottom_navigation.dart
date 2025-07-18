@@ -171,21 +171,41 @@ class EcoceFloatingActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FloatingActionButton(
-      onPressed: () {
-        HapticFeedback.lightImpact();
-        onPressed();
-      },
-      backgroundColor: backgroundColor,
-      elevation: 6,
-      heroTag: heroTag ?? UniqueKey(),
-      child: Icon(
-        icon,
-        color: Colors.white,
-        size: 28,
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            backgroundColor,
+            backgroundColor.withOpacity(0.8),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: backgroundColor.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      shape: const CircleBorder(),
-      tooltip: tooltip,
+      child: FloatingActionButton(
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          onPressed();
+        },
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        heroTag: heroTag ?? UniqueKey(),
+        child: Icon(
+          icon,
+          color: Colors.white,
+          size: 28,
+        ),
+        shape: const CircleBorder(),
+        tooltip: tooltip,
+      ),
     );
   }
 }

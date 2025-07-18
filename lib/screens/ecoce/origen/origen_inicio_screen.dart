@@ -8,7 +8,7 @@ import 'origen_ayuda.dart';
 import 'origen_perfil.dart';
 import 'origen_lote_detalle_screen.dart';
 import '../shared/widgets/lote_card.dart';
-import 'widgets/origen_bottom_navigation.dart';
+import '../shared/widgets/ecoce_bottom_navigation.dart';
 import 'origen_config.dart';
 
 class OrigenInicioScreen extends StatefulWidget {
@@ -693,15 +693,24 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
           ),
 
       // Bottom Navigation Bar con FAB
-      bottomNavigationBar: OrigenBottomNavigation(
+      bottomNavigationBar: EcoceBottomNavigation(
         selectedIndex: _selectedIndex,
         onItemTapped: _onBottomNavTapped,
-        onFabPressed: _navigateToNewLot,
+        primaryColor: BioWayColors.ecoceGreen,
+        items: EcoceNavigationConfigs.origenItems,
+        fabConfig: FabConfig(
+          icon: Icons.add,
+          onPressed: _navigateToNewLot,
+          tooltip: 'Nuevo Lote',
+        ),
       ),
 
       // Floating Action Button
-      floatingActionButton: OrigenFloatingActionButton(
+      floatingActionButton: EcoceFloatingActionButton(
         onPressed: _navigateToNewLot,
+        icon: Icons.add,
+        backgroundColor: BioWayColors.ecoceGreen,
+        tooltip: 'Nuevo Lote',
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
