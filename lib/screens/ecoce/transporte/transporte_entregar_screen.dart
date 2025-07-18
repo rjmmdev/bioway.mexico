@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'widgets/transporte_bottom_navigation.dart';
+import '../shared/widgets/ecoce_bottom_navigation.dart';
+import '../shared/utils/navigation_utils.dart';
+import '../../../utils/colors.dart';
 import 'transporte_inicio_screen.dart';
 import 'transporte_ayuda_screen.dart';
 import 'transporte_perfil_screen.dart';
@@ -102,60 +104,31 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
   }
   
   void _onItemTapped(int index) {
-    HapticFeedback.lightImpact();
-    
     if (index == _selectedIndex) return;
     
     switch (index) {
       case 0:
-        Navigator.pushReplacement(
+        NavigationUtils.navigateWithFade(
           context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const TransporteInicioScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
+          const TransporteInicioScreen(),
+          replacement: true,
         );
         break;
       case 1:
         // Ya estamos en entregar
         break;
       case 2:
-        Navigator.pushReplacement(
+        NavigationUtils.navigateWithFade(
           context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const TransporteAyudaScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
+          const TransporteAyudaScreen(),
+          replacement: true,
         );
         break;
       case 3:
-        Navigator.pushReplacement(
+        NavigationUtils.navigateWithFade(
           context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const TransportePerfilScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
+          const TransportePerfilScreen(),
+          replacement: true,
         );
         break;
     }
@@ -643,9 +616,11 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: TransporteBottomNavigation(
+      bottomNavigationBar: EcoceBottomNavigation(
         selectedIndex: _selectedIndex,
         onItemTapped: _onItemTapped,
+        primaryColor: BioWayColors.deepBlue,
+        items: EcoceNavigationConfigs.transporteItems,
       ),
     );
   }

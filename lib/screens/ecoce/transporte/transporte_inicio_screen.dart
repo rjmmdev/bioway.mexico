@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'widgets/transporte_bottom_navigation.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import '../shared/widgets/ecoce_bottom_navigation.dart';
+import '../shared/utils/navigation_utils.dart';
+import '../../../utils/colors.dart';
 import 'transporte_entregar_screen.dart';
 import 'transporte_ayuda_screen.dart';
 import 'transporte_perfil_screen.dart';
 import 'transporte_resumen_carga_screen.dart';
-import '../shared/widgets/qr_scanner_widget.dart';
 
 class TransporteInicioScreen extends StatefulWidget {
   const TransporteInicioScreen({super.key});
@@ -17,20 +19,32 @@ class TransporteInicioScreen extends StatefulWidget {
 class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
   final int _selectedIndex = 0;
   final TextEditingController _manualIdController = TextEditingController();
+  late MobileScannerController _cameraController;
+  bool _isFlashOn = false;
+  bool _isProcessing = false;
   
   // Variables de usuario
   final String nombreOperador = 'Juan Pérez'; // TODO: Obtener del auth
   final String folioOperador = 'V0000001'; // TODO: Obtener del auth
 
   @override
+  void initState() {
+    super.initState();
+    _cameraController = MobileScannerController(
+      detectionSpeed: DetectionSpeed.normal,
+      facing: CameraFacing.back,
+      torchEnabled: false,
+    );
+  }
+
+  @override
   void dispose() {
     _manualIdController.dispose();
+    _cameraController.dispose();
     super.dispose();
   }
 
   void _onItemTapped(int index) {
-    HapticFeedback.lightImpact();
-    
     if (index == _selectedIndex) return;
     
     switch (index) {
@@ -38,73 +52,40 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
         // Ya estamos en inicio/recoger
         break;
       case 1:
-        Navigator.pushReplacement(
+        NavigationUtils.navigateWithFade(
           context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const TransporteEntregarScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
+          const TransporteEntregarScreen(),
+          replacement: true,
         );
         break;
       case 2:
-        Navigator.pushReplacement(
+        NavigationUtils.navigateWithFade(
           context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const TransporteAyudaScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
+          const TransporteAyudaScreen(),
+          replacement: true,
         );
         break;
       case 3:
-        Navigator.pushReplacement(
+        NavigationUtils.navigateWithFade(
           context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const TransportePerfilScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
+          const TransportePerfilScreen(),
+          replacement: true,
         );
         break;
     }
   }
 
-  void _iniciarEscaneo() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => SharedQRScannerScreen(
-          title: 'Escanear Lote',
-          subtitle: 'Escanea el código QR del lote',
-          onCodeScanned: (code) {
-            Navigator.pop(context);
-            _procesarEscaneoExitoso(code);
-          },
-          primaryColor: const Color(0xFF3AA45B),
-          headerLabel: 'Transportista',
-          headerValue: folioOperador,
-        ),
-      ),
-    );
+  void _processQRCode(String code) {
+    if (_isProcessing) return;
+    
+    setState(() {
+      _isProcessing = true;
+    });
+    
+    HapticFeedback.heavyImpact();
+    
+    // Procesar el código escaneado
+    _procesarEscaneoExitoso(code);
   }
 
   void _procesarEscaneoExitoso(String loteId) {
@@ -124,7 +105,11 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
           },
         ),
       ),
-    );
+    ).then((_) {
+      setState(() {
+        _isProcessing = false;
+      });
+    });
   }
 
   void _ingresarManualmente() {
@@ -203,6 +188,7 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -215,89 +201,183 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
     );
   }
 
-  List<Widget> _buildCornerGuides(double size) {
-    final cornerLength = size * 0.15;
-    final cornerWidth = 3.0;
-    final cornerColor = Colors.white;
+  Widget _buildScannerOverlay() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
     
-    return [
-      // Top-left corner
-      Positioned(
-        top: 0,
-        left: 0,
-        child: Container(
-          width: cornerLength,
-          height: cornerWidth,
-          color: cornerColor,
-        ),
+    return ColorFiltered(
+      colorFilter: const ColorFilter.mode(
+        Colors.black54,
+        BlendMode.srcOut,
       ),
-      Positioned(
-        top: 0,
-        left: 0,
-        child: Container(
-          width: cornerWidth,
-          height: cornerLength,
-          color: cornerColor,
-        ),
+      child: Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              color: Colors.black54,
+              backgroundBlendMode: BlendMode.dstOut,
+            ),
+            child: Align(
+              alignment: Alignment.center,
+              child: Container(
+                width: screenWidth * 0.7,
+                height: screenWidth * 0.7,
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
+          ),
+          
+          // Marco del visor QR
+          Center(
+            child: Container(
+              width: screenWidth * 0.7,
+              height: screenWidth * 0.7,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.5),
+                  width: 1,
+                ),
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+          ),
+          
+          // Esquinas decorativas
+          Center(
+            child: SizedBox(
+              width: screenWidth * 0.7,
+              height: screenWidth * 0.7,
+              child: Stack(
+                children: [
+                  // Esquina superior izquierda
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(
+                            color: const Color(0xFF3AA45B),
+                            width: 4,
+                          ),
+                          left: BorderSide(
+                            color: const Color(0xFF3AA45B),
+                            width: 4,
+                          ),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Esquina superior derecha
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(
+                            color: const Color(0xFF3AA45B),
+                            width: 4,
+                          ),
+                          right: BorderSide(
+                            color: const Color(0xFF3AA45B),
+                            width: 4,
+                          ),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          topRight: Radius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Esquina inferior izquierda
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: const Color(0xFF3AA45B),
+                            width: 4,
+                          ),
+                          left: BorderSide(
+                            color: const Color(0xFF3AA45B),
+                            width: 4,
+                          ),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Esquina inferior derecha
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: const Color(0xFF3AA45B),
+                            width: 4,
+                          ),
+                          right: BorderSide(
+                            color: const Color(0xFF3AA45B),
+                            width: 4,
+                          ),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          bottomRight: Radius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Instrucciones
+          Positioned(
+            bottom: screenHeight * 0.15,
+            left: 0,
+            right: 0,
+            child: Text(
+              'Centra el código QR en el visor',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: screenWidth * 0.04,
+                fontWeight: FontWeight.w500,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withOpacity(0.5),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
-      // Top-right corner
-      Positioned(
-        top: 0,
-        right: 0,
-        child: Container(
-          width: cornerLength,
-          height: cornerWidth,
-          color: cornerColor,
-        ),
-      ),
-      Positioned(
-        top: 0,
-        right: 0,
-        child: Container(
-          width: cornerWidth,
-          height: cornerLength,
-          color: cornerColor,
-        ),
-      ),
-      // Bottom-left corner
-      Positioned(
-        bottom: 0,
-        left: 0,
-        child: Container(
-          width: cornerLength,
-          height: cornerWidth,
-          color: cornerColor,
-        ),
-      ),
-      Positioned(
-        bottom: 0,
-        left: 0,
-        child: Container(
-          width: cornerWidth,
-          height: cornerLength,
-          color: cornerColor,
-        ),
-      ),
-      // Bottom-right corner
-      Positioned(
-        bottom: 0,
-        right: 0,
-        child: Container(
-          width: cornerLength,
-          height: cornerWidth,
-          color: cornerColor,
-        ),
-      ),
-      Positioned(
-        bottom: 0,
-        right: 0,
-        child: Container(
-          width: cornerWidth,
-          height: cornerLength,
-          color: cornerColor,
-        ),
-      ),
-    ];
+    );
   }
 
   @override
@@ -306,7 +386,7 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
     final screenHeight = MediaQuery.of(context).size.height;
     
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
         child: Column(
           children: [
@@ -374,148 +454,92 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
               ),
             ),
 
-            // Contenido principal - Vista de escáner
+            // Contenido principal - Escáner QR activo
             Expanded(
-              child: _buildScannerView(),
+              child: Stack(
+                children: [
+                  // Escáner QR
+                  MobileScanner(
+                    controller: _cameraController,
+                    onDetect: (capture) {
+                      final List<Barcode> barcodes = capture.barcodes;
+                      for (final barcode in barcodes) {
+                        if (barcode.rawValue != null && !_isProcessing) {
+                          _processQRCode(barcode.rawValue!);
+                        }
+                      }
+                    },
+                  ),
+                  
+                  // Overlay con esquinas
+                  _buildScannerOverlay(),
+                  
+                  // Botón de flash
+                  Positioned(
+                    top: 20,
+                    right: 20,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: Icon(
+                          _isFlashOn ? Icons.flash_on : Icons.flash_off,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                        onPressed: () async {
+                          setState(() {
+                            _isFlashOn = !_isFlashOn;
+                          });
+                          await _cameraController.toggleTorch();
+                        },
+                      ),
+                    ),
+                  ),
+                  
+                  // Botón de entrada manual en la parte inferior
+                  Positioned(
+                    bottom: 40,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: TextButton(
+                        key: const Key('link_manual_entry'),
+                        onPressed: _showManualInputModal,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.7),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'Ingresa el ID manualmente',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: TransporteBottomNavigation(
+      bottomNavigationBar: EcoceBottomNavigation(
         selectedIndex: _selectedIndex,
         onItemTapped: _onItemTapped,
-      ),
-    );
-  }
-
-  Widget _buildScannerView() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final scannerSize = screenWidth * 0.8;
-    
-    return Container(
-      color: Colors.black,
-      child: Column(
-        children: [
-          SizedBox(height: screenHeight * 0.05),
-          
-          // Visor cuadrado negro con esquinas guía
-          Container(
-            width: scannerSize,
-            height: scannerSize,
-            child: Stack(
-              children: [
-                // Fondo del visor
-                Container(
-                  color: Colors.black,
-                ),
-                
-                // Esquinas guía
-                ..._buildCornerGuides(scannerSize),
-                
-                // Icono de cámara central
-                Center(
-                  child: Icon(
-                    Icons.camera_alt,
-                    size: screenWidth * 0.15,
-                    color: Colors.grey,
-                  ),
-                ),
-                
-                // Texto "Escanear Código QR"
-                Positioned(
-                  bottom: screenHeight * 0.05,
-                  left: 0,
-                  right: 0,
-                  child: Column(
-                    children: [
-                      Text(
-                        'Escanear Código QR',
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.045,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: screenHeight * 0.01),
-                      Text(
-                        'Apunta al código del lote',
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.035,
-                          color: Colors.white70,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          SizedBox(height: screenHeight * 0.05),
-
-          // Botón primario "Iniciar Escaneo"
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
-            child: Container(
-              key: const Key('btn_scan_start'),
-              width: double.infinity,
-              height: 48,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFF3AA45B),
-                    Color(0xFF68C76A),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _iniciarEscaneo,
-                  borderRadius: BorderRadius.circular(8),
-                  child: Center(
-                    child: Text(
-                      'Iniciar Escaneo',
-                      style: TextStyle(
-                        fontSize: screenWidth * 0.04,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          SizedBox(height: screenHeight * 0.02),
-          
-          // Enlace "Ingresa el ID manualmente"
-          TextButton(
-            key: const Key('link_manual_entry'),
-            onPressed: _showManualInputModal,
-            child: Text(
-              'Ingresa el ID manualmente',
-              style: TextStyle(
-                color: const Color(0xFF2E7D32),
-                fontSize: screenWidth * 0.035,
-                decoration: TextDecoration.underline,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
+        primaryColor: BioWayColors.deepBlue,
+        items: EcoceNavigationConfigs.transporteItems,
       ),
     );
   }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
-import 'widgets/transporte_bottom_navigation.dart';
+import '../shared/widgets/ecoce_bottom_navigation.dart';
+import '../shared/utils/navigation_utils.dart';
+import '../../../utils/colors.dart';
 import 'transporte_inicio_screen.dart';
 import 'transporte_recoger_screen.dart';
 import 'transporte_entregar_screen.dart';
@@ -51,58 +53,29 @@ class _TransporteResumenCargaScreenState extends State<TransporteResumenCargaScr
   double get pesoTotal => lotesTemp.fold(0.0, (sum, lote) => sum + (lote['peso'] as double));
 
   void _onItemTapped(int index) {
-    HapticFeedback.lightImpact();
-    
     switch (index) {
       case 0:
         // Ya estamos en inicio/recoger
         break;
       case 1:
-        Navigator.pushReplacement(
+        NavigationUtils.navigateWithFade(
           context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const TransporteEntregarScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
+          const TransporteEntregarScreen(),
+          replacement: true,
         );
         break;
       case 2:
-        Navigator.pushReplacement(
+        NavigationUtils.navigateWithFade(
           context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const TransporteAyudaScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
+          const TransporteAyudaScreen(),
+          replacement: true,
         );
         break;
       case 3:
-        Navigator.pushReplacement(
+        NavigationUtils.navigateWithFade(
           context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const TransportePerfilScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
+          const TransportePerfilScreen(),
+          replacement: true,
         );
         break;
     }
@@ -508,9 +481,11 @@ class _TransporteResumenCargaScreenState extends State<TransporteResumenCargaScr
           ],
         ),
       ),
-      bottomNavigationBar: TransporteBottomNavigation(
+      bottomNavigationBar: EcoceBottomNavigation(
         selectedIndex: _selectedIndex,
         onItemTapped: _onItemTapped,
+        primaryColor: BioWayColors.deepBlue,
+        items: EcoceNavigationConfigs.transporteItems,
       ),
     );
   }
