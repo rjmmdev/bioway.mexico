@@ -464,8 +464,6 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                     ),
                     
                     const SizedBox(height: 20),
-                    // Espacio adicional para el teclado
-                    SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
                   ],
                 ),
               ),
