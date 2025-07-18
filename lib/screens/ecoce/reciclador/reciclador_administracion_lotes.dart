@@ -8,6 +8,8 @@ import 'reciclador_documentacion.dart';
 import 'reciclador_lote_qr_screen.dart';
 import 'reciclador_ayuda.dart';
 import 'reciclador_perfil.dart';
+import '../shared/utils/material_utils.dart';
+import '../shared/widgets/material_filter_bar.dart';
 import 'widgets/reciclador_bottom_navigation.dart';
 import 'widgets/reciclador_lote_card.dart';
 
@@ -296,7 +298,6 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
       backgroundColor: BioWayColors.backgroundGrey,
       appBar: AppBar(
         backgroundColor: BioWayColors.ecoceGreen,
-        elevation: 0,
         title: const Text(
           'Administración de Lotes',
           style: TextStyle(
@@ -305,10 +306,13 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
             color: Colors.white,
           ),
         ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Container(
-            color: Colors.white.withOpacity(0.1),
+        elevation: 0,
+      ),
+      body: Column(
+        children: [
+          // TabBar
+          Container(
+            color: BioWayColors.ecoceGreen,
             child: TabBar(
               controller: _tabController,
               indicatorColor: Colors.white,
@@ -322,14 +326,17 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
               ],
             ),
           ),
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildTabContent(),
-          _buildTabContent(),
-          _buildTabContent(),
+          // TabBarView
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildTabContent(),
+                _buildTabContent(),
+                _buildTabContent(),
+              ],
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: RecicladorBottomNavigation(
@@ -347,184 +354,221 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
   Widget _buildTabContent() {
     final tabColor = _getTabColor();
     
-    return Column(
-      children: [
-        // Filtros
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              // Filtro de materiales
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: ['Todos', 'PEBD', 'PP', 'Multilaminado'].map((material) {
-                    final isSelected = _selectedMaterial == material;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(material),
-                        selected: isSelected,
-                        selectedColor: tabColor.withOpacity(0.2),
-                        labelStyle: TextStyle(
-                          color: isSelected ? tabColor : Colors.grey[700],
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        ),
-                        onSelected: (_) {
-                          setState(() {
-                            _selectedMaterial = material;
-                          });
-                        },
+    if (_lotesFiltrados.isEmpty) {
+      // Mostrar estado vacío con filtros scrollables
+      return SingleChildScrollView(
+        child: Column(
+          children: [
+            // Filtros
+            _buildFilterSection(tabColor),
+            // Tarjeta de estadísticas
+            _buildStatisticsCard(tabColor),
+            // Estado vacío
+            Container(
+              height: 300,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.inventory_2_outlined,
+                      size: 80,
+                      color: Colors.grey[300],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No hay lotes en esta sección',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
                       ),
-                    );
-                  }).toList(),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              // Filtros de tiempo y presentación
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildDropdownFilter(
-                      label: 'Tiempo',
-                      value: _selectedTiempo,
-                      items: ['Esta Semana', 'Este Mes', 'Últimos tres meses', 'Este Año'],
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedTiempo = value!;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildDropdownFilter(
-                      label: 'Presentación',
-                      value: _selectedPresentacion,
-                      items: ['Todos', 'Pacas', 'Sacos'],
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedPresentacion = value!;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        
-        // Tarjeta de estadísticas
-        Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                tabColor,
-                tabColor.withOpacity(0.8),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: tabColor.withOpacity(0.3),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatItem(
-                icon: Icons.inventory_2,
-                value: _lotesFiltrados.length.toString(),
-                label: 'Lotes',
-              ),
-              _buildStatItem(
-                icon: Icons.scale,
-                value: '${_lotesFiltrados.fold(0.0, (sum, lote) => sum + lote.peso).toStringAsFixed(1)} kg',
-                label: 'Peso Total',
-              ),
-              _buildStatItem(
-                icon: Icons.category,
-                value: _getMaterialMasPredominante(),
-                label: 'Predominante',
-              ),
-            ],
-          ),
+          ],
         ),
+      );
+    }
+    
+    // Lista con filtros y estadísticas scrollables
+    return ListView.builder(
+      padding: EdgeInsets.zero,
+      itemCount: _lotesFiltrados.length + 2, // +2 para filtros y estadísticas
+      itemBuilder: (context, index) {
+        // Primer item: Filtros
+        if (index == 0) {
+          return _buildFilterSection(tabColor);
+        }
         
-        // Lista de lotes
-        Expanded(
-          child: _lotesFiltrados.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.inventory_2_outlined,
-                        size: 80,
-                        color: Colors.grey[300],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No hay lotes en esta sección',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
+        // Segundo item: Estadísticas
+        if (index == 1) {
+          return _buildStatisticsCard(tabColor);
+        }
+        
+        // Resto: Lotes
+        final loteIndex = index - 2;
+        final lote = _lotesFiltrados[loteIndex];
+        final loteMap = {
+          'id': lote.id,
+          'material': lote.material,
+          'peso': lote.peso,
+          'presentacion': lote.presentacion,
+          'origen': lote.origen,
+          'fecha': MaterialUtils.formatDate(lote.fechaCreacion),
+          'fechaSalida': lote.fechaSalida != null ? MaterialUtils.formatDate(lote.fechaSalida!) : null,
+          'estado': lote.estado,
+          'tieneDocumentacion': lote.tieneDocumentacion,
+        };
+        
+        // Padding para el primer y último lote
+        Widget card;
+        
+        // Para lotes finalizados, usar el estilo original con botón QR lateral
+        if (lote.estado == 'finalizado') {
+          card = RecicladorLoteCard(
+            lote: loteMap,
+            onTap: () => _onLoteTap(lote),
+            showActionButton: false,
+            showActions: false,
+            trailing: _buildQRButton(lote),
+          );
+        } else {
+          // Para lotes en salida y documentación, mostrar botón debajo
+          card = RecicladorLoteCard(
+            lote: loteMap,
+            onTap: () => _onLoteTap(lote),
+            showActionButton: true,
+            actionButtonText: _getActionButtonText(lote.estado),
+            actionButtonColor: _getActionButtonColor(lote.estado),
+            onActionPressed: () => _onLoteTap(lote),
+            showActions: true, // Mostrar flecha lateral
+          );
+        }
+        
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            bottom: loteIndex == _lotesFiltrados.length - 1 ? 100 : 0, // Espacio para FAB
+          ),
+          child: card,
+        );
+      },
+    );
+  }
+  
+  Widget _buildFilterSection(Color tabColor) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Filtro de materiales
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: ['Todos', 'PEBD', 'PP', 'Multilaminado'].map((material) {
+                final isSelected = _selectedMaterial == material;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(material),
+                    selected: isSelected,
+                    selectedColor: tabColor.withOpacity(0.2),
+                    labelStyle: TextStyle(
+                      color: isSelected ? tabColor : Colors.grey[700],
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                    onSelected: (_) {
+                      setState(() {
+                        _selectedMaterial = material;
+                      });
+                    },
                   ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: _lotesFiltrados.length,
-                  itemBuilder: (context, index) {
-                    final lote = _lotesFiltrados[index];
-                    final loteMap = {
-                      'id': lote.id,
-                      'material': lote.material,
-                      'peso': lote.peso,
-                      'presentacion': lote.presentacion,
-                      'origen': lote.origen,
-                      'fecha': _formatDate(lote.fechaCreacion),
-                      'fechaSalida': lote.fechaSalida != null ? _formatDate(lote.fechaSalida!) : null,
-                      'estado': lote.estado,
-                      'tieneDocumentacion': lote.tieneDocumentacion,
-                    };
-                    
-                    // Para lotes finalizados, usar el estilo original con botón QR lateral
-                    if (lote.estado == 'finalizado') {
-                      return RecicladorLoteCard(
-                        lote: loteMap,
-                        onTap: () => _onLoteTap(lote),
-                        showActionButton: false,
-                        showActions: false,
-                        trailing: _buildQRButton(lote),
-                      );
-                    }
-                    
-                    // Para lotes en salida y documentación, mostrar botón debajo
-                    return RecicladorLoteCard(
-                      lote: loteMap,
-                      onTap: () => _onLoteTap(lote),
-                      showActionButton: true,
-                      actionButtonText: _getActionButtonText(lote.estado),
-                      actionButtonColor: _getActionButtonColor(lote.estado),
-                      onActionPressed: () => _onLoteTap(lote),
-                      showActions: true, // Mostrar flecha lateral
-                    );
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Filtros de tiempo y presentación
+          Row(
+            children: [
+              Expanded(
+                child: _buildDropdownFilter(
+                  label: 'Tiempo',
+                  value: _selectedTiempo,
+                  items: ['Esta Semana', 'Este Mes', 'Últimos tres meses', 'Este Año'],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedTiempo = value!;
+                    });
                   },
                 ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildDropdownFilter(
+                  label: 'Presentación',
+                  value: _selectedPresentacion,
+                  items: ['Todos', 'Pacas', 'Sacos'],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedPresentacion = value!;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildStatisticsCard(Color tabColor) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            tabColor,
+            tabColor.withOpacity(0.8),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-      ],
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: tabColor.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatItem(
+            icon: Icons.inventory_2,
+            value: _lotesFiltrados.length.toString(),
+            label: 'Lotes',
+          ),
+          _buildStatItem(
+            icon: Icons.scale,
+            value: '${_lotesFiltrados.fold(0.0, (sum, lote) => sum + lote.peso).toStringAsFixed(1)} kg',
+            label: 'Peso Total',
+          ),
+          _buildStatItem(
+            icon: Icons.category,
+            value: _getMaterialMasPredominante(),
+            label: 'Predominante',
+          ),
+        ],
+      ),
     );
   }
 
@@ -682,7 +726,4 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
   }
 
 
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-  }
 }

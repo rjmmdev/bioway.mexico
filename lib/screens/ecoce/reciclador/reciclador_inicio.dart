@@ -10,6 +10,10 @@ import 'reciclador_ayuda.dart';
 import 'reciclador_perfil.dart';
 import 'widgets/reciclador_bottom_navigation.dart';
 import 'widgets/reciclador_lote_card.dart';
+import '../shared/widgets/statistic_card.dart';
+import '../shared/widgets/gradient_header.dart';
+import '../shared/widgets/quick_action_button.dart';
+import '../shared/utils/material_utils.dart';
 
 class RecicladorHomeScreen extends StatefulWidget {
   const RecicladorHomeScreen({super.key});
@@ -382,185 +386,23 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                             children: [
                               // Card de Lotes Recibidos
                               Expanded(
-                                child: Container(
+                                child: StatisticCard(
+                                  title: 'Lotes recibidos',
+                                  value: _lotesRecibidos.toString(),
+                                  icon: Icons.inbox,
+                                  color: Colors.blue,
                                   height: 70,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [
-                                        Colors.white,
-                                        Colors.blue.shade50,
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(20),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.blue.withOpacity(0.1),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 10),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Stack(
-                                    children: [
-                                      // Icono de fondo decorativo
-                                      Positioned(
-                                        right: -10,
-                                        bottom: -10,
-                                        child: Icon(
-                                          Icons.inventory_2_outlined,
-                                          size: 60,
-                                          color: Colors.blue.withOpacity(0.05),
-                                        ),
-                                      ),
-                                      // Contenido
-                                      Padding(
-                                        padding: const EdgeInsets.all(12),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Container(
-                                                  width: 32,
-                                                  height: 32,
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.blue.withOpacity(0.1),
-                                                    borderRadius: BorderRadius.circular(10),
-                                                  ),
-                                                  child: const Icon(
-                                                    Icons.inbox,
-                                                    color: Colors.blue,
-                                                    size: 18,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 10),
-                                                Flexible(
-                                                  child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: [
-                                                      Text(
-                                                        _lotesRecibidos.toString(),
-                                                        style: const TextStyle(
-                                                          fontSize: 20,
-                                                          fontWeight: FontWeight.bold,
-                                                          color: Colors.black87,
-                                                          height: 1,
-                                                        ),
-                                                      ),
-                                                      Text(
-                                                        'Lotes recibidos',
-                                                        style: TextStyle(
-                                                          fontSize: 11,
-                                                          color: Colors.grey[600],
-                                                          height: 1.1,
-                                                        ),
-                                                        overflow: TextOverflow.ellipsis,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
                                 ),
                               ),
                               const SizedBox(width: 12),
                               // Card de Lotes Creados
                               Expanded(
-                                child: Container(
+                                child: StatisticCard(
+                                  title: 'Lotes creados',
+                                  value: _lotesCreados.toString(),
+                                  icon: Icons.add_box,
+                                  color: Colors.purple,
                                   height: 70,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [
-                                        Colors.white,
-                                        Colors.purple.shade50,
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(20),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.purple.withOpacity(0.1),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 10),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Stack(
-                                    children: [
-                                      // Icono de fondo decorativo
-                                      Positioned(
-                                        right: -10,
-                                        bottom: -10,
-                                        child: Icon(
-                                          Icons.add_box_outlined,
-                                          size: 60,
-                                          color: Colors.purple.withOpacity(0.05),
-                                        ),
-                                      ),
-                                      // Contenido
-                                      Padding(
-                                        padding: const EdgeInsets.all(12),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Container(
-                                                  width: 32,
-                                                  height: 32,
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.purple.withOpacity(0.1),
-                                                    borderRadius: BorderRadius.circular(10),
-                                                  ),
-                                                  child: const Icon(
-                                                    Icons.add_box,
-                                                    color: Colors.purple,
-                                                    size: 18,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 10),
-                                                Flexible(
-                                                  child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: [
-                                                      Text(
-                                                        _lotesCreados.toString(),
-                                                        style: const TextStyle(
-                                                          fontSize: 20,
-                                                          fontWeight: FontWeight.bold,
-                                                          color: Colors.black87,
-                                                          height: 1,
-                                                        ),
-                                                      ),
-                                                      Text(
-                                                        'Lotes creados',
-                                                        style: TextStyle(
-                                                          fontSize: 11,
-                                                          color: Colors.grey[600],
-                                                          height: 1.1,
-                                                        ),
-                                                        overflow: TextOverflow.ellipsis,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
                                 ),
                               ),
                             ],
@@ -573,107 +415,13 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                               // Card de Peso Procesado centrada
                               Container(
                                 width: MediaQuery.of(context).size.width * 0.45,
-                                height: 70,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      Colors.white,
-                                      Colors.green.shade50,
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.green.withOpacity(0.1),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 10),
-                                    ),
-                                  ],
-                                ),
-                                child: Stack(
-                                  children: [
-                                    // Icono de fondo decorativo
-                                    Positioned(
-                                      right: -10,
-                                      bottom: -10,
-                                      child: Icon(
-                                        Icons.scale_outlined,
-                                        size: 60,
-                                        color: Colors.green.withOpacity(0.05),
-                                      ),
-                                    ),
-                                    // Contenido
-                                    Padding(
-                                      padding: const EdgeInsets.all(12),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Container(
-                                                width: 32,
-                                                height: 32,
-                                                decoration: BoxDecoration(
-                                                  color: Colors.green.withOpacity(0.1),
-                                                  borderRadius: BorderRadius.circular(10),
-                                                ),
-                                                child: const Icon(
-                                                  Icons.scale,
-                                                  color: Colors.green,
-                                                  size: 18,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 10),
-                                              Flexible(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Row(
-                                                      textBaseline: TextBaseline.alphabetic,
-                                                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                                                      children: [
-                                                        Text(
-                                                          '${(_pesoProcesado / 1000).toStringAsFixed(1)}',
-                                                          style: const TextStyle(
-                                                            fontSize: 20,
-                                                            fontWeight: FontWeight.bold,
-                                                            color: Colors.black87,
-                                                            height: 1,
-                                                          ),
-                                                        ),
-                                                        const SizedBox(width: 4),
-                                                        const Text(
-                                                          'ton',
-                                                          style: TextStyle(
-                                                            fontSize: 14,
-                                                            fontWeight: FontWeight.w600,
-                                                            color: Colors.green,
-                                                            height: 1,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    Text(
-                                                      'Material procesado',
-                                                      style: TextStyle(
-                                                        fontSize: 11,
-                                                        color: Colors.grey[600],
-                                                        height: 1.1,
-                                                      ),
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
+                                child: StatisticCard(
+                                  title: 'Material procesado',
+                                  value: '${(_pesoProcesado / 1000).toStringAsFixed(1)}',
+                                  unit: 'ton',
+                                  icon: Icons.scale,
+                                  color: Colors.green,
+                                  height: 70,
                                 ),
                               ),
                             ],

@@ -158,6 +158,11 @@ class BioWayColors {
   static const Color otherPurple = Color(0xFF9333EA);
   static const Color pvcRed = Color(0xFFE53935);
   static const Color psYellow = Color(0xFFFFB300);
+  
+  // ===== ALIAS PARA COMPATIBILIDAD CON CÓDIGO EXISTENTE =====
+  static const Color pebd = pebdPink;
+  static const Color pp = ppPurple;
+  static const Color multilaminado = multilaminadoBrown;
 
   /// Amarillo vibrante para notificaciones
   static const Color brightYellow = Color(0xFFFFD93D);
@@ -237,3 +242,6 @@ class BioWayColors {
     );
   }
 }
+
+/// Alias para compatibilidad con código existente
+typedef AppColors = BioWayColors;
