@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import '../shared/widgets/signature_dialog.dart';
+import '../shared/widgets/weight_input_widget.dart';
 
 class RecicladorFormularioEntrada extends StatefulWidget {
   final List<String> lotIds;
@@ -144,6 +145,11 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final horizontalPadding = screenWidth * 0.03;
+    final verticalPadding = screenHeight * 0.02;
+    
     return Scaffold(
       backgroundColor: BioWayColors.backgroundGrey,
       appBar: AppBar(
@@ -170,12 +176,15 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
           // Header verde
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: verticalPadding,
+            ),
             decoration: BoxDecoration(
               color: BioWayColors.ecoceGreen,
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(screenWidth * 0.08),
+                bottomRight: Radius.circular(screenWidth * 0.08),
               ),
             ),
             child: Column(
@@ -211,7 +220,10 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
           // Formulario
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: verticalPadding,
+              ),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -219,10 +231,10 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                     // Tarjeta de Características del Lote
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(20),
+                      padding: EdgeInsets.all(screenWidth * 0.035),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(screenWidth * 0.04),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.05),
@@ -323,182 +335,41 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                           const SizedBox(height: 20),
                           
                           // Peso Bruto Recibido
-                          Row(
-                            children: [
-                              Text(
-                                'Peso Bruto Recibido',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: BioWayColors.textGrey,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '*',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: BioWayColors.error,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _pesoBrutoController,
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.allow(RegExp(r'^\d{0,5}\.?\d{0,3}')),
-                                  ],
-                                  decoration: InputDecoration(
-                                    hintText: 'XXXXX.XXX',
-                                    filled: true,
-                                    fillColor: BioWayColors.backgroundGrey,
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: BioWayColors.ecoceGreen.withOpacity(0.3),
-                                        width: 1,
-                                      ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: BioWayColors.ecoceGreen,
-                                        width: 2,
-                                      ),
-                                    ),
-                                  ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Por favor ingresa el peso';
-                                    }
-                                    final peso = double.tryParse(value);
-                                    if (peso == null || peso <= 0) {
-                                      return 'Ingresa un peso válido';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                                decoration: BoxDecoration(
-                                  color: BioWayColors.ecoceGreen.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: BioWayColors.ecoceGreen.withOpacity(0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  'kg',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: BioWayColors.ecoceGreen,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          WeightInputWidget(
+                            controller: _pesoBrutoController,
+                            label: 'Peso Bruto Recibido *',
+                            primaryColor: BioWayColors.ecoceGreen,
+                            quickAddValues: const [50, 100, 250, 500],
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Por favor ingresa el peso';
+                              }
+                              final peso = double.tryParse(value);
+                              if (peso == null || peso <= 0) {
+                                return 'Ingresa un peso válido';
+                              }
+                              return null;
+                            },
                           ),
                           
                           const SizedBox(height: 20),
                           
                           // Peso Neto Aprovechable
-                          Row(
-                            children: [
-                              Text(
-                                'Peso Neto Aprovechable',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: BioWayColors.textGrey,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '*',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: BioWayColors.error,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _pesoNetoController,
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.allow(RegExp(r'^\d{0,5}\.?\d{0,3}')),
-                                  ],
-                                  decoration: InputDecoration(
-                                    hintText: 'XXXXX.XXX',
-                                    filled: true,
-                                    fillColor: BioWayColors.backgroundGrey,
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: BioWayColors.lightGrey,
-                                        width: 1,
-                                      ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: BioWayColors.ecoceGreen,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    counterText: '',
-                                  ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Por favor ingresa el peso neto';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                                decoration: BoxDecoration(
-                                  color: BioWayColors.ecoceGreen.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: BioWayColors.ecoceGreen.withOpacity(0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  'kg',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: BioWayColors.ecoceGreen,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          WeightInputWidget(
+                            controller: _pesoNetoController,
+                            label: 'Peso Neto Aprovechable *',
+                            primaryColor: BioWayColors.ecoceGreen,
+                            quickAddValues: const [50, 100, 250, 500],
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Por favor ingresa el peso neto';
+                              }
+                              final peso = double.tryParse(value);
+                              if (peso == null || peso <= 0) {
+                                return 'Ingresa un peso válido';
+                              }
+                              return null;
+                            },
                           ),
                         ],
                       ),
@@ -509,10 +380,10 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                     // Tarjeta de Datos del Responsable
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(20),
+                      padding: EdgeInsets.all(screenWidth * 0.035),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(screenWidth * 0.04),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.05),

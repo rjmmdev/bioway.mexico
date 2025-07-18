@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:io';
+import 'dart:async';
 import '../../../utils/colors.dart';
 import 'origen_config.dart';
 import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
+import '../shared/widgets/weight_input_widget.dart';
+import '../shared/widgets/section_card.dart';
+import '../shared/widgets/field_label.dart';
+import '../shared/utils/material_utils.dart';
 import 'origen_lote_detalle_screen.dart';
 
 class OrigenCrearLoteScreen extends StatefulWidget {
@@ -16,12 +21,36 @@ class OrigenCrearLoteScreen extends StatefulWidget {
 }
 
 class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
+  // Constants
+  static const List<String> _tiposPolimeros = [
+    'PEBD',
+    'PP',
+    'Multilaminado'
+  ];
+
+  static const List<String> _fuentesMaterial = [
+    'Recolectores informales o independientes',
+    'Instituciones educativas (escuelas, universidades)',
+    'Empresas y comercios (tiendas, oficinas, fábricas)',
+    'Hogares y ciudadanos particulares',
+    'Organizaciones civiles, ONGs y programas sociales',
+    'Campañas, eventos especiales y plataformas digitales de reciclaje',
+  ];
+
+  static const List<IconData> _fuenteMaterialIcons = [
+    Icons.people_outline, // Recolectores informales o independientes
+    Icons.school, // Instituciones educativas
+    Icons.business, // Empresas y comercios
+    Icons.home, // Hogares y ciudadanos
+    Icons.groups, // Organizaciones civiles
+    Icons.campaign, // Campañas y eventos
+  ];
+
   final _formKey = GlobalKey<FormState>();
 
   Color get _primaryColor => OrigenUserConfig.current.color;
   
   // Controladores para los campos de texto
-  final TextEditingController _fuenteController = TextEditingController();
   final TextEditingController _pesoController = TextEditingController();
   final TextEditingController _condicionesController = TextEditingController();
   final TextEditingController _operadorController = TextEditingController();
@@ -30,14 +59,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
   // Variables para los selectores
   String? _tipoPolimeroSeleccionado;
   String _presentacionSeleccionada = 'Pacas';
-
-  // Lista de tipos de polímeros disponibles
-  final List<String> _tiposPolimeros = [
-    'PEBD',
-    'PP',
-    'Multilaminado'
-  ];
-
+  String? _fuenteMaterialSeleccionada;
 
   // Variables para la firma
   List<Offset?> _signaturePoints = [];
@@ -51,7 +73,6 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
 
   @override
   void dispose() {
-    _fuenteController.dispose();
     _pesoController.dispose();
     _condicionesController.dispose();
     _operadorController.dispose();
@@ -92,7 +113,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
           material: _tipoPolimeroSeleccionado ?? 'Poli',
           peso: double.tryParse(_pesoController.text) ?? 100,
           presentacion: _presentacionSeleccionada,
-          fuente: _fuenteController.text.isEmpty ? 'Fuente de ejemplo' : _fuenteController.text,
+          fuente: _fuenteMaterialSeleccionada ?? 'Fuente no especificada',
           fechaCreacion: fechaCreacion,
           mostrarMensajeExito: true,
         ),
@@ -102,38 +123,47 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final horizontalPadding = screenWidth * 0.03; // 3% del ancho de pantalla
+    final verticalPadding = screenHeight * 0.02; // 2% del alto de pantalla
+    
     return Scaffold(
-      backgroundColor: BioWayColors.backgroundGrey,
-      appBar: AppBar(
-        backgroundColor: _primaryColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () {
-            HapticFeedback.lightImpact();
-            Navigator.pop(context);
-          },
-        ),
-        title: const Text(
-          'Crear Nuevo Lote',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+        backgroundColor: BioWayColors.backgroundGrey,
+        appBar: AppBar(
+          backgroundColor: _primaryColor,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.pop(context);
+            },
+          ),
+          title: const Text(
+            'Crear Nuevo Lote',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
         ),
-      ),
-      body: Column(
+        resizeToAvoidBottomInset: false,
+        body: Column(
         children: [
           // Header verde
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: verticalPadding,
+            ),
             decoration: BoxDecoration(
               color: _primaryColor,
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(screenWidth * 0.08),
+                bottomRight: Radius.circular(screenWidth * 0.08),
               ),
             ),
             child: Column(
@@ -148,10 +178,13 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.03,
+                    vertical: screenHeight * 0.008,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(screenWidth * 0.05),
                   ),
                   child: const Text(
                     'Centro de Acopio - Origen',
@@ -169,33 +202,94 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
           // Formulario
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              physics: const ClampingScrollPhysics(),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: verticalPadding * 0.8,
+              ),
               child: Form(
                 key: _formKey,
                 child: Column(
                   children: [
                     // Sección: Información del Material
-                    _buildSectionCard(
+                    SectionCard(
                       icon: '📦',
                       title: 'Información del Material',
                       children: [
-                        // Fuente del Material (hasta 50 caracteres)
-                        _buildFieldLabel('Fuente del Material'),
+                        // Fuente del Material
+                        const FieldLabel(text: 'Fuente del Material'),
                         const SizedBox(height: 8),
-                        TextFormField(
-                          controller: _fuenteController,
-                          maxLength: 50,
+                        DropdownButtonFormField<String>(
+                          value: _fuenteMaterialSeleccionada,
                           decoration: _buildInputDecoration(
-                            hintText: 'Ej: Programa Escolar Norte',
+                            hintText: 'Selecciona la fuente del material',
                           ),
+                          isExpanded: true,
+                          isDense: true,
+                          menuMaxHeight: screenHeight * 0.5,
+                          items: _fuentesMaterial.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final fuente = entry.value;
+                            return DropdownMenuItem<String>(
+                              value: fuente,
+                              child: Tooltip(
+                                message: fuente,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      _fuenteMaterialIcons[index],
+                                      size: screenWidth * 0.05,
+                                      color: _primaryColor.withOpacity(0.7),
+                                    ),
+                                    SizedBox(width: screenWidth * 0.03),
+                                    Expanded(
+                                      child: Text(
+                                        fuente,
+                                        style: TextStyle(
+                                          fontSize: screenWidth * 0.035,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _fuenteMaterialSeleccionada = newValue;
+                            });
+                          },
+                          selectedItemBuilder: (BuildContext context) {
+                            return _fuentesMaterial.map<Widget>((String fuente) {
+                              // Crear versiones cortas para mostrar cuando está seleccionado
+                              String shortText = fuente;
+                              if (fuente.contains('(')) {
+                                shortText = fuente.substring(0, fuente.indexOf('(')).trim();
+                              }
+                              return Container(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  shortText,
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.035,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              );
+                            }).toList();
+                          },
                           // Sin validación para diseño visual
                         ),
                         
-                        const SizedBox(height: 20),
+                        SizedBox(height: screenHeight * 0.025),
                         
                         // Presentación del Material (selección con iconos)
-                        _buildFieldLabel('Presentación del Material'),
-                        const SizedBox(height: 12),
+                        const FieldLabel(text: 'Presentación del Material'),
+                        SizedBox(height: screenHeight * 0.015),
                         Row(
                           children: [
                             Expanded(
@@ -204,9 +298,11 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                                 label: 'Pacas',
                                 isSelected: _presentacionSeleccionada == 'Pacas',
                                 onTap: () {
-                                  setState(() {
-                                    _presentacionSeleccionada = 'Pacas';
-                                  });
+                                  if (_presentacionSeleccionada != 'Pacas') {
+                                    setState(() {
+                                      _presentacionSeleccionada = 'Pacas';
+                                    });
+                                  }
                                 },
                               ),
                             ),
@@ -217,9 +313,11 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                                 label: 'Sacos',
                                 isSelected: _presentacionSeleccionada == 'Sacos',
                                 onTap: () {
-                                  setState(() {
-                                    _presentacionSeleccionada = 'Sacos';
-                                  });
+                                  if (_presentacionSeleccionada != 'Sacos') {
+                                    setState(() {
+                                      _presentacionSeleccionada = 'Sacos';
+                                    });
+                                  }
                                 },
                               ),
                             ),
@@ -229,7 +327,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                         const SizedBox(height: 20),
                         
                         // Tipo de Polímero (lista desplegable)
-                        _buildFieldLabel('Tipo de Polímero'),
+                        const FieldLabel(text: 'Tipo de Polímero'),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
                           value: _tipoPolimeroSeleccionado,
@@ -253,55 +351,24 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                         const SizedBox(height: 20),
                         
                         // Peso en kilogramos (decimal)
-                        _buildFieldLabel('Peso'),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                controller: _pesoController,
-                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(RegExp(r'^\d{0,5}\.?\d{0,3}')),
-                                ],
-                                decoration: _buildInputDecoration(
-                                  hintText: 'XXXXX.XXX',
-                                ),
-                                // Sin validación para diseño visual
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                              decoration: BoxDecoration(
-                                color: _primaryColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: _primaryColor.withOpacity(0.3),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Text(
-                                'kg',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: _primaryColor,
-                                ),
-                              ),
-                            ),
-                          ],
+                        WeightInputWidget(
+                          controller: _pesoController,
+                          label: 'Peso del Material',
+                          primaryColor: _primaryColor,
+                          quickAddValues: const [100, 250, 500, 1000],
                         ),
                         
                         const SizedBox(height: 20),
                         
                         // Condiciones del Material (hasta 100 caracteres)
-                        _buildFieldLabel('Condiciones del Material'),
+                        const FieldLabel(text: 'Condiciones del Material'),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _condicionesController,
                           maxLength: 100,
                           maxLines: 3,
+                          keyboardType: TextInputType.multiline,
+                          textInputAction: TextInputAction.newline,
                           decoration: _buildInputDecoration(
                             hintText: 'Describe el estado del material: limpieza, compactación, contaminación, etc.',
                           ),
@@ -312,16 +379,18 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                     const SizedBox(height: 20),
                     
                     // Sección: Datos del Responsable
-                    _buildSectionCard(
+                    SectionCard(
                       icon: '👤',
                       title: 'Datos del Responsable',
                       children: [
                         // Nombre del Operador (hasta 50 caracteres)
-                        _buildFieldLabel('Nombre del Operador'),
+                        const FieldLabel(text: 'Nombre del Operador'),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _operadorController,
                           maxLength: 50,
+                          keyboardType: TextInputType.name,
+                          textInputAction: TextInputAction.next,
                           decoration: _buildInputDecoration(
                             hintText: 'Ingresa el nombre completo',
                           ),
@@ -331,7 +400,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                         const SizedBox(height: 20),
                         
                         // Firma del Operador
-                        _buildFieldLabel('Firma del Operador'),
+                        const FieldLabel(text: 'Firma del Operador'),
                         const SizedBox(height: 8),
                         _buildSignatureArea(),
                       ],
@@ -351,7 +420,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                     const SizedBox(height: 20),
                     
                     // Sección: Comentarios Adicionales
-                    _buildSectionCard(
+                    SectionCard(
                       icon: '💬',
                       title: 'Comentarios',
                       children: [
@@ -359,6 +428,8 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                           controller: _comentariosController,
                           maxLength: 150,
                           maxLines: 4,
+                          keyboardType: TextInputType.multiline,
+                          textInputAction: TextInputAction.newline,
                           decoration: _buildInputDecoration(
                             hintText: 'Ingresa comentarios adicionales (opcional)',
                           ),
@@ -393,6 +464,8 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                     ),
                     
                     const SizedBox(height: 20),
+                    // Espacio adicional para el teclado
+                    SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
                   ],
                 ),
               ),
@@ -403,91 +476,75 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
     );
   }
 
-  Widget _buildSectionCard({
-    required String icon,
-    required String title,
-    required List<Widget> children,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                icon,
-                style: const TextStyle(fontSize: 24),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: BioWayColors.darkGreen,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          ...children,
-        ],
-      ),
-    );
-  }
 
-  Widget _buildFieldLabel(String text) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: BioWayColors.textGrey,
-      ),
-    );
-  }
+
+  // Caché para las decoraciones de input
+  final Map<String, InputDecoration> _inputDecorationCache = {};
 
   InputDecoration _buildInputDecoration({required String hintText}) {
-    return InputDecoration(
+    // Revisar si ya existe en caché
+    if (_inputDecorationCache.containsKey(hintText)) {
+      return _inputDecorationCache[hintText]!;
+    }
+    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final borderRadius = BorderRadius.circular(12);
+    
+    final decoration = InputDecoration(
       hintText: hintText,
+      hintStyle: const TextStyle(
+        fontSize: 14,
+        color: Colors.grey,
+      ),
       filled: true,
       fillColor: BioWayColors.backgroundGrey,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: borderRadius,
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: borderRadius,
         borderSide: BorderSide(
           color: _primaryColor.withOpacity(0.3),
           width: 1,
         ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: borderRadius,
         borderSide: BorderSide(
           color: _primaryColor,
           width: 2,
         ),
       ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: borderRadius,
+        borderSide: const BorderSide(
+          color: Colors.red,
+          width: 1,
+        ),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: borderRadius,
+        borderSide: const BorderSide(
+          color: Colors.red,
+          width: 2,
+        ),
+      ),
       counterText: '',
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 16,
+      ),
     );
+    
+    // Guardar en caché
+    _inputDecorationCache[hintText] = decoration;
+    return decoration;
   }
 
   Widget _buildSignatureArea() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -516,10 +573,13 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                       fit: BoxFit.contain,
                       alignment: Alignment.center,
                       child: SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.95,
+                        width: screenWidth * 0.95,
                         height: 400,
                         child: CustomPaint(
-                          painter: SignaturePainter(_signaturePoints),
+                          painter: SignaturePainter(
+                            _signaturePoints,
+                            strokeWidth: screenWidth * 0.008,
+                          ),
                           size: Size.infinite,
                         ),
                       ),
@@ -620,30 +680,37 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: EdgeInsets.symmetric(vertical: screenWidth * 0.05),
         decoration: BoxDecoration(
           color: isSelected ? _primaryColor.withOpacity(0.1) : BioWayColors.backgroundGrey,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(screenWidth * 0.03),
           border: Border.all(
             color: isSelected ? _primaryColor : _primaryColor.withOpacity(0.3),
             width: isSelected ? 2 : 1,
           ),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             SvgPicture.asset(
               svgPath,
-              width: 40,
-              height: 40,
+              width: screenWidth * 0.1,
+              height: screenWidth * 0.1,
+              colorFilter: ColorFilter.mode(
+                isSelected ? _primaryColor : BioWayColors.textGrey,
+                BlendMode.srcIn,
+              ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: screenWidth * 0.02),
             Text(
               label,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: screenWidth * 0.04,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 color: isSelected ? _primaryColor : BioWayColors.textGrey,
               ),

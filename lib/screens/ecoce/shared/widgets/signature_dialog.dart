@@ -86,73 +86,168 @@ class _SignatureDialogState extends State<SignatureDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.title),
-      content: Container(
-        width: MediaQuery.of(context).size.width * 0.95,
-        height: 400,
-        decoration: BoxDecoration(
-          color: Colors.grey[50],
-          border: Border.all(color: BioWayColors.lightGrey),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: GestureDetector(
-          onPanUpdate: _onPanUpdate,
-          onPanEnd: _onPanEnd,
-          child: CustomPaint(
-            painter: SignaturePainter(List.of(_points)),
-            size: Size.infinite,
-            child: _points.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.draw, size: 48, color: Colors.grey[400]),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Dibuja tu firma aquí',
-                          style: TextStyle(color: Colors.grey[600], fontSize: 16),
-                        ),
-                      ],
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isTablet = screenWidth > 600;
+    
+    // Ajustar tamaños según el dispositivo
+    final dialogWidth = isTablet 
+        ? screenWidth * 0.7  // 70% en tablets
+        : screenWidth * 0.9; // 90% en móviles
+    
+    final dialogHeight = screenHeight * 0.5; // 50% de la altura de pantalla
+    
+    return Dialog(
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.05, // 5% de margen horizontal
+        vertical: screenHeight * 0.1,   // 10% de margen vertical
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(screenWidth * 0.04),
+      ),
+      child: Container(
+        width: dialogWidth,
+        padding: EdgeInsets.all(screenWidth * 0.04),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Título
+            Text(
+              widget.title,
+              style: TextStyle(
+                fontSize: screenWidth * 0.05,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: screenHeight * 0.02),
+            // Área de firma
+            Container(
+              width: double.infinity,
+              height: dialogHeight,
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                border: Border.all(color: BioWayColors.lightGrey),
+                borderRadius: BorderRadius.circular(screenWidth * 0.02),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                child: GestureDetector(
+                  onPanUpdate: _onPanUpdate,
+                  onPanEnd: _onPanEnd,
+                  child: CustomPaint(
+                    painter: SignaturePainter(
+                      List.of(_points),
+                      strokeWidth: screenWidth * 0.008, // Grosor responsivo
                     ),
-                  )
-                : null,
-          ),
+                    size: Size.infinite,
+                    child: _points.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.draw, 
+                                  size: screenWidth * 0.12, 
+                                  color: Colors.grey[400]
+                                ),
+                                SizedBox(height: screenHeight * 0.01),
+                                Text(
+                                  'Dibuja tu firma aquí',
+                                  style: TextStyle(
+                                    color: Colors.grey[600], 
+                                    fontSize: screenWidth * 0.04
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : null,
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: screenHeight * 0.02),
+            // Botones de acción
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: _clear,
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.04,
+                      vertical: screenHeight * 0.015,
+                    ),
+                  ),
+                  child: Text(
+                    'Limpiar', 
+                    style: TextStyle(
+                      color: BioWayColors.error,
+                      fontSize: screenWidth * 0.035,
+                    )
+                  ),
+                ),
+                SizedBox(width: screenWidth * 0.02),
+                TextButton(
+                  onPressed: _cancel,
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.04,
+                      vertical: screenHeight * 0.015,
+                    ),
+                  ),
+                  child: Text(
+                    'Cancelar', 
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: screenWidth * 0.035,
+                    )
+                  ),
+                ),
+                SizedBox(width: screenWidth * 0.02),
+                ElevatedButton(
+                  onPressed: _points.isNotEmpty ? _save : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: widget.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.05,
+                      vertical: screenHeight * 0.015,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                    ),
+                  ),
+                  child: Text(
+                    'Guardar',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.035,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _clear,
-          child: Text('Limpiar', style: TextStyle(color: BioWayColors.error)),
-        ),
-        TextButton(
-          onPressed: _cancel,
-          child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
-        ),
-        ElevatedButton(
-          onPressed: _points.isNotEmpty ? _save : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: widget.primaryColor,
-            foregroundColor: Colors.white,
-          ),
-          child: const Text('Guardar'),
-        ),
-      ],
     );
   }
 }
 
 class SignaturePainter extends CustomPainter {
   final List<Offset?> points;
+  final double strokeWidth;
 
-  SignaturePainter(this.points);
+  SignaturePainter(this.points, {this.strokeWidth = 2.0});
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = Colors.black87
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round;
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
 
     for (int i = 0; i < points.length - 1; i++) {
       if (points[i] != null && points[i + 1] != null) {

@@ -98,13 +98,15 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
   }
 
   void _showImageOptions() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(screenWidth * 0.035),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -115,7 +117,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: screenWidth * 0.05),
             ListTile(
               leading: const Icon(Icons.camera_alt),
               title: const Text('Tomar foto'),
@@ -155,6 +157,11 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final horizontalPadding = screenWidth * 0.03;
+    final verticalPadding = screenHeight * 0.02;
+    
     return Scaffold(
       backgroundColor: BioWayColors.backgroundGrey,
       body: SafeArea(
@@ -163,7 +170,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                const SizedBox(height: 16),
+                SizedBox(height: verticalPadding),
                 Text(
                   'Formulario de Carga',
                   style: TextStyle(
@@ -172,11 +179,11 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                     color: BioWayColors.deepBlue,
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: verticalPadding),
                 // Resumen de lotes seleccionados
                 Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(screenWidth * 0.035),
                 color: Colors.white,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,7 +200,10 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.03,
+                            vertical: verticalPadding * 0.3,
+                          ),
                           decoration: BoxDecoration(
                             color: BioWayColors.deepBlue.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(20),
@@ -209,13 +219,12 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: verticalPadding),
                     
                     // Lista compacta de lotes
                     ...widget.lotesSeleccionados
                         .take(_mostrarTodosLotes ? widget.lotesSeleccionados.length : 3)
-                        .map((lote) => _buildLoteCompacto(lote))
-                        .toList(),
+                        .map((lote) => _buildLoteCompacto(lote)),
                     
                     if (widget.lotesSeleccionados.length > 3)
                       TextButton(
@@ -238,7 +247,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
               
               // Mensaje informativo
               Container(
-                margin: const EdgeInsets.all(20),
+                margin: EdgeInsets.all(horizontalPadding),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: BioWayColors.info.withOpacity(0.1),
@@ -270,8 +279,8 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
               
               // Formulario principal
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.all(20),
+                margin: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                padding: EdgeInsets.all(screenWidth * 0.035),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -305,11 +314,11 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: verticalPadding * 1.25),
                     
                     // Nombre del Transportista
                     _buildFieldLabel('Nombre del Transportista'),
-                    const SizedBox(height: 8),
+                    SizedBox(height: verticalPadding * 0.4),
                     TextFormField(
                       controller: _nombreTransportistaController,
                       maxLength: 50,
@@ -318,11 +327,11 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                       ),
                     ),
                     
-                    const SizedBox(height: 20),
+                    SizedBox(height: verticalPadding * 1.25),
                     
                     // Placas del Vehículo
                     _buildFieldLabel('Placas del Vehículo'),
-                    const SizedBox(height: 8),
+                    SizedBox(height: verticalPadding * 0.4),
                     TextFormField(
                       controller: _placasController,
                       maxLength: 15,
@@ -332,11 +341,11 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                       ),
                     ),
                     
-                    const SizedBox(height: 20),
+                    SizedBox(height: verticalPadding * 1.25),
                     
                     // Peso Total Cargado
                     _buildFieldLabel('Peso Total Cargado'),
-                    const SizedBox(height: 8),
+                    SizedBox(height: verticalPadding * 0.4),
                     Row(
                       children: [
                         Expanded(
@@ -353,7 +362,10 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                         ),
                         const SizedBox(width: 12),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.04,
+                            vertical: verticalPadding * 0.9,
+                          ),
                           decoration: BoxDecoration(
                             color: BioWayColors.lightGrey.withOpacity(0.5),
                             borderRadius: BorderRadius.circular(12),
@@ -370,7 +382,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                       ],
                     ),
                     
-                    const SizedBox(height: 30),
+                    SizedBox(height: verticalPadding * 1.5),
                     
                     // Evidencia Fotográfica
                     Row(
@@ -391,7 +403,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: verticalPadding * 1.25),
                     
                     GestureDetector(
                       onTap: _hasImage ? null : _showImageOptions,
@@ -419,7 +431,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                                       fit: BoxFit.cover,
                                     ),
                                   ),
-                                  const SizedBox(height: 12),
+                                  SizedBox(height: verticalPadding * 0.6),
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
@@ -454,7 +466,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                                     size: 48,
                                     color: Colors.grey[400],
                                   ),
-                                  const SizedBox(height: 12),
+                                  SizedBox(height: verticalPadding * 0.6),
                                   Text(
                                     'Tomar Fotografía de la Carga',
                                     style: TextStyle(
@@ -463,7 +475,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                                       color: BioWayColors.darkGrey,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
+                                  SizedBox(height: verticalPadding * 0.2),
                                   Text(
                                     'Muestra los lotes en el vehículo',
                                     style: TextStyle(
@@ -476,7 +488,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                       ),
                     ),
                     
-                    const SizedBox(height: 30),
+                    SizedBox(height: verticalPadding * 1.5),
                     
                     // Firma del Responsable
                     Row(
@@ -497,11 +509,11 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: verticalPadding * 1.25),
                     
                     // Nombre de quien entrega
                     _buildFieldLabel('Nombre de quien entrega'),
-                    const SizedBox(height: 8),
+                    SizedBox(height: verticalPadding * 0.4),
                     TextFormField(
                       controller: _nombreEntregaController,
                       decoration: _buildInputDecoration(
@@ -509,7 +521,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                       ),
                     ),
                     
-                    const SizedBox(height: 16),
+                    SizedBox(height: verticalPadding),
                     
                     // Área de firma
                     GestureDetector(
@@ -558,7 +570,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                                     size: 32,
                                     color: Colors.grey[400],
                                   ),
-                                  const SizedBox(height: 8),
+                                  SizedBox(height: verticalPadding * 0.4),
                                   Text(
                                     'Toca para firmar',
                                     style: TextStyle(
@@ -567,9 +579,9 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                                       color: BioWayColors.darkGrey,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
+                                  SizedBox(height: verticalPadding * 0.2),
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                                    padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                                     child: Text(
                                       'La persona responsable del centro de acopio debe firmar para confirmar la salida del material',
                                       style: TextStyle(
@@ -585,7 +597,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                     ),
                     
                     if (_hasSignature) ...[
-                      const SizedBox(height: 8),
+                      SizedBox(height: verticalPadding * 0.4),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -607,7 +619,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                       ),
                     ],
                     
-                    const SizedBox(height: 30),
+                    SizedBox(height: verticalPadding * 1.5),
                     
                     // Comentarios
                     Row(
@@ -628,7 +640,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: verticalPadding),
                     
                     TextFormField(
                       controller: _comentariosController,
@@ -642,11 +654,11 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                 ),
               ),
               
-              const SizedBox(height: 30),
+              SizedBox(height: verticalPadding * 1.5),
               
               // Botón de confirmar
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                 child: SizedBox(
                   width: double.infinity,
                   height: 56,
@@ -671,7 +683,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                 ),
               ),
               
-              const SizedBox(height: 40),
+              SizedBox(height: verticalPadding * 2),
             ],
           ),
         ),
@@ -683,7 +695,10 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
   Widget _buildLoteCompacto(Map<String, dynamic> lote) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: MediaQuery.of(context).size.width * 0.03,
+        vertical: MediaQuery.of(context).size.height * 0.01,
+      ),
       decoration: BoxDecoration(
         color: BioWayColors.backgroundGrey,
         borderRadius: BorderRadius.circular(8),
@@ -691,7 +706,10 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            padding: EdgeInsets.symmetric(
+              horizontal: MediaQuery.of(context).size.width * 0.02,
+              vertical: MediaQuery.of(context).size.height * 0.002,
+            ),
             decoration: BoxDecoration(
               color: BioWayColors.brightYellow.withOpacity(0.2),
               borderRadius: BorderRadius.circular(4),
@@ -784,7 +802,10 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
           width: 2,
         ),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: MediaQuery.of(context).size.width * 0.04,
+        vertical: MediaQuery.of(context).size.height * 0.02,
+      ),
     );
   }
 }
