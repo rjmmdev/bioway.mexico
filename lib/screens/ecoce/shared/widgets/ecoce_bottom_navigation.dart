@@ -326,11 +326,6 @@ class EcoceNavigationConfigs {
       testKey: 'origen_nav_lotes',
     ),
     NavigationItem(
-      icon: Icons.storage_rounded,
-      label: 'Repositorio',
-      testKey: 'origen_nav_repositorio',
-    ),
-    NavigationItem(
       icon: Icons.help_outline_rounded,
       label: 'Ayuda',
       testKey: 'origen_nav_ayuda',
@@ -354,11 +349,6 @@ class EcoceNavigationConfigs {
       testKey: 'reciclador_nav_lotes',
     ),
     NavigationItem(
-      icon: Icons.storage_rounded,
-      label: 'Repositorio',
-      testKey: 'reciclador_nav_repositorio',
-    ),
-    NavigationItem(
       icon: Icons.help_outline_rounded,
       label: 'Ayuda',
       testKey: 'reciclador_nav_ayuda',
@@ -380,11 +370,6 @@ class EcoceNavigationConfigs {
       icon: Icons.local_shipping_rounded,
       label: 'Entregar',
       testKey: 'transporte_nav_entregar',
-    ),
-    NavigationItem(
-      icon: Icons.storage_rounded,
-      label: 'Repositorio',
-      testKey: 'transporte_nav_repositorio',
     ),
     NavigationItem(
       icon: Icons.help_outline_rounded,

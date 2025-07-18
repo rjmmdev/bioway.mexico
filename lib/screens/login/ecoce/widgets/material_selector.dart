@@ -5,11 +5,13 @@ import '../../../../utils/colors.dart';
 class MaterialSelector extends StatelessWidget {
   final Set<String> selectedMaterials;
   final Function(String) onMaterialToggle;
+  final List<Map<String, String>>? customMaterials;
 
   const MaterialSelector({
     super.key,
     required this.selectedMaterials,
     required this.onMaterialToggle,
+    this.customMaterials,
   });
 
   static const List<Map<String, dynamic>> _materials = [
@@ -28,13 +30,61 @@ class MaterialSelector extends StatelessWidget {
     {'id': 'stretch', 'name': 'Stretch Film', 'color': BioWayColors.darkGrey, 'desc': 'Film estirable'},
     {'id': 'termoencogible', 'name': 'Termoencogible', 'color': BioWayColors.error, 'desc': 'Film retráctil'},
   ];
+  
+  List<Widget> _buildMaterialItems() {
+    // Use custom materials if provided, otherwise use default
+    if (customMaterials != null && customMaterials!.isNotEmpty) {
+      return customMaterials!.map((material) {
+        // Convert custom material format to match MaterialItem expectations
+        final materialData = {
+          'id': material['id'],
+          'name': material['label'] ?? material['id'],
+          'color': _getColorForMaterial(material['id'] ?? ''),
+          'desc': '', // Custom materials don't have descriptions
+        };
+        return MaterialItem(
+          material: materialData,
+          isSelected: selectedMaterials.contains(material['id']),
+          onTap: () => onMaterialToggle(material['id'] ?? ''),
+        );
+      }).toList();
+    }
+    
+    // Use default materials
+    return _materials.map((material) {
+      return MaterialItem(
+        material: material,
+        isSelected: selectedMaterials.contains(material['id']),
+        onTap: () => onMaterialToggle(material['id']),
+      );
+    }).toList();
+  }
+  
+  Color _getColorForMaterial(String materialId) {
+    // Assign colors based on material type
+    if (materialId.contains('poli') || materialId.contains('pe')) {
+      return BioWayColors.petBlue;
+    } else if (materialId.contains('pp')) {
+      return BioWayColors.ppOrange;
+    } else if (materialId.contains('multi')) {
+      return BioWayColors.warning;
+    } else if (materialId.contains('pellets')) {
+      return BioWayColors.success;
+    } else if (materialId.contains('hojuelas')) {
+      return BioWayColors.hdpeGreen;
+    } else if (materialId.contains('muestra')) {
+      return BioWayColors.info;
+    } else {
+      return BioWayColors.primaryGreen;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: BioWayColors.lightGrey.withOpacity(0.3),
+        color: BioWayColors.lightGrey.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: BioWayColors.lightGrey, width: 1),
       ),
@@ -77,13 +127,7 @@ class MaterialSelector extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: _materials.map((material) {
-              return MaterialItem(
-                material: material,
-                isSelected: selectedMaterials.contains(material['id']),
-                onTap: () => onMaterialToggle(material['id']),
-              );
-            }).toList(),
+            children: _buildMaterialItems(),
           ),
         ],
       ),
@@ -111,7 +155,7 @@ class MaterialItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? material['color'].withOpacity(0.1) : Colors.white,
+          color: isSelected ? (material['color'] as Color).withValues(alpha: 0.1) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? material['color'] : BioWayColors.lightGrey,

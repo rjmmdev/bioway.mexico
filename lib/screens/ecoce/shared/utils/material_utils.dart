@@ -47,6 +47,12 @@ class MaterialUtils {
     }
   }
   
+  /// Formatea una fecha con hora a formato dd/mm/yyyy HH:mm
+  static String formatDateTime(DateTime dateTime) {
+    return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year} '
+           '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+  
   /// Obtiene el color asociado a un material
   static Color getMaterialColor(String material) {
     // Usa la función existente getMaterialColor

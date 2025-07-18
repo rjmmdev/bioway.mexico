@@ -17,22 +17,16 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for iOS - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
         throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macOS - '
+          'DefaultFirebaseOptions have not been configured for macos - '
           'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.windows:
@@ -53,10 +47,29 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'YOUR-API-KEY-HERE',
-    appId: 'YOUR-APP-ID-HERE',
-    messagingSenderId: 'YOUR-SENDER-ID-HERE',
-    projectId: 'trazabilidad-ecoce',
-    storageBucket: 'trazabilidad-ecoce.appspot.com',
+    apiKey: 'AIzaSyDWhBaGXpQjiFzkQ9XRuvGwEgKJrPWypNY',
+    appId: '1:763751005076:android:d668a114c8753c2e56ed81',
+    messagingSenderId: '763751005076',
+    projectId: 'bioway-mexico',
+    storageBucket: 'bioway-mexico.firebasestorage.app',
   );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyBeXT8JdQt-s5Ibi4cGto1OU1ZmZxvJsWw',
+    appId: '1:763751005076:ios:c5fa7215e6ea4c4856ed81',
+    messagingSenderId: '763751005076',
+    projectId: 'bioway-mexico',
+    storageBucket: 'bioway-mexico.firebasestorage.app',
+    iosBundleId: 'com.biowaymexico.app',
+  );
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyCGjPuE5BqzQx-FldRHr3kVeG0s361qSpo',
+    appId: '1:763751005076:web:a0f4a39e1e9bf05b56ed81',
+    messagingSenderId: '763751005076',
+    projectId: 'bioway-mexico',
+    authDomain: 'bioway-mexico.firebaseapp.com',
+    storageBucket: 'bioway-mexico.firebasestorage.app',
+  );
+
 }

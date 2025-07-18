@@ -1,7 +1,9 @@
 // Archivo: widgets/step_widgets.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../../utils/colors.dart';
+import '../../../../widgets/common/simple_map_widget.dart';
 import 'material_selector.dart';
 import 'document_uploader.dart';
 
@@ -439,17 +441,64 @@ class BasicInfoStep extends StatelessWidget {
 }
 
 /// Paso 2: Ubicación
-class LocationStep extends StatelessWidget {
+class LocationStep extends StatefulWidget {
   final Map<String, TextEditingController> controllers;
   final VoidCallback onNext;
   final VoidCallback onPrevious;
+  final Function(LatLng, String)? onLocationSelected;
+  final LatLng? selectedLocation;
+  final String? selectedAddress;
 
   const LocationStep({
     super.key,
     required this.controllers,
     required this.onNext,
     required this.onPrevious,
+    this.onLocationSelected,
+    this.selectedLocation,
+    this.selectedAddress,
   });
+
+  @override
+  State<LocationStep> createState() => _LocationStepState();
+}
+
+class _LocationStepState extends State<LocationStep> {
+  LatLng? _selectedLocation;
+  bool _locationConfirmed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedLocation = widget.selectedLocation;
+    // Si ya hay una ubicación guardada, considerarla confirmada
+    if (_selectedLocation != null) {
+      _locationConfirmed = true;
+    }
+  }
+
+  void _handleLocationSelected(LatLng location) {
+    setState(() {
+      _selectedLocation = location;
+      _locationConfirmed = false; // Resetear confirmación cuando se cambia la ubicación
+    });
+    // Notificar al padre
+    widget.onLocationSelected?.call(location, '${location.latitude}, ${location.longitude}');
+  }
+
+  bool _canContinue() {
+    // Validar todos los campos requeridos
+    final hasRequiredFields = widget.controllers['estado']!.text.isNotEmpty &&
+        widget.controllers['municipio']!.text.isNotEmpty &&
+        widget.controllers['colonia']!.text.isNotEmpty &&
+        widget.controllers['cp']!.text.isNotEmpty &&
+        widget.controllers['direccion']!.text.isNotEmpty &&
+        widget.controllers['numExt']!.text.isNotEmpty &&
+        widget.controllers['referencias']!.text.isNotEmpty;
+    
+    // También debe tener ubicación confirmada
+    return hasRequiredFields && _selectedLocation != null && _locationConfirmed;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -459,7 +508,7 @@ class LocationStep extends StatelessWidget {
         buildStepTitle(2, 5, 'Ubicación', 'Dirección de tu centro de acopio'),
         const SizedBox(height: 32),
 
-        // Sección de búsqueda por ubicación
+        // Sección de búsqueda por dirección
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -485,7 +534,7 @@ class LocationStep extends StatelessWidget {
                   const SizedBox(width: 8),
                   const Expanded(
                     child: Text(
-                      'Búsqueda por ubicación',
+                      'Búsqueda por dirección',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -498,14 +547,14 @@ class LocationStep extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Selecciona tu ubicación para facilitar el registro',
+                'Ingresa los datos de tu ubicación para generar el mapa',
                 style: TextStyle(fontSize: 14, color: BioWayColors.textGrey),
               ),
               const SizedBox(height: 16),
 
               // Estado
               buildTextField(
-                controller: controllers['estado']!,
+                controller: widget.controllers['estado']!,
                 label: 'Estado *',
                 hint: 'Selecciona tu estado',
                 icon: Icons.map,
@@ -514,7 +563,7 @@ class LocationStep extends StatelessWidget {
 
               // Municipio
               buildTextField(
-                controller: controllers['municipio']!,
+                controller: widget.controllers['municipio']!,
                 label: 'Municipio *',
                 hint: 'Selecciona tu municipio',
                 icon: Icons.location_city,
@@ -523,10 +572,21 @@ class LocationStep extends StatelessWidget {
 
               // Colonia
               buildTextField(
-                controller: controllers['colonia']!,
+                controller: widget.controllers['colonia']!,
                 label: 'Colonia *',
                 hint: 'Selecciona tu colonia',
                 icon: Icons.holiday_village,
+              ),
+              const SizedBox(height: 16),
+              
+              // Código Postal
+              buildTextField(
+                controller: widget.controllers['cp']!,
+                label: 'Código Postal *',
+                hint: '00000',
+                icon: Icons.location_on,
+                keyboardType: TextInputType.number,
+                maxLength: 5,
               ),
             ],
           ),
@@ -539,7 +599,7 @@ class LocationStep extends StatelessWidget {
             Expanded(
               flex: 2,
               child: buildTextField(
-                controller: controllers['direccion']!,
+                controller: widget.controllers['direccion']!,
                 label: 'Nombre de calle *',
                 hint: 'Ej: Av. Universidad',
                 icon: Icons.home,
@@ -548,7 +608,7 @@ class LocationStep extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: buildTextField(
-                controller: controllers['numExt']!,
+                controller: widget.controllers['numExt']!,
                 label: 'Núm. Exterior *',
                 hint: '123',
                 icon: Icons.numbers,
@@ -560,7 +620,7 @@ class LocationStep extends StatelessWidget {
         const SizedBox(height: 20),
 
         buildTextField(
-          controller: controllers['referencias']!,
+          controller: widget.controllers['referencias']!,
           label: 'Referencias de ubicación *',
           hint: 'Ej: Frente a la iglesia, entrada lateral',
           icon: Icons.near_me,
@@ -569,16 +629,21 @@ class LocationStep extends StatelessWidget {
         ),
         const SizedBox(height: 24),
 
-        MapPreview(
-          estado: controllers['estado']!.text,
-          municipio: controllers['municipio']!.text,
-          colonia: controllers['colonia']!.text,
+        // Mapa con marcador arrastrable
+        SimpleMapWidget(
+          estado: widget.controllers['estado']!.text,
+          municipio: widget.controllers['municipio']!.text,
+          colonia: widget.controllers['colonia']!.text,
+          codigoPostal: widget.controllers['cp']!.text,
+          initialLocation: _selectedLocation,
+          onLocationSelected: _handleLocationSelected,
         ),
+        
         const SizedBox(height: 40),
 
         buildNavigationButtons(
-          onNext: onNext,
-          onPrevious: onPrevious,
+          onNext: widget.onNext,
+          onPrevious: widget.onPrevious,
         ),
       ],
     );
@@ -783,6 +848,7 @@ class OperationsStep extends StatelessWidget {
   final VoidCallback onPrevious;
   final bool isTransportLocked;
   final bool showCapacitySection;
+  final List<Map<String, String>>? customMaterials;
 
   const OperationsStep({
     super.key,
@@ -795,6 +861,7 @@ class OperationsStep extends StatelessWidget {
     required this.onPrevious,
     this.isTransportLocked = false,
     this.showCapacitySection = true,
+    this.customMaterials,
   });
 
   @override
@@ -808,6 +875,7 @@ class OperationsStep extends StatelessWidget {
         MaterialSelector(
           selectedMaterials: selectedMaterials,
           onMaterialToggle: onMaterialToggle,
+          customMaterials: customMaterials,
         ),
         const SizedBox(height: 24),
 
@@ -1192,6 +1260,7 @@ class CredentialsStep extends StatelessWidget {
   final VoidCallback onConfirmPasswordVisibilityToggle;
   final VoidCallback onComplete;
   final VoidCallback onPrevious;
+  final bool isLoading;
 
   const CredentialsStep({
     super.key,
@@ -1204,6 +1273,7 @@ class CredentialsStep extends StatelessWidget {
     required this.onConfirmPasswordVisibilityToggle,
     required this.onComplete,
     required this.onPrevious,
+    this.isLoading = false,
   });
 
   @override
@@ -1237,6 +1307,7 @@ class CredentialsStep extends StatelessWidget {
           nextLabel: 'Completar Registro',
           nextColor: BioWayColors.success,
           nextIcon: Icons.check,
+          isLoading: isLoading,
         ),
       ],
     );

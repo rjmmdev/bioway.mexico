@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import '../shared/utils/material_utils.dart';
-import '../shared/utils/navigation_utils.dart';
 import 'widgets/timeline_widget.dart';
 import 'widgets/detail_info_card.dart';
 
@@ -46,7 +45,7 @@ class _LoteDetalleScreenState extends State<LoteDetalleScreen>
         'subtitle': 'Transportista TR001',
         'date': DateTime.now().subtract(const Duration(days: 8)),
         'icon': Icons.local_shipping,
-        'color': BioWayColors.primary,
+        'color': BioWayColors.primaryGreen,
         'isCompleted': true,
       },
       {
@@ -141,7 +140,7 @@ class _LoteDetalleScreenState extends State<LoteDetalleScreen>
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -244,7 +243,7 @@ class _LoteDetalleScreenState extends State<LoteDetalleScreen>
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -309,7 +308,7 @@ class _LoteDetalleScreenState extends State<LoteDetalleScreen>
                   end: Alignment.bottomRight,
                   colors: [
                     widget.primaryColor,
-                    widget.primaryColor.withOpacity(0.8),
+                    widget.primaryColor.withValues(alpha: 0.8),
                   ],
                 ),
                 borderRadius: const BorderRadius.only(
@@ -392,7 +391,7 @@ class _LoteDetalleScreenState extends State<LoteDetalleScreen>
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
+                                    color: Colors.white.withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
@@ -411,7 +410,7 @@ class _LoteDetalleScreenState extends State<LoteDetalleScreen>
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
+                                    color: Colors.white.withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(

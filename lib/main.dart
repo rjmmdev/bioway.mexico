@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'screens/splash_screen.dart';
 import 'utils/colors.dart';
-import 'services/firebase/firebase_manager.dart';
 
 // Screens - Origen
 import 'screens/ecoce/origen/origen_inicio_screen.dart';
@@ -30,14 +28,9 @@ void main() async {
   // Asegurar que los widgets estén inicializados
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Inicializar Firebase (sin proyecto específico aún)
-  // El proyecto se seleccionará en el login
-  try {
-    await Firebase.initializeApp();
-    print('Firebase Core inicializado correctamente');
-  } catch (e) {
-    print('Error al inicializar Firebase Core: $e');
-  }
+  // Firebase NO se inicializa aquí
+  // Se inicializará dinámicamente según la plataforma seleccionada
+  // Ver FirebaseManager para más detalles
   
   // Desactivar animaciones del teclado
   SystemChannels.textInput.invokeMethod('TextInput.setClientFeatures', <String, dynamic>{
