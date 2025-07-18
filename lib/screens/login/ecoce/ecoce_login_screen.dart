@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
+import '../../../services/firebase/auth_service.dart';
+import '../../../services/firebase/firebase_manager.dart';
+import '../../../config/firebase_config.dart';
 import 'ecoce_tipo_proveedor_selector.dart';
 import '../../ecoce/reciclador/reciclador_inicio.dart';
 import '../../ecoce/reciclador/reciclador_perfil.dart';
@@ -157,37 +160,117 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         _isLoading = true;
       });
 
-      // Simular proceso de login
-      await Future.delayed(const Duration(seconds: 2));
+      try {
+        // Intentar autenticación con Firebase
+        final userEmail = _userController.text.trim();
+        final userPassword = _passwordController.text;
+        
+        // Usar un email temporal para pruebas si el usuario no es un email
+        String email = userEmail;
+        if (!userEmail.contains('@')) {
+          email = '$userEmail@ecoce.mx';
+        }
 
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        try {
+          // Intentar login con Firebase
+          final userCredential = await AuthService.instance.signInWithEmailAndPassword(
+            email: email,
+            password: userPassword,
+            project: FirebaseConfig.ecoceProject,
+          );
 
-        // Mostrar mensaje de éxito temporal
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 12),
-                Text('Login ECOCE exitoso'),
-              ],
+          if (userCredential != null && mounted) {
+            // Login exitoso con Firebase
+            setState(() {
+              _isLoading = false;
+            });
+
+            // Mostrar mensaje de éxito
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white),
+                    SizedBox(width: 12),
+                    Text('Login ECOCE exitoso'),
+                  ],
+                ),
+                backgroundColor: BioWayColors.ecoceGreen,
+                behavior: SnackBarBehavior.floating,
+                margin: const EdgeInsets.all(20),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+
+            // TODO: Navegar según el tipo de usuario desde Firestore
+            // Por ahora, mostramos el diálogo de selección temporal
+            _showTemporarySuccessDialog();
+          }
+        } catch (firebaseError) {
+          // Si Firebase falla, usar login temporal para desarrollo
+          print('Error Firebase: $firebaseError');
+          print('Usando login temporal para desarrollo');
+          
+          // Simular proceso de login
+          await Future.delayed(const Duration(seconds: 1));
+
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+
+            // Login temporal exitoso
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Row(
+                  children: [
+                    Icon(Icons.warning, color: Colors.white),
+                    SizedBox(width: 12),
+                    Text('Login temporal (sin Firebase)'),
+                  ],
+                ),
+                backgroundColor: BioWayColors.warning,
+                behavior: SnackBarBehavior.floating,
+                margin: const EdgeInsets.all(20),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                duration: const Duration(seconds: 3),
+              ),
+            );
+
+            _showTemporarySuccessDialog();
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.error, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(e.toString()),
+                  ),
+                ],
+              ),
+              backgroundColor: BioWayColors.error,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-            backgroundColor: BioWayColors.ecoceGreen,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(20),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-
-        // TODO: Aquí navegarías a la pantalla principal de ECOCE
-        // Por ahora, mostramos un diálogo temporal
-        _showTemporarySuccessDialog();
+          );
+        }
       }
     }
   }

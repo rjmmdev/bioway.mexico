@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart'; // ACTUALIZADA
 import '../../../widgets/common/gradient_background.dart'; // ACTUALIZADA
+import '../../../services/firebase/auth_service.dart';
+import '../../../services/firebase/firebase_manager.dart';
+import '../../../config/firebase_config.dart';
 import 'widgets/animated_logo.dart'; // ACTUALIZADA
 import '../platform_selector_screen.dart'; // ACTUALIZADA
 import 'bioway_register_screen.dart'; // ACTUALIZADA
@@ -115,30 +118,112 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
         _isLoading = true;
       });
 
-      // Simular proceso de login
-      await Future.delayed(const Duration(seconds: 2));
+      try {
+        // Intentar autenticación con Firebase
+        final email = _emailController.text.trim();
+        final password = _passwordController.text;
 
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        try {
+          // Intentar login con Firebase
+          final userCredential = await AuthService.instance.signInWithEmailAndPassword(
+            email: email,
+            password: password,
+            project: FirebaseConfig.biowayProject,
+          );
 
-        // TODO: Implementar lógica real de autenticación
-        // Aquí deberías:
-        // 1. Llamar a tu servicio de autenticación
-        // 2. Verificar el tipo de usuario (reciclador/brindador)
-        // 3. Navegar a la pantalla correspondiente
+          if (userCredential != null && mounted) {
+            // Login exitoso con Firebase
+            setState(() {
+              _isLoading = false;
+            });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Login exitoso'),
-            backgroundColor: BioWayColors.success,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+            // Mostrar mensaje de éxito
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white),
+                    SizedBox(width: 12),
+                    Text('Login BioWay exitoso'),
+                  ],
+                ),
+                backgroundColor: BioWayColors.success,
+                behavior: SnackBarBehavior.floating,
+                margin: const EdgeInsets.all(20),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+
+            // TODO: Navegar según el tipo de usuario desde Firestore
+            // Por ahora, mostramos un mensaje temporal
+            await Future.delayed(const Duration(seconds: 2));
+            if (mounted) {
+              Navigator.pop(context); // Volver al selector de plataforma
+            }
+          }
+        } catch (firebaseError) {
+          // Si Firebase falla, usar login temporal para desarrollo
+          print('Error Firebase: $firebaseError');
+          print('Usando login temporal para desarrollo');
+          
+          // Simular proceso de login
+          await Future.delayed(const Duration(seconds: 1));
+
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+
+            // Login temporal exitoso
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Row(
+                  children: [
+                    Icon(Icons.warning, color: Colors.white),
+                    SizedBox(width: 12),
+                    Text('Login temporal (sin Firebase)'),
+                  ],
+                ),
+                backgroundColor: BioWayColors.warning,
+                behavior: SnackBarBehavior.floating,
+                margin: const EdgeInsets.all(20),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.error, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(e.toString()),
+                  ),
+                ],
+              ),
+              backgroundColor: BioWayColors.error,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-          ),
-        );
+          );
+        }
       }
     }
   }

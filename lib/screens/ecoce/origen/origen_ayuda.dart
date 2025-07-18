@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../utils/colors.dart';
-import '../../../utils/optimized_navigation.dart';
+import '../shared/utils/navigation_utils.dart';
+import 'origen_inicio_screen.dart';
+import 'origen_lotes_screen.dart';
+import 'origen_perfil.dart';
+import 'origen_crear_lote_screen.dart';
 import '../shared/placeholder_ayuda_screen.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import 'origen_config.dart';
+import '../repositorio/repositorio_lotes_screen.dart';
 
 class OrigenAyudaScreen extends StatelessWidget {
   const OrigenAyudaScreen({super.key});
@@ -15,20 +20,42 @@ class OrigenAyudaScreen extends StatelessWidget {
       tipoUsuario: config.tipoUsuario,
       primaryColor: config.color,
       bottomNavigation: EcoceBottomNavigation(
-        selectedIndex: 2,
+        selectedIndex: 3,
         onItemTapped: (index) {
-          if (index == 2) return; // Ya estamos en ayuda
+          if (index == 3) return; // Ya estamos en ayuda
           
           // Navegación a otras pantallas según el índice
           switch (index) {
             case 0:
-              OptimizedNavigation.navigateToNamed(context, '/origen_inicio', replacement: true);
+              NavigationUtils.navigateWithFade(
+                context,
+                const OrigenInicioScreen(),
+                replacement: true,
+              );
               break;
             case 1:
-              OptimizedNavigation.navigateToNamed(context, '/origen_lotes', replacement: true);
+              NavigationUtils.navigateWithFade(
+                context,
+                const OrigenLotesScreen(),
+                replacement: true,
+              );
               break;
-            case 3:
-              OptimizedNavigation.navigateToNamed(context, '/origen_perfil', replacement: true);
+            case 2:
+              NavigationUtils.navigateWithFade(
+                context,
+                RepositorioLotesScreen(
+                  primaryColor: config.color,
+                  tipoUsuario: config.tipoUsuario,
+                ),
+                replacement: true,
+              );
+              break;
+            case 4:
+              NavigationUtils.navigateWithFade(
+                context,
+                const OrigenPerfilScreen(),
+                replacement: true,
+              );
               break;
           }
         },
@@ -37,14 +64,20 @@ class OrigenAyudaScreen extends StatelessWidget {
         fabConfig: FabConfig(
           icon: Icons.add,
           onPressed: () {
-            OptimizedNavigation.navigateToNamed(context, '/origen_crear_lote');
+            NavigationUtils.navigateWithFade(
+              context,
+              const OrigenCrearLoteScreen(),
+            );
           },
           tooltip: 'Nuevo Lote',
         ),
       ),
       floatingActionButton: EcoceFloatingActionButton(
         onPressed: () {
-          OptimizedNavigation.navigateToNamed(context, '/origen_crear_lote');
+          NavigationUtils.navigateWithFade(
+            context,
+            const OrigenCrearLoteScreen(),
+          );
         },
         icon: Icons.add,
         backgroundColor: BioWayColors.ecoceGreen,

@@ -3,6 +3,14 @@ import 'package:flutter/services.dart';
 import 'dart:io';
 import '../shared/widgets/photo_evidence_widget.dart';
 import '../shared/widgets/signature_dialog.dart';
+import '../shared/widgets/ecoce_bottom_navigation.dart';
+import '../shared/utils/navigation_utils.dart';
+import '../../../utils/colors.dart';
+import 'transporte_escaneo.dart';
+import 'transporte_entregar_screen.dart';
+import 'transporte_ayuda_screen.dart';
+import 'transporte_perfil_screen.dart';
+import '../repositorio/repositorio_lotes_screen.dart';
 
 class TransporteRecogerScreen extends StatefulWidget {
   final List<Map<String, dynamic>> lotesSeleccionados;
@@ -103,8 +111,12 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
         ),
       );
       
-      // Navegar de vuelta
-      Navigator.pop(context);
+      // Navegar de vuelta al escáner
+      NavigationUtils.navigateWithFade(
+        context,
+        const TransporteEscaneoScreen(),
+        replacement: true,
+      );
     }
   }
 
@@ -149,24 +161,13 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                      SizedBox(width: screenWidth * 0.03),
-                      Text(
-                        'Formulario de Carga',
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.06,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    'Formulario de Carga',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.06,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ],
               ),
@@ -737,6 +738,48 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
             ),
           ],
         ),
+      ),
+      bottomNavigationBar: EcoceBottomNavigation(
+        selectedIndex: 0, // Recoger está seleccionado
+        onItemTapped: (index) {
+          if (index == 0) return; // Ya estamos en recoger
+          
+          switch (index) {
+            case 1:
+              NavigationUtils.navigateWithFade(
+                context,
+                const TransporteEntregarScreen(),
+                replacement: true,
+              );
+              break;
+            case 2:
+              NavigationUtils.navigateWithFade(
+                context,
+                RepositorioLotesScreen(
+                  primaryColor: BioWayColors.deepBlue,
+                  tipoUsuario: 'transportista',
+                ),
+                replacement: true,
+              );
+              break;
+            case 3:
+              NavigationUtils.navigateWithFade(
+                context,
+                const TransporteAyudaScreen(),
+                replacement: true,
+              );
+              break;
+            case 4:
+              NavigationUtils.navigateWithFade(
+                context,
+                const TransportePerfilScreen(),
+                replacement: true,
+              );
+              break;
+          }
+        },
+        primaryColor: BioWayColors.deepBlue,
+        items: EcoceNavigationConfigs.transporteItems,
       ),
     );
   }

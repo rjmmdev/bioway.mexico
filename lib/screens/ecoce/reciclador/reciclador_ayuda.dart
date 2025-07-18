@@ -7,6 +7,7 @@ import 'reciclador_inicio.dart';
 import 'reciclador_administracion_lotes.dart';
 import 'reciclador_perfil.dart';
 import 'reciclador_escaneo.dart';
+import '../repositorio/repositorio_lotes_screen.dart';
 
 class RecicladorAyudaScreen extends StatefulWidget {
   const RecicladorAyudaScreen({super.key});
@@ -17,7 +18,7 @@ class RecicladorAyudaScreen extends StatefulWidget {
 
 class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with SingleTickerProviderStateMixin {
   // Índice para la navegación del bottom bar
-  final int _selectedIndex = 2; // Ayuda está seleccionado
+  final int _selectedIndex = 3; // Ayuda está seleccionado
   
   // Controlador para la animación del header
   late AnimationController _animationController;
@@ -383,9 +384,28 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
         );
         break;
       case 2:
-        // Ya estamos en ayuda
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                RepositorioLotesScreen(
+                  primaryColor: BioWayColors.ecoceGreen,
+                  tipoUsuario: 'reciclador',
+                ),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 300),
+          ),
+        );
         break;
       case 3:
+        // Ya estamos en ayuda
+        break;
+      case 4:
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
