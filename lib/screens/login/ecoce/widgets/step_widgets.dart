@@ -466,6 +466,7 @@ class LocationStep extends StatefulWidget {
 class _LocationStepState extends State<LocationStep> {
   LatLng? _selectedLocation;
   bool _locationConfirmed = false;
+  bool _hasAttemptedToContinue = false;
 
   @override
   void initState() {
@@ -476,11 +477,250 @@ class _LocationStepState extends State<LocationStep> {
       _locationConfirmed = true;
     }
   }
+  
+  bool _hasTriedToContinue() {
+    // Simple check para ver si han llenado algún campo
+    return widget.controllers['estado']!.text.isNotEmpty ||
+           widget.controllers['municipio']!.text.isNotEmpty ||
+           widget.controllers['colonia']!.text.isNotEmpty ||
+           widget.controllers['cp']!.text.isNotEmpty;
+  }
 
-  void _handleLocationSelected(LatLng location) {
+  void _showConfirmationDialog() {
+    if (!_canContinue()) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icono
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.location_on,
+                    size: 40,
+                    color: BioWayColors.primaryGreen,
+                  ),
+                ),
+                SizedBox(height: 20),
+                
+                // Título
+                Text(
+                  'Confirmar información de ubicación',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: BioWayColors.darkGreen,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 20),
+                
+                // Información a confirmar
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: BioWayColors.backgroundGrey,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildInfoRow('Estado', widget.controllers['estado']!.text),
+                      _buildInfoRow('Municipio', widget.controllers['municipio']!.text),
+                      _buildInfoRow('Colonia', widget.controllers['colonia']!.text),
+                      _buildInfoRow('C.P.', widget.controllers['cp']!.text),
+                      _buildInfoRow('Calle', widget.controllers['direccion']!.text),
+                      _buildInfoRow('Núm. Ext.', widget.controllers['numExt']!.text),
+                      _buildInfoRow('Referencias', widget.controllers['referencias']!.text),
+                      Divider(height: 24, color: BioWayColors.lightGrey),
+                      if (_selectedLocation != null) ...[
+                        Row(
+                          children: [
+                            Icon(Icons.gps_fixed, size: 16, color: BioWayColors.primaryGreen),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Coordenadas GPS',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: BioWayColors.textGrey,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Lat: ${_selectedLocation!.latitude.toStringAsFixed(6)}',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: BioWayColors.darkGreen,
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
+                                  Text(
+                                    'Lng: ${_selectedLocation!.longitude.toStringAsFixed(6)}',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: BioWayColors.darkGreen,
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                SizedBox(height: 16),
+                
+                // Mensaje de confirmación
+                Text(
+                  '¿Toda la información es correcta?',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: BioWayColors.textGrey,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 24),
+                
+                // Botones
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          side: BorderSide(color: BioWayColors.textGrey),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          'Revisar',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: BioWayColors.textGrey,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          widget.onNext();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: BioWayColors.primaryGreen,
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          'Confirmar',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              '$label:',
+              style: TextStyle(
+                fontSize: 13,
+                color: BioWayColors.textGrey,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value.isEmpty ? '(No especificado)' : value,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: value.isEmpty ? BioWayColors.textGrey : BioWayColors.darkGreen,
+                fontStyle: value.isEmpty ? FontStyle.italic : FontStyle.normal,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleLocationSelected(LatLng location, Map<String, String>? addressComponents) {
     setState(() {
       _selectedLocation = location;
       _locationConfirmed = false; // Resetear confirmación cuando se cambia la ubicación
+      
+      // Auto-llenar campos con los componentes de dirección si están disponibles
+      if (addressComponents != null) {
+        if (addressComponents['estado']?.isNotEmpty ?? false) {
+          widget.controllers['estado']!.text = addressComponents['estado']!;
+        }
+        if (addressComponents['municipio']?.isNotEmpty ?? false) {
+          widget.controllers['municipio']!.text = addressComponents['municipio']!;
+        }
+        if (addressComponents['colonia']?.isNotEmpty ?? false) {
+          widget.controllers['colonia']!.text = addressComponents['colonia']!;
+        }
+        if (addressComponents['cp']?.isNotEmpty ?? false) {
+          widget.controllers['cp']!.text = addressComponents['cp']!;
+        }
+        // Si viene la calle, actualizar el campo de dirección
+        if (addressComponents['calle']?.isNotEmpty ?? false) {
+          // Solo actualizar si el campo está vacío para no sobrescribir entrada manual
+          if (widget.controllers['direccion']!.text.isEmpty) {
+            widget.controllers['direccion']!.text = addressComponents['calle']!;
+          }
+        }
+      }
     });
     // Notificar al padre
     widget.onLocationSelected?.call(location, '${location.latitude}, ${location.longitude}');
@@ -639,11 +879,133 @@ class _LocationStepState extends State<LocationStep> {
           onLocationSelected: _handleLocationSelected,
         ),
         
+        // Checkbox de confirmación si hay ubicación seleccionada
+        if (_selectedLocation != null) ...[
+          const SizedBox(height: 20),
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: BioWayColors.lightGreen.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: BioWayColors.primaryGreen.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.location_on,
+                      color: BioWayColors.primaryGreen,
+                      size: 20,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'Coordenadas guardadas:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: BioWayColors.darkGreen,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: BioWayColors.lightGrey),
+                  ),
+                  child: Text(
+                    'Latitud: ${_selectedLocation!.latitude.toStringAsFixed(6)}\nLongitud: ${_selectedLocation!.longitude.toStringAsFixed(6)}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: BioWayColors.darkGreen,
+                      fontFamily: 'monospace',
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 12),
+                CheckboxListTile(
+                  value: _locationConfirmed,
+                  onChanged: (value) {
+                    setState(() {
+                      _locationConfirmed = value ?? false;
+                    });
+                  },
+                  title: Text(
+                    'Confirmo que esta es mi ubicación exacta',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: BioWayColors.darkGreen,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Debes confirmar tu ubicación para continuar',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: BioWayColors.textGrey,
+                    ),
+                  ),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  activeColor: BioWayColors.primaryGreen,
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ],
+            ),
+          ),
+        ],
+        
+        // Mensaje de validación si falta algo
+        if (!_canContinue() && (_selectedLocation != null || _hasTriedToContinue())) ...[
+          const SizedBox(height: 20),
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: BioWayColors.warning.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: BioWayColors.warning.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: BioWayColors.warning,
+                  size: 20,
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _selectedLocation == null 
+                        ? 'Debes generar y confirmar tu ubicación en el mapa'
+                        : !_locationConfirmed 
+                            ? 'Debes confirmar tu ubicación para continuar'
+                            : 'Completa todos los campos requeridos',
+                    style: TextStyle(
+                      color: BioWayColors.warning,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        
         const SizedBox(height: 40),
 
         buildNavigationButtons(
-          onNext: widget.onNext,
+          onNext: _showConfirmationDialog,
           onPrevious: widget.onPrevious,
+          isLoading: !_canContinue(),
         ),
       ],
     );

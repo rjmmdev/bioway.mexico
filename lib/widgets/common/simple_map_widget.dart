@@ -10,7 +10,7 @@ class SimpleMapWidget extends StatefulWidget {
   final String? municipio;
   final String? colonia;
   final String? codigoPostal;
-  final Function(LatLng) onLocationSelected;
+  final Function(LatLng, Map<String, String>?) onLocationSelected;
   final LatLng? initialLocation;
 
   const SimpleMapWidget({
@@ -79,7 +79,7 @@ class _SimpleMapWidgetState extends State<SimpleMapWidget> {
         });
         
         // Abrir el diálogo del mapa
-        final LatLng? result = await showDialog<LatLng>(
+        final Map<String, dynamic>? result = await showDialog<Map<String, dynamic>>(
           context: context,
           barrierDismissible: false,
           builder: (context) => MapSelectorDialog(
@@ -88,14 +88,14 @@ class _SimpleMapWidgetState extends State<SimpleMapWidget> {
           ),
         );
         
-        if (result != null) {
+        if (result != null && result['position'] != null) {
           setState(() {
-            _selectedPosition = result;
+            _selectedPosition = result['position'];
             _selectedAddress = '${widget.colonia ?? ''}, ${widget.municipio ?? ''}, ${widget.estado ?? ''}';
           });
           
-          // Notificar la ubicación seleccionada
-          widget.onLocationSelected(result);
+          // Notificar la ubicación seleccionada con los componentes de dirección
+          widget.onLocationSelected(result['position'], result['addressComponents']);
         }
       } else {
         setState(() {
@@ -175,59 +175,6 @@ class _SimpleMapWidgetState extends State<SimpleMapWidget> {
           ),
         ],
         
-        if (_selectedPosition != null) ...[
-          SizedBox(height: 12),
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: BioWayColors.success.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: BioWayColors.success.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.check_circle,
-                      color: BioWayColors.success,
-                      size: 20,
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      'Ubicación seleccionada',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: BioWayColors.darkGreen,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8),
-                Text(
-                  _selectedAddress ?? '',
-                  style: TextStyle(
-                    color: BioWayColors.darkGreen,
-                    fontSize: 13,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Lat: ${_selectedPosition!.latitude.toStringAsFixed(6)}, Lng: ${_selectedPosition!.longitude.toStringAsFixed(6)}',
-                  style: TextStyle(
-                    color: BioWayColors.textGrey,
-                    fontSize: 12,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ],
     );
   }
