@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
-import '../../../services/image_service.dart';
+import '../shared/widgets/photo_evidence_widget.dart';
 import '../shared/widgets/signature_dialog.dart';
 
 class TransporteFormularioEntregaScreen extends StatefulWidget {
@@ -35,9 +35,8 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
   List<Offset?> _signaturePoints = [];
   bool _hasSignature = false;
   
-  // Variables para la imagen
-  File? _selectedImage;
-  bool _hasImage = false;
+  // Evidencias fotográficas
+  List<File> _photos = [];
   
   @override
   void initState() {
@@ -103,93 +102,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
     );
   }
   
-  Future<void> _takePicture() async {
-    final File? image = await ImageService.takePhoto();
-    
-    if (image != null) {
-      setState(() {
-        _selectedImage = image;
-        _hasImage = true;
-        // TODO: Convertir imagen a base64 y guardar en _imagenBase64
-      });
-    }
-  }
-  
-  Future<void> _pickFromGallery() async {
-    final File? image = await ImageService.pickFromGallery();
-    
-    if (image != null) {
-      setState(() {
-        _selectedImage = image;
-        _hasImage = true;
-        // TODO: Convertir imagen a base64 y guardar en _imagenBase64
-      });
-    }
-  }
-  
-  void _showImageOptions() {
-    
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1490EE).withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.camera_alt,
-                  color: Color(0xFF1490EE),
-                ),
-              ),
-              title: const Text('Tomar foto'),
-              onTap: () {
-                Navigator.pop(context);
-                _takePicture();
-              },
-            ),
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1490EE).withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.photo_library,
-                  color: Color(0xFF1490EE),
-                ),
-              ),
-              title: const Text('Seleccionar de galería'),
-              onTap: () {
-                Navigator.pop(context);
-                _pickFromGallery();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
   
   void _completarEntrega() {
     if (_destinatarioEncontrado == null) {
@@ -543,116 +456,17 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                         SizedBox(height: screenHeight * 0.03),
                         
                         // Evidencia Fotográfica
-                        Container(
-                          padding: EdgeInsets.all(screenWidth * 0.04),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.camera_alt,
-                                    color: const Color(0xFF1490EE),
-                                    size: screenWidth * 0.06,
-                                  ),
-                                  SizedBox(width: screenWidth * 0.03),
-                                  Text(
-                                    'Evidencia Fotográfica',
-                                    style: TextStyle(
-                                      fontSize: screenWidth * 0.045,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: screenHeight * 0.02),
-                              
-                              GestureDetector(
-                                onTap: _hasImage ? null : _showImageOptions,
-                                child: Container(
-                                  width: double.infinity,
-                                  height: _hasImage ? null : screenHeight * 0.2,
-                                  decoration: BoxDecoration(
-                                    color: _hasImage ? null : const Color(0xFFF5F5F5),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: _hasImage ? null : Border.all(
-                                      color: const Color(0xFF1490EE),
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: _hasImage && _selectedImage != null
-                                      ? Stack(
-                                          children: [
-                                            ClipRRect(
-                                              borderRadius: BorderRadius.circular(8),
-                                              child: Image.file(
-                                                _selectedImage!,
-                                                width: double.infinity,
-                                                height: screenHeight * 0.2,
-                                                fit: BoxFit.cover,
-                                              ),
-                                            ),
-                                            Positioned(
-                                              top: 8,
-                                              right: 8,
-                                              child: IconButton(
-                                                onPressed: () {
-                                                  setState(() {
-                                                    _selectedImage = null;
-                                                    _hasImage = false;
-                                                  });
-                                                },
-                                                icon: Container(
-                                                  padding: const EdgeInsets.all(4),
-                                                  decoration: const BoxDecoration(
-                                                    color: Colors.white,
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  child: const Icon(
-                                                    Icons.close,
-                                                    color: Color(0xFFE74C3C),
-                                                    size: 20,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        )
-                                      : Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.add_a_photo,
-                                              size: screenWidth * 0.12,
-                                              color: const Color(0xFF1490EE),
-                                            ),
-                                            SizedBox(height: screenHeight * 0.01),
-                                            Text(
-                                              'Tomar o seleccionar foto',
-                                              style: TextStyle(
-                                                fontSize: screenWidth * 0.04,
-                                                color: const Color(0xFF1490EE),
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                ),
-                              ),
-                            ],
-                          ),
+                        PhotoEvidenceFormField(
+                          title: 'Evidencia Fotográfica',
+                          maxPhotos: 1,
+                          minPhotos: 1,
+                          isRequired: true,
+                          onPhotosChanged: (photos) {
+                            setState(() {
+                              _photos = photos;
+                            });
+                          },
+                          primaryColor: const Color(0xFF1490EE),
                         ),
                         
                         SizedBox(height: screenHeight * 0.03),
