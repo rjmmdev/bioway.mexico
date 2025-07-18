@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
-import 'widgets/transformador_bottom_navigation.dart';
-import 'transformador_inicio.dart';
 
 class TransformadorProduccionScreen extends StatefulWidget {
   const TransformadorProduccionScreen({super.key});
@@ -13,7 +11,6 @@ class TransformadorProduccionScreen extends StatefulWidget {
 
 class _TransformadorProduccionScreenState extends State<TransformadorProduccionScreen> 
     with SingleTickerProviderStateMixin {
-  final int _selectedIndex = 1; // Producción está en índice 1
   late TabController _tabController;
   
   // Datos de producción
@@ -82,86 +79,27 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
     super.dispose();
   }
 
-  void _onBottomNavTapped(int index) {
-    HapticFeedback.lightImpact();
-    
-    if (index == _selectedIndex) return;
-    
-    switch (index) {
-      case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const TransformadorInicioScreen(),
-          ),
-        );
-        break;
-      case 1:
-        // Ya estamos en producción
-        break;
-      case 2:
-        // TODO: Navegar a Ayuda
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Pantalla de Ayuda en desarrollo'),
-            backgroundColor: BioWayColors.info,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-        break;
-      case 3:
-        // TODO: Navegar a Perfil
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Pantalla de Perfil en desarrollo'),
-            backgroundColor: BioWayColors.info,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-        break;
-    }
-  }
-
-  void _onFabPressed() {
-    HapticFeedback.lightImpact();
-    // TODO: Implementar acción del FAB
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Función de agregar en desarrollo'),
-        backgroundColor: BioWayColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    BioWayColors.ecoceGreen,
-                    BioWayColors.ecoceGreen.withOpacity(0.8),
-                  ],
-                ),
+      body: Column(
+        children: [
+          // Header que cubre todo el ancho
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  BioWayColors.ecoceGreen,
+                  BioWayColors.ecoceGreen.withOpacity(0.8),
+                ],
               ),
+            ),
+            child: SafeArea(
+              bottom: false,
               child: Stack(
                 children: [
                   // Patrón de fondo
@@ -179,122 +117,113 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                   ),
                   // Contenido
                   Padding(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            IconButton(
-                              onPressed: () => Navigator.pop(context),
-                              icon: const Icon(Icons.arrow_back, color: Colors.white),
-                            ),
-                            const SizedBox(width: 8),
-                            const Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Control de Producción',
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Gestión de procesos y capacidad',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Control de Producción',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Gestión de procesos y capacidad',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white70,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
                 ],
               ),
             ),
-            
-            // Contenido principal
-            Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      // Card de Capacidad
-                      _buildCapacityCard(),
-                      const SizedBox(height: 20),
-                      
-                      // Tabs
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: TabBar(
-                          controller: _tabController,
-                          indicator: BoxDecoration(
-                            color: Colors.white,
+          ),
+          
+          // Capacidad Card y Tabs en un área scrollable
+          Expanded(
+            child: Column(
+              children: [
+                SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        // Card de Capacidad
+                        _buildCapacityCard(),
+                        const SizedBox(height: 20),
+                        
+                        // Tabs
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
                             borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
+                          ),
+                          child: TabBar(
+                            controller: _tabController,
+                            indicator: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            labelColor: BioWayColors.ecoceGreen,
+                            unselectedLabelColor: Colors.grey[600],
+                            labelStyle: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                            labelPadding: const EdgeInsets.symmetric(horizontal: 24),
+                            tabs: const [
+                              Tab(
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 16),
+                                  child: Text('En Proceso'),
+                                ),
+                              ),
+                              Tab(
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 16),
+                                  child: Text('Completados'),
+                                ),
                               ),
                             ],
                           ),
-                          labelColor: BioWayColors.ecoceGreen,
-                          unselectedLabelColor: Colors.grey[600],
-                          labelStyle: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                          tabs: const [
-                            Tab(text: 'En Proceso'),
-                            Tab(text: 'Completados'),
-                          ],
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Tab Content
-                      SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.5,
-                        child: TabBarView(
-                          controller: _tabController,
-                          children: [
-                            // Tab En Proceso
-                            _buildLotesList(_lotesEnProceso),
-                            // Tab Completados
-                            _buildLotesList(_lotesCompletados),
-                          ],
-                        ),
-                      ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                // TabBarView para los lotes
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      // Tab En Proceso
+                      _buildLotesList(_lotesEnProceso),
+                      // Tab Completados
+                      _buildLotesList(_lotesCompletados),
                     ],
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-      bottomNavigationBar: TransformadorBottomNavigation(
-        selectedIndex: _selectedIndex,
-        onItemTapped: _onBottomNavTapped,
-        onFabPressed: _onFabPressed,
-      ),
-      floatingActionButton: TransformadorFloatingActionButton(
-        onPressed: _onFabPressed,
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
@@ -406,15 +335,19 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
   }
 
   Widget _buildLotesList(List<Map<String, dynamic>> lotes) {
-    return ListView.builder(
-      itemCount: lotes.length,
-      itemBuilder: (context, index) {
-        final lote = lotes[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _buildLoteCard(lote),
-        );
-      },
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ListView.builder(
+        padding: const EdgeInsets.only(top: 16, bottom: 100), // Espacio para el FAB y navegación
+        itemCount: lotes.length,
+        itemBuilder: (context, index) {
+          final lote = lotes[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildLoteCard(lote),
+          );
+        },
+      ),
     );
   }
 

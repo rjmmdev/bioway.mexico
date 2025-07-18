@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
-import 'widgets/transformador_bottom_navigation.dart';
-import 'transformador_produccion_screen.dart';
 class TransformadorInicioScreen extends StatefulWidget {
   const TransformadorInicioScreen({super.key});
 
@@ -194,48 +192,6 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen>
     );
   }
 
-  void _onBottomNavTapped(int index) {
-    HapticFeedback.lightImpact();
-    
-    if (index == 0) return; // Ya estamos en inicio
-    
-    switch (index) {
-      case 1:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const TransformadorProduccionScreen(),
-          ),
-        );
-        break;
-      case 2:
-        // TODO: Navegar a Ayuda
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Pantalla de Ayuda en desarrollo'),
-            backgroundColor: BioWayColors.info,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-        break;
-      case 3:
-        // TODO: Navegar a Perfil
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Pantalla de Perfil en desarrollo'),
-            backgroundColor: BioWayColors.info,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-        break;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -439,16 +395,6 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen>
         ),
       ),
 
-      // Bottom Navigation
-      bottomNavigationBar: TransformadorBottomNavigation(
-        selectedIndex: 0, // Inicio está en índice 0
-        onItemTapped: _onBottomNavTapped,
-        onFabPressed: _escanearLote,
-      ),
-      floatingActionButton: TransformadorFloatingActionButton(
-        onPressed: _escanearLote,
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
