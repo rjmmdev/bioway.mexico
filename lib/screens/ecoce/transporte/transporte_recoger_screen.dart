@@ -164,22 +164,71 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
     
     return Scaffold(
       backgroundColor: BioWayColors.backgroundGrey,
+      appBar: AppBar(
+        backgroundColor: BioWayColors.deepBlue,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: const Text(
+          'Formulario de Carga',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      ),
       body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                SizedBox(height: verticalPadding),
-                Text(
-                  'Formulario de Carga',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: BioWayColors.deepBlue,
-                  ),
+        child: Column(
+          children: [
+            // Header azul con información
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: verticalPadding,
+              ),
+              decoration: BoxDecoration(
+                color: BioWayColors.deepBlue,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(screenWidth * 0.08),
+                  bottomRight: Radius.circular(screenWidth * 0.08),
                 ),
-                SizedBox(height: verticalPadding),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Completa los datos de carga',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${widget.lotesSeleccionados.length} lote(s) seleccionado(s)',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
                 // Resumen de lotes seleccionados
                 Container(
                 width: double.infinity,
