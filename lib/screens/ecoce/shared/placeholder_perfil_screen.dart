@@ -3,7 +3,8 @@ import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import '../origen/widgets/origen_bottom_navigation.dart';
 import '../reciclador/widgets/reciclador_bottom_navigation.dart';
-import '../transporte/widgets/transporte_bottom_navigation.dart';
+import 'widgets/ecoce_bottom_navigation.dart';
+import 'utils/navigation_utils.dart';
 import '../transporte/transporte_inicio_screen.dart';
 import '../transporte/transporte_entregar_screen.dart';
 import '../transporte/transporte_ayuda_screen.dart';
@@ -1002,7 +1003,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
         );
       
       case 'local_shipping':
-        return TransporteBottomNavigation(
+        return EcoceBottomNavigation(
           selectedIndex: 3,
           onItemTapped: (index) {
             if (index == 3) return; // Ya estamos en perfil
@@ -1010,55 +1011,30 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
             // Navegación a otras pantallas según el índice
             switch (index) {
               case 0:
-                Navigator.pushReplacement(
+                NavigationUtils.navigateWithFade(
                   context,
-                  PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) =>
-                        const TransporteInicioScreen(),
-                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      );
-                    },
-                    transitionDuration: const Duration(milliseconds: 300),
-                  ),
+                  const TransporteInicioScreen(),
+                  replacement: true,
                 );
                 break;
               case 1:
-                Navigator.pushReplacement(
+                NavigationUtils.navigateWithFade(
                   context,
-                  PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) =>
-                        const TransporteEntregarScreen(),
-                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      );
-                    },
-                    transitionDuration: const Duration(milliseconds: 300),
-                  ),
+                  const TransporteEntregarScreen(),
+                  replacement: true,
                 );
                 break;
               case 2:
-                Navigator.pushReplacement(
+                NavigationUtils.navigateWithFade(
                   context,
-                  PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) =>
-                        const TransporteAyudaScreen(),
-                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      );
-                    },
-                    transitionDuration: const Duration(milliseconds: 300),
-                  ),
+                  const TransporteAyudaScreen(),
+                  replacement: true,
                 );
                 break;
             }
           },
+          primaryColor: BioWayColors.deepBlue,
+          items: EcoceNavigationConfigs.transporteItems,
         );
       
       default:
