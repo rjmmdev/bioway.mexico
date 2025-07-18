@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
-
+import 'widgets/transformador_bottom_navigation.dart';
+import 'transformador_produccion_screen.dart';
 class TransformadorInicioScreen extends StatefulWidget {
   const TransformadorInicioScreen({super.key});
 
@@ -28,8 +29,6 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen>
   final int _lotesRecibidos = 47;
   final int _productosCreados = 28;
   final double _materialProcesado = 4.5; // toneladas
-  final double _capacidadUtilizada = 85.0; // porcentaje
-  final double _materialProcesadoHoy = 1.2; // toneladas
 
   // Lista de lotes en proceso
   final List<Map<String, dynamic>> _lotesEnProceso = [
@@ -195,6 +194,49 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen>
     );
   }
 
+  void _onBottomNavTapped(int index) {
+    HapticFeedback.lightImpact();
+    
+    if (index == 0) return; // Ya estamos en inicio
+    
+    switch (index) {
+      case 1:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const TransformadorProduccionScreen(),
+          ),
+        );
+        break;
+      case 2:
+        // TODO: Navegar a Ayuda
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Pantalla de Ayuda en desarrollo'),
+            backgroundColor: BioWayColors.info,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+        break;
+      case 3:
+        // TODO: Navegar a Perfil
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Pantalla de Perfil en desarrollo'),
+            backgroundColor: BioWayColors.info,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -230,46 +272,6 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen>
                       child: Column(
                         children: [
                           // Barra superior con notificación
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                '9:41',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Stack(
-                                  children: [
-                                    const Icon(
-                                      Icons.notifications_outlined,
-                                      color: Colors.white,
-                                      size: 20,
-                                    ),
-                                    Positioned(
-                                      right: 0,
-                                      top: 0,
-                                      child: Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: const BoxDecoration(
-                                          color: BioWayColors.error,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
                           const SizedBox(height: 16),
 
                           // Información de la empresa
@@ -407,11 +409,6 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen>
 
                           const SizedBox(height: 24),
 
-                          // Capacidad de Producción - Hoy
-                          _buildCapacitySection(),
-
-                          const SizedBox(height: 24),
-
                           // Lotes en Proceso
                           _buildSectionTitle('Lotes en Proceso'),
                           const SizedBox(height: 12),
@@ -442,72 +439,16 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen>
         ),
       ),
 
-      // FAB animado
-      floatingActionButton: AnimatedBuilder(
-        animation: _fabController,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _fabScaleAnimation.value,
-            child: FloatingActionButton(
-              onPressed: _escanearLote,
-              backgroundColor: BioWayColors.ppOrange,
-              child: const Icon(
-                Icons.add,
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
-          );
-        },
-      ),
-
       // Bottom Navigation
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildBottomNavItem(
-                  icon: Icons.home,
-                  label: 'Inicio',
-                  isSelected: true,
-                  onTap: () {},
-                ),
-                _buildBottomNavItem(
-                  icon: Icons.bar_chart,
-                  label: 'Producción',
-                  isSelected: false,
-                  onTap: () {},
-                ),
-                _buildBottomNavItem(
-                  icon: Icons.help_outline,
-                  label: 'Ayuda',
-                  isSelected: false,
-                  onTap: () {},
-                ),
-                _buildBottomNavItem(
-                  icon: Icons.person,
-                  label: 'Perfil',
-                  isSelected: false,
-                  onTap: () {},
-                ),
-              ],
-            ),
-          ),
-        ),
+      bottomNavigationBar: TransformadorBottomNavigation(
+        selectedIndex: 0, // Inicio está en índice 0
+        onItemTapped: _onBottomNavTapped,
+        onFabPressed: _escanearLote,
       ),
+      floatingActionButton: TransformadorFloatingActionButton(
+        onPressed: _escanearLote,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
@@ -631,106 +572,6 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen>
     );
   }
 
-  Widget _buildCapacitySection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: BioWayColors.info.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: BioWayColors.info.withOpacity(0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.bar_chart,
-                color: BioWayColors.info,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'Capacidad de Producción - Hoy',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: BioWayColors.darkGreen,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${_capacidadUtilizada.toInt()}%',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: BioWayColors.info,
-                      ),
-                    ),
-                    const Text(
-                      'Capacidad Utilizada',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: BioWayColors.textGrey,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$_materialProcesadoHoy t',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: BioWayColors.info,
-                      ),
-                    ),
-                    const Text(
-                      'Material Procesado',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: BioWayColors.textGrey,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Barra de progreso
-          LinearProgressIndicator(
-            value: _capacidadUtilizada / 100,
-            backgroundColor: Colors.grey.shade200,
-            valueColor: AlwaysStoppedAnimation<Color>(BioWayColors.info),
-            minHeight: 8,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Máxima eficiencia: ${100 - _capacidadUtilizada.toInt()}% restante disponible',
-            style: TextStyle(
-              fontSize: 12,
-              color: BioWayColors.textGrey,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildLoteCard(Map<String, dynamic> lote, {required bool isCompleted}) {
     final Color statusColor = isCompleted 
@@ -1035,33 +876,4 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen>
     );
   }
 
-  Widget _buildBottomNavItem({
-    required IconData icon,
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: isSelected ? BioWayColors.ppOrange : BioWayColors.textGrey,
-            size: 24,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: isSelected ? BioWayColors.ppOrange : BioWayColors.textGrey,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
