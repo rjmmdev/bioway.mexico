@@ -22,6 +22,7 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
   late MobileScannerController _cameraController;
   bool _isFlashOn = false;
   bool _isProcessing = false;
+  bool _isScanning = false;
   
   // Variables de usuario
   final String nombreOperador = 'Juan Pérez'; // TODO: Obtener del auth
@@ -37,9 +38,19 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
     );
   }
 
+  void _startScanning() async {
+    setState(() {
+      _isScanning = true;
+    });
+    await _cameraController.start();
+  }
+
   @override
   void dispose() {
     _manualIdController.dispose();
+    if (_isScanning) {
+      _cameraController.stop();
+    }
     _cameraController.dispose();
     super.dispose();
   }
@@ -380,6 +391,78 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
     );
   }
 
+  Widget _buildHeader(double screenWidth, double screenHeight) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.04,
+        vertical: screenHeight * 0.02,
+      ),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF3AA45B), Color(0xFF68C76A)],
+        ),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Recoger Materiales',
+            style: TextStyle(
+              fontSize: screenWidth * 0.06,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(height: screenHeight * 0.01),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                nombreOperador,
+                style: TextStyle(
+                  fontSize: screenWidth * 0.04,
+                  color: Colors.white.withOpacity(0.9),
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: screenWidth * 0.03,
+                  vertical: screenHeight * 0.005,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                ),
+                child: Text(
+                  folioOperador,
+                  key: const Key('folio'),
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.035,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -388,150 +471,115 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            // Header con gradiente verde
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(
-                horizontal: screenWidth * 0.04,
-                vertical: screenHeight * 0.02,
+            if (_isScanning)
+              MobileScanner(
+                controller: _cameraController,
+                onDetect: (capture) {
+                  final List<Barcode> barcodes = capture.barcodes;
+                  for (final barcode in barcodes) {
+                    if (barcode.rawValue != null && !_isProcessing) {
+                      _processQRCode(barcode.rawValue!);
+                    }
+                  }
+                },
               ),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF3AA45B),
-                    Color(0xFF68C76A),
+
+            if (_isScanning) _buildScannerOverlay(),
+
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: _buildHeader(screenWidth, screenHeight),
+            ),
+
+            if (_isScanning)
+              Positioned(
+                top: screenHeight * 0.14,
+                right: 20,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      _isFlashOn ? Icons.flash_on : Icons.flash_off,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                    onPressed: () async {
+                      setState(() {
+                        _isFlashOn = !_isFlashOn;
+                      });
+                      await _cameraController.toggleTorch();
+                    },
+                  ),
+                ),
+              ),
+
+            if (_isScanning)
+              Positioned(
+                bottom: 40,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: TextButton(
+                    key: const Key('link_manual_entry'),
+                    onPressed: _showManualInputModal,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'Ingresa el ID manualmente',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+            if (!_isScanning)
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.qr_code_scanner,
+                      size: screenWidth * 0.4,
+                      color: const Color(0xFF3AA45B),
+                    ),
+                    SizedBox(height: screenHeight * 0.04),
+                    SizedBox(
+                      width: screenWidth * 0.6,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        onPressed: _startScanning,
+                        icon: const Icon(Icons.qr_code),
+                        label: const Text('Iniciar Escaneo'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF3AA45B),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Recoger Materiales',
-                    style: TextStyle(
-                      fontSize: screenWidth * 0.06,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  SizedBox(height: screenHeight * 0.01),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        nombreOperador,
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.04,
-                          color: Colors.white.withOpacity(0.9),
-                        ),
-                      ),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: screenWidth * 0.03,
-                          vertical: screenHeight * 0.005,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(screenWidth * 0.02),
-                        ),
-                        child: Text(
-                          folioOperador,
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.035,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                          key: const Key('folio'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Contenido principal - Escáner QR activo
-            Expanded(
-              child: Stack(
-                children: [
-                  // Escáner QR
-                  MobileScanner(
-                    controller: _cameraController,
-                    onDetect: (capture) {
-                      final List<Barcode> barcodes = capture.barcodes;
-                      for (final barcode in barcodes) {
-                        if (barcode.rawValue != null && !_isProcessing) {
-                          _processQRCode(barcode.rawValue!);
-                        }
-                      }
-                    },
-                  ),
-                  
-                  // Overlay con esquinas
-                  _buildScannerOverlay(),
-                  
-                  // Botón de flash
-                  Positioned(
-                    top: 20,
-                    right: 20,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
-                        shape: BoxShape.circle,
-                      ),
-                      child: IconButton(
-                        icon: Icon(
-                          _isFlashOn ? Icons.flash_on : Icons.flash_off,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                        onPressed: () async {
-                          setState(() {
-                            _isFlashOn = !_isFlashOn;
-                          });
-                          await _cameraController.toggleTorch();
-                        },
-                      ),
-                    ),
-                  ),
-                  
-                  // Botón de entrada manual en la parte inferior
-                  Positioned(
-                    bottom: 40,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: TextButton(
-                        key: const Key('link_manual_entry'),
-                        onPressed: _showManualInputModal,
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.7),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            'Ingresa el ID manualmente',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
