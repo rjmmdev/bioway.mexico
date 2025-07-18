@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-BioWay México is a Flutter-based mobile application for recycling and waste management with multiple user roles in a supply chain tracking system. The app supports both iOS and Android platforms and includes two main platforms: BioWay and ECOCE.
+BioWay México is a Flutter-based mobile application for recycling and waste management with multiple user roles in a supply chain tracking system. The app supports both iOS and Android platforms and includes two main platforms: BioWay and ECOCE. Currently in prototype/early development stage with mock data and no backend integration.
 
 ## Commands
 
@@ -42,6 +42,12 @@ flutter test
 
 # Run tests with coverage
 flutter test --coverage
+
+# Run a specific test file
+flutter test test/widget_test.dart
+
+# Run tests with verbose output
+flutter test -v
 ```
 
 ### Code Quality
@@ -68,7 +74,7 @@ dart format .
 
 ## Architecture
 
-The application follows Clean Architecture with clear separation of concerns:
+The application follows a feature-based folder structure with clear separation of concerns. Currently uses Flutter's built-in state management (StatefulWidget + setState) with no external state management libraries.
 
 - **lib/screens/** - UI screens organized by feature modules:
   - `splash_screen.dart` - Initial splash screen
@@ -82,6 +88,8 @@ The application follows Clean Architecture with clear separation of concerns:
     - `reciclador/` - Recycler screens with lot management
     - `transporte/` - Transport screens for pickup/delivery
     - `shared/` - Shared ECOCE components
+      - `widgets/` - Reusable widgets (signature_dialog, weight_input_widget, etc.)
+      - `utils/` - Shared utilities (material_utils, input_decorations)
     
 - **lib/widgets/** - Reusable UI components
   - `common/` - Shared widgets like gradient backgrounds
@@ -131,11 +139,24 @@ The application follows Clean Architecture with clear separation of concerns:
 4. **BioWay Login** → Registration → Dashboard
 
 Key named routes in `main.dart`:
-- `/` - Splash screen
-- `/origen_inicio` - Origin collector dashboard
-- `/reciclador_inicio` - Recycler dashboard  
-- `/transporte_inicio` - Transport dashboard
-- Additional routes for each role's screens
+- **Origen (Acopiador)**:
+  - `/origen_inicio` - Dashboard
+  - `/origen_lotes` - Lot management
+  - `/origen_crear_lote` - Create new lot
+  - `/origen_ayuda` - Help screen
+  - `/origen_perfil` - Profile
+- **Reciclador**:
+  - `/reciclador_inicio` - Dashboard
+  - `/reciclador_lotes` - Lot administration
+  - `/reciclador_escaneo` - QR scanner
+  - `/reciclador_ayuda` - Help
+  - `/reciclador_perfil` - Profile
+- **Transporte**:
+  - `/transporte_inicio` - Dashboard
+  - `/transporte_recoger` - Pickup screen
+  - `/transporte_entregar` - Delivery
+  - `/transporte_ayuda` - Help
+  - `/transporte_perfil` - Profile
 
 ## Firebase Integration
 
@@ -165,23 +186,54 @@ The app includes the following asset structure:
 
 Assets are declared in `pubspec.yaml` and loaded using Flutter's asset system.
 
+## State Management
+
+- Uses Flutter's built-in StatefulWidget + setState()
+- No external state management library (Provider, Riverpod, Bloc, etc.)
+- Each screen manages its own local state
+- Data passed between screens via constructor parameters
+- Configuration stored in classes like `OrigenUserConfig`
+
 ## Development Notes
 
 - Flutter SDK: ^3.8.1
 - Dart SDK: Compatible with Flutter version
 - Package name: `com.biowaymexico.app`
 - Min SDK: Android 21 (Lollipop)
+- Target SDK: Android 34 (API 34)
 - Material Design 3 theming implemented
+- Portrait-only orientation locked in main()
 - SVG support via `flutter_svg` for scalable graphics
 - Comprehensive permission handling for camera, storage access
 - Screenshot and sharing capabilities via `screenshot` and `share_plus`
 - Print functionality support via `printing`
 - Gallery saving functionality for images/videos via `gal`
+- No backend integration - currently uses mock/hardcoded data
+
+## Performance Optimization Guidelines
+
+- Use const constructors wherever possible
+- Implement caching for expensive operations (e.g., InputDecoration cache)
+- Use adaptive sizing with MediaQuery percentages instead of fixed pixels
+- Minimize widget rebuilds by checking state changes before setState()
+- Prefer ClampingScrollPhysics for better scroll performance
+- Set resizeToAvoidBottomInset: false to avoid keyboard animation issues
+
+## Responsive Design Patterns
+
+- All sizing should use MediaQuery-based calculations:
+  - Padding: `screenWidth * 0.03` (3% of screen width)
+  - Border radius: `screenWidth * 0.02-0.04`
+  - Font sizes: `screenWidth * 0.035-0.05`
+- Check for tablet vs phone: `screenWidth > 600`
+- Use percentage-based sizing for dialogs and modals
 
 ## Code Style
 
 - Follow Flutter's official style guide
 - Use meaningful variable and function names
+- Group related widgets in shared/widgets folder
+- Extract reusable components (e.g., SectionCard, FieldLabel)
+- Use const for static lists and data
 - Implement proper error handling
 - Add appropriate comments for complex logic
-- Use const constructors where possible for performance
