@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'dart:io';
 import 'dart:async';
 import '../../../utils/colors.dart';
 import 'origen_config.dart';
@@ -10,7 +9,6 @@ import '../shared/widgets/photo_evidence_widget.dart';
 import '../shared/widgets/weight_input_widget.dart';
 import '../shared/widgets/section_card.dart';
 import '../shared/widgets/field_label.dart';
-import '../shared/utils/material_utils.dart';
 import 'origen_lote_detalle_screen.dart';
 
 class OrigenCrearLoteScreen extends StatefulWidget {
@@ -166,88 +164,81 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
     
     return Scaffold(
         backgroundColor: BioWayColors.backgroundGrey,
-        appBar: AppBar(
-          backgroundColor: _primaryColor,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-            onPressed: () {
-              HapticFeedback.lightImpact();
-              Navigator.pop(context);
-            },
-          ),
-          title: const Text(
-            'Crear Nuevo Lote',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-        ),
         resizeToAvoidBottomInset: true,
-        body: SafeArea(
-          child: Column(
-          children: [
-            // Header verde
-            Container(
-            width: double.infinity,
-            padding: EdgeInsets.symmetric(
-              horizontal: horizontalPadding,
-              vertical: verticalPadding,
-            ),
-            decoration: BoxDecoration(
-              color: _primaryColor,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(screenWidth * 0.08),
-                bottomRight: Radius.circular(screenWidth * 0.08),
+        body: CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            // SliverAppBar compacto con header
+            SliverAppBar(
+              expandedHeight: screenHeight * 0.1,
+              floating: false,
+              pinned: true,
+              backgroundColor: _primaryColor,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.pop(context);
+                },
               ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Complete la información del nuevo lote',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white.withOpacity(0.9),
-                  ),
+              title: const Text(
+                'Crear Nuevo Lote',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: screenWidth * 0.03,
-                    vertical: screenHeight * 0.008,
-                  ),
+              ),
+              flexibleSpace: FlexibleSpaceBar(
+                background: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                    color: _primaryColor,
                   ),
-                  child: const Text(
-                    'Centro de Acopio - Origen',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                  child: SafeArea(
+                    child: Align(
+                      alignment: Alignment.bottomLeft,
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          left: horizontalPadding + 56, // Espacio para el botón back
+                          right: horizontalPadding,
+                          bottom: verticalPadding * 0.5,
+                        ),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.025,
+                            vertical: screenHeight * 0.005,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(screenWidth * 0.04),
+                          ),
+                          child: Text(
+                            'Centro de Acopio - Origen',
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.032,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
 
-          // Formulario
-          Expanded(
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              physics: const ClampingScrollPhysics(),
+            // Formulario
+            SliverPadding(
               padding: EdgeInsets.only(
                 left: horizontalPadding,
                 right: horizontalPadding,
-                top: verticalPadding * 0.8,
+                top: verticalPadding,
                 bottom: 20,
               ),
-              child: Form(
+              sliver: SliverToBoxAdapter(
+                child: Form(
                 key: _formKey,
                 child: Column(
                   children: [
@@ -594,7 +585,6 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
           ),
         ],
       ),
-        ),
     );
   }
 
