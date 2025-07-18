@@ -9,6 +9,7 @@ import '../../ecoce/origen/origen_inicio_screen.dart';
 import '../../ecoce/origen/origen_perfil.dart';
 import '../../ecoce/transporte/transporte_inicio_screen.dart';
 import '../../ecoce/transporte/transporte_perfil_screen.dart';
+import '../../ecoce/laboratorio/laboratorio_inicio.dart';
 
 class ECOCELoginScreen extends StatefulWidget {
   const ECOCELoginScreen({super.key});
@@ -251,7 +252,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         targetScreen = const TransporteInicioScreen();
         break;
       case 'laboratorio':
-        targetScreen = const OrigenInicioScreen(); // TEMPORAL
+        targetScreen = const LaboratorioInicioScreen();
         break;
       case 'repositorio':
         targetScreen = const OrigenInicioScreen(); // TEMPORAL

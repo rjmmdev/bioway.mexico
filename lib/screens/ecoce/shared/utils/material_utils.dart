@@ -16,11 +16,11 @@ class MaterialUtils {
   static Color getMaterialColor(String material) {
     switch (material.toUpperCase()) {
       case 'PEBD':
-        return AppColors.pebd;
+        return BioWayColors.pebdPink;
       case 'PP':
-        return AppColors.pp;
+        return BioWayColors.ppPurple;
       case 'MULTILAMINADO':
-        return AppColors.multilaminado;
+        return BioWayColors.multilaminadoBrown;
       default:
         return Colors.grey;
     }

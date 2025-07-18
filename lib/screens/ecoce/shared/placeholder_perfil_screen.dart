@@ -4,6 +4,11 @@ import '../../../utils/colors.dart';
 import '../origen/widgets/origen_bottom_navigation.dart';
 import '../reciclador/widgets/reciclador_bottom_navigation.dart';
 import '../transporte/widgets/transporte_bottom_navigation.dart';
+import '../laboratorio/widgets/laboratorio_bottom_navigation.dart';
+import '../laboratorio/laboratorio_inicio.dart';
+import '../laboratorio/laboratorio_gestion_muestras.dart';
+import '../laboratorio/laboratorio_ayuda.dart';
+import '../laboratorio/laboratorio_escaneo.dart';
 
 class PlaceholderPerfilScreen extends StatefulWidget {
   final String nombreUsuario;
@@ -112,6 +117,8 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
         return Icons.recycling;
       case 'local_shipping':
         return Icons.local_shipping;
+      case 'science':
+        return Icons.science;
       default:
         return Icons.person;
     }
@@ -125,6 +132,8 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
         return 'R';
       case 'local_shipping':
         return 'V';
+      case 'science':
+        return 'L';
       default:
         return 'A';
     }
@@ -926,7 +935,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
   }
 
   bool _shouldShowFab() {
-    return widget.iconCode == 'store' || widget.iconCode == 'recycling';
+    return widget.iconCode == 'store' || widget.iconCode == 'recycling' || widget.iconCode == 'science';
   }
 
   Widget? _buildFloatingActionButton() {
@@ -941,6 +950,16 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
         return RecicladorFloatingActionButton(
           onPressed: () {
             Navigator.pushNamed(context, '/reciclador_escaneo');
+          },
+        );
+      case 'science':
+        return LaboratorioFloatingActionButton(
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            NavigationHelper.navigateWithSlideTransition(
+              context: context,
+              destination: const LaboratorioEscaneoScreen(),
+            );
           },
         );
       default:
@@ -1016,6 +1035,45 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
                 Navigator.pushReplacementNamed(context, '/transporte_ayuda');
                 break;
             }
+          },
+        );
+      
+      case 'science':
+        return LaboratorioBottomNavigation(
+          selectedIndex: 3,
+          onItemTapped: (index) {
+            if (index == 3) return; // Ya estamos en perfil
+            
+            HapticFeedback.lightImpact();
+            
+            // Navegación a otras pantallas según el índice
+            switch (index) {
+              case 0:
+                NavigationHelper.navigateWithReplacement(
+                  context: context,
+                  destination: const LaboratorioInicioScreen(),
+                );
+                break;
+              case 1:
+                NavigationHelper.navigateWithReplacement(
+                  context: context,
+                  destination: const LaboratorioGestionMuestras(),
+                );
+                break;
+              case 2:
+                NavigationHelper.navigateWithReplacement(
+                  context: context,
+                  destination: const LaboratorioAyudaScreen(),
+                );
+                break;
+            }
+          },
+          onFabPressed: () {
+            HapticFeedback.lightImpact();
+            NavigationHelper.navigateWithSlideTransition(
+              context: context,
+              destination: const LaboratorioEscaneoScreen(),
+            );
           },
         );
       
