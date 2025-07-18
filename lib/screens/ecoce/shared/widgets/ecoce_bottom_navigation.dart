@@ -46,6 +46,15 @@ class EcoceBottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isSmallScreen = screenWidth < 360;
+    final isTablet = screenWidth > 600;
+    
+    // Adaptive heights based on screen size
+    final bottomBarHeight = isTablet ? 75.0 : (isSmallScreen ? 55.0 : 65.0);
+    final notchMargin = fabConfig != null ? (isTablet ? 10.0 : 8.0) : 0.0;
+    
     return Container(
       decoration: BoxDecoration(
         boxShadow: [
@@ -59,11 +68,13 @@ class EcoceBottomNavigation extends StatelessWidget {
       child: BottomAppBar(
         color: Colors.white,
         elevation: 0,
-        notchMargin: fabConfig != null ? 8.0 : 0,
+        notchMargin: notchMargin,
         shape: fabConfig != null ? const CircularNotchedRectangle() : null,
         child: Container(
-          height: 65,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          height: bottomBarHeight,
+          padding: EdgeInsets.symmetric(
+            horizontal: isTablet ? 16 : (isSmallScreen ? 4 : 8),
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: _buildNavigationItems(context),
@@ -104,6 +115,17 @@ class EcoceBottomNavigation extends StatelessWidget {
     String? testKey,
   }) {
     final isSelected = selectedIndex == index;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    final isTablet = screenWidth > 600;
+    
+    // Adaptive sizes
+    final iconSize = isTablet ? 28.0 : (isSmallScreen ? 20.0 : 24.0);
+    final fontSize = isTablet ? 14.0 : (isSmallScreen ? 10.0 : 12.0);
+    final horizontalPadding = isSelected 
+        ? (isTablet ? 24.0 : (isSmallScreen ? 16.0 : 20.0))
+        : (isTablet ? 16.0 : (isSmallScreen ? 8.0 : 12.0));
+    final verticalPadding = isTablet ? 10.0 : (isSmallScreen ? 6.0 : 8.0);
     
     return Expanded(
       child: InkWell(
@@ -114,7 +136,9 @@ class EcoceBottomNavigation extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: Container(
           key: testKey != null ? Key(testKey) : null,
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: EdgeInsets.symmetric(
+            vertical: isSmallScreen ? 4 : 8,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
@@ -122,8 +146,8 @@ class EcoceBottomNavigation extends StatelessWidget {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: EdgeInsets.symmetric(
-                  horizontal: isSelected ? 20 : 12,
-                  vertical: 8,
+                  horizontal: horizontalPadding,
+                  vertical: verticalPadding,
                 ),
                 decoration: BoxDecoration(
                   color: isSelected ? primaryColor.withOpacity(0.1) : Colors.transparent,
@@ -132,16 +156,21 @@ class EcoceBottomNavigation extends StatelessWidget {
                 child: Icon(
                   icon,
                   color: isSelected ? primaryColor : Colors.grey,
-                  size: 24,
+                  size: iconSize,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected ? primaryColor : Colors.grey,
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              SizedBox(height: isSmallScreen ? 2 : 4),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: isSelected ? primaryColor : Colors.grey,
+                    fontSize: fontSize,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

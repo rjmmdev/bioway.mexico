@@ -18,7 +18,7 @@ import 'screens/ecoce/reciclador/reciclador_escaneo.dart';
 import 'screens/ecoce/reciclador/reciclador_perfil.dart';
 
 // Screens - Transporte
-import 'screens/ecoce/transporte/transporte_inicio_screen.dart';
+import 'screens/ecoce/transporte/transporte_escaneo.dart';
 import 'screens/ecoce/transporte/transporte_recoger_screen.dart';
 import 'screens/ecoce/transporte/transporte_entregar_screen.dart';
 import 'screens/ecoce/transporte/transporte_ayuda_screen.dart';
@@ -212,7 +212,7 @@ class BioWayApp extends StatelessWidget {
         '/reciclador_perfil': (context) => const RecicladorPerfilScreen(),
         
         // Rutas de Transporte
-        '/transporte_inicio': (context) => const TransporteInicioScreen(),
+        '/transporte_inicio': (context) => const TransporteEscaneoScreen(),
         '/transporte_recoger': (context) => const TransporteRecogerScreen(lotesSeleccionados: []),
         '/transporte_entregar': (context) => const TransporteEntregarScreen(),
         '/transporte_ayuda': (context) => const TransporteAyudaScreen(),

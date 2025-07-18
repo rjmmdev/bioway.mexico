@@ -3,7 +3,7 @@ import '../../../utils/colors.dart';
 import '../shared/placeholder_ayuda_screen.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/utils/navigation_utils.dart';
-import 'transporte_inicio_screen.dart';
+import 'transporte_escaneo.dart';
 import 'transporte_entregar_screen.dart';
 import 'transporte_perfil_screen.dart';
 
@@ -24,7 +24,7 @@ class TransporteAyudaScreen extends StatelessWidget {
             case 0:
               NavigationUtils.navigateWithFade(
                 context,
-                const TransporteInicioScreen(),
+                const TransporteEscaneoScreen(),
                 replacement: true,
               );
               break;

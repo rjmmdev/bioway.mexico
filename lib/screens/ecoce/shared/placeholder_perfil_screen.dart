@@ -4,7 +4,7 @@ import '../../../utils/colors.dart';
 import 'widgets/ecoce_bottom_navigation.dart';
 import 'utils/navigation_utils.dart';
 import 'utils/material_utils.dart';
-import '../transporte/transporte_inicio_screen.dart';
+import '../transporte/transporte_escaneo.dart';
 import '../transporte/transporte_entregar_screen.dart';
 import '../transporte/transporte_ayuda_screen.dart';
 
@@ -1020,7 +1020,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
               case 0:
                 NavigationUtils.navigateWithFade(
                   context,
-                  const TransporteInicioScreen(),
+                  const TransporteEscaneoScreen(),
                   replacement: true,
                 );
                 break;
