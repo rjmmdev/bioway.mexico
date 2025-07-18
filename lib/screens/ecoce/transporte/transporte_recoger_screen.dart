@@ -10,7 +10,6 @@ import 'transporte_escaneo.dart';
 import 'transporte_entregar_screen.dart';
 import 'transporte_ayuda_screen.dart';
 import 'transporte_perfil_screen.dart';
-import '../repositorio/repositorio_lotes_screen.dart';
 
 class TransporteRecogerScreen extends StatefulWidget {
   final List<Map<String, dynamic>> lotesSeleccionados;
@@ -755,21 +754,11 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
             case 2:
               NavigationUtils.navigateWithFade(
                 context,
-                RepositorioLotesScreen(
-                  primaryColor: BioWayColors.deepBlue,
-                  tipoUsuario: 'transportista',
-                ),
-                replacement: true,
-              );
-              break;
-            case 3:
-              NavigationUtils.navigateWithFade(
-                context,
                 const TransporteAyudaScreen(),
                 replacement: true,
               );
               break;
-            case 4:
+            case 3:
               NavigationUtils.navigateWithFade(
                 context,
                 const TransportePerfilScreen(),

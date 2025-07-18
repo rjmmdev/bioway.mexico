@@ -8,7 +8,6 @@ import 'origen_crear_lote_screen.dart';
 import '../shared/placeholder_ayuda_screen.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import 'origen_config.dart';
-import '../repositorio/repositorio_lotes_screen.dart';
 
 class OrigenAyudaScreen extends StatelessWidget {
   const OrigenAyudaScreen({super.key});
@@ -20,9 +19,9 @@ class OrigenAyudaScreen extends StatelessWidget {
       tipoUsuario: config.tipoUsuario,
       primaryColor: config.color,
       bottomNavigation: EcoceBottomNavigation(
-        selectedIndex: 3,
+        selectedIndex: 2,
         onItemTapped: (index) {
-          if (index == 3) return; // Ya estamos en ayuda
+          if (index == 2) return; // Ya estamos en ayuda
           
           // Navegación a otras pantallas según el índice
           switch (index) {
@@ -40,17 +39,7 @@ class OrigenAyudaScreen extends StatelessWidget {
                 replacement: true,
               );
               break;
-            case 2:
-              NavigationUtils.navigateWithFade(
-                context,
-                RepositorioLotesScreen(
-                  primaryColor: config.color,
-                  tipoUsuario: config.tipoUsuario,
-                ),
-                replacement: true,
-              );
-              break;
-            case 4:
+            case 3:
               NavigationUtils.navigateWithFade(
                 context,
                 const OrigenPerfilScreen(),

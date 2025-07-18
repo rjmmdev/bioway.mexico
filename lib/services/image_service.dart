@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -131,7 +130,7 @@ class ImageService {
       while (attempts < maxAttempts) {
         targetPath = path.join(
           tempDir.path,
-          'optimized_${DateTime.now().millisecondsSinceEpoch}_${attempts}.jpg',
+          'optimized_${DateTime.now().millisecondsSinceEpoch}_$attempts.jpg',
         );
         
         // Comprimir la imagen
@@ -157,7 +156,6 @@ class ImageService {
         // Si el tamaño es aceptable, terminar
         if (sizeInKB <= maxSizeKB) {
           final double originalSize = getImageSizeInMB(imageFile);
-          final double compressedSize = sizeInKB / 1024;
           
           debugPrint('✓ Imagen optimizada: ${originalSize.toStringAsFixed(1)}MB -> ${sizeInKB.toStringAsFixed(1)}KB');
           return compressedFile;

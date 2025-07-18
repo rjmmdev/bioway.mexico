@@ -131,10 +131,10 @@ class _FiltersSheetState extends State<FiltersSheet> {
                           });
                           HapticFeedback.lightImpact();
                         },
-                        selectedColor: BioWayColors.primary.withOpacity(0.2),
-                        checkmarkColor: BioWayColors.primary,
+                        selectedColor: BioWayColors.primaryGreen.withValues(alpha: 0.2),
+                        checkmarkColor: BioWayColors.primaryGreen,
                         labelStyle: TextStyle(
-                          color: isSelected ? BioWayColors.primary : Colors.grey[700],
+                          color: isSelected ? BioWayColors.primaryGreen : Colors.grey[700],
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       );
@@ -167,7 +167,7 @@ class _FiltersSheetState extends State<FiltersSheet> {
                           });
                           HapticFeedback.lightImpact();
                         },
-                        activeColor: BioWayColors.primary,
+                        activeColor: BioWayColors.primaryGreen,
                         dense: true,
                         contentPadding: EdgeInsets.zero,
                       );
@@ -185,7 +185,7 @@ class _FiltersSheetState extends State<FiltersSheet> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, -2),
                 ),
@@ -230,7 +230,7 @@ class _FiltersSheetState extends State<FiltersSheet> {
                         Navigator.pop(context);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: BioWayColors.primary,
+                        backgroundColor: BioWayColors.primaryGreen,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -270,7 +270,7 @@ class _FiltersSheetState extends State<FiltersSheet> {
           children: [
             Icon(
               icon,
-              color: BioWayColors.primary,
+              color: BioWayColors.primaryGreen,
               size: 20,
             ),
             SizedBox(width: screenWidth * 0.02),

@@ -4,7 +4,6 @@ import '../../../utils/colors.dart'; // ACTUALIZADA
 import '../../../widgets/common/gradient_background.dart'; // ACTUALIZADA
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
-import '../../../config/firebase_config.dart';
 import 'widgets/animated_logo.dart'; // ACTUALIZADA
 import '../platform_selector_screen.dart'; // ACTUALIZADA
 import 'bioway_register_screen.dart'; // ACTUALIZADA
@@ -35,11 +34,26 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
   late Animation<double> _formFadeAnimation;
   late Animation<Offset> _formSlideAnimation;
 
+  // Instancia del servicio de autenticación
+  final AuthService _authService = AuthService();
+
   @override
   void initState() {
     super.initState();
     _setupAnimations();
     _startAnimations();
+    _initializeFirebase();
+  }
+
+  Future<void> _initializeFirebase() async {
+    try {
+      // Inicializar Firebase para BioWay
+      await _authService.initializeForPlatform(FirebasePlatform.bioway);
+      debugPrint('✅ Firebase inicializado para BioWay');
+    } catch (e) {
+      debugPrint('❌ Error al inicializar Firebase para BioWay: $e');
+      // Por ahora no mostramos error ya que BioWay puede no tener proyecto Firebase configurado
+    }
   }
 
   void _setupAnimations() {
@@ -125,13 +139,12 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
 
         try {
           // Intentar login con Firebase
-          final userCredential = await AuthService.instance.signInWithEmailAndPassword(
+          final userCredential = await _authService.signInWithEmailAndPassword(
             email: email,
             password: password,
-            project: FirebaseConfig.biowayProject,
           );
 
-          if (userCredential != null && mounted) {
+          if (userCredential.user != null && mounted) {
             // Login exitoso con Firebase
             setState(() {
               _isLoading = false;
@@ -166,10 +179,10 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
           }
         } catch (firebaseError) {
           // Si Firebase falla, usar login temporal para desarrollo
-          print('Error Firebase: $firebaseError');
-          print('Usando login temporal para desarrollo');
+          debugPrint('Error Firebase: $firebaseError');
+          debugPrint('Usando login temporal para desarrollo');
           
-          // Simular proceso de login
+          // Simular proceso de login (código mock)
           await Future.delayed(const Duration(seconds: 1));
 
           if (mounted) {

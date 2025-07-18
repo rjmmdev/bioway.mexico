@@ -4,7 +4,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
-import '../../../config/firebase_config.dart';
 import 'ecoce_tipo_proveedor_selector.dart';
 import '../../ecoce/reciclador/reciclador_inicio.dart';
 import '../../ecoce/reciclador/reciclador_perfil.dart';
@@ -47,11 +46,33 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
   late Animation<Offset> _formSlideAnimation;
   late Animation<double> _userTypeFadeAnimation; // Nueva animación
 
+  // Instancia del servicio de autenticación
+  final AuthService _authService = AuthService();
+
   @override
   void initState() {
     super.initState();
     _setupAnimations();
     _startAnimations();
+    _initializeFirebase();
+  }
+
+  Future<void> _initializeFirebase() async {
+    try {
+      // Inicializar Firebase para ECOCE
+      await _authService.initializeForPlatform(FirebasePlatform.ecoce);
+      debugPrint('✅ Firebase inicializado para ECOCE');
+    } catch (e) {
+      debugPrint('❌ Error al inicializar Firebase para ECOCE: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al conectar con el servidor: $e'),
+            backgroundColor: BioWayColors.error,
+          ),
+        );
+      }
+    }
   }
 
   void _setupAnimations() {
@@ -173,13 +194,12 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
 
         try {
           // Intentar login con Firebase
-          final userCredential = await AuthService.instance.signInWithEmailAndPassword(
+          final userCredential = await _authService.signInWithEmailAndPassword(
             email: email,
             password: userPassword,
-            project: FirebaseConfig.ecoceProject,
           );
 
-          if (userCredential != null && mounted) {
+          if (userCredential.user != null && mounted) {
             // Login exitoso con Firebase
             setState(() {
               _isLoading = false;
@@ -211,10 +231,10 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
           }
         } catch (firebaseError) {
           // Si Firebase falla, usar login temporal para desarrollo
-          print('Error Firebase: $firebaseError');
-          print('Usando login temporal para desarrollo');
+          debugPrint('Error Firebase: $firebaseError');
+          debugPrint('Usando login temporal para desarrollo');
           
-          // Simular proceso de login
+          // Simular proceso de login (código mock)
           await Future.delayed(const Duration(seconds: 1));
 
           if (mounted) {

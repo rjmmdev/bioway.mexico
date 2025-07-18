@@ -188,7 +188,7 @@ class LoteCard extends StatelessWidget {
       case 'Completado':
         return BioWayColors.success;
       case 'Pendiente':
-        return BioWayColors.primary;
+        return BioWayColors.primaryGreen;
       default:
         return Colors.grey;
     }

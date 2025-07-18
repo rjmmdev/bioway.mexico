@@ -1,172 +1,106 @@
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
-import '../../config/firebase_config.dart';
+import 'package:flutter/foundation.dart';
+import 'firebase_config.dart';
 
-/// Manager para manejar múltiples instancias de Firebase
+/// Gestor centralizado para manejar múltiples proyectos de Firebase
 class FirebaseManager {
-  static FirebaseManager? _instance;
-  static FirebaseManager get instance => _instance ??= FirebaseManager._();
+  static final FirebaseManager _instance = FirebaseManager._internal();
+  factory FirebaseManager() => _instance;
+  FirebaseManager._internal();
+
+  /// Mapa de instancias de Firebase por plataforma
+  final Map<FirebasePlatform, FirebaseApp?> _firebaseApps = {};
   
-  FirebaseManager._();
+  /// Plataforma actualmente activa
+  FirebasePlatform? _currentPlatform;
   
-  // Apps de Firebase
-  FirebaseApp? _ecoceApp;
-  FirebaseApp? _biowayApp;
+  /// Obtiene la plataforma actualmente activa
+  FirebasePlatform? get currentPlatform => _currentPlatform;
   
-  // Servicios actuales
-  FirebaseAuth? _currentAuth;
-  FirebaseFirestore? _currentFirestore;
-  FirebaseStorage? _currentStorage;
-  FirebaseAnalytics? _currentAnalytics;
-  
-  // Getters para los servicios actuales
-  FirebaseAuth? get auth => _currentAuth;
-  FirebaseFirestore? get firestore => _currentFirestore;
-  FirebaseStorage? get storage => _currentStorage;
-  FirebaseAnalytics? get analytics => _currentAnalytics;
-  
-  /// Inicializar Firebase con el proyecto especificado
-  Future<void> initializeFirebase(String projectName) async {
+  /// Obtiene la app de Firebase actual
+  FirebaseApp? get currentApp => _currentPlatform != null 
+      ? _firebaseApps[_currentPlatform] 
+      : null;
+
+  /// Inicializa Firebase para una plataforma específica
+  Future<FirebaseApp> initializeForPlatform(FirebasePlatform platform) async {
+    debugPrint('🔥 Inicializando Firebase para: ${platform.name}');
+    
+    // Si ya existe una instancia para esta plataforma, retornarla
+    if (_firebaseApps.containsKey(platform) && _firebaseApps[platform] != null) {
+      debugPrint('✅ Firebase ya inicializado para ${platform.name}');
+      _currentPlatform = platform;
+      return _firebaseApps[platform]!;
+    }
+
     try {
-      // Si ya está inicializado el mismo proyecto, no hacer nada
-      if (FirebaseConfig.currentProject == projectName && _hasCurrentServices()) {
-        print('Firebase ya inicializado para $projectName');
-        return;
+      // Obtener la configuración para la plataforma
+      final options = FirebaseConfig.getOptionsForPlatform(platform);
+      
+      // Verificar si ya existe una app con este nombre
+      FirebaseApp? app;
+      try {
+        app = Firebase.app(platform.name);
+        debugPrint('📱 App Firebase existente encontrada para ${platform.name}');
+      } catch (e) {
+        // No existe, crear nueva
+        app = await Firebase.initializeApp(
+          name: platform.name,
+          options: options,
+        );
+        debugPrint('✨ Nueva app Firebase creada para ${platform.name}');
       }
       
-      // Limpiar servicios anteriores si cambiamos de proyecto
-      if (FirebaseConfig.currentProject != null && 
-          FirebaseConfig.currentProject != projectName) {
-        await _clearCurrentServices();
-      }
+      // Guardar la referencia
+      _firebaseApps[platform] = app;
+      _currentPlatform = platform;
       
-      // Establecer el proyecto actual
-      FirebaseConfig.setCurrentProject(projectName);
-      
-      // Inicializar la app correspondiente
-      FirebaseApp app;
-      
-      switch (projectName) {
-        case FirebaseConfig.ecoceProject:
-          app = await _initializeEcoceApp();
-          break;
-        case FirebaseConfig.biowayProject:
-          app = await _initializeBiowayApp();
-          break;
-        default:
-          throw Exception('Proyecto no válido: $projectName');
-      }
-      
-      // Configurar los servicios para la app actual
-      _setupServices(app);
-      
-      print('Firebase inicializado correctamente para $projectName');
-      
+      debugPrint('✅ Firebase inicializado correctamente para ${platform.name}');
+      return app;
     } catch (e) {
-      print('Error al inicializar Firebase: $e');
+      debugPrint('❌ Error al inicializar Firebase para ${platform.name}: $e');
       rethrow;
     }
   }
-  
-  /// Inicializar app de ECOCE
-  Future<FirebaseApp> _initializeEcoceApp() async {
-    if (_ecoceApp != null) {
-      return _ecoceApp!;
-    }
-    
-    // Verificar si ya existe una app con este nombre
-    try {
-      _ecoceApp = Firebase.app(FirebaseConfig.ecoceProject);
-      return _ecoceApp!;
-    } catch (e) {
-      // Si no existe, crearla
-      _ecoceApp = await Firebase.initializeApp(
-        name: FirebaseConfig.ecoceProject,
-        options: FirebaseConfig.ecoceOptions,
-      );
-      return _ecoceApp!;
-    }
-  }
-  
-  /// Inicializar app de BioWay
-  Future<FirebaseApp> _initializeBiowayApp() async {
-    if (_biowayApp != null) {
-      return _biowayApp!;
-    }
-    
-    // Verificar si ya existe una app con este nombre
-    try {
-      _biowayApp = Firebase.app(FirebaseConfig.biowayProject);
-      return _biowayApp!;
-    } catch (e) {
-      // Si no existe, crearla
-      _biowayApp = await Firebase.initializeApp(
-        name: FirebaseConfig.biowayProject,
-        options: FirebaseConfig.biowayOptions,
-      );
-      return _biowayApp!;
-    }
-  }
-  
-  /// Configurar los servicios para la app especificada
-  void _setupServices(FirebaseApp app) {
-    _currentAuth = FirebaseAuth.instanceFor(app: app);
-    _currentFirestore = FirebaseFirestore.instanceFor(app: app);
-    _currentStorage = FirebaseStorage.instanceFor(app: app);
-    _currentAnalytics = FirebaseAnalytics.instanceFor(app: app);
-    
-    // Configurar Firestore
-    _currentFirestore!.settings = const Settings(
-      persistenceEnabled: true,
-      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
-    );
-  }
-  
-  /// Verificar si hay servicios actuales configurados
-  bool _hasCurrentServices() {
-    return _currentAuth != null && 
-           _currentFirestore != null && 
-           _currentStorage != null && 
-           _currentAnalytics != null;
-  }
-  
-  /// Limpiar los servicios actuales
-  Future<void> _clearCurrentServices() async {
-    // Cerrar sesión si hay usuario activo
-    if (_currentAuth?.currentUser != null) {
-      await _currentAuth!.signOut();
-    }
-    
-    // Limpiar referencias
-    _currentAuth = null;
-    _currentFirestore = null;
-    _currentStorage = null;
-    _currentAnalytics = null;
-  }
-  
-  /// Cambiar entre proyectos Firebase
-  Future<void> switchProject(String projectName) async {
-    if (FirebaseConfig.currentProject == projectName) {
-      print('Ya estás en el proyecto $projectName');
+
+  /// Cambia la plataforma activa
+  Future<void> switchToPlatform(FirebasePlatform platform) async {
+    if (_currentPlatform == platform) {
+      debugPrint('⚡ Ya estás en la plataforma ${platform.name}');
       return;
     }
-    
-    print('Cambiando de ${FirebaseConfig.currentProject} a $projectName');
-    await initializeFirebase(projectName);
+
+    // Si la plataforma no está inicializada, inicializarla
+    if (!_firebaseApps.containsKey(platform) || _firebaseApps[platform] == null) {
+      await initializeForPlatform(platform);
+    } else {
+      _currentPlatform = platform;
+      debugPrint('🔄 Cambiado a plataforma ${platform.name}');
+    }
   }
-  
-  /// Cerrar sesión y limpiar el proyecto actual
-  Future<void> signOutAndClear() async {
-    await _clearCurrentServices();
-    FirebaseConfig.clearCurrentProject();
+
+  /// Limpia todos los recursos
+  Future<void> dispose() async {
+    _firebaseApps.clear();
+    _currentPlatform = null;
   }
-  
-  /// Obtener el proyecto actual
-  String? get currentProject => FirebaseConfig.currentProject;
-  
-  /// Verificar si un proyecto está activo
-  bool get hasActiveProject => FirebaseConfig.hasActiveProject;
+
+  /// Verifica si una plataforma está inicializada
+  bool isPlatformInitialized(FirebasePlatform platform) {
+    return _firebaseApps.containsKey(platform) && _firebaseApps[platform] != null;
+  }
+
+  /// Obtiene la app de Firebase para una plataforma específica
+  FirebaseApp? getAppForPlatform(FirebasePlatform platform) {
+    return _firebaseApps[platform];
+  }
+}
+
+/// Enumeración de las plataformas disponibles
+enum FirebasePlatform {
+  ecoce('ECOCE'),
+  bioway('BioWay');
+
+  final String name;
+  const FirebasePlatform(this.name);
 }

@@ -1,198 +1,136 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_manager.dart';
 
-/// Servicio de autenticación que trabaja con múltiples proyectos Firebase
+/// Servicio de autenticación que maneja múltiples proyectos Firebase
 class AuthService {
-  static AuthService? _instance;
-  static AuthService get instance => _instance ??= AuthService._();
+  final FirebaseManager _firebaseManager = FirebaseManager();
   
-  AuthService._();
+  /// Obtiene la instancia de FirebaseAuth para la plataforma actual
+  FirebaseAuth get _auth {
+    final app = _firebaseManager.currentApp;
+    if (app == null) {
+      throw Exception('Firebase no inicializado. Llame a initializeForPlatform primero.');
+    }
+    return FirebaseAuth.instanceFor(app: app);
+  }
   
-  final FirebaseManager _firebaseManager = FirebaseManager.instance;
+  /// Obtiene la instancia de Firestore para la plataforma actual
+  FirebaseFirestore get _firestore {
+    final app = _firebaseManager.currentApp;
+    if (app == null) {
+      throw Exception('Firebase no inicializado. Llame a initializeForPlatform primero.');
+    }
+    return FirebaseFirestore.instanceFor(app: app);
+  }
+
+  /// Usuario actual
+  User? get currentUser => _auth.currentUser;
   
-  /// Obtener el usuario actual
-  User? get currentUser => _firebaseManager.auth?.currentUser;
-  
-  /// Stream de cambios de autenticación
-  Stream<User?> get authStateChanges => 
-      _firebaseManager.auth?.authStateChanges() ?? Stream.value(null);
-  
-  /// Verificar si hay un usuario autenticado
-  bool get isAuthenticated => currentUser != null;
-  
-  /// Iniciar sesión con email y contraseña
-  Future<UserCredential?> signInWithEmailAndPassword({
+  /// Stream de cambios en el estado de autenticación
+  Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  /// Inicializa Firebase para una plataforma específica
+  Future<void> initializeForPlatform(FirebasePlatform platform) async {
+    await _firebaseManager.initializeForPlatform(platform);
+  }
+
+  /// Login con email y contraseña
+  Future<UserCredential> signInWithEmailAndPassword({
     required String email,
     required String password,
-    required String project,
   }) async {
     try {
-      // Asegurarse de que estamos en el proyecto correcto
-      await _firebaseManager.initializeFirebase(project);
-      
-      final auth = _firebaseManager.auth;
-      if (auth == null) {
-        throw Exception('Firebase Auth no inicializado');
-      }
-      
-      return await auth.signInWithEmailAndPassword(
+      return await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
     } catch (e) {
-      throw Exception('Error al iniciar sesión: $e');
+      throw _handleAuthError(e);
     }
   }
-  
-  /// Registrar nuevo usuario
-  Future<UserCredential?> createUserWithEmailAndPassword({
+
+  /// Registro con email y contraseña
+  Future<UserCredential> createUserWithEmailAndPassword({
     required String email,
     required String password,
-    required String project,
   }) async {
     try {
-      // Asegurarse de que estamos en el proyecto correcto
-      await _firebaseManager.initializeFirebase(project);
-      
-      final auth = _firebaseManager.auth;
-      if (auth == null) {
-        throw Exception('Firebase Auth no inicializado');
-      }
-      
-      return await auth.createUserWithEmailAndPassword(
+      return await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
     } catch (e) {
-      throw Exception('Error al crear usuario: $e');
+      throw _handleAuthError(e);
     }
   }
-  
+
+  /// Guardar datos del usuario en Firestore
+  Future<void> saveUserData({
+    required String uid,
+    required Map<String, dynamic> userData,
+  }) async {
+    try {
+      await _firestore.collection('users').doc(uid).set(
+        {
+          ...userData,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+    } catch (e) {
+      throw Exception('Error al guardar datos del usuario: $e');
+    }
+  }
+
+  /// Obtener datos del usuario desde Firestore
+  Future<Map<String, dynamic>?> getUserData(String uid) async {
+    try {
+      final doc = await _firestore.collection('users').doc(uid).get();
+      return doc.data();
+    } catch (e) {
+      throw Exception('Error al obtener datos del usuario: $e');
+    }
+  }
+
   /// Cerrar sesión
   Future<void> signOut() async {
-    await _firebaseManager.signOutAndClear();
+    await _auth.signOut();
   }
-  
-  /// Enviar email de restablecimiento de contraseña
-  Future<void> sendPasswordResetEmail({
-    required String email,
-    required String project,
-  }) async {
+
+  /// Restablecer contraseña
+  Future<void> sendPasswordResetEmail(String email) async {
     try {
-      // Asegurarse de que estamos en el proyecto correcto
-      await _firebaseManager.initializeFirebase(project);
-      
-      final auth = _firebaseManager.auth;
-      if (auth == null) {
-        throw Exception('Firebase Auth no inicializado');
-      }
-      
-      await auth.sendPasswordResetEmail(email: email);
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
+      await _auth.sendPasswordResetEmail(email: email);
     } catch (e) {
-      throw Exception('Error al enviar email: $e');
+      throw _handleAuthError(e);
     }
   }
-  
-  /// Actualizar perfil del usuario
-  Future<void> updateProfile({
-    String? displayName,
-    String? photoURL,
-  }) async {
-    final user = currentUser;
-    if (user == null) {
-      throw Exception('No hay usuario autenticado');
+
+  /// Manejo de errores de autenticación
+  Exception _handleAuthError(dynamic error) {
+    if (error is FirebaseAuthException) {
+      switch (error.code) {
+        case 'user-not-found':
+          return Exception('No existe un usuario con este correo electrónico.');
+        case 'wrong-password':
+          return Exception('Contraseña incorrecta.');
+        case 'email-already-in-use':
+          return Exception('Este correo ya está registrado.');
+        case 'invalid-email':
+          return Exception('Correo electrónico inválido.');
+        case 'weak-password':
+          return Exception('La contraseña es muy débil.');
+        case 'network-request-failed':
+          return Exception('Error de conexión. Verifica tu internet.');
+        default:
+          return Exception('Error de autenticación: ${error.message}');
+      }
     }
-    
-    try {
-      await user.updateProfile(
-        displayName: displayName,
-        photoURL: photoURL,
-      );
-      await user.reload();
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
-    }
+    return Exception('Error inesperado: $error');
   }
-  
-  /// Cambiar contraseña
-  Future<void> updatePassword(String newPassword) async {
-    final user = currentUser;
-    if (user == null) {
-      throw Exception('No hay usuario autenticado');
-    }
-    
-    try {
-      await user.updatePassword(newPassword);
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
-    }
-  }
-  
-  /// Reautenticar usuario (necesario antes de operaciones sensibles)
-  Future<void> reauthenticate({
-    required String email,
-    required String password,
-  }) async {
-    final user = currentUser;
-    if (user == null) {
-      throw Exception('No hay usuario autenticado');
-    }
-    
-    try {
-      final credential = EmailAuthProvider.credential(
-        email: email,
-        password: password,
-      );
-      await user.reauthenticateWithCredential(credential);
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
-    }
-  }
-  
-  /// Eliminar cuenta de usuario
-  Future<void> deleteAccount() async {
-    final user = currentUser;
-    if (user == null) {
-      throw Exception('No hay usuario autenticado');
-    }
-    
-    try {
-      await user.delete();
-      await _firebaseManager.signOutAndClear();
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
-    }
-  }
-  
-  /// Manejar excepciones de Firebase Auth
-  String _handleAuthException(FirebaseAuthException e) {
-    switch (e.code) {
-      case 'user-not-found':
-        return 'No se encontró un usuario con ese correo';
-      case 'wrong-password':
-        return 'Contraseña incorrecta';
-      case 'email-already-in-use':
-        return 'Este correo ya está registrado';
-      case 'weak-password':
-        return 'La contraseña es muy débil';
-      case 'invalid-email':
-        return 'El correo no es válido';
-      case 'operation-not-allowed':
-        return 'Operación no permitida';
-      case 'user-disabled':
-        return 'Esta cuenta ha sido deshabilitada';
-      case 'too-many-requests':
-        return 'Demasiados intentos. Intenta más tarde';
-      case 'requires-recent-login':
-        return 'Necesitas volver a iniciar sesión';
-      default:
-        return e.message ?? 'Error de autenticación';
-    }
-  }
+
+  /// Obtiene la plataforma actualmente activa
+  FirebasePlatform? get currentPlatform => _firebaseManager.currentPlatform;
 }
