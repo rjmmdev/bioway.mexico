@@ -14,7 +14,8 @@ import '../../ecoce/origen/origen_inicio_screen.dart';
 import '../../ecoce/origen/origen_perfil.dart';
 import '../../ecoce/transporte/transporte_escaneo.dart';
 import '../../ecoce/transporte/transporte_perfil_screen.dart';
-import '../../ecoce/maestro/maestro_aprobaciones_screen.dart';
+import '../../ecoce/maestro/maestro_unified_screen.dart';
+import '../../ecoce/repositorio/repositorio_lotes_screen.dart';
 
 class ECOCELoginScreen extends StatefulWidget {
   const ECOCELoginScreen({super.key});
@@ -383,10 +384,13 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         targetScreen = const OrigenInicioScreen(); // TEMPORAL
         break;
       case 'repositorio':
-        targetScreen = const OrigenInicioScreen(); // TEMPORAL
+        targetScreen = RepositorioLotesScreen(
+          primaryColor: BioWayColors.metalGrey,
+          tipoUsuario: 'repositorio',
+        );
         break;
       case 'maestro ecoce':
-        targetScreen = const MaestroAprobacionesScreen();
+        targetScreen = const MaestroUnifiedScreen();
         break;
     }
 

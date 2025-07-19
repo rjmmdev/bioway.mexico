@@ -26,6 +26,31 @@ class EcoceProfileService {
   // Colección de solicitudes de cuentas
   CollectionReference get _solicitudesCollection => 
       _firestore.collection('solicitudes_cuentas');
+      
+  // Obtener la subcolección según el tipo de usuario
+  CollectionReference _getProfileSubcollection(String tipoActor, String? subtipo) {
+    // Mapear tipos de actor a sus colecciones
+    switch (tipoActor) {
+      case 'O': // Origen (Acopiador o Planta de Separación)
+      case 'A': // A veces viene como A
+        if (subtipo == 'A') {
+          return _profilesCollection.doc('origen').collection('centro_acopio');
+        } else if (subtipo == 'P') {
+          return _profilesCollection.doc('origen').collection('planta_separacion');
+        }
+        return _profilesCollection.doc('origen').collection('usuarios');
+      case 'R': // Reciclador
+        return _profilesCollection.doc('reciclador').collection('usuarios');
+      case 'T': // Transformador
+        return _profilesCollection.doc('transformador').collection('usuarios');
+      case 'V': // Transporte/Vehicular
+        return _profilesCollection.doc('transporte').collection('usuarios');
+      case 'L': // Laboratorio
+        return _profilesCollection.doc('laboratorio').collection('usuarios');
+      default:
+        return _profilesCollection.doc('otros').collection('usuarios');
+    }
+  }
 
   // Generar folio único según el subtipo para usuarios origen
   Future<String> _generateFolio(String tipoActor, String? subtipo) async {
@@ -457,13 +482,24 @@ class EcoceProfileService {
     }
   }
 
-  // Obtener perfil por ID
+  // Obtener perfil por ID (busca primero en índice y luego en subcolección)
   Future<EcoceProfileModel?> getProfile(String userId) async {
     try {
-      final doc = await _profilesCollection.doc(userId).get();
-      if (!doc.exists) return null;
+      // Primero buscar en el índice principal
+      final indexDoc = await _profilesCollection.doc(userId).get();
+      if (!indexDoc.exists) return null;
       
-      return EcoceProfileModel.fromFirestore(doc);
+      final indexData = indexDoc.data() as Map<String, dynamic>;
+      final profilePath = indexData['path'] as String?;
+      
+      if (profilePath != null) {
+        // Obtener el documento desde la subcolección
+        final profileDoc = await _firestore.doc(profilePath).get();
+        if (profileDoc.exists) {
+          return EcoceProfileModel.fromFirestore(profileDoc);
+        }
+      }
+      return null;
     } catch (e) {
       return null;
     }
@@ -473,7 +509,26 @@ class EcoceProfileService {
   Future<void> updateProfile(String userId, Map<String, dynamic> data) async {
     try {
       data['updatedAt'] = Timestamp.fromDate(DateTime.now());
-      await _profilesCollection.doc(userId).update(data);
+      
+      // Primero obtener la ruta del perfil desde el índice
+      final indexDoc = await _profilesCollection.doc(userId).get();
+      if (!indexDoc.exists) throw Exception('Usuario no encontrado');
+      
+      final indexData = indexDoc.data() as Map<String, dynamic>;
+      final profilePath = indexData['path'] as String?;
+      
+      if (profilePath != null) {
+        // Actualizar el documento en la subcolección
+        await _firestore.doc(profilePath).update(data);
+        
+        // Si se actualiza el nombre, actualizar también en el índice
+        if (data.containsKey('ecoce_nombre')) {
+          await _profilesCollection.doc(userId).update({
+            'nombre': data['ecoce_nombre'],
+            'updatedAt': data['updatedAt'],
+          });
+        }
+      }
     } catch (e) {
       rethrow;
     }
@@ -569,29 +624,26 @@ class EcoceProfileService {
     }
   }
 
-  // Eliminar perfil rechazado y sus datos asociados
-  Future<void> deleteRejectedProfile(String profileId) async {
+  // Eliminar perfil y sus datos asociados
+  Future<void> deleteProfile(String userId) async {
     try {
-      // Obtener el perfil para tener el email
-      final profileDoc = await _profilesCollection.doc(profileId).get();
-      if (!profileDoc.exists) return;
+      // Obtener la ruta del perfil desde el índice
+      final indexDoc = await _profilesCollection.doc(userId).get();
+      if (!indexDoc.exists) return;
       
-      final profileData = profileDoc.data() as Map<String, dynamic>;
-      final email = profileData['ecoce_correo_contacto'] as String?;
+      final indexData = indexDoc.data() as Map<String, dynamic>;
+      final profilePath = indexData['path'] as String?;
       
-      // Eliminar el perfil de Firestore
-      await _profilesCollection.doc(profileId).delete();
-      
-      // Eliminar el usuario de Auth si existe
-      if (email != null) {
-        // Nota: Para eliminar un usuario de Auth, necesitamos que esté autenticado
-        // o usar el Admin SDK desde un backend
-        // Por ahora solo eliminamos el perfil de Firestore
-        // El usuario de Auth permanecerá pero no podrá acceder sin perfil
+      if (profilePath != null) {
+        // Eliminar el documento de la subcolección
+        await _firestore.doc(profilePath).delete();
       }
       
+      // Eliminar el índice
+      await _profilesCollection.doc(userId).delete();
+      
       // TODO: Eliminar archivos de Storage asociados al usuario
-      // Esto requeriría implementar la lógica de Storage
+      // TODO: Eliminar usuario de Auth (requiere Admin SDK o usuario autenticado)
       
     } catch (e) {
       rethrow;
@@ -601,34 +653,26 @@ class EcoceProfileService {
   // Obtener estadísticas de perfiles
   Future<Map<String, int>> getProfileStatistics() async {
     try {
-      final allProfiles = await _profilesCollection.get();
+      // Contar solicitudes pendientes
+      final pendingQuery = await _solicitudesCollection
+          .where('estado', isEqualTo: 'pendiente')
+          .get();
+      final pending = pendingQuery.docs.length;
       
-      int pending = 0;
-      int approved = 0;
-      int rejected = 0;
+      // Contar usuarios aprobados desde el índice
+      final approvedQuery = await _profilesCollection
+          .where('aprobado', isEqualTo: true)
+          .get();
+      final approved = approvedQuery.docs.length;
       
-      for (final doc in allProfiles.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        final status = data['ecoce_estatus_aprobacion'] ?? 0;
-        
-        switch (status) {
-          case 0:
-            pending++;
-            break;
-          case 1:
-            approved++;
-            break;
-          case 2:
-            rejected++;
-            break;
-        }
-      }
+      // Las rechazadas se eliminan, así que siempre es 0
+      final rejected = 0;
       
       return {
         'pending': pending,
         'approved': approved,
         'rejected': rejected,
-        'total': allProfiles.docs.length,
+        'total': pending + approved,
       };
     } catch (e) {
       return {
@@ -650,36 +694,40 @@ class EcoceProfileService {
     }
   }
   
-  // Obtener perfiles aprobados
+  // Obtener perfiles aprobados (desde todas las subcolecciones)
   Future<List<EcoceProfileModel>> getApprovedProfiles() async {
     try {
-      final query = await _profilesCollection
-          .where('ecoce_estatus_aprobacion', isEqualTo: 1)
-          .orderBy('ecoce_fecha_aprobacion', descending: true)
+      // Buscar en el índice principal usuarios aprobados
+      final indexQuery = await _profilesCollection
+          .where('aprobado', isEqualTo: true)
+          .orderBy('fecha_aprobacion', descending: true)
           .get();
       
-      return query.docs
-          .map((doc) => EcoceProfileModel.fromFirestore(doc))
-          .toList();
+      List<EcoceProfileModel> profiles = [];
+      
+      // Para cada entrada en el índice, obtener el perfil completo
+      for (final indexDoc in indexQuery.docs) {
+        final indexData = indexDoc.data() as Map<String, dynamic>;
+        final profilePath = indexData['path'] as String?;
+        
+        if (profilePath != null) {
+          final profileDoc = await _firestore.doc(profilePath).get();
+          if (profileDoc.exists) {
+            profiles.add(EcoceProfileModel.fromFirestore(profileDoc));
+          }
+        }
+      }
+      
+      return profiles;
     } catch (e) {
       return [];
     }
   }
   
-  // Obtener perfiles rechazados
+  // Obtener perfiles rechazados (ya no aplica con la nueva estructura)
+  // Los perfiles rechazados se eliminan, no se guardan
   Future<List<EcoceProfileModel>> getRejectedProfiles() async {
-    try {
-      final query = await _profilesCollection
-          .where('ecoce_estatus_aprobacion', isEqualTo: 2)
-          .orderBy('ecoce_fecha_aprobacion', descending: true)
-          .get();
-      
-      return query.docs
-          .map((doc) => EcoceProfileModel.fromFirestore(doc))
-          .toList();
-    } catch (e) {
-      return [];
-    }
+    return []; // Las solicitudes rechazadas se eliminan completamente
   }
   
   // Obtener solicitudes aprobadas
@@ -713,6 +761,58 @@ class EcoceProfileService {
         data['solicitud_id'] = doc.id;
         return data;
       }).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+  
+  // Obtener perfiles por tipo específico
+  Future<List<EcoceProfileModel>> getProfilesByType(String tipoActor, {String? subtipo}) async {
+    try {
+      final subcollection = _getProfileSubcollection(tipoActor, subtipo);
+      final query = await subcollection
+          .where('ecoce_estatus_aprobacion', isEqualTo: 1)
+          .orderBy('ecoce_fecha_aprobacion', descending: true)
+          .get();
+      
+      return query.docs
+          .map((doc) => EcoceProfileModel.fromFirestore(doc))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+  
+  // Obtener todos los perfiles de origen (centros de acopio y plantas de separación)
+  Future<List<EcoceProfileModel>> getOrigenProfiles() async {
+    try {
+      List<EcoceProfileModel> profiles = [];
+      
+      // Obtener centros de acopio
+      final acopioQuery = await _profilesCollection
+          .doc('origen')
+          .collection('centro_acopio')
+          .where('ecoce_estatus_aprobacion', isEqualTo: 1)
+          .get();
+      
+      profiles.addAll(acopioQuery.docs
+          .map((doc) => EcoceProfileModel.fromFirestore(doc)));
+      
+      // Obtener plantas de separación
+      final plantaQuery = await _profilesCollection
+          .doc('origen')
+          .collection('planta_separacion')
+          .where('ecoce_estatus_aprobacion', isEqualTo: 1)
+          .get();
+      
+      profiles.addAll(plantaQuery.docs
+          .map((doc) => EcoceProfileModel.fromFirestore(doc)));
+      
+      // Ordenar por fecha de aprobación
+      profiles.sort((a, b) => (b.ecoceFechaAprobacion ?? DateTime.now())
+          .compareTo(a.ecoceFechaAprobacion ?? DateTime.now()));
+      
+      return profiles;
     } catch (e) {
       return [];
     }
