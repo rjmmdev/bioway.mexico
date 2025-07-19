@@ -116,6 +116,10 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
         return Icons.recycling;
       case 'local_shipping':
         return Icons.local_shipping;
+      case 'factory':
+        return Icons.factory;
+      case 'science':
+        return Icons.science;
       default:
         return Icons.person;
     }
@@ -129,6 +133,10 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
         return 'R';
       case 'local_shipping':
         return 'V';
+      case 'factory':
+        return 'T';
+      case 'science':
+        return 'L';
       default:
         return 'A';
     }
@@ -1116,7 +1124,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
 
 
   bool _shouldShowFab() {
-    return widget.iconCode == 'store' || widget.iconCode == 'recycling';
+    return widget.iconCode == 'store' || widget.iconCode == 'recycling' || widget.iconCode == 'factory';
   }
 
   Widget? _buildFloatingActionButton() {
@@ -1134,6 +1142,14 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
         return EcoceFloatingActionButton(
           onPressed: () {
             Navigator.pushNamed(context, '/reciclador_escaneo');
+          },
+          icon: Icons.add,
+          backgroundColor: BioWayColors.ecoceGreen,
+        );
+      case 'factory':
+        return EcoceFloatingActionButton(
+          onPressed: () {
+            Navigator.pushNamed(context, '/transformador_recibir_lote');
           },
           icon: Icons.add,
           backgroundColor: BioWayColors.ecoceGreen,
@@ -1237,6 +1253,35 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
           },
           primaryColor: BioWayColors.deepBlue,
           items: EcoceNavigationConfigs.transporteItems,
+        );
+      
+      case 'factory':
+        return EcoceBottomNavigation(
+          selectedIndex: 3,
+          onItemTapped: (index) {
+            if (index == 3) return; // Ya estamos en perfil
+            
+            // Navegación a otras pantallas según el índice
+            switch (index) {
+              case 0:
+                Navigator.pushReplacementNamed(context, '/transformador_inicio');
+                break;
+              case 1:
+                Navigator.pushReplacementNamed(context, '/transformador_produccion');
+                break;
+              case 2:
+                Navigator.pushReplacementNamed(context, '/transformador_ayuda');
+                break;
+            }
+          },
+          primaryColor: BioWayColors.ecoceGreen,
+          items: EcoceNavigationConfigs.transformadorItems,
+          fabConfig: FabConfig(
+            icon: Icons.add,
+            onPressed: () {
+              Navigator.pushNamed(context, '/transformador_recibir_lote');
+            },
+          ),
         );
       
       default:

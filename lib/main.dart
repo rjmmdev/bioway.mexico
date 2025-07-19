@@ -24,6 +24,14 @@ import 'screens/ecoce/transporte/transporte_entregar_screen.dart';
 import 'screens/ecoce/transporte/transporte_ayuda_screen.dart';
 import 'screens/ecoce/transporte/transporte_perfil_screen.dart';
 
+// Screens - Transformador
+import 'screens/ecoce/transformador/transformador_inicio_screen.dart';
+import 'screens/ecoce/transformador/transformador_produccion_screen.dart';
+import 'screens/ecoce/transformador/transformador_recibir_lote_screen.dart';
+import 'screens/ecoce/transformador/transformador_perfil.dart';
+import 'screens/ecoce/transformador/transformador_ayuda.dart';
+import 'screens/ecoce/transformador/transformador_documentacion_screen.dart';
+
 void main() async {
   // Asegurar que los widgets estén inicializados
   WidgetsFlutterBinding.ensureInitialized();
@@ -221,6 +229,14 @@ class BioWayApp extends StatelessWidget {
         '/transporte_entregar': (context) => const TransporteEntregarScreen(),
         '/transporte_ayuda': (context) => const TransporteAyudaScreen(),
         '/transporte_perfil': (context) => const TransportePerfilScreen(),
+        
+        // Rutas de Transformador
+        '/transformador_inicio': (context) => const TransformadorInicioScreen(),
+        '/transformador_produccion': (context) => const TransformadorProduccionScreen(),
+        '/transformador_recibir_lote': (context) => const TransformadorRecibirLoteScreen(),
+        '/transformador_perfil': (context) => const TransformadorPerfilScreen(),
+        '/transformador_ayuda': (context) => const TransformadorAyudaScreen(),
+        '/transformador_documentacion': (context) => const TransformadorDocumentacionScreen(),
       },
     );
   }

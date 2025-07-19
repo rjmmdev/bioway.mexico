@@ -14,6 +14,7 @@ import '../../ecoce/origen/origen_inicio_screen.dart';
 import '../../ecoce/origen/origen_perfil.dart';
 import '../../ecoce/transporte/transporte_escaneo.dart';
 import '../../ecoce/transporte/transporte_perfil_screen.dart';
+import '../../ecoce/transformador/transformador_inicio_screen.dart';
 import '../../ecoce/maestro/maestro_aprobaciones_screen.dart';
 
 class ECOCELoginScreen extends StatefulWidget {
@@ -374,7 +375,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         targetScreen = const OrigenInicioScreen();
         break;
       case 'transformador':
-        targetScreen = const OrigenInicioScreen(); // TEMPORAL
+        targetScreen = const TransformadorInicioScreen();
         break;
       case 'transportista':
         targetScreen = const TransporteEscaneoScreen();
