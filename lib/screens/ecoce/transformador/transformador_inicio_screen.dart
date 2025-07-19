@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/statistic_card.dart';
+import 'transformador_lote_detalle_screen.dart';
 
 class TransformadorInicioScreen extends StatefulWidget {
   const TransformadorInicioScreen({super.key});
@@ -21,42 +22,48 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
   final int _productosCreados = 28;
   final double _materialProcesado = 4.5; // en toneladas
   
-  // Lista de lotes en proceso (datos de ejemplo)
+  // Lista de lotes en proceso (datos de ejemplo mejorados)
   final List<Map<String, dynamic>> _lotesEnProceso = [
     {
       'id': 'Firebase_ID_1x7h9k3',
       'origen': 'RECICLADOR PLASTICOS DEL NORTE',
+      'material': 'PET',
       'fecha': '14/07/2025',
-      'material': 'PELLETS',
-      'peso': 120,
+      'fechaISO': '2025-07-14T10:30:00',
+      'peso': 120.0,
       'estado': 'RECIBIDO',
       'estadoColor': Colors.blue,
+      'producto': 'Envases PET',
+      'tiposAnalisis': ['Inyección', 'Extrusión'],
+      'composicion': 'PET reciclado 70%, PET virgen 30%, estabilizadores UV 0.5%',
+      'comentarios': 'Material de alta calidad, cumple con normas ISO 9001',
+      'procesosAplicados': ['Lavado', 'Secado', 'Extrusión'],
     },
     {
       'id': 'Firebase_ID_2a9m5p1',
       'origen': 'CENTRO DE ACOPIO SUSTENTABLE',
+      'material': 'LDPE',
       'fecha': '14/07/2025',
-      'material': 'FLAKES',
+      'fechaISO': '2025-07-14T08:15:00',
       'peso': 85.5,
       'estado': 'RECIBIDO',
       'estadoColor': Colors.blue,
+      'producto': 'Láminas LDPE',
+      'tiposAnalisis': ['Soplado', 'Laminado', 'Termoformado'],
+      'composicion': 'LDPE reciclado 80%, aditivos antioxidantes 2%, pigmentos 1%',
+      'comentarios': 'Procesamiento especial requerido para cliente premium',
+      'procesosAplicados': ['Trituración', 'Lavado', 'Laminado'],
     },
   ];
 
   void _navigateToRecibirLotes() {
     HapticFeedback.lightImpact();
-    // TODO: Navegar a pantalla de recepción de lotes
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Navegando a Recibir Lotes...')),
-    );
+    Navigator.pushNamed(context, '/transformador_recibir_lote');
   }
 
   void _navigateToDocumentacion() {
     HapticFeedback.lightImpact();
-    // TODO: Navegar a pantalla de documentación
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Navegando a Documentación...')),
-    );
+    Navigator.pushNamed(context, '/transformador_documentacion');
   }
 
   void _actualizarDocumentacion(String loteId) {
@@ -77,194 +84,293 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
         // Ya estamos en inicio
         break;
       case 1:
-        // TODO: Navegar a Producción
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Navegando a Producción...')),
-        );
+        Navigator.pushReplacementNamed(context, '/transformador_produccion');
         break;
       case 2:
-        // TODO: Navegar a Ayuda
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Navegando a Ayuda...')),
-        );
+        Navigator.pushReplacementNamed(context, '/transformador_ayuda');
         break;
       case 3:
-        // TODO: Navegar a Perfil
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Navegando a Perfil...')),
-        );
+        Navigator.pushReplacementNamed(context, '/transformador_perfil');
         break;
     }
   }
 
   void _onAddPressed() {
     HapticFeedback.lightImpact();
-    // TODO: Acción del botón central
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Creando nuevo producto...')),
+    Navigator.pushNamed(context, '/transformador_recibir_lote');
+  }
+
+  void _navigateToLoteDetalle(Map<String, dynamic> lote) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TransformadorLoteDetalleScreen(
+          firebaseId: lote['id'],
+          peso: lote['peso'].toDouble(),
+          tiposAnalisis: lote['tiposAnalisis'] ?? ['Extrusión', 'Inyección'],
+          productoFabricado: lote['producto'] ?? 'Producto no especificado',
+          composicionMaterial: lote['composicion'] ?? 'Material reciclado procesado según estándares de calidad',
+          fechaCreacion: DateTime.parse(lote['fechaISO'] ?? DateTime.now().toIso8601String()),
+          procesosAplicados: lote['procesosAplicados'] ?? [],
+          comentarios: lote['comentarios'],
+        ),
+      ),
     );
   }
 
   Widget _buildLoteCard(Map<String, dynamic> lote) {
+    final productoColor = _getProductoColor(lote['producto'] ?? '');
+    
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Header amarillo con ID
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _navigateToLoteDetalle(lote),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
             decoration: BoxDecoration(
-              color: Colors.amber[300],
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.qr_code_2,
-                  size: 20,
-                  color: Colors.amber[900],
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    lote['id'],
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.amber[900],
-                    ),
-                  ),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
-          ),
-          // Contenido del lote
-          Padding(
-            padding: const EdgeInsets.all(16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Origen y fecha
-                Text(
-                  lote['origen'],
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Fecha: ${lote['fecha']}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Tres columnas con iconos
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    // Material
-                    Column(
-                      children: [
-                        Icon(
-                          Icons.recycling,
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      // Icono del producto
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              productoColor.withValues(alpha: 0.2),
+                              productoColor.withValues(alpha: 0.1),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          _getProductoIcon(lote['producto'] ?? ''),
+                          color: productoColor,
                           size: 24,
-                          color: BioWayColors.ecoceGreen,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          lote['material'],
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    // Peso
-                    Column(
-                      children: [
-                        Icon(
-                          Icons.scale,
-                          size: 24,
-                          color: BioWayColors.ecoceGreen,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${lote['peso']} kg',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    // Estado
-                    Column(
-                      children: [
-                        Icon(
-                          Icons.domain,
-                          size: 24,
-                          color: BioWayColors.ecoceGreen,
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: lote['estadoColor'].withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            lote['estado'],
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: lote['estadoColor'],
+                      ),
+                      const SizedBox(width: 16),
+                      // Información del lote
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Primera línea: Producto y ID
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    'Lote ${lote['id'] ?? ''}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey[600],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
+                            const SizedBox(height: 6),
+                            // Segunda línea: Tipo de material
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.category_outlined,
+                                  size: 16,
+                                  color: Colors.grey[600],
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Material: ${lote['material'] ?? 'No especificado'}',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            // Tercera línea: Peso, Producto y Composición
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    _buildCompactChip(
+                                      Icons.scale_outlined,
+                                      '${lote['peso']} kg',
+                                      Colors.blue,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _buildCompactChip(
+                                      Icons.calendar_today_outlined,
+                                      lote['fecha'] ?? '',
+                                      Colors.orange,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                // Producto fabricado
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: productoColor.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.inventory_2_outlined,
+                                        size: 12,
+                                        color: productoColor,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Flexible(
+                                        child: Text(
+                                          lote['producto'] ?? '',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: productoColor,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                // Composición
+                                Text(
+                                  lote['composicion'] ?? '',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey[600],
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Flecha de navegación
+                      const SizedBox(width: 12),
+                      InkWell(
+                        onTap: () => _navigateToLoteDetalle(lote),
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          child: Icon(
+                            Icons.arrow_forward_ios,
+                            color: Colors.grey.shade400,
+                            size: 16,
                           ),
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 16),
-                // Botón verde
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _actualizarDocumentacion(lote['id']),
-                    icon: const Icon(Icons.update, size: 18),
-                    label: const Text('Actualizar Documentación'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: BioWayColors.ecoceGreen,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                // Botón de acción inferior
+                InkWell(
+                  onTap: () => _actualizarDocumentacion(lote['id']),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(16),
+                        bottomRight: Radius.circular(16),
                       ),
                     ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.update,
+                          color: BioWayColors.ecoceGreen,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Actualizar Documentación',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: BioWayColors.ecoceGreen,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactChip(IconData icon, String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 12,
+            color: color,
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 11,
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
         ],
@@ -272,9 +378,51 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
     );
   }
 
+  Color _getProductoColor(String producto) {
+    // Asignar colores basados en el tipo de producto
+    if (producto.toLowerCase().contains('pet') || producto.toLowerCase().contains('envase')) {
+      return Colors.indigo;
+    } else if (producto.toLowerCase().contains('ldpe') || producto.toLowerCase().contains('lámina')) {
+      return Colors.teal;
+    } else if (producto.toLowerCase().contains('hdpe') || producto.toLowerCase().contains('botella')) {
+      return Colors.blue;
+    } else if (producto.toLowerCase().contains('pp') || producto.toLowerCase().contains('polipropileno')) {
+      return Colors.purple;
+    } else if (producto.toLowerCase().contains('ps') || producto.toLowerCase().contains('poliestireno')) {
+      return Colors.orange;
+    } else {
+      return BioWayColors.ecoceGreen;
+    }
+  }
+
+  IconData _getProductoIcon(String producto) {
+    // Asignar iconos basados en el tipo de producto
+    if (producto.toLowerCase().contains('envase') || producto.toLowerCase().contains('botella')) {
+      return Icons.local_drink;
+    } else if (producto.toLowerCase().contains('lámina') || producto.toLowerCase().contains('hoja')) {
+      return Icons.layers;
+    } else if (producto.toLowerCase().contains('tubo') || producto.toLowerCase().contains('tubería')) {
+      return Icons.view_column;
+    } else if (producto.toLowerCase().contains('contenedor') || producto.toLowerCase().contains('caja')) {
+      return Icons.inventory_2;
+    } else if (producto.toLowerCase().contains('película') || producto.toLowerCase().contains('film')) {
+      return Icons.wrap_text;
+    } else {
+      return Icons.recycling;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return GestureDetector(
+      onHorizontalDragEnd: (details) {
+        // Detectar swipe hacia la izquierda (ir a producción)
+        if (details.primaryVelocity! < -100) {
+          Navigator.pushReplacementNamed(context, '/transformador_produccion');
+        }
+        // No hay pantalla a la derecha desde inicio
+      },
+      child: Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
         child: CustomScrollView(
@@ -588,31 +736,31 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                       const SizedBox(height: 16),
                       
                       // Botón secundario de documentación (más sutil)
-                      OutlinedButton.icon(
-                        onPressed: _navigateToDocumentacion,
-                        icon: Icon(
-                          Icons.description_outlined,
-                          color: BioWayColors.ecoceGreen,
-                        ),
-                        label: const Text(
-                          'Gestionar Documentación',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: OutlinedButton.icon(
+                          onPressed: _navigateToDocumentacion,
+                          icon: Icon(
+                            Icons.description_outlined,
+                            color: BioWayColors.ecoceGreen,
                           ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: BioWayColors.ecoceGreen,
-                          side: BorderSide(
-                            color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
-                            width: 1.5,
+                          label: const Text(
+                            'Gestionar Documentación',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: BioWayColors.ecoceGreen,
+                            side: BorderSide(
+                              color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
+                              width: 1.5,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
                           ),
                         ),
                       ),
@@ -662,6 +810,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
         backgroundColor: BioWayColors.ecoceGreen,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      ),
     );
   }
 }

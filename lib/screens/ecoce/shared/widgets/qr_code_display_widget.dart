@@ -726,11 +726,19 @@ Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pes
                   ),
                 ],
                 const SizedBox(height: 16),
-                _buildPresentacionRow(
-                  label: 'Presentación',
-                  value: widget.presentacion,
-                  color: Colors.green,
-                ),
+                if (widget.tipoUsuario == 'transformador')
+                  _buildInfoRow(
+                    icon: Icons.inventory_2_outlined,
+                    label: 'Producto fabricado',
+                    value: widget.presentacion,
+                    color: Colors.green,
+                  )
+                else
+                  _buildPresentacionRow(
+                    label: 'Presentación',
+                    value: widget.presentacion,
+                    color: Colors.green,
+                  ),
                 const SizedBox(height: 16),
                 _buildInfoRow(
                   icon: widget.tipoUsuario == 'origen' ? Icons.factory_outlined : Icons.location_on_outlined,
@@ -879,6 +887,8 @@ Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pes
     required String value,
     required Color color,
   }) {
+    // Solo intentar mostrar SVG para presentaciones conocidas
+    final bool hasSvg = value == 'Pacas' || value == 'Sacos';
     final svgPath = value == 'Pacas' 
         ? 'assets/images/icons/pacas.svg' 
         : 'assets/images/icons/sacos.svg';
@@ -893,11 +903,17 @@ Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pes
             borderRadius: BorderRadius.circular(10),
           ),
           child: Center(
-            child: SvgPicture.asset(
-              svgPath,
-              width: 22,
-              height: 22,
-            ),
+            child: hasSvg
+                ? SvgPicture.asset(
+                    svgPath,
+                    width: 22,
+                    height: 22,
+                  )
+                : Icon(
+                    Icons.category,
+                    color: color,
+                    size: 22,
+                  ),
           ),
         ),
         const SizedBox(width: 16),
