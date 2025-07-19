@@ -234,7 +234,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                   end: Alignment.bottomRight,
                   colors: [
                     _primaryColor,
-                    _primaryColor.withOpacity(0.8),
+                    _primaryColor.withValues(alpha: 0.8),
                   ],
                 ),
               ),
@@ -249,7 +249,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                         height: 200,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.1),
+                          color: Colors.white.withValues(alpha: 0.1),
                         ),
                       ),
                     ),
@@ -261,7 +261,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                         height: 150,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.05),
+                          color: Colors.white.withValues(alpha: 0.05),
                         ),
                       ),
                     ),
@@ -287,7 +287,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: Colors.white.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Row(
@@ -295,14 +295,14 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                     Icon(
                                       Icons.calendar_today,
                                       size: 14,
-                                      color: Colors.white.withOpacity(0.9),
+                                      color: Colors.white.withValues(alpha: 0.9),
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
                                       '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.white.withOpacity(0.9),
+                                        color: Colors.white.withValues(alpha: 0.9),
                                       ),
                                     ),
                                   ],
@@ -334,7 +334,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.9),
+                                  color: Colors.white.withValues(alpha: 0.9),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Row(
@@ -387,11 +387,11 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.95),
+                                      color: Colors.white.withValues(alpha: 0.95),
                                       borderRadius: BorderRadius.circular(16),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withOpacity(0.08),
+                                          color: Colors.black.withValues(alpha: 0.08),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         ),
@@ -452,11 +452,11 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.95),
+                                      color: Colors.white.withValues(alpha: 0.95),
                                       borderRadius: BorderRadius.circular(16),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withOpacity(0.08),
+                                          color: Colors.black.withValues(alpha: 0.08),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         ),
@@ -565,13 +565,13 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               end: Alignment.bottomRight,
                               colors: [
                                 _primaryColor,
-                                _primaryColor.withOpacity(0.8),
+                                _primaryColor.withValues(alpha: 0.8),
                               ],
                             ),
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: _primaryColor.withOpacity(0.3),
+                                color: _primaryColor.withValues(alpha: 0.3),
                                 blurRadius: 12,
                                 offset: const Offset(0, 6),
                               ),
@@ -591,7 +591,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                       width: 40,
                                       height: 40,
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.2),
+                                        color: Colors.white.withValues(alpha: 0.2),
                                         shape: BoxShape.circle,
                                       ),
                                       child: const Icon(
@@ -618,7 +618,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                             'Genera código QR para tu material',
                                             style: TextStyle(
                                               fontSize: 13,
-                                              color: Colors.white.withOpacity(0.9),
+                                              color: Colors.white.withValues(alpha: 0.9),
                                             ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -627,7 +627,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                     ),
                                     Icon(
                                       Icons.arrow_forward_ios,
-                                      color: Colors.white.withOpacity(0.8),
+                                      color: Colors.white.withValues(alpha: 0.8),
                                       size: 18,
                                     ),
                                   ],

@@ -4,7 +4,7 @@ import '../../../utils/colors.dart'; // ACTUALIZADA
 import '../../../widgets/common/gradient_background.dart'; // ACTUALIZADA
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
-import 'widgets/animated_logo.dart'; // ACTUALIZADA
+import '../../../widgets/login/animated_logo.dart'; // ACTUALIZADA
 import '../platform_selector_screen.dart'; // ACTUALIZADA
 import 'bioway_register_screen.dart'; // ACTUALIZADA
 
@@ -390,7 +390,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
               size: 22,
             ),
             filled: true,
-            fillColor: Colors.white.withOpacity(0.9),
+            fillColor: Colors.white.withValues(alpha: 0.9),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -472,7 +472,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
               },
             ),
             filled: true,
-            fillColor: Colors.white.withOpacity(0.9),
+            fillColor: Colors.white.withValues(alpha: 0.9),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -576,7 +576,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
           backgroundColor: BioWayColors.primaryGreen,
           foregroundColor: Colors.white,
           elevation: _isLoading ? 0 : 3,
-          shadowColor: BioWayColors.primaryGreen.withOpacity(0.4),
+          shadowColor: BioWayColors.primaryGreen.withValues(alpha: 0.4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),

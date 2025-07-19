@@ -169,13 +169,13 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
                           end: Alignment.bottomRight,
                           colors: [
                             BioWayColors.success,
-                            BioWayColors.success.withOpacity(0.8),
+                            BioWayColors.success.withValues(alpha: 0.8),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: BioWayColors.success.withOpacity(0.3),
+                            color: BioWayColors.success.withValues(alpha: 0.3),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -187,7 +187,7 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
                             width: 56,
                             height: 56,
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -213,7 +213,7 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
                                 Text(
                                   'ID: ${widget.firebaseId}',
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.9),
+                                    color: Colors.white.withValues(alpha: 0.9),
                                     fontSize: 14,
                                   ),
                                 ),

@@ -231,7 +231,7 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
               gradient: LinearGradient(
                 colors: [
                   BioWayColors.ecoceGreen,
-                  BioWayColors.ecoceGreen.withOpacity(0.8),
+                  BioWayColors.ecoceGreen.withValues(alpha: 0.8),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -239,7 +239,7 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: BioWayColors.ecoceGreen.withOpacity(0.3),
+                  color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
                   blurRadius: 15,
                   offset: const Offset(0, 8),
                 ),
@@ -305,7 +305,7 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
                   ),
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    backgroundColor: BioWayColors.ecoceGreen.withOpacity(0.1),
+                    backgroundColor: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -373,7 +373,7 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
                     icon: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: BioWayColors.error.withOpacity(0.1),
+                        color: BioWayColors.error.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
@@ -395,7 +395,7 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, -5),
                 ),
@@ -446,7 +446,7 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -465,7 +465,7 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: materialColor.withOpacity(0.2),
+                    color: materialColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -507,7 +507,7 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
                   icon: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: BioWayColors.error.withOpacity(0.1),
+                      color: BioWayColors.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(

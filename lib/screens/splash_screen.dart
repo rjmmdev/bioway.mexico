@@ -243,7 +243,7 @@ class _SplashScreenState extends State<SplashScreen>
                                 letterSpacing: 1.5,
                                 shadows: [
                                   Shadow(
-                                    color: Colors.black.withOpacity(0.1),
+                                    color: Colors.black.withValues(alpha: 0.1),
                                     offset: const Offset(0, 2),
                                     blurRadius: 4,
                                   ),
@@ -258,7 +258,7 @@ class _SplashScreenState extends State<SplashScreen>
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: BioWayColors.primaryGreen.withOpacity(0.1),
+                                color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -303,7 +303,7 @@ class _SplashScreenState extends State<SplashScreen>
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: BioWayColors.primaryGreen.withOpacity(0.2),
+                                      color: BioWayColors.primaryGreen.withValues(alpha: 0.2),
                                       width: 3,
                                     ),
                                   ),
@@ -328,7 +328,7 @@ class _SplashScreenState extends State<SplashScreen>
                             'Iniciando...',
                             style: TextStyle(
                               fontSize: 14,
-                              color: BioWayColors.darkGreen.withOpacity(0.6),
+                              color: BioWayColors.darkGreen.withValues(alpha: 0.6),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -350,7 +350,7 @@ class _SplashScreenState extends State<SplashScreen>
                       'v1.0.0',
                       style: TextStyle(
                         fontSize: 12,
-                        color: BioWayColors.darkGreen.withOpacity(0.4),
+                        color: BioWayColors.darkGreen.withValues(alpha: 0.4),
                       ),
                     ),
                   ),

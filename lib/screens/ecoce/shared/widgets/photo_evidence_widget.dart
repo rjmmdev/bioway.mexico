@@ -309,8 +309,8 @@ class _PhotoEvidenceWidgetState extends State<PhotoEvidenceWidget> {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: _hasMinimumPhotos
-                      ? BioWayColors.success.withOpacity(0.1)
-                      : BioWayColors.warning.withOpacity(0.1),
+                      ? BioWayColors.success.withValues(alpha: 0.1)
+                      : BioWayColors.warning.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -334,10 +334,10 @@ class _PhotoEvidenceWidgetState extends State<PhotoEvidenceWidget> {
             padding: const EdgeInsets.all(16),
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
-              color: BioWayColors.info.withOpacity(0.1),
+              color: BioWayColors.info.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: BioWayColors.info.withOpacity(0.3),
+                color: BioWayColors.info.withValues(alpha: 0.3),
               ),
             ),
             child: Row(
@@ -384,7 +384,7 @@ class _PhotoEvidenceWidgetState extends State<PhotoEvidenceWidget> {
           color: BioWayColors.backgroundGrey,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: widget.primaryColor.withOpacity(0.3),
+            color: widget.primaryColor.withValues(alpha: 0.3),
             width: 2,
           ),
         ),
@@ -394,7 +394,7 @@ class _PhotoEvidenceWidgetState extends State<PhotoEvidenceWidget> {
             Icon(
               Icons.add_a_photo,
               size: 50,
-              color: widget.primaryColor.withOpacity(0.5),
+              color: widget.primaryColor.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 12),
             Text(
@@ -445,10 +445,10 @@ class _PhotoEvidenceWidgetState extends State<PhotoEvidenceWidget> {
       borderRadius: BorderRadius.circular(12),
       child: Container(
         decoration: BoxDecoration(
-          color: widget.primaryColor.withOpacity(0.1),
+          color: widget.primaryColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: widget.primaryColor.withOpacity(0.3),
+            color: widget.primaryColor.withValues(alpha: 0.3),
             width: 2,
           ),
         ),
@@ -482,7 +482,7 @@ class _PhotoEvidenceWidgetState extends State<PhotoEvidenceWidget> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: widget.primaryColor.withOpacity(0.3),
+            color: widget.primaryColor.withValues(alpha: 0.3),
             width: 2,
           ),
         ),
@@ -501,7 +501,7 @@ class _PhotoEvidenceWidgetState extends State<PhotoEvidenceWidget> {
               right: 4,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.7),
+                  color: Colors.black.withValues(alpha: 0.7),
                   shape: BoxShape.circle,
                 ),
                 child: IconButton(
@@ -525,7 +525,7 @@ class _PhotoEvidenceWidgetState extends State<PhotoEvidenceWidget> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.7),
+                  color: Colors.black.withValues(alpha: 0.7),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
@@ -589,7 +589,7 @@ class PhotoEvidenceFormField extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),

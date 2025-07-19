@@ -136,7 +136,7 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
@@ -172,7 +172,7 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 5),
                       ),
@@ -216,10 +216,10 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                           borderRadius: BorderRadius.circular(25),
                           border: Border.all(
                             color: _qrExpirado
-                                ? const Color(0xFFE74C3C).withOpacity(0.3)
+                                ? const Color(0xFFE74C3C).withValues(alpha: 0.3)
                                 : (_tiempoRestante < 60
-                                    ? const Color(0xFFF57C00).withOpacity(0.3)
-                                    : const Color(0xFF2196F3).withOpacity(0.3)),
+                                    ? const Color(0xFFF57C00).withValues(alpha: 0.3)
+                                    : const Color(0xFF2196F3).withValues(alpha: 0.3)),
                           ),
                         ),
                         child: Row(
@@ -265,7 +265,7 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                     color: const Color(0xFFE3F2FD),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: const Color(0xFF2196F3).withOpacity(0.2),
+                      color: const Color(0xFF2196F3).withValues(alpha: 0.2),
                     ),
                   ),
                   child: Column(
@@ -349,7 +349,7 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                     color: const Color(0xFFFFF3E0),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: const Color(0xFFF57C00).withOpacity(0.2),
+                      color: const Color(0xFFF57C00).withValues(alpha: 0.2),
                     ),
                   ),
                   child: Column(

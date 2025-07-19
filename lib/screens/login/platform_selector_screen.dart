@@ -201,7 +201,7 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: BioWayColors.info.withOpacity(0.1),
+                    color: BioWayColors.info.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -265,11 +265,11 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                       icon: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 10,
                               offset: const Offset(0, 2),
                             ),
@@ -318,7 +318,7 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                                       boxShadow: [
                                         BoxShadow(
                                           color: BioWayColors.primaryGreen
-                                              .withOpacity(0.3),
+                                              .withValues(alpha: 0.3),
                                           blurRadius: 20,
                                           offset: const Offset(0, 8),
                                         ),
@@ -348,7 +348,7 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                                     'Elige el servicio al que deseas acceder',
                                     style: TextStyle(
                                       fontSize: 16,
-                                      color: BioWayColors.darkGreen.withOpacity(0.7),
+                                      color: BioWayColors.darkGreen.withValues(alpha: 0.7),
                                     ),
                                   ),
                                 ],
@@ -472,10 +472,10 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                               padding: const EdgeInsets.all(20),
                               margin: const EdgeInsets.only(bottom: 20),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
+                                color: Colors.white.withValues(alpha: 0.9),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: BioWayColors.primaryGreen.withOpacity(0.2),
+                                  color: BioWayColors.primaryGreen.withValues(alpha: 0.2),
                                   width: 1,
                                 ),
                               ),
@@ -484,7 +484,7 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                                   Container(
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: BioWayColors.info.withOpacity(0.1),
+                                      color: BioWayColors.info.withValues(alpha: 0.1),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
@@ -564,8 +564,8 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
             boxShadow: [
               BoxShadow(
                 color: isDisabled
-                    ? Colors.grey.withOpacity(0.1)
-                    : Colors.black.withOpacity(0.1),
+                    ? Colors.grey.withValues(alpha: 0.1)
+                    : Colors.black.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -580,7 +580,7 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                 decoration: BoxDecoration(
                   color: isDisabled
                       ? Colors.grey.shade300
-                      : iconColor.withOpacity(0.1),
+                      : iconColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: iconWidget ?? Icon(
@@ -616,7 +616,7 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: (badgeColor ?? iconColor).withOpacity(0.1),
+                              color: (badgeColor ?? iconColor).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(

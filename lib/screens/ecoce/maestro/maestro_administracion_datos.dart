@@ -307,7 +307,7 @@ class _MaestroAdministracionDatosScreenState extends State<MaestroAdministracion
             Text(
               widget.usuario.folioOficial,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
                 fontSize: 14,
               ),
             ),
@@ -320,8 +320,8 @@ class _MaestroAdministracionDatosScreenState extends State<MaestroAdministracion
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: widget.usuario.activo 
-                  ? Colors.green.withOpacity(0.2)
-                  : Colors.red.withOpacity(0.2),
+                  ? Colors.green.withValues(alpha: 0.2)
+                  : Colors.red.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -359,7 +359,7 @@ class _MaestroAdministracionDatosScreenState extends State<MaestroAdministracion
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -371,7 +371,7 @@ class _MaestroAdministracionDatosScreenState extends State<MaestroAdministracion
                     width: 60,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: widget.usuario.color.withOpacity(0.1),
+                      color: widget.usuario.color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -400,10 +400,10 @@ class _MaestroAdministracionDatosScreenState extends State<MaestroAdministracion
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: widget.usuario.color.withOpacity(0.1),
+                            color: widget.usuario.color.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: widget.usuario.color.withOpacity(0.3),
+                              color: widget.usuario.color.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Text(
@@ -433,7 +433,7 @@ class _MaestroAdministracionDatosScreenState extends State<MaestroAdministracion
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -446,7 +446,7 @@ class _MaestroAdministracionDatosScreenState extends State<MaestroAdministracion
                     Container(
                       padding: EdgeInsets.all(screenWidth * 0.04),
                       decoration: BoxDecoration(
-                        color: widget.usuario.color.withOpacity(0.05),
+                        color: widget.usuario.color.withValues(alpha: 0.05),
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(12),
                           topRight: Radius.circular(12),
@@ -522,7 +522,7 @@ class _MaestroAdministracionDatosScreenState extends State<MaestroAdministracion
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -535,7 +535,7 @@ class _MaestroAdministracionDatosScreenState extends State<MaestroAdministracion
                   Container(
                     padding: EdgeInsets.all(screenWidth * 0.04),
                     decoration: BoxDecoration(
-                      color: widget.usuario.color.withOpacity(0.05),
+                      color: widget.usuario.color.withValues(alpha: 0.05),
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(12),
                         topRight: Radius.circular(12),
@@ -564,7 +564,7 @@ class _MaestroAdministracionDatosScreenState extends State<MaestroAdministracion
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: widget.usuario.color.withOpacity(0.1),
+                            color: widget.usuario.color.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(

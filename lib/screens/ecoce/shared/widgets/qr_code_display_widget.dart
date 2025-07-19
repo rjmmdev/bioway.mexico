@@ -601,7 +601,7 @@ Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pes
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -644,7 +644,7 @@ Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pes
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: widget.colorPrincipal.withOpacity(0.3),
+                  color: widget.colorPrincipal.withValues(alpha: 0.3),
                   width: 2,
                 ),
               ),
@@ -664,10 +664,10 @@ Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pes
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
-              color: widget.colorPrincipal.withOpacity(0.1),
+              color: widget.colorPrincipal.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: widget.colorPrincipal.withOpacity(0.3),
+                color: widget.colorPrincipal.withValues(alpha: 0.3),
               ),
             ),
             child: Row(
@@ -684,7 +684,7 @@ Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pes
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: widget.colorPrincipal.withOpacity(0.9),
+                    color: widget.colorPrincipal.withValues(alpha: 0.9),
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -837,7 +837,7 @@ Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pes
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
@@ -889,7 +889,7 @@ Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pes
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Center(

@@ -228,7 +228,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                   widget.subtitle,
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                   ),
                 ),
                 if (widget.lotId != null) ...[
@@ -236,7 +236,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -291,7 +291,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -353,10 +353,10 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: BioWayColors.info.withOpacity(0.1),
+                color: BioWayColors.info.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: BioWayColors.info.withOpacity(0.3),
+                  color: BioWayColors.info.withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
@@ -394,7 +394,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -428,8 +428,8 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
                     color: _uploadedDocuments.length >= widget.requiredDocuments.length
-                        ? BioWayColors.success.withOpacity(0.1)
-                        : BioWayColors.warning.withOpacity(0.1),
+                        ? BioWayColors.success.withValues(alpha: 0.1)
+                        : BioWayColors.warning.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -455,7 +455,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: widget.primaryColor.withOpacity(0.3),
+                  color: widget.primaryColor.withValues(alpha: 0.3),
                   width: 2,
                 ),
                 borderRadius: BorderRadius.circular(12),
@@ -521,10 +521,10 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: widget.primaryColor.withOpacity(0.05),
+          color: widget.primaryColor.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: widget.primaryColor.withOpacity(0.2),
+            color: widget.primaryColor.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
@@ -535,7 +535,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
               width: 45,
               height: 45,
               decoration: BoxDecoration(
-                color: _getFileColor(doc.fileName).withOpacity(0.1),
+                color: _getFileColor(doc.fileName).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(

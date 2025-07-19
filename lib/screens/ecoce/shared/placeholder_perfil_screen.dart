@@ -180,7 +180,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
                         end: Alignment.bottomRight,
                         colors: [
                           widget.primaryColor,
-                          widget.primaryColor.withOpacity(0.7),
+                          widget.primaryColor.withValues(alpha: 0.7),
                         ],
                       ),
                     ),
@@ -194,7 +194,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
                       height: 200,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                       ),
                     ),
                   ),
@@ -206,7 +206,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
                       height: 250,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.05),
+                        color: Colors.white.withValues(alpha: 0.05),
                       ),
                     ),
                   ),
@@ -228,7 +228,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
+                                  color: Colors.black.withValues(alpha: 0.2),
                                   blurRadius: 10,
                                   offset: const Offset(0, 3),
                                 ),
@@ -266,7 +266,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.2),
+                                        color: Colors.white.withValues(alpha: 0.2),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Row(
@@ -275,7 +275,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
                                           Icon(
                                             Icons.qr_code,
                                             size: 14,
-                                            color: Colors.white.withOpacity(0.9),
+                                            color: Colors.white.withValues(alpha: 0.9),
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
@@ -294,7 +294,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.2),
+                                        color: Colors.white.withValues(alpha: 0.2),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Text(
@@ -314,7 +314,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                     decoration: BoxDecoration(
-                                      color: Colors.amber.withOpacity(0.3),
+                                      color: Colors.amber.withValues(alpha: 0.3),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Row(
@@ -484,7 +484,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -500,7 +500,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: widget.primaryColor.withOpacity(0.1),
+                    color: widget.primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -645,7 +645,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: widget.primaryColor.withOpacity(0.05),
+                  color: widget.primaryColor.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -721,10 +721,10 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: color.withOpacity(0.3),
+                  color: color.withValues(alpha: 0.3),
                 ),
               ),
               child: Text(
@@ -772,7 +772,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -805,8 +805,8 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
                   height: 48,
                   decoration: BoxDecoration(
                     color: isSubido 
-                        ? Colors.green.withOpacity(0.1)
-                        : Colors.grey.withOpacity(0.1),
+                        ? Colors.green.withValues(alpha: 0.1)
+                        : Colors.grey.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -847,8 +847,8 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: isSubido 
-                        ? Colors.green.withOpacity(0.1)
-                        : Colors.orange.withOpacity(0.1),
+                        ? Colors.green.withValues(alpha: 0.1)
+                        : Colors.orange.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -880,7 +880,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -892,7 +892,7 @@ class _PlaceholderPerfilScreenState extends State<PlaceholderPerfilScreen> with 
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(

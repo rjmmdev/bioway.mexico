@@ -197,7 +197,7 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: BioWayColors.ecoceGreen.withOpacity(0.1),
+                          color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -423,7 +423,7 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
                       end: Alignment.bottomRight,
                       colors: [
                         BioWayColors.ecoceGreen,
-                        BioWayColors.ecoceGreen.withOpacity(0.85),
+                        BioWayColors.ecoceGreen.withValues(alpha: 0.85),
                       ],
                     ),
                   ),
@@ -441,7 +441,7 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
                                   width: 48,
                                   height: 48,
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
+                                    color: Colors.white.withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: const Icon(
@@ -469,7 +469,7 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
                                         'Todo para gestionar tu centro',
                                         style: TextStyle(
                                           fontSize: 16,
-                                          color: Colors.white.withOpacity(0.9),
+                                          color: Colors.white.withValues(alpha: 0.9),
                                         ),
                                       ),
                                     ],
@@ -628,7 +628,7 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, -5),
                           ),
@@ -716,10 +716,10 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.05),
+            color: color.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: color.withOpacity(0.2),
+              color: color.withValues(alpha: 0.2),
               width: 1,
             ),
           ),
@@ -730,7 +730,7 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
@@ -776,7 +776,7 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -814,7 +814,7 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -948,7 +948,7 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: BioWayColors.ecoceGreen.withOpacity(0.1),
+                  color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -982,7 +982,7 @@ class _RecicladorAyudaScreenState extends State<RecicladorAyudaScreen> with Sing
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: BioWayColors.ecoceGreen.withOpacity(0.1),
+                            color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(

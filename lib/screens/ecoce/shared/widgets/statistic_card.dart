@@ -37,7 +37,7 @@ class StatisticCard extends StatelessWidget {
     } else if (color == Colors.orange) {
       backgroundGradientColor = Colors.orange.shade50;
     } else {
-      backgroundGradientColor = color.withOpacity(0.05);
+      backgroundGradientColor = color.withValues(alpha: 0.05);
     }
     
     return Container(
@@ -55,7 +55,7 @@ class StatisticCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -73,7 +73,7 @@ class StatisticCard extends StatelessWidget {
               icon == Icons.scale ? Icons.scale_outlined : 
               icon == Icons.inventory_2 ? Icons.inventory_2_outlined : icon,
               size: 60,
-              color: color.withOpacity(0.05),
+              color: color.withValues(alpha: 0.05),
             ),
           ),
           // Contenido
@@ -89,7 +89,7 @@ class StatisticCard extends StatelessWidget {
                       width: isCompact ? 32 : 32,
                       height: isCompact ? 32 : 32,
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
+                        color: color.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(

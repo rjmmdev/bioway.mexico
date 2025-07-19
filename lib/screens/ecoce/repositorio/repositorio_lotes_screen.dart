@@ -183,7 +183,7 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -228,7 +228,7 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
           SizedBox(width: screenWidth * 0.03),
           Container(
             decoration: BoxDecoration(
-              color: widget.primaryColor.withOpacity(0.1),
+              color: widget.primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Stack(
@@ -377,7 +377,7 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),

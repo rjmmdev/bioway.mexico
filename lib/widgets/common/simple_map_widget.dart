@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
-import '../../config/google_maps_config.dart';
 import '../../utils/colors.dart';
 import 'map_selector_dialog.dart';
 
@@ -31,7 +30,6 @@ class _SimpleMapWidgetState extends State<SimpleMapWidget> {
   LatLng? _selectedPosition;
   bool _isSearching = false;
   String? _errorMessage;
-  String? _selectedAddress;
 
   @override
   void initState() {
@@ -78,6 +76,9 @@ class _SimpleMapWidgetState extends State<SimpleMapWidget> {
           _isSearching = false;
         });
         
+        // Check if widget is still mounted before using context
+        if (!mounted) return;
+        
         // Abrir el diálogo del mapa
         final Map<String, dynamic>? result = await showDialog<Map<String, dynamic>>(
           context: context,
@@ -89,10 +90,12 @@ class _SimpleMapWidgetState extends State<SimpleMapWidget> {
         );
         
         if (result != null && result['position'] != null) {
-          setState(() {
-            _selectedPosition = result['position'];
-            _selectedAddress = '${widget.colonia ?? ''}, ${widget.municipio ?? ''}, ${widget.estado ?? ''}';
-          });
+          if (mounted) {
+            setState(() {
+              _selectedPosition = result['position'];
+              // Address is already constructed from widget properties
+            });
+          }
           
           // Notificar la ubicación seleccionada con los componentes de dirección
           widget.onLocationSelected(result['position'], result['addressComponents']);

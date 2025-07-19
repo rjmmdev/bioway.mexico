@@ -254,7 +254,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                         // Botón de filtros
                         Container(
                           decoration: BoxDecoration(
-                            color: _primaryColor.withOpacity(0.1),
+                            color: _primaryColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: IconButton(
@@ -637,7 +637,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: _primaryColor.withOpacity(0.05),
+                color: _primaryColor.withValues(alpha: 0.05),
                 shape: BoxShape.circle,
               ),
               child: Stack(
@@ -646,7 +646,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                   Icon(
                     Icons.inventory_2_outlined,
                     size: 60,
-                    color: _primaryColor.withOpacity(0.3),
+                    color: _primaryColor.withValues(alpha: 0.3),
                   ),
                   Positioned(
                     right: 25,
@@ -659,7 +659,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.orange.withOpacity(0.3),
+                            color: Colors.orange.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),

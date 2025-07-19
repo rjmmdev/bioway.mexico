@@ -169,7 +169,7 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
               widget.subtitle,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
               ),
             ),
           ],
@@ -195,7 +195,7 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
                     widget.headerLabel!,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -232,7 +232,7 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
                       color: Colors.black87,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: widget.primaryColor.withOpacity(0.3),
+                        color: widget.primaryColor.withValues(alpha: 0.3),
                         width: 2,
                       ),
                     ),
@@ -257,7 +257,7 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
                                 border: Border.all(
                                   color: _isScanning
                                       ? widget.primaryColor
-                                      : Colors.white.withOpacity(0.5),
+                                      : Colors.white.withValues(alpha: 0.5),
                                   width: 2,
                                 ),
                                 borderRadius: BorderRadius.circular(20),
@@ -296,7 +296,7 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
                               child: Text(
                                 widget.scanPrompt,
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.8),
+                                  color: Colors.white.withValues(alpha: 0.8),
                                   fontSize: 14,
                                 ),
                               ),
@@ -426,7 +426,7 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 5),
                           ),
@@ -465,7 +465,7 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide(
-                                  color: widget.primaryColor.withOpacity(0.3),
+                                  color: widget.primaryColor.withValues(alpha: 0.3),
                                   width: 1,
                                 ),
                               ),

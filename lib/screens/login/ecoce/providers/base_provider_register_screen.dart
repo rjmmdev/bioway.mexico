@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../utils/colors.dart';
 import '../widgets/step_widgets.dart';
 import '../../../../services/firebase/ecoce_profile_service.dart';
 import '../../../../services/firebase/auth_service.dart';
 import '../../../../services/firebase/firebase_manager.dart';
+import '../../../../services/document_service.dart';
 
 abstract class BaseProviderRegisterScreen extends StatefulWidget {
   const BaseProviderRegisterScreen({super.key});
@@ -54,6 +57,13 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
     'banco_caratula': null,
     'ine': null,
   };
+  final Map<String, PlatformFile?> _platformFiles = {
+    'const_sit_fis': null,
+    'comp_domicilio': null,
+    'banco_caratula': null,
+    'ine': null,
+  };
+  bool _isUploadingDocuments = false;
   
   // Location data
   LatLng? _selectedLocation;
@@ -62,6 +72,7 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
   // Services
   final EcoceProfileService _profileService = EcoceProfileService();
   final AuthService _authService = AuthService();
+  final DocumentService _documentService = DocumentService();
 
   // Animación
   late AnimationController _animationController;
@@ -86,7 +97,6 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
     try {
       await _authService.initializeForPlatform(FirebasePlatform.ecoce);
     } catch (e) {
-      print('Error initializing Firebase: $e');
     }
   }
 
@@ -156,8 +166,8 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
     });
     
     try {
-      // Obtener tipo de actor según el tipo de proveedor
-      String tipoActor = _getTipoActor();
+      // Obtener subtipo según el tipo de proveedor (solo para origen)
+      String subtipo = _getSubtipo();
       
       // Preparar dimensiones de capacidad si aplica
       Map<String, double>? dimensionesCapacidad;
@@ -184,13 +194,18 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
         longitud = _selectedLocation!.longitude;
       }
       
-      // Crear perfil en Firebase
-      final profile = await _profileService.createOrigenProfile(
+      // Primero, crear la solicitud sin documentos para obtener el ID
+      setState(() {
+        _isUploadingDocuments = true;
+      });
+      
+      // Crear solicitud de cuenta en Firebase (sin crear usuario en Auth)
+      final solicitudId = await _profileService.createOrigenAccountRequest(
         email: _controllers['email']!.text.trim(),
         password: _controllers['password']!.text,
-        tipoActor: tipoActor,
+        subtipo: subtipo,
         nombre: _controllers['nombreComercial']!.text.trim(),
-        rfc: _controllers['rfc']!.text.trim().isEmpty ? null : _controllers['rfc']!.text.trim(),
+        rfc: _controllers['rfc']!.text.trim(),
         nombreContacto: _controllers['nombreContacto']!.text.trim(),
         telefonoContacto: _controllers['telefono']!.text.trim(),
         telefonoEmpresa: _controllers['telefonoOficina']!.text.trim(),
@@ -206,17 +221,43 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
         linkRedSocial: _controllers['linkRedSocial']!.text.trim().isEmpty ? null : _controllers['linkRedSocial']!.text.trim(),
         dimensionesCapacidad: dimensionesCapacidad,
         pesoCapacidad: pesoCapacidad,
-        documentos: _selectedFiles,
+        documentos: {}, // Inicialmente vacío, se actualizará después
         linkMaps: linkMaps,
         latitud: latitud,
         longitud: longitud,
       );
       
+      // Ahora subir los documentos usando el ID de la solicitud
+      final uploadedDocs = <String, String?>{};
+      
+      for (final entry in _platformFiles.entries) {
+        if (entry.value != null) {
+          try {
+            final url = await _documentService.uploadDocument(
+              userId: solicitudId, // Usar el ID de la solicitud
+              documentType: entry.key,
+              file: entry.value!,
+              solicitudId: solicitudId,
+            );
+            uploadedDocs[entry.key] = url;
+          } catch (e) {
+            // Log error - En producción usar un servicio de logging
+            // Continuar con otros documentos aunque uno falle
+          }
+        }
+      }
+      
+      // Actualizar la solicitud con las URLs de los documentos
+      if (uploadedDocs.isNotEmpty) {
+        await _updateSolicitudDocuments(solicitudId, uploadedDocs);
+      }
+      
       setState(() {
         _isLoading = false;
+        _isUploadingDocuments = false;
       });
       
-      _showSuccessDialog(profile.ecoce_folio);
+      _showSuccessDialog();
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -225,22 +266,14 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
     }
   }
   
-  String _getTipoActor() {
+  String _getSubtipo() {
     switch (providerType) {
       case 'Acopiador':
         return 'A';
       case 'Planta de Separación':
         return 'P';
-      case 'Reciclador':
-        return 'R';
-      case 'Transformador':
-        return 'T';
-      case 'Transportista':
-        return 'V';
-      case 'Laboratorio':
-        return 'L';
       default:
-        return 'A';
+        return 'A'; // Por defecto acopiador para usuarios origen
     }
   }
   
@@ -256,171 +289,191 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
     } else if (error.contains('too-many-requests')) {
       return 'Demasiados intentos. Intenta más tarde';
     } else {
-      print('Error completo: $error'); // Para debugging
       return 'Error al registrar. Intenta nuevamente.';
     }
   }
 
-  void _showSuccessDialog(String folio) {
+  void _showSuccessDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => Dialog(
+        insetPadding: EdgeInsets.symmetric(horizontal: 20),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Container(
-          padding: EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icono de éxito
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: BioWayColors.success.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.check_circle_outline,
-                  size: 50,
-                  color: BioWayColors.success,
-                ),
-              ),
-              SizedBox(height: 20),
-              
-              // Título
-              Text(
-                '¡Registro exitoso!',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: BioWayColors.darkGreen,
-                ),
-              ),
-              SizedBox(height: 12),
-              
-              // Folio
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: BioWayColors.lightGreen.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Folio: $folio',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: BioWayColors.primaryGreen,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-              ),
-              SizedBox(height: 20),
-              
-              // Mensaje de aprobación pendiente
-              Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: BioWayColors.warning.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: BioWayColors.warning.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.pending_actions,
-                      color: BioWayColors.warning,
-                      size: 32,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 500,
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+          ),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Icono de éxito
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: BioWayColors.success.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
                     ),
-                    SizedBox(height: 12),
-                    Text(
-                      'Cuenta pendiente de aprobación',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: BioWayColors.darkGreen,
-                      ),
+                    child: Icon(
+                      Icons.check_circle_outline,
+                      size: 35,
+                      color: BioWayColors.success,
                     ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Tu cuenta ha sido creada exitosamente, pero necesita ser aprobada por ECOCE antes de que puedas acceder.',
+                  ),
+                  SizedBox(height: 16),
+                  
+                  // Título
+                  Text(
+                    '¡Registro exitoso!',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: BioWayColors.darkGreen,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  
+                  // Mensaje de solicitud enviada
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: BioWayColors.lightGreen.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Solicitud enviada',
                       style: TextStyle(
                         fontSize: 14,
-                        color: BioWayColors.textGrey,
-                        height: 1.5,
+                        fontWeight: FontWeight.bold,
+                        color: BioWayColors.primaryGreen,
                       ),
-                      textAlign: TextAlign.center,
                     ),
-                    SizedBox(height: 12),
-                    Container(
-                      padding: EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: BioWayColors.lightGrey),
+                  ),
+                  SizedBox(height: 16),
+                  
+                  // Mensaje de aprobación pendiente
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: BioWayColors.warning.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: BioWayColors.warning.withValues(alpha: 0.3),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Próximos pasos:',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: BioWayColors.darkGreen,
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.pending_actions,
+                              color: BioWayColors.warning,
+                              size: 24,
                             ),
+                            SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                'Cuenta pendiente de aprobación',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: BioWayColors.darkGreen,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Tu cuenta necesita ser aprobada por ECOCE antes de que puedas acceder.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: BioWayColors.textGrey,
+                            height: 1.4,
                           ),
-                          SizedBox(height: 8),
-                          _buildStep('1', 'ECOCE revisará tus documentos'),
-                          _buildStep('2', 'Recibirás una notificación por correo'),
-                          _buildStep('3', 'Una vez aprobado, podrás iniciar sesión'),
-                        ],
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 12),
+                        Container(
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: BioWayColors.lightGrey),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Center(
+                                child: Text(
+                                  'Próximos pasos:',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: BioWayColors.darkGreen,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              _buildCompactStep('1', 'ECOCE revisará tus documentos'),
+                              _buildCompactStep('2', 'Recibirás notificación por correo'),
+                              _buildCompactStep('3', 'Podrás iniciar sesión al ser aprobado'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  
+                  // Información adicional
+                  Text(
+                    'Tu folio se asignará al aprobar tu cuenta',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: BioWayColors.textGrey,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 20),
+                  
+                  // Botón
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).pop();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: BioWayColors.primaryGreen,
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Entendido',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 20),
-              
-              // Información adicional
-              Text(
-                'Guarda tu folio para futuras referencias',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: BioWayColors.textGrey,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-              SizedBox(height: 24),
-              
-              // Botón
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).pop();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BioWayColors.primaryGreen,
-                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
                   ),
-                ),
-                child: Text(
-                  'Entendido',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -458,6 +511,46 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
               style: TextStyle(
                 fontSize: 13,
                 color: BioWayColors.textGrey,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactStep(String number, String text) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 18,
+            height: 18,
+            decoration: BoxDecoration(
+              color: BioWayColors.petBlue.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                number,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: BioWayColors.petBlue,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                color: BioWayColors.textGrey,
+                height: 1.3,
               ),
             ),
           ),
@@ -537,9 +630,11 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
       case 4:
         return FiscalDataStep(
           selectedFiles: _selectedFiles,
-          onFileToggle: _toggleFile,
+          platformFiles: _platformFiles,
+          onFileSelected: _handleFileSelected,
           onNext: _nextStep,
           onPrevious: _navigateBack,
+          isUploading: _isUploadingDocuments,
         );
       case 5:
         return Column(
@@ -592,9 +687,9 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
     // Los transportistas siempre tienen transporte y no pueden cambiarlo
     final isTransportLocked = providerType == 'Transportista';
     
-    // Obtener materiales según el tipo de usuario
-    final tipoActor = _getTipoActor();
-    final materialesList = _getMaterialesByTipo(tipoActor);
+    // Obtener materiales según el subtipo de usuario origen
+    final subtipo = _getSubtipo();
+    final materialesList = _getMaterialesBySubtipo(subtipo);
     
     return OperationsStep(
       controllers: _controllers,
@@ -610,8 +705,8 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
     );
   }
   
-  List<Map<String, String>> _getMaterialesByTipo(String tipoActor) {
-    switch (tipoActor) {
+  List<Map<String, String>> _getMaterialesBySubtipo(String subtipo) {
+    switch (subtipo) {
       case 'A': // Acopiador (Usuario Origen)
       case 'P': // Planta de Separación (Usuario Origen)
         return [
@@ -619,34 +714,12 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
           {'id': 'ecoce_epf_pp', 'label': 'EPF - PP'},
           {'id': 'ecoce_epf_multi', 'label': 'EPF - Multi'},
         ];
-      case 'R': // Reciclador
-        return [
-          {'id': 'ecoce_epf_separados', 'label': 'EPF separados por tipo'},
-          {'id': 'ecoce_epf_semiseparados', 'label': 'EPF semiseparados'},
-          {'id': 'ecoce_epf_pacas', 'label': 'EPF en pacas'},
-          {'id': 'ecoce_epf_sacos', 'label': 'EPF en sacos'},
-          {'id': 'ecoce_epf_granel', 'label': 'EPF a granel'},
-          {'id': 'ecoce_epf_limpios', 'label': 'EPF limpios'},
-          {'id': 'ecoce_epf_cont_leve', 'label': 'EPF con contaminación leve'},
-        ];
-      case 'T': // Transformador
-        return [
-          {'id': 'ecoce_pellets_poli', 'label': 'Pellets reciclados - Poli'},
-          {'id': 'ecoce_pellets_pp', 'label': 'Pellets reciclados - PP'},
-          {'id': 'ecoce_hojuelas_poli', 'label': 'Hojuelas recicladas - Poli'},
-          {'id': 'ecoce_hojuelas_pp', 'label': 'Hojuelas recicladas - PP'},
-        ];
-      case 'L': // Laboratorio
-        return [
-          {'id': 'ecoce_muestra_pe', 'label': 'Muestras PE'},
-          {'id': 'ecoce_muestra_pp', 'label': 'Muestras PP'},
-          {'id': 'ecoce_muestra_multi', 'label': 'Muestras Multi'},
-          {'id': 'ecoce_hojuelas', 'label': 'Hojuelas'},
-          {'id': 'ecoce_pellets', 'label': 'Pellets reciclados'},
-          {'id': 'ecoce_productos', 'label': 'Productos transformados'},
-        ];
       default:
-        return [];
+        return [
+          {'id': 'ecoce_epf_poli', 'label': 'EPF - Poli (PE)'},
+          {'id': 'ecoce_epf_pp', 'label': 'EPF - PP'},
+          {'id': 'ecoce_epf_multi', 'label': 'EPF - Multi'},
+        ];
     }
   }
 
@@ -660,9 +733,38 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
     });
   }
 
-  void _toggleFile(String key) {
+  void _handleFileSelected(String key, PlatformFile? file, String? url) {
     setState(() {
-      _selectedFiles[key] = _selectedFiles[key] != null ? null : '$key.pdf';
+      if (file != null) {
+        _platformFiles[key] = file;
+        _selectedFiles[key] = url ?? 'pending';
+      } else {
+        _platformFiles[key] = null;
+        _selectedFiles[key] = null;
+      }
     });
+  }
+  
+  Future<void> _updateSolicitudDocuments(String solicitudId, Map<String, String?> documents) async {
+    try {
+      final updates = <String, dynamic>{};
+      
+      // Mapear las URLs a la estructura de datos de la solicitud
+      documents.forEach((key, url) {
+        if (url != null) {
+          updates['datos_perfil.ecoce_$key'] = url;
+        }
+      });
+      
+      // Actualizar directamente en Firestore
+      if (updates.isNotEmpty) {
+        await FirebaseFirestore.instance
+            .collection('solicitudes_cuentas')
+            .doc(solicitudId)
+            .update(updates);
+      }
+    } catch (e) {
+      // Log error - En producción usar un servicio de logging
+    }
   }
 }

@@ -42,7 +42,7 @@ class LoteCard extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
+                  color: Colors.black.withValues(alpha: 0.03),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -55,7 +55,7 @@ class LoteCard extends StatelessWidget {
                   width: isTablet ? 70 : 60,
                   height: isTablet ? 70 : 60,
                   decoration: BoxDecoration(
-                    color: materialColor.withOpacity(0.1),
+                    color: materialColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -89,7 +89,7 @@ class LoteCard extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: _getEstadoColor(lote['estado']).withOpacity(0.1),
+                              color: _getEstadoColor(lote['estado']).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(

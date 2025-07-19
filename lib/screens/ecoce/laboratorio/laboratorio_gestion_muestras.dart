@@ -508,7 +508,7 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                   child: ChoiceChip(
                     label: Text(material),
                     selected: isSelected,
-                    selectedColor: tabColor.withOpacity(0.2),
+                    selectedColor: tabColor.withValues(alpha: 0.2),
                     labelStyle: TextStyle(
                       color: isSelected ? tabColor : Colors.grey[700],
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -548,7 +548,7 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
         gradient: LinearGradient(
           colors: [
             tabColor,
-            tabColor.withOpacity(0.8),
+            tabColor.withValues(alpha: 0.8),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -556,7 +556,7 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: tabColor.withOpacity(0.3),
+            color: tabColor.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),

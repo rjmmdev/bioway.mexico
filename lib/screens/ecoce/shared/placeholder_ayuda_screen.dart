@@ -205,7 +205,7 @@ class _PlaceholderAyudaScreenState extends State<PlaceholderAyudaScreen> with Si
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: widget.primaryColor.withOpacity(0.1),
+                          color: widget.primaryColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -316,7 +316,7 @@ class _PlaceholderAyudaScreenState extends State<PlaceholderAyudaScreen> with Si
                       end: Alignment.bottomRight,
                       colors: [
                         widget.primaryColor,
-                        widget.primaryColor.withOpacity(0.85),
+                        widget.primaryColor.withValues(alpha: 0.85),
                       ],
                     ),
                   ),
@@ -334,7 +334,7 @@ class _PlaceholderAyudaScreenState extends State<PlaceholderAyudaScreen> with Si
                                   width: 48,
                                   height: 48,
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
+                                    color: Colors.white.withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: const Icon(
@@ -362,7 +362,7 @@ class _PlaceholderAyudaScreenState extends State<PlaceholderAyudaScreen> with Si
                                         'Encuentra respuestas rápidas',
                                         style: TextStyle(
                                           fontSize: 16,
-                                          color: Colors.white.withOpacity(0.9),
+                                          color: Colors.white.withValues(alpha: 0.9),
                                         ),
                                       ),
                                     ],
@@ -521,7 +521,7 @@ class _PlaceholderAyudaScreenState extends State<PlaceholderAyudaScreen> with Si
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, -5),
                           ),
@@ -595,10 +595,10 @@ class _PlaceholderAyudaScreenState extends State<PlaceholderAyudaScreen> with Si
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.05),
+            color: color.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: color.withOpacity(0.2),
+              color: color.withValues(alpha: 0.2),
               width: 1,
             ),
           ),
@@ -609,7 +609,7 @@ class _PlaceholderAyudaScreenState extends State<PlaceholderAyudaScreen> with Si
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
@@ -655,7 +655,7 @@ class _PlaceholderAyudaScreenState extends State<PlaceholderAyudaScreen> with Si
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -693,7 +693,7 @@ class _PlaceholderAyudaScreenState extends State<PlaceholderAyudaScreen> with Si
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -709,7 +709,7 @@ class _PlaceholderAyudaScreenState extends State<PlaceholderAyudaScreen> with Si
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.7),
+                          color: Colors.black.withValues(alpha: 0.7),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -829,7 +829,7 @@ class _PlaceholderAyudaScreenState extends State<PlaceholderAyudaScreen> with Si
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: widget.primaryColor.withOpacity(0.1),
+                  color: widget.primaryColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -907,7 +907,7 @@ class _PlaceholderAyudaScreenState extends State<PlaceholderAyudaScreen> with Si
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: widget.primaryColor.withOpacity(0.1),
+                            color: widget.primaryColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(

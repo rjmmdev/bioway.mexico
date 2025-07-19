@@ -235,7 +235,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
+                      color: color.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -274,9 +274,9 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.05),
+                      color: color.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: color.withOpacity(0.2)),
+                      border: Border.all(color: color.withValues(alpha: 0.2)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -369,15 +369,15 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                 height: 35,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isActive || isPast ? BioWayColors.primaryGreen : Colors.white.withOpacity(0.3),
+                  color: isActive || isPast ? BioWayColors.primaryGreen : Colors.white.withValues(alpha: 0.3),
                   border: Border.all(
-                    color: isActive || isPast ? BioWayColors.primaryGreen : Colors.white.withOpacity(0.5),
+                    color: isActive || isPast ? BioWayColors.primaryGreen : Colors.white.withValues(alpha: 0.5),
                     width: 2,
                   ),
                   boxShadow: isActive
                       ? [
                     BoxShadow(
-                      color: BioWayColors.primaryGreen.withOpacity(0.4),
+                      color: BioWayColors.primaryGreen.withValues(alpha: 0.4),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     )
@@ -388,7 +388,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                   child: Text(
                     '${index + 1}',
                     style: TextStyle(
-                      color: isActive || isPast ? Colors.white : Colors.white.withOpacity(0.7),
+                      color: isActive || isPast ? Colors.white : Colors.white.withValues(alpha: 0.7),
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -399,7 +399,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                 Container(
                   width: MediaQuery.of(context).size.width * 0.15,
                   height: 2,
-                  color: isPast ? BioWayColors.primaryGreen : Colors.white.withOpacity(0.3),
+                  color: isPast ? BioWayColors.primaryGreen : Colors.white.withValues(alpha: 0.3),
                 ),
             ],
           );
@@ -468,9 +468,9 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withOpacity(0.2)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -634,7 +634,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -732,9 +732,9 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: BioWayColors.info.withOpacity(0.1),
+              color: BioWayColors.info.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: BioWayColors.info.withOpacity(0.3)),
+              border: Border.all(color: BioWayColors.info.withValues(alpha: 0.3)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -825,9 +825,9 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: BioWayColors.info.withOpacity(0.1),
+                    color: BioWayColors.info.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: BioWayColors.info.withOpacity(0.3)),
+                    border: Border.all(color: BioWayColors.info.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
@@ -957,16 +957,16 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.white.withOpacity(0.1),
+          color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? Colors.white : Colors.white.withOpacity(0.3),
+            color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.3),
             width: 2,
           ),
           boxShadow: isSelected
               ? [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withValues(alpha: 0.2),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -1041,7 +1041,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1086,7 +1086,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1163,7 +1163,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1254,7 +1254,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: BioWayColors.primaryGreen,
-                disabledBackgroundColor: Colors.white.withOpacity(0.3),
+                disabledBackgroundColor: Colors.white.withValues(alpha: 0.3),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
@@ -1296,7 +1296,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                       icon: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(

@@ -27,13 +27,13 @@ class DashboardStats extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             primaryColor,
-            primaryColor.withOpacity(0.8),
+            primaryColor.withValues(alpha: 0.8),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: primaryColor.withOpacity(0.3),
+            color: primaryColor.withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -96,7 +96,7 @@ class DashboardStats extends StatelessWidget {
       children: [
         Icon(
           icon,
-          color: color.withOpacity(0.9),
+          color: color.withValues(alpha: 0.9),
           size: isTablet ? 32 : 28,
         ),
         SizedBox(height: screenWidth * 0.02),
@@ -114,7 +114,7 @@ class DashboardStats extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: screenWidth * (isTablet ? 0.024 : 0.032),
-            color: color.withOpacity(0.9),
+            color: color.withValues(alpha: 0.9),
           ),
         ),
       ],

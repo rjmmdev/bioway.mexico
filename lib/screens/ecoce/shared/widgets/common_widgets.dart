@@ -61,7 +61,7 @@ class GradientHeader extends StatelessWidget {
               subtitle!,
               style: TextStyle(
                 fontSize: screenWidth * 0.04,
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
               ),
             ),
           ],
@@ -173,7 +173,7 @@ class InfoCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),

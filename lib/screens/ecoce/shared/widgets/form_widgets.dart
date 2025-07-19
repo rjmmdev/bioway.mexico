@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../utils/colors.dart';
 import '../utils/input_decorations.dart';
+import '../utils/input_formatters.dart';
 import '../utils/validation_utils.dart';
 
 /// Widget de campo de texto estándar reutilizable
@@ -123,7 +124,7 @@ class PhoneNumberField extends StatelessWidget {
       inputFormatters: [
         FilteringTextInputFormatter.digitsOnly,
         LengthLimitingTextInputFormatter(10),
-        _PhoneNumberFormatter(),
+        EcoceInputFormatters.phoneNumber(),
       ],
       validator: required ? ValidationUtils.validatePhoneNumber : null,
     );
@@ -485,35 +486,6 @@ enum MessageType {
   warning,
   info,
   success,
-}
-
-/// Formateador de números de teléfono
-class _PhoneNumberFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final text = newValue.text;
-    
-    if (text.length <= 3) {
-      return newValue;
-    } else if (text.length <= 6) {
-      final newText = '${text.substring(0, 3)}-${text.substring(3)}';
-      return TextEditingValue(
-        text: newText,
-        selection: TextSelection.collapsed(offset: newText.length),
-      );
-    } else if (text.length <= 10) {
-      final newText = '${text.substring(0, 3)}-${text.substring(3, 6)}-${text.substring(6)}';
-      return TextEditingValue(
-        text: newText,
-        selection: TextSelection.collapsed(offset: newText.length),
-      );
-    }
-    
-    return oldValue;
-  }
 }
 
 /// Formateador para convertir texto a mayúsculas

@@ -299,12 +299,12 @@ class _MaestroAdministracionPerfilesScreenState extends State<MaestroAdministrac
                   end: Alignment.bottomRight,
                   colors: [
                     BioWayColors.ecoceGreen,
-                    BioWayColors.ecoceGreen.withOpacity(0.8),
+                    BioWayColors.ecoceGreen.withValues(alpha: 0.8),
                   ],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -326,7 +326,7 @@ class _MaestroAdministracionPerfilesScreenState extends State<MaestroAdministrac
                     'Administración de Perfiles',
                     style: TextStyle(
                       fontSize: screenWidth * 0.04,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
                 ],
@@ -440,7 +440,7 @@ class _MaestroAdministracionPerfilesScreenState extends State<MaestroAdministrac
                   color: Colors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 4,
                       offset: const Offset(0, -2),
                     ),
@@ -517,7 +517,7 @@ class _MaestroAdministracionPerfilesScreenState extends State<MaestroAdministrac
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -538,7 +538,7 @@ class _MaestroAdministracionPerfilesScreenState extends State<MaestroAdministrac
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: usuario.color.withOpacity(0.1),
+                    color: usuario.color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -576,7 +576,7 @@ class _MaestroAdministracionPerfilesScreenState extends State<MaestroAdministrac
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.red.withOpacity(0.1),
+                                color: Colors.red.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -605,10 +605,10 @@ class _MaestroAdministracionPerfilesScreenState extends State<MaestroAdministrac
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: usuario.color.withOpacity(0.1),
+                              color: usuario.color.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: usuario.color.withOpacity(0.3),
+                                color: usuario.color.withValues(alpha: 0.3),
                               ),
                             ),
                             child: Text(
@@ -628,10 +628,10 @@ class _MaestroAdministracionPerfilesScreenState extends State<MaestroAdministrac
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: usuario.color.withOpacity(0.05),
+                              color: usuario.color.withValues(alpha: 0.05),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: usuario.color.withOpacity(0.2),
+                                color: usuario.color.withValues(alpha: 0.2),
                               ),
                             ),
                             child: Text(
@@ -639,7 +639,7 @@ class _MaestroAdministracionPerfilesScreenState extends State<MaestroAdministrac
                               style: TextStyle(
                                 fontSize: screenWidth * 0.025,
                                 fontWeight: FontWeight.w500,
-                                color: usuario.color.withOpacity(0.8),
+                                color: usuario.color.withValues(alpha: 0.8),
                               ),
                             ),
                           ),
@@ -676,7 +676,7 @@ class _MaestroAdministracionPerfilesScreenState extends State<MaestroAdministrac
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.green.withOpacity(0.3),
+                        color: Colors.green.withValues(alpha: 0.3),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),

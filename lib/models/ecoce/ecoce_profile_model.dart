@@ -32,53 +32,54 @@ enum EcoceTipoActor {
 class EcoceProfileModel {
   // Identificación
   final String id; // Firebase document ID
-  final String ecoce_tipo_actor; // Enumerado: A, P, R, T, V, L, D
-  final String ecoce_nombre; // Nombre del proveedor (max 50 chars)
-  final String ecoce_folio; // Folio único del sistema (A0000001, P0000001, etc.)
+  final String ecoceTipoActor; // Enumerado: O (Origen), R, T, V, L, D
+  final String? ecoceSubtipo; // Para Origen: A (Acopiador), P (Planta). Null para otros tipos
+  final String ecoceNombre; // Nombre del proveedor (max 50 chars)
+  final String ecoceFolio; // Folio único del sistema (A0000001, P0000001, etc.)
   
   // Información fiscal
-  final String? ecoce_rfc; // RFC opcional (13 chars)
+  final String? ecoceRfc; // RFC opcional (13 chars)
   
   // Datos de contacto
-  final String ecoce_nombre_contacto; // Nombre del contacto (max 50 chars)
-  final String ecoce_correo_contacto; // Correo del contacto (max 50 chars)
-  final String ecoce_tel_contacto; // Teléfono contacto (max 15 chars)
-  final String ecoce_tel_empresa; // Teléfono empresa (max 15 chars)
+  final String ecoceNombreContacto; // Nombre del contacto (max 50 chars)
+  final String ecoceCorreoContacto; // Correo del contacto (max 50 chars)
+  final String ecoceTelContacto; // Teléfono contacto (max 15 chars)
+  final String ecoceTelEmpresa; // Teléfono empresa (max 15 chars)
   
   // Ubicación física
-  final String ecoce_calle; // Dirección calle (max 50 chars)
-  final String ecoce_num_ext; // Número exterior (max 10 chars)
-  final String ecoce_cp; // Código postal (5 chars)
-  final String? ecoce_estado; // Estado
-  final String? ecoce_municipio; // Municipio
-  final String? ecoce_colonia; // Colonia
-  final String? ecoce_ref_ubi; // Referencias adicionales (max 150 chars)
-  final String? ecoce_link_maps; // Link de Google Maps generado automáticamente
-  final String? ecoce_poligono_loc; // Zona asignada (max 50 chars)
-  final double? ecoce_latitud; // Coordenada latitud
-  final double? ecoce_longitud; // Coordenada longitud
+  final String ecoceCalle; // Dirección calle (max 50 chars)
+  final String ecoceNumExt; // Número exterior (max 10 chars)
+  final String ecoceCp; // Código postal (5 chars)
+  final String? ecoceEstado; // Estado
+  final String? ecoceMunicipio; // Municipio
+  final String? ecoceColonia; // Colonia
+  final String? ecoceRefUbi; // Referencias adicionales (max 150 chars)
+  final String? ecoceLinkMaps; // Link de Google Maps generado automáticamente
+  final String? ecocePoligonoLoc; // Zona asignada (max 50 chars)
+  final double? ecoceLatitud; // Coordenada latitud
+  final double? ecoceLongitud; // Coordenada longitud
   
   // Información operativa
-  final DateTime ecoce_fecha_reg; // Fecha de registro (AAAA-MM-DD)
-  final List<String> ecoce_lista_materiales; // Materiales que maneja (checkboxes múltiples)
-  final bool? ecoce_transporte; // Si cuenta con transporte propio
-  final String? ecoce_link_red_social; // Link a red social (max 150 chars)
+  final DateTime ecoceFechaReg; // Fecha de registro (AAAA-MM-DD)
+  final List<String> ecoceListaMateriales; // Materiales que maneja (checkboxes múltiples)
+  final bool? ecoceTransporte; // Si cuenta con transporte propio
+  final String? ecoceLinkRedSocial; // Link a red social (max 150 chars)
   
   // Estado de aprobación
-  final int ecoce_estatus_aprobacion; // 0 = Pendiente, 1 = Aprobado, 2 = Rechazado
-  final DateTime? ecoce_fecha_aprobacion; // Fecha cuando fue aprobado/rechazado
-  final String? ecoce_aprobado_por; // ID del usuario maestro que aprobó
-  final String? ecoce_comentarios_revision; // Comentarios de la revisión
+  final int ecoceEstatusAprobacion; // 0 = Pendiente, 1 = Aprobado, 2 = Rechazado
+  final DateTime? ecoceFechaAprobacion; // Fecha cuando fue aprobado/rechazado
+  final String? ecoceAprobadoPor; // ID del usuario maestro que aprobó
+  final String? ecoceComentariosRevision; // Comentarios de la revisión
   
   // Documentos fiscales (archivos PDF)
-  final String? ecoce_const_sit_fis; // URL/referencia Constancia de Situación Fiscal
-  final String? ecoce_comp_domicilio; // URL/referencia Comprobante de Domicilio
-  final String? ecoce_banco_caratula; // URL/referencia Carátula de Banco
-  final String? ecoce_ine; // URL/referencia Identificación oficial
+  final String? ecoceConstSitFis; // URL/referencia Constancia de Situación Fiscal
+  final String? ecoceCompDomicilio; // URL/referencia Comprobante de Domicilio
+  final String? ecoceBancoCaratula; // URL/referencia Carátula de Banco
+  final String? ecoceIne; // URL/referencia Identificación oficial
   
   // Campos adicionales para Origen (Acopiador y Planta de Separación)
-  final Map<String, double>? ecoce_dim_cap; // Dimensiones de prensado {largo, ancho}
-  final double? ecoce_peso_cap; // Peso de prensado en kg (formato 5.3 hasta 99999.999)
+  final Map<String, double>? ecoceDimCap; // Dimensiones de prensado {largo, ancho}
+  final double? ecocePesoCap; // Peso de prensado en kg (formato 5.3 hasta 99999.999)
   
   // Metadata
   final DateTime createdAt;
@@ -86,39 +87,40 @@ class EcoceProfileModel {
 
   EcoceProfileModel({
     required this.id,
-    required this.ecoce_tipo_actor,
-    required this.ecoce_nombre,
-    required this.ecoce_folio,
-    this.ecoce_rfc,
-    required this.ecoce_nombre_contacto,
-    required this.ecoce_correo_contacto,
-    required this.ecoce_tel_contacto,
-    required this.ecoce_tel_empresa,
-    required this.ecoce_calle,
-    required this.ecoce_num_ext,
-    required this.ecoce_cp,
-    this.ecoce_estado,
-    this.ecoce_municipio,
-    this.ecoce_colonia,
-    this.ecoce_ref_ubi,
-    this.ecoce_link_maps,
-    this.ecoce_poligono_loc,
-    this.ecoce_latitud,
-    this.ecoce_longitud,
-    required this.ecoce_fecha_reg,
-    required this.ecoce_lista_materiales,
-    this.ecoce_transporte,
-    this.ecoce_link_red_social,
-    this.ecoce_estatus_aprobacion = 0, // Por defecto pendiente
-    this.ecoce_fecha_aprobacion,
-    this.ecoce_aprobado_por,
-    this.ecoce_comentarios_revision,
-    this.ecoce_const_sit_fis,
-    this.ecoce_comp_domicilio,
-    this.ecoce_banco_caratula,
-    this.ecoce_ine,
-    this.ecoce_dim_cap,
-    this.ecoce_peso_cap,
+    required this.ecoceTipoActor,
+    this.ecoceSubtipo,
+    required this.ecoceNombre,
+    required this.ecoceFolio,
+    this.ecoceRfc,
+    required this.ecoceNombreContacto,
+    required this.ecoceCorreoContacto,
+    required this.ecoceTelContacto,
+    required this.ecoceTelEmpresa,
+    required this.ecoceCalle,
+    required this.ecoceNumExt,
+    required this.ecoceCp,
+    this.ecoceEstado,
+    this.ecoceMunicipio,
+    this.ecoceColonia,
+    this.ecoceRefUbi,
+    this.ecoceLinkMaps,
+    this.ecocePoligonoLoc,
+    this.ecoceLatitud,
+    this.ecoceLongitud,
+    required this.ecoceFechaReg,
+    required this.ecoceListaMateriales,
+    this.ecoceTransporte,
+    this.ecoceLinkRedSocial,
+    this.ecoceEstatusAprobacion = 0, // Por defecto pendiente
+    this.ecoceFechaAprobacion,
+    this.ecoceAprobadoPor,
+    this.ecoceComentariosRevision,
+    this.ecoceConstSitFis,
+    this.ecoceCompDomicilio,
+    this.ecoceBancoCaratula,
+    this.ecoceIne,
+    this.ecoceDimCap,
+    this.ecocePesoCap,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -129,43 +131,44 @@ class EcoceProfileModel {
     
     return EcoceProfileModel(
       id: doc.id,
-      ecoce_tipo_actor: data['ecoce_tipo_actor'] ?? '',
-      ecoce_nombre: data['ecoce_nombre'] ?? '',
-      ecoce_folio: data['ecoce_folio'] ?? '',
-      ecoce_rfc: data['ecoce_rfc'],
-      ecoce_nombre_contacto: data['ecoce_nombre_contacto'] ?? '',
-      ecoce_correo_contacto: data['ecoce_correo_contacto'] ?? '',
-      ecoce_tel_contacto: data['ecoce_tel_contacto'] ?? '',
-      ecoce_tel_empresa: data['ecoce_tel_empresa'] ?? '',
-      ecoce_calle: data['ecoce_calle'] ?? '',
-      ecoce_num_ext: data['ecoce_num_ext'] ?? '',
-      ecoce_cp: data['ecoce_cp'] ?? '',
-      ecoce_estado: data['ecoce_estado'],
-      ecoce_municipio: data['ecoce_municipio'],
-      ecoce_colonia: data['ecoce_colonia'],
-      ecoce_ref_ubi: data['ecoce_ref_ubi'],
-      ecoce_link_maps: data['ecoce_link_maps'],
-      ecoce_poligono_loc: data['ecoce_poligono_loc'],
-      ecoce_latitud: data['ecoce_latitud']?.toDouble(),
-      ecoce_longitud: data['ecoce_longitud']?.toDouble(),
-      ecoce_fecha_reg: (data['ecoce_fecha_reg'] as Timestamp).toDate(),
-      ecoce_lista_materiales: List<String>.from(data['ecoce_lista_materiales'] ?? []),
-      ecoce_transporte: data['ecoce_transporte'],
-      ecoce_link_red_social: data['ecoce_link_red_social'],
-      ecoce_estatus_aprobacion: data['ecoce_estatus_aprobacion'] ?? 0,
-      ecoce_fecha_aprobacion: data['ecoce_fecha_aprobacion'] != null 
+      ecoceTipoActor: data['ecoce_tipo_actor'] ?? '',
+      ecoceSubtipo: data['ecoce_subtipo'],
+      ecoceNombre: data['ecoce_nombre'] ?? '',
+      ecoceFolio: data['ecoce_folio'] ?? '',
+      ecoceRfc: data['ecoce_rfc'],
+      ecoceNombreContacto: data['ecoce_nombre_contacto'] ?? '',
+      ecoceCorreoContacto: data['ecoce_correo_contacto'] ?? '',
+      ecoceTelContacto: data['ecoce_tel_contacto'] ?? '',
+      ecoceTelEmpresa: data['ecoce_tel_empresa'] ?? '',
+      ecoceCalle: data['ecoce_calle'] ?? '',
+      ecoceNumExt: data['ecoce_num_ext'] ?? '',
+      ecoceCp: data['ecoce_cp'] ?? '',
+      ecoceEstado: data['ecoce_estado'],
+      ecoceMunicipio: data['ecoce_municipio'],
+      ecoceColonia: data['ecoce_colonia'],
+      ecoceRefUbi: data['ecoce_ref_ubi'],
+      ecoceLinkMaps: data['ecoce_link_maps'],
+      ecocePoligonoLoc: data['ecoce_poligono_loc'],
+      ecoceLatitud: data['ecoce_latitud']?.toDouble(),
+      ecoceLongitud: data['ecoce_longitud']?.toDouble(),
+      ecoceFechaReg: (data['ecoce_fecha_reg'] as Timestamp).toDate(),
+      ecoceListaMateriales: List<String>.from(data['ecoce_lista_materiales'] ?? []),
+      ecoceTransporte: data['ecoce_transporte'],
+      ecoceLinkRedSocial: data['ecoce_link_red_social'],
+      ecoceEstatusAprobacion: data['ecoce_estatus_aprobacion'] ?? 0,
+      ecoceFechaAprobacion: data['ecoce_fecha_aprobacion'] != null 
           ? (data['ecoce_fecha_aprobacion'] as Timestamp).toDate() 
           : null,
-      ecoce_aprobado_por: data['ecoce_aprobado_por'],
-      ecoce_comentarios_revision: data['ecoce_comentarios_revision'],
-      ecoce_const_sit_fis: data['ecoce_const_sit_fis'],
-      ecoce_comp_domicilio: data['ecoce_comp_domicilio'],
-      ecoce_banco_caratula: data['ecoce_banco_caratula'],
-      ecoce_ine: data['ecoce_ine'],
-      ecoce_dim_cap: data['ecoce_dim_cap'] != null 
+      ecoceAprobadoPor: data['ecoce_aprobado_por'],
+      ecoceComentariosRevision: data['ecoce_comentarios_revision'],
+      ecoceConstSitFis: data['ecoce_const_sit_fis'],
+      ecoceCompDomicilio: data['ecoce_comp_domicilio'],
+      ecoceBancoCaratula: data['ecoce_banco_caratula'],
+      ecoceIne: data['ecoce_ine'],
+      ecoceDimCap: data['ecoce_dim_cap'] != null 
           ? Map<String, double>.from(data['ecoce_dim_cap'])
           : null,
-      ecoce_peso_cap: data['ecoce_peso_cap']?.toDouble(),
+      ecocePesoCap: data['ecoce_peso_cap']?.toDouble(),
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
     );
@@ -174,63 +177,74 @@ class EcoceProfileModel {
   // Convertir a Map para Firebase
   Map<String, dynamic> toFirestore() {
     return {
-      'ecoce_tipo_actor': ecoce_tipo_actor,
-      'ecoce_nombre': ecoce_nombre,
-      'ecoce_folio': ecoce_folio,
-      'ecoce_rfc': ecoce_rfc,
-      'ecoce_nombre_contacto': ecoce_nombre_contacto,
-      'ecoce_correo_contacto': ecoce_correo_contacto,
-      'ecoce_tel_contacto': ecoce_tel_contacto,
-      'ecoce_tel_empresa': ecoce_tel_empresa,
-      'ecoce_calle': ecoce_calle,
-      'ecoce_num_ext': ecoce_num_ext,
-      'ecoce_cp': ecoce_cp,
-      'ecoce_estado': ecoce_estado,
-      'ecoce_municipio': ecoce_municipio,
-      'ecoce_colonia': ecoce_colonia,
-      'ecoce_ref_ubi': ecoce_ref_ubi,
-      'ecoce_link_maps': ecoce_link_maps,
-      'ecoce_poligono_loc': ecoce_poligono_loc,
-      'ecoce_latitud': ecoce_latitud,
-      'ecoce_longitud': ecoce_longitud,
-      'ecoce_fecha_reg': Timestamp.fromDate(ecoce_fecha_reg),
-      'ecoce_lista_materiales': ecoce_lista_materiales,
-      'ecoce_transporte': ecoce_transporte,
-      'ecoce_link_red_social': ecoce_link_red_social,
-      'ecoce_estatus_aprobacion': ecoce_estatus_aprobacion,
-      'ecoce_fecha_aprobacion': ecoce_fecha_aprobacion != null 
-          ? Timestamp.fromDate(ecoce_fecha_aprobacion!) 
+      'ecoce_tipo_actor': ecoceTipoActor,
+      'ecoce_subtipo': ecoceSubtipo,
+      'ecoce_nombre': ecoceNombre,
+      'ecoce_folio': ecoceFolio,
+      'ecoce_rfc': ecoceRfc,
+      'ecoce_nombre_contacto': ecoceNombreContacto,
+      'ecoce_correo_contacto': ecoceCorreoContacto,
+      'ecoce_tel_contacto': ecoceTelContacto,
+      'ecoce_tel_empresa': ecoceTelEmpresa,
+      'ecoce_calle': ecoceCalle,
+      'ecoce_num_ext': ecoceNumExt,
+      'ecoce_cp': ecoceCp,
+      'ecoce_estado': ecoceEstado,
+      'ecoce_municipio': ecoceMunicipio,
+      'ecoce_colonia': ecoceColonia,
+      'ecoce_ref_ubi': ecoceRefUbi,
+      'ecoce_link_maps': ecoceLinkMaps,
+      'ecoce_poligono_loc': ecocePoligonoLoc,
+      'ecoce_latitud': ecoceLatitud,
+      'ecoce_longitud': ecoceLongitud,
+      'ecoce_fecha_reg': Timestamp.fromDate(ecoceFechaReg),
+      'ecoce_lista_materiales': ecoceListaMateriales,
+      'ecoce_transporte': ecoceTransporte,
+      'ecoce_link_red_social': ecoceLinkRedSocial,
+      'ecoce_estatus_aprobacion': ecoceEstatusAprobacion,
+      'ecoce_fecha_aprobacion': ecoceFechaAprobacion != null 
+          ? Timestamp.fromDate(ecoceFechaAprobacion!) 
           : null,
-      'ecoce_aprobado_por': ecoce_aprobado_por,
-      'ecoce_comentarios_revision': ecoce_comentarios_revision,
-      'ecoce_const_sit_fis': ecoce_const_sit_fis,
-      'ecoce_comp_domicilio': ecoce_comp_domicilio,
-      'ecoce_banco_caratula': ecoce_banco_caratula,
-      'ecoce_ine': ecoce_ine,
-      'ecoce_dim_cap': ecoce_dim_cap,
-      'ecoce_peso_cap': ecoce_peso_cap,
+      'ecoce_aprobado_por': ecoceAprobadoPor,
+      'ecoce_comentarios_revision': ecoceComentariosRevision,
+      'ecoce_const_sit_fis': ecoceConstSitFis,
+      'ecoce_comp_domicilio': ecoceCompDomicilio,
+      'ecoce_banco_caratula': ecoceBancoCaratula,
+      'ecoce_ine': ecoceIne,
+      'ecoce_dim_cap': ecoceDimCap,
+      'ecoce_peso_cap': ecocePesoCap,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };
   }
 
   // Método para verificar si es usuario Origen (Acopiador o Planta de Separación)
-  bool get isOrigen => ecoce_tipo_actor == 'A' || ecoce_tipo_actor == 'P';
+  bool get isOrigen => ecoceTipoActor == 'O';
+  
+  // Métodos para identificar subtipo de usuario origen
+  bool get isAcopiador => ecoceTipoActor == 'O' && ecoceSubtipo == 'A';
+  bool get isPlantaSeparacion => ecoceTipoActor == 'O' && ecoceSubtipo == 'P';
 
   // Métodos auxiliares para estado de aprobación
-  bool get isPending => ecoce_estatus_aprobacion == 0;
-  bool get isApproved => ecoce_estatus_aprobacion == 1;
-  bool get isRejected => ecoce_estatus_aprobacion == 2;
+  bool get isPending => ecoceEstatusAprobacion == 0;
+  bool get isApproved => ecoceEstatusAprobacion == 1;
+  bool get isRejected => ecoceEstatusAprobacion == 2;
   
-  EcoceApprovalStatus get approvalStatus => EcoceApprovalStatus.fromValue(ecoce_estatus_aprobacion);
+  EcoceApprovalStatus get approvalStatus => EcoceApprovalStatus.fromValue(ecoceEstatusAprobacion);
   
   // Método para obtener el nombre del tipo de actor
   String get tipoActorLabel {
-    switch (ecoce_tipo_actor) {
-      case 'A':
-        return 'Acopiador';
-      case 'P':
-        return 'Planta de Separación';
+    switch (ecoceTipoActor) {
+      case 'O':
+        // Para usuarios origen, usar el subtipo
+        switch (ecoceSubtipo) {
+          case 'A':
+            return 'Acopiador';
+          case 'P':
+            return 'Planta de Separación';
+          default:
+            return 'Usuario Origen';
+        }
       case 'R':
         return 'Reciclador';
       case 'T':
@@ -239,16 +253,17 @@ class EcoceProfileModel {
         return 'Transportista';
       case 'L':
         return 'Laboratorio';
+      case 'D':
+        return 'Desarrollo de Mercado';
       default:
         return 'Desconocido';
     }
   }
 
   // Obtener lista de materiales según el tipo de usuario
-  static List<Map<String, String>> getMaterialesByTipo(String tipoActor) {
+  static List<Map<String, String>> getMaterialesByTipo(String tipoActor, [String? subtipo]) {
     switch (tipoActor) {
-      case 'A': // Acopiador (Usuario Origen)
-      case 'P': // Planta de Separación (Usuario Origen)
+      case 'O': // Usuario Origen
         return [
           {'id': 'ecoce_epf_poli', 'label': 'EPF - Poli (PE)'},
           {'id': 'ecoce_epf_pp', 'label': 'EPF - PP'},

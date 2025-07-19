@@ -198,7 +198,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
   Widget _buildQRButton(Map<String, dynamic> lote) {
     return Container(
       decoration: BoxDecoration(
-        color: BioWayColors.ecoceGreen.withOpacity(0.1),
+        color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
       ),
       child: IconButton(
@@ -238,7 +238,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                     end: Alignment.bottomRight,
                     colors: [
                       BioWayColors.ecoceGreen,
-                      BioWayColors.ecoceGreen.withOpacity(0.8),
+                      BioWayColors.ecoceGreen.withValues(alpha: 0.8),
                     ],
                   ),
                 ),
@@ -253,7 +253,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                         height: 200,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.1),
+                          color: Colors.white.withValues(alpha: 0.1),
                         ),
                       ),
                     ),
@@ -265,7 +265,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                         height: 150,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.05),
+                          color: Colors.white.withValues(alpha: 0.05),
                         ),
                       ),
                     ),
@@ -283,7 +283,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                                 'Buen día 👋',
                                 style: TextStyle(
                                   fontSize: 16,
-                                  color: Colors.white.withOpacity(0.9),
+                                  color: Colors.white.withValues(alpha: 0.9),
                                 ),
                               ),
                               Container(
@@ -292,7 +292,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: Colors.white.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Row(
@@ -300,14 +300,14 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                                     Icon(
                                       Icons.calendar_today,
                                       size: 14,
-                                      color: Colors.white.withOpacity(0.9),
+                                      color: Colors.white.withValues(alpha: 0.9),
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
                                       '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.white.withOpacity(0.9),
+                                        color: Colors.white.withValues(alpha: 0.9),
                                       ),
                                     ),
                                   ],
@@ -337,7 +337,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.9),
+                                  color: Colors.white.withValues(alpha: 0.9),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Row(
@@ -461,13 +461,13 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                             end: Alignment.bottomRight,
                             colors: [
                               BioWayColors.ecoceGreen,
-                              BioWayColors.ecoceGreen.withOpacity(0.8),
+                              BioWayColors.ecoceGreen.withValues(alpha: 0.8),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: BioWayColors.ecoceGreen.withOpacity(0.3),
+                              color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
                               blurRadius: 12,
                               offset: const Offset(0, 6),
                             ),
@@ -487,7 +487,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                                     width: 40,
                                     height: 40,
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.2),
+                                      color: Colors.white.withValues(alpha: 0.2),
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(
@@ -514,7 +514,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                                           'Registra entrada de material',
                                           style: TextStyle(
                                             fontSize: 13,
-                                            color: Colors.white.withOpacity(0.9),
+                                            color: Colors.white.withValues(alpha: 0.9),
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -523,7 +523,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
                                   ),
                                   Icon(
                                     Icons.arrow_forward_ios,
-                                    color: Colors.white.withOpacity(0.8),
+                                    color: Colors.white.withValues(alpha: 0.8),
                                     size: 18,
                                   ),
                                 ],

@@ -26,5 +26,5 @@ class _PlantaSeparacionRegisterScreenState extends BaseProviderRegisterScreenSta
   Color get providerColor => BioWayColors.ecoceGreen;
   
   @override
-  String get folioPrefix => 'PS';
+  String get folioPrefix => 'P';
 }

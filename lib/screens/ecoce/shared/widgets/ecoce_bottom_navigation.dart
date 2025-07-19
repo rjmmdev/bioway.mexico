@@ -82,7 +82,7 @@ class EcoceBottomNavigation extends StatelessWidget {
       decoration: BoxDecoration(
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -281,12 +281,12 @@ class EcoceFloatingActionButton extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             backgroundColor,
-            backgroundColor.withOpacity(0.8),
+            backgroundColor.withValues(alpha: 0.8),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: backgroundColor.withOpacity(0.3),
+            color: backgroundColor.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),

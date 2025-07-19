@@ -30,8 +30,8 @@ class TimelineWidget extends StatelessWidget {
                   height: 40,
                   decoration: BoxDecoration(
                     color: isCompleted 
-                        ? (event['color'] as Color).withOpacity(0.1)
-                        : Colors.grey.withOpacity(0.1),
+                        ? (event['color'] as Color).withValues(alpha: 0.1)
+                        : Colors.grey.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: isCompleted 
@@ -53,8 +53,8 @@ class TimelineWidget extends StatelessWidget {
                     width: 2,
                     height: 80,
                     color: isCompleted 
-                        ? (event['color'] as Color).withOpacity(0.3)
-                        : Colors.grey.withOpacity(0.3),
+                        ? (event['color'] as Color).withValues(alpha: 0.3)
+                        : Colors.grey.withValues(alpha: 0.3),
                   ),
               ],
             ),
@@ -68,13 +68,13 @@ class TimelineWidget extends StatelessWidget {
                 padding: EdgeInsets.all(screenWidth * 0.04),
                 decoration: BoxDecoration(
                   color: isCompleted 
-                      ? (event['color'] as Color).withOpacity(0.05)
-                      : Colors.grey.withOpacity(0.05),
+                      ? (event['color'] as Color).withValues(alpha: 0.05)
+                      : Colors.grey.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isCompleted 
-                        ? (event['color'] as Color).withOpacity(0.2)
-                        : Colors.grey.withOpacity(0.2),
+                        ? (event['color'] as Color).withValues(alpha: 0.2)
+                        : Colors.grey.withValues(alpha: 0.2),
                   ),
                 ),
                 child: Column(

@@ -50,7 +50,7 @@ class GradientBackground extends StatelessWidget {
         // Opacidad opcional
         if (opacity < 1.0)
           Container(
-            color: Colors.white.withOpacity(1.0 - opacity),
+            color: Colors.white.withValues(alpha: 1.0 - opacity),
           ),
 
         // Patrón decorativo opcional
@@ -64,7 +64,7 @@ class GradientBackground extends StatelessWidget {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: BioWayColors.primaryGreen.withOpacity(0.05),
+                color: BioWayColors.primaryGreen.withValues(alpha: 0.05),
               ),
             ),
           ),
@@ -78,7 +78,7 @@ class GradientBackground extends StatelessWidget {
               height: 400,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: BioWayColors.mediumGreen.withOpacity(0.05),
+                color: BioWayColors.mediumGreen.withValues(alpha: 0.05),
               ),
             ),
           ),
@@ -93,7 +93,7 @@ class GradientBackground extends StatelessWidget {
                 child: Container(
                   width: 200,
                   height: 1,
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                 ),
               ),
             );
@@ -134,9 +134,9 @@ class SoftGradientBackground extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                BioWayColors.lightGreen.withOpacity(0.3),
-                BioWayColors.mediumGreen.withOpacity(0.1),
-                Colors.white.withOpacity(0.5),
+                BioWayColors.lightGreen.withValues(alpha: 0.3),
+                BioWayColors.mediumGreen.withValues(alpha: 0.1),
+                Colors.white.withValues(alpha: 0.5),
               ],
               stops: const [0.0, 0.5, 1.0],
             ),
@@ -165,7 +165,7 @@ class WavePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = BioWayColors.primaryGreen.withOpacity(0.05)
+      ..color = BioWayColors.primaryGreen.withValues(alpha: 0.05)
       ..style = PaintingStyle.fill;
 
     final path = Path();
@@ -191,7 +191,7 @@ class WavePainter extends CustomPainter {
     canvas.drawPath(path, paint);
 
     // Segunda onda
-    paint.color = BioWayColors.mediumGreen.withOpacity(0.03);
+    paint.color = BioWayColors.mediumGreen.withValues(alpha: 0.03);
     final path2 = Path();
 
     path2.moveTo(0, size.height * 0.5);

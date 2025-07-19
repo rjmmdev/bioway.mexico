@@ -77,7 +77,6 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
         });
       }
     } catch (e) {
-      print('Error al obtener dirección: $e');
       setState(() {
         _isLoadingAddress = false;
       });

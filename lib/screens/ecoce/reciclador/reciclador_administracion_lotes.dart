@@ -487,7 +487,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                   child: ChoiceChip(
                     label: Text(material),
                     selected: isSelected,
-                    selectedColor: tabColor.withOpacity(0.2),
+                    selectedColor: tabColor.withValues(alpha: 0.2),
                     labelStyle: TextStyle(
                       color: isSelected ? tabColor : Colors.grey[700],
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -546,7 +546,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
         gradient: LinearGradient(
           colors: [
             tabColor,
-            tabColor.withOpacity(0.8),
+            tabColor.withValues(alpha: 0.8),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -554,7 +554,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: tabColor.withOpacity(0.3),
+            color: tabColor.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -713,7 +713,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
   Widget _buildQRButton(Lote lote) {
     return Container(
       decoration: BoxDecoration(
-        color: BioWayColors.ecoceGreen.withOpacity(0.1),
+        color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
       ),
       child: IconButton(

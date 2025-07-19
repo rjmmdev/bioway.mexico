@@ -328,7 +328,7 @@ class _MaestroAprobacionDatosScreenState extends State<MaestroAprobacionDatosScr
             Text(
               widget.usuario.folioTemporal,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
                 fontSize: 14,
               ),
             ),
@@ -348,7 +348,7 @@ class _MaestroAprobacionDatosScreenState extends State<MaestroAprobacionDatosScr
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -360,7 +360,7 @@ class _MaestroAprobacionDatosScreenState extends State<MaestroAprobacionDatosScr
                     width: 60,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: widget.usuario.color.withOpacity(0.1),
+                      color: widget.usuario.color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -389,10 +389,10 @@ class _MaestroAprobacionDatosScreenState extends State<MaestroAprobacionDatosScr
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: widget.usuario.color.withOpacity(0.1),
+                            color: widget.usuario.color.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: widget.usuario.color.withOpacity(0.3),
+                              color: widget.usuario.color.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Text(
@@ -422,7 +422,7 @@ class _MaestroAprobacionDatosScreenState extends State<MaestroAprobacionDatosScr
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -435,7 +435,7 @@ class _MaestroAprobacionDatosScreenState extends State<MaestroAprobacionDatosScr
                     Container(
                       padding: EdgeInsets.all(screenWidth * 0.04),
                       decoration: BoxDecoration(
-                        color: widget.usuario.color.withOpacity(0.05),
+                        color: widget.usuario.color.withValues(alpha: 0.05),
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(12),
                           topRight: Radius.circular(12),
@@ -511,7 +511,7 @@ class _MaestroAprobacionDatosScreenState extends State<MaestroAprobacionDatosScr
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -524,7 +524,7 @@ class _MaestroAprobacionDatosScreenState extends State<MaestroAprobacionDatosScr
                   Container(
                     padding: EdgeInsets.all(screenWidth * 0.04),
                     decoration: BoxDecoration(
-                      color: widget.usuario.color.withOpacity(0.05),
+                      color: widget.usuario.color.withValues(alpha: 0.05),
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(12),
                         topRight: Radius.circular(12),

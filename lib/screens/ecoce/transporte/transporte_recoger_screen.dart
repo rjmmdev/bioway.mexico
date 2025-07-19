@@ -151,7 +151,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -189,7 +189,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -271,7 +271,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                             color: const Color(0xFFE3F2FD),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: const Color(0xFF2196F3).withOpacity(0.3),
+                              color: const Color(0xFF2196F3).withValues(alpha: 0.3),
                             ),
                           ),
                           child: Row(
@@ -305,7 +305,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -520,7 +520,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -623,7 +623,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -703,7 +703,7 @@ class _TransporteRecogerScreenState extends State<TransporteRecogerScreen> {
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
+                                color: Colors.black.withValues(alpha: 0.2),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),

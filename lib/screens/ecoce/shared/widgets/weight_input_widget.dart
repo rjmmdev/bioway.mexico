@@ -124,7 +124,7 @@ class _WeightInputWidgetState extends State<WeightInputWidget> {
             color: BioWayColors.backgroundGrey,
             borderRadius: BorderRadius.circular(screenWidth * 0.03),
             border: Border.all(
-              color: widget.primaryColor.withOpacity(0.3),
+              color: widget.primaryColor.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
@@ -259,7 +259,7 @@ class _WeightInputWidgetState extends State<WeightInputWidget> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(screenWidth * 0.05),
                       border: Border.all(
-                        color: widget.primaryColor.withOpacity(0.3),
+                        color: widget.primaryColor.withValues(alpha: 0.3),
                         width: 1,
                       ),
                     ),

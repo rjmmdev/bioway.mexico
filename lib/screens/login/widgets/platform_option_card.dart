@@ -145,7 +145,7 @@ class _PlatformOptionCardState extends State<PlatformOptionCard>
                           boxShadow: [
                             BoxShadow(
                               color: widget.isDisabled
-                                  ? Colors.grey.withOpacity(0.1)
+                                  ? Colors.grey.withValues(alpha: 0.1)
                                   : widget.iconColor.withOpacity(
                                   0.2 + (0.1 * _elevationAnimation.value)),
                               blurRadius: 20 + (10 * _elevationAnimation.value),
@@ -171,7 +171,7 @@ class _PlatformOptionCardState extends State<PlatformOptionCard>
                           color: widget.isDisabled
                               ? Colors.grey.shade300
                               : _isHovered || _isPressed
-                              ? widget.iconColor.withOpacity(0.3)
+                              ? widget.iconColor.withValues(alpha: 0.3)
                               : Colors.grey.shade200,
                           width: _isHovered || _isPressed ? 2 : 1,
                         ),
@@ -226,7 +226,7 @@ class _PlatformOptionCardState extends State<PlatformOptionCard>
                                         ),
                                         decoration: BoxDecoration(
                                           color: (widget.badgeColor ?? widget.iconColor)
-                                              .withOpacity(0.1),
+                                              .withValues(alpha: 0.1),
                                           borderRadius: BorderRadius.circular(12),
                                         ),
                                         child: Text(
@@ -263,7 +263,7 @@ class _PlatformOptionCardState extends State<PlatformOptionCard>
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
                                 color: (_isHovered || _isPressed)
-                                    ? widget.iconColor.withOpacity(0.1)
+                                    ? widget.iconColor.withValues(alpha: 0.1)
                                     : Colors.transparent,
                                 shape: BoxShape.circle,
                               ),
@@ -304,7 +304,7 @@ class _PlatformOptionCardState extends State<PlatformOptionCard>
                               borderRadius: BorderRadius.circular(20),
                               boxShadow: [
                                 BoxShadow(
-                                  color: widget.iconColor.withOpacity(0.3),
+                                  color: widget.iconColor.withValues(alpha: 0.3),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
@@ -360,7 +360,7 @@ class SimplePlatformCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isSelected
-              ? iconColor.withOpacity(0.1)
+              ? iconColor.withValues(alpha: 0.1)
               : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
@@ -376,7 +376,7 @@ class SimplePlatformCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
+                color: iconColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(

@@ -165,7 +165,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -209,7 +209,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -317,7 +317,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                     color: const Color(0xFFE8F5E9),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color: const Color(0xFF4CAF50).withOpacity(0.3),
+                                      color: const Color(0xFF4CAF50).withValues(alpha: 0.3),
                                     ),
                                   ),
                                   child: Row(
@@ -369,7 +369,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -479,7 +479,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -622,7 +622,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),

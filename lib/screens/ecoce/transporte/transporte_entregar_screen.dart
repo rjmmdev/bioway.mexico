@@ -354,7 +354,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> wit
                     end: Alignment.bottomRight,
                     colors: [
                       BioWayColors.deepBlue,
-                      BioWayColors.deepBlue.withOpacity(0.8),
+                      BioWayColors.deepBlue.withValues(alpha: 0.8),
                     ],
                   ),
                   borderRadius: const BorderRadius.only(
@@ -363,7 +363,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> wit
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: BioWayColors.deepBlue.withOpacity(0.3),
+                      color: BioWayColors.deepBlue.withValues(alpha: 0.3),
                       blurRadius: 10,
                       offset: const Offset(0, 5),
                     ),
@@ -391,7 +391,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> wit
                               'Selecciona los lotes a entregar',
                               style: TextStyle(
                                 fontSize: screenWidth * 0.035,
-                                color: Colors.white.withOpacity(0.9),
+                                color: Colors.white.withValues(alpha: 0.9),
                               ),
                             ),
                           ],
@@ -402,10 +402,10 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> wit
                             vertical: screenHeight * 0.008,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.3),
+                              color: Colors.white.withValues(alpha: 0.3),
                               width: 1,
                             ),
                           ),
@@ -485,7 +485,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> wit
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
+                            color: Colors.black.withValues(alpha: 0.08),
                             blurRadius: 15,
                             offset: const Offset(0, 5),
                           ),
@@ -503,8 +503,8 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> wit
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                   colors: [
-                                    BioWayColors.deepBlue.withOpacity(0.1),
-                                    BioWayColors.deepBlue.withOpacity(0.05),
+                                    BioWayColors.deepBlue.withValues(alpha: 0.1),
+                                    BioWayColors.deepBlue.withValues(alpha: 0.05),
                                   ],
                                 ),
                               ),
@@ -513,7 +513,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> wit
                                   Container(
                                     padding: EdgeInsets.all(screenWidth * 0.025),
                                     decoration: BoxDecoration(
-                                      color: BioWayColors.deepBlue.withOpacity(0.2),
+                                      color: BioWayColors.deepBlue.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Icon(
@@ -645,8 +645,8 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> wit
                                                 begin: Alignment.topLeft,
                                                 end: Alignment.bottomRight,
                                                 colors: [
-                                                  materialColor.withOpacity(0.2),
-                                                  materialColor.withOpacity(0.1),
+                                                  materialColor.withValues(alpha: 0.2),
+                                                  materialColor.withValues(alpha: 0.1),
                                                 ],
                                               ),
                                               borderRadius: BorderRadius.circular(12),
@@ -710,10 +710,10 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> wit
                                                     vertical: 4,
                                                   ),
                                                   decoration: BoxDecoration(
-                                                    color: BioWayColors.warning.withOpacity(0.1),
+                                                    color: BioWayColors.warning.withValues(alpha: 0.1),
                                                     borderRadius: BorderRadius.circular(6),
                                                     border: Border.all(
-                                                      color: BioWayColors.warning.withOpacity(0.3),
+                                                      color: BioWayColors.warning.withValues(alpha: 0.3),
                                                     ),
                                                   ),
                                                   child: Row(
@@ -802,7 +802,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> wit
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 10,
                       offset: const Offset(0, -5),
                     ),
@@ -924,7 +924,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> wit
         vertical: screenWidth * 0.02,
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -951,7 +951,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> wit
                 label,
                 style: TextStyle(
                   fontSize: screenWidth * 0.025,
-                  color: color.withOpacity(0.8),
+                  color: color.withValues(alpha: 0.8),
                 ),
               ),
             ],
@@ -970,7 +970,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> wit
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(

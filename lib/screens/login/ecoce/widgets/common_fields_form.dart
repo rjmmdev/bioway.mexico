@@ -606,7 +606,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
         prefixIcon: Icon(icon, color: BioWayColors.petBlue),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: BioWayColors.lightGrey.withOpacity(0.5),
+        fillColor: BioWayColors.lightGrey.withValues(alpha: 0.5),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -641,15 +641,15 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            BioWayColors.petBlue.withOpacity(0.05),
-            BioWayColors.petBlue.withOpacity(0.02),
+            BioWayColors.petBlue.withValues(alpha: 0.05),
+            BioWayColors.petBlue.withValues(alpha: 0.02),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: BioWayColors.petBlue.withOpacity(0.2),
+          color: BioWayColors.petBlue.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -753,7 +753,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
     return Container(
       height: 200,
       decoration: BoxDecoration(
-        color: BioWayColors.lightGrey.withOpacity(0.3),
+        color: BioWayColors.lightGrey.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: BioWayColors.lightGrey,
@@ -833,7 +833,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: BioWayColors.lightGrey.withOpacity(0.3),
+        color: BioWayColors.lightGrey.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: BioWayColors.lightGrey,
@@ -896,7 +896,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
                   });
                   widget.onDataChanged(widget.formData);
                 },
-                selectedColor: BioWayColors.petBlue.withOpacity(0.2),
+                selectedColor: BioWayColors.petBlue.withValues(alpha: 0.2),
                 checkmarkColor: BioWayColors.petBlue,
                 labelStyle: TextStyle(
                   color: isSelected
@@ -1105,7 +1105,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: BioWayColors.lightGrey.withOpacity(0.3),
+        color: BioWayColors.lightGrey.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: BioWayColors.lightGrey,
@@ -1191,7 +1191,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: hasFile
-              ? BioWayColors.success.withOpacity(0.1)
+              ? BioWayColors.success.withValues(alpha: 0.1)
               : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
@@ -1248,15 +1248,15 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            BioWayColors.petBlue.withOpacity(0.05),
-            BioWayColors.petBlue.withOpacity(0.02),
+            BioWayColors.petBlue.withValues(alpha: 0.05),
+            BioWayColors.petBlue.withValues(alpha: 0.02),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: BioWayColors.petBlue.withOpacity(0.3),
+          color: BioWayColors.petBlue.withValues(alpha: 0.3),
           width: 2,
         ),
       ),

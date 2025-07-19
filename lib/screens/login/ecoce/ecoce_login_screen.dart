@@ -14,7 +14,7 @@ import '../../ecoce/origen/origen_inicio_screen.dart';
 import '../../ecoce/origen/origen_perfil.dart';
 import '../../ecoce/transporte/transporte_escaneo.dart';
 import '../../ecoce/transporte/transporte_perfil_screen.dart';
-import '../../ecoce/maestro/maestro_aprobacion.dart';
+import '../../ecoce/maestro/maestro_aprobaciones_screen.dart';
 
 class ECOCELoginScreen extends StatefulWidget {
   const ECOCELoginScreen({super.key});
@@ -63,9 +63,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
     try {
       // Inicializar Firebase para ECOCE
       await _authService.initializeForPlatform(FirebasePlatform.ecoce);
-      debugPrint('✅ Firebase inicializado para ECOCE');
     } catch (e) {
-      debugPrint('❌ Error al inicializar Firebase para ECOCE: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -226,7 +224,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
               await _authService.signOut();
               return;
             } else if (profile.isRejected) {
-              _showRejectedDialog(profile.ecoce_comentarios_revision ?? 'Tu solicitud ha sido rechazada.');
+              _showRejectedDialog(profile.ecoceComentariosRevision ?? 'Tu solicitud ha sido rechazada.');
               await _authService.signOut();
               return;
             }
@@ -252,12 +250,10 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
             );
 
             // Navegar según el tipo de usuario
-            _navigateToUserScreen(profile.ecoce_tipo_actor);
+            _navigateToUserScreen(profile.ecoceTipoActor);
           }
         } catch (firebaseError) {
           // Si Firebase falla, usar login temporal para desarrollo
-          debugPrint('Error Firebase: $firebaseError');
-          debugPrint('Usando login temporal para desarrollo');
           
           // Simular proceso de login (código mock)
           await Future.delayed(const Duration(seconds: 1));
@@ -390,7 +386,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         targetScreen = const OrigenInicioScreen(); // TEMPORAL
         break;
       case 'maestro ecoce':
-        targetScreen = const MaestroAprobacionScreen();
+        targetScreen = const MaestroAprobacionesScreen();
         break;
     }
 
@@ -724,7 +720,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: BioWayColors.ecoceGreen.withOpacity(0.1),
+                    color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -756,7 +752,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: BioWayColors.warning.withOpacity(0.1),
+                    color: BioWayColors.warning.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -836,7 +832,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: Colors.black.withValues(alpha: 0.1),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
@@ -854,7 +850,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: BioWayColors.ecoceGreen.withOpacity(0.1),
+                          color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -914,7 +910,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                           'Sistema de Trazabilidad',
                           style: TextStyle(
                             fontSize: 18,
-                            color: BioWayColors.ecoceDark.withOpacity(0.7),
+                            color: BioWayColors.ecoceDark.withValues(alpha: 0.7),
                           ),
                         ),
 
@@ -940,7 +936,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                               borderRadius: BorderRadius.circular(20),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
+                                  color: Colors.black.withValues(alpha: 0.1),
                                   blurRadius: 20,
                                   offset: const Offset(0, 10),
                                 ),
@@ -1017,12 +1013,12 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: BioWayColors.warning.withOpacity(0.3),
+                                      color: BioWayColors.warning.withValues(alpha: 0.3),
                                       width: 2,
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.1),
+                                        color: Colors.black.withValues(alpha: 0.1),
                                         blurRadius: 20,
                                         offset: const Offset(0, 10),
                                       ),
@@ -1035,7 +1031,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                                       Container(
                                         padding: const EdgeInsets.all(12),
                                         decoration: BoxDecoration(
-                                          color: BioWayColors.warning.withOpacity(0.1),
+                                          color: BioWayColors.warning.withValues(alpha: 0.1),
                                           borderRadius: BorderRadius.circular(8),
                                         ),
                                         child: Row(
@@ -1133,7 +1129,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: BioWayColors.ecoceGreen.withOpacity(0.2),
+                color: BioWayColors.ecoceGreen.withValues(alpha: 0.2),
                 width: 1,
               ),
             ),
@@ -1216,7 +1212,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: BioWayColors.ecoceGreen.withOpacity(0.2),
+                color: BioWayColors.ecoceGreen.withValues(alpha: 0.2),
                 width: 1,
               ),
             ),
@@ -1259,7 +1255,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
           backgroundColor: BioWayColors.ecoceGreen,
           foregroundColor: Colors.white,
           elevation: _isLoading ? 0 : 3,
-          shadowColor: BioWayColors.ecoceGreen.withOpacity(0.4),
+          shadowColor: BioWayColors.ecoceGreen.withValues(alpha: 0.4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -1376,7 +1372,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         style: OutlinedButton.styleFrom(
           foregroundColor: BioWayColors.warning,
           side: BorderSide(
-            color: BioWayColors.warning.withOpacity(0.5),
+            color: BioWayColors.warning.withValues(alpha: 0.5),
             width: 1,
           ),
           shape: RoundedRectangleBorder(
@@ -1443,10 +1439,10 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: BioWayColors.ecoceGreen.withOpacity(0.05),
+        color: BioWayColors.ecoceGreen.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: BioWayColors.ecoceGreen.withOpacity(0.2),
+          color: BioWayColors.ecoceGreen.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -1480,7 +1476,7 @@ class ECOCEBackgroundPainter extends CustomPainter {
     final paint = Paint()..style = PaintingStyle.fill;
 
     // Círculo decorativo superior
-    paint.color = BioWayColors.ecoceGreen.withOpacity(0.05);
+    paint.color = BioWayColors.ecoceGreen.withValues(alpha: 0.05);
     canvas.drawCircle(
       Offset(size.width * 0.8, -50),
       150,
@@ -1488,7 +1484,7 @@ class ECOCEBackgroundPainter extends CustomPainter {
     );
 
     // Círculo decorativo inferior
-    paint.color = BioWayColors.ecoceGreen.withOpacity(0.03);
+    paint.color = BioWayColors.ecoceGreen.withValues(alpha: 0.03);
     canvas.drawCircle(
       Offset(size.width * 0.2, size.height + 100),
       200,
@@ -1496,7 +1492,7 @@ class ECOCEBackgroundPainter extends CustomPainter {
     );
 
     // Líneas decorativas
-    paint.color = BioWayColors.ecoceGreen.withOpacity(0.02);
+    paint.color = BioWayColors.ecoceGreen.withValues(alpha: 0.02);
     paint.strokeWidth = 1;
     paint.style = PaintingStyle.stroke;
 

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../../../utils/colors.dart';
 import '../../../../widgets/common/simple_map_widget.dart';
 import 'material_selector.dart';
@@ -351,7 +352,7 @@ Widget buildNavigationButtons({
 }
 
 /// Paso 1: Información Básica
-class BasicInfoStep extends StatelessWidget {
+class BasicInfoStep extends StatefulWidget {
   final Map<String, TextEditingController> controllers;
   final VoidCallback onNext;
 
@@ -362,15 +363,82 @@ class BasicInfoStep extends StatelessWidget {
   });
 
   @override
+  State<BasicInfoStep> createState() => _BasicInfoStepState();
+}
+
+class _BasicInfoStepState extends State<BasicInfoStep> {
+  String? _errorMessage;
+  
+  bool _validateFields() {
+    setState(() {
+      _errorMessage = null;
+    });
+    
+    if (widget.controllers['nombreComercial']!.text.trim().isEmpty) {
+      setState(() {
+        _errorMessage = 'El nombre comercial es obligatorio';
+      });
+      return false;
+    }
+    
+    if (widget.controllers['rfc']!.text.trim().isEmpty) {
+      setState(() {
+        _errorMessage = 'El RFC es obligatorio';
+      });
+      return false;
+    }
+    
+    // Validar formato de RFC (básico)
+    final rfc = widget.controllers['rfc']!.text.trim();
+    if (rfc.length != 12 && rfc.length != 13) {
+      setState(() {
+        _errorMessage = 'El RFC debe tener 12 o 13 caracteres';
+      });
+      return false;
+    }
+    
+    if (widget.controllers['nombreContacto']!.text.trim().isEmpty) {
+      setState(() {
+        _errorMessage = 'El nombre del contacto es obligatorio';
+      });
+      return false;
+    }
+    
+    if (widget.controllers['telefono']!.text.trim().isEmpty) {
+      setState(() {
+        _errorMessage = 'El teléfono móvil es obligatorio';
+      });
+      return false;
+    }
+    
+    // Validar formato de teléfono básico (al menos 10 dígitos)
+    final telefono = widget.controllers['telefono']!.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (telefono.length < 10) {
+      setState(() {
+        _errorMessage = 'El teléfono debe tener al menos 10 dígitos';
+      });
+      return false;
+    }
+    
+    return true;
+  }
+  
+  void _handleNext() {
+    if (_validateFields()) {
+      widget.onNext();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        buildStepTitle(1, 5, 'Información Básica', 'Datos principales de tu centro de acopio'),
+        buildStepTitle(1, 5, 'Información Básica', 'Datos principales de tu centro'),
         const SizedBox(height: 32),
 
         buildTextField(
-          controller: controllers['nombreComercial']!,
+          controller: widget.controllers['nombreComercial']!,
           label: 'Nombre Comercial *',
           hint: 'Ej: Centro de Acopio San Juan',
           icon: Icons.business,
@@ -378,11 +446,10 @@ class BasicInfoStep extends StatelessWidget {
         const SizedBox(height: 20),
 
         buildTextField(
-          controller: controllers['rfc']!,
-          label: 'RFC (Opcional)',
+          controller: widget.controllers['rfc']!,
+          label: 'RFC *',
           hint: 'XXXX000000XXX',
           icon: Icons.article,
-          helperText: 'Tienes 2 semanas para proporcionarlo',
           inputFormatters: [
             LengthLimitingTextInputFormatter(13),
             FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9]')),
@@ -394,7 +461,7 @@ class BasicInfoStep extends StatelessWidget {
         const SizedBox(height: 20),
 
         buildTextField(
-          controller: controllers['nombreContacto']!,
+          controller: widget.controllers['nombreContacto']!,
           label: 'Nombre del Contacto *',
           hint: 'Nombre completo',
           icon: Icons.person,
@@ -405,7 +472,7 @@ class BasicInfoStep extends StatelessWidget {
           children: [
             Expanded(
               child: buildTextField(
-                controller: controllers['telefono']!,
+                controller: widget.controllers['telefono']!,
                 label: 'Teléfono Móvil *',
                 hint: '10 dígitos',
                 icon: Icons.phone_android,
@@ -419,7 +486,7 @@ class BasicInfoStep extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: buildTextField(
-                controller: controllers['telefonoOficina']!,
+                controller: widget.controllers['telefonoOficina']!,
                 label: 'Teléfono Oficina',
                 hint: 'Opcional',
                 icon: Icons.phone,
@@ -432,9 +499,34 @@ class BasicInfoStep extends StatelessWidget {
             ),
           ],
         ),
+        
+        if (_errorMessage != null) ...[
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.red, fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        
         const SizedBox(height: 40),
 
-        buildNavigationButtons(onNext: onNext),
+        buildNavigationButtons(onNext: _handleNext),
       ],
     );
   }
@@ -726,15 +818,59 @@ class _LocationStepState extends State<LocationStep> {
     widget.onLocationSelected?.call(location, '${location.latitude}, ${location.longitude}');
   }
 
+  String _getValidationMessage() {
+    if (_selectedLocation == null) {
+      return 'Debes generar tu ubicación en el mapa';
+    }
+    
+    if (!_locationConfirmed) {
+      return 'Debes confirmar tu ubicación para continuar';
+    }
+    
+    final missingFields = <String>[];
+    
+    if (widget.controllers['direccion']!.text.trim().isEmpty) {
+      missingFields.add('Dirección/Calle');
+    }
+    if (widget.controllers['numExt']!.text.trim().isEmpty) {
+      missingFields.add('Número exterior');
+    }
+    if (widget.controllers['cp']!.text.trim().isEmpty) {
+      missingFields.add('Código postal');
+    }
+    if (widget.controllers['estado']!.text.trim().isEmpty) {
+      missingFields.add('Estado');
+    }
+    if (widget.controllers['municipio']!.text.trim().isEmpty) {
+      missingFields.add('Municipio');
+    }
+    if (widget.controllers['colonia']!.text.trim().isEmpty) {
+      missingFields.add('Colonia');
+    }
+    if (widget.controllers['referencias']!.text.trim().isEmpty) {
+      missingFields.add('Referencias');
+    }
+    
+    if (missingFields.isNotEmpty) {
+      if (missingFields.length == 1) {
+        return 'Campo requerido: ${missingFields.first}';
+      } else {
+        return 'Faltan ${missingFields.length} campos requeridos';
+      }
+    }
+    
+    return 'Completa todos los campos para continuar';
+  }
+
   bool _canContinue() {
     // Validar todos los campos requeridos
-    final hasRequiredFields = widget.controllers['estado']!.text.isNotEmpty &&
-        widget.controllers['municipio']!.text.isNotEmpty &&
-        widget.controllers['colonia']!.text.isNotEmpty &&
-        widget.controllers['cp']!.text.isNotEmpty &&
-        widget.controllers['direccion']!.text.isNotEmpty &&
-        widget.controllers['numExt']!.text.isNotEmpty &&
-        widget.controllers['referencias']!.text.isNotEmpty;
+    final hasRequiredFields = widget.controllers['estado']!.text.trim().isNotEmpty &&
+        widget.controllers['municipio']!.text.trim().isNotEmpty &&
+        widget.controllers['colonia']!.text.trim().isNotEmpty &&
+        widget.controllers['cp']!.text.trim().isNotEmpty &&
+        widget.controllers['direccion']!.text.trim().isNotEmpty &&
+        widget.controllers['numExt']!.text.trim().isNotEmpty &&
+        widget.controllers['referencias']!.text.trim().isNotEmpty;
     
     // También debe tener ubicación confirmada
     return hasRequiredFields && _selectedLocation != null && _locationConfirmed;
@@ -963,34 +1099,30 @@ class _LocationStepState extends State<LocationStep> {
         ],
         
         // Mensaje de validación si falta algo
-        if (!_canContinue() && (_selectedLocation != null || _hasTriedToContinue())) ...[
+        if (!_canContinue()) ...[
           const SizedBox(height: 20),
           Container(
             padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: BioWayColors.warning.withValues(alpha: 0.1),
+              color: Colors.red.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: BioWayColors.warning.withValues(alpha: 0.3),
+                color: Colors.red.withValues(alpha: 0.3),
               ),
             ),
             child: Row(
               children: [
                 Icon(
-                  Icons.info_outline,
-                  color: BioWayColors.warning,
+                  Icons.error_outline,
+                  color: Colors.red,
                   size: 20,
                 ),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    _selectedLocation == null 
-                        ? 'Debes generar y confirmar tu ubicación en el mapa'
-                        : !_locationConfirmed 
-                            ? 'Debes confirmar tu ubicación para continuar'
-                            : 'Completa todos los campos requeridos',
+                    _getValidationMessage(),
                     style: TextStyle(
-                      color: BioWayColors.warning,
+                      color: Colors.red,
                       fontSize: 13,
                     ),
                   ),
@@ -1003,9 +1135,8 @@ class _LocationStepState extends State<LocationStep> {
         const SizedBox(height: 40),
 
         buildNavigationButtons(
-          onNext: _showConfirmationDialog,
+          onNext: _canContinue() ? _showConfirmationDialog : () {},
           onPrevious: widget.onPrevious,
-          isLoading: !_canContinue(),
         ),
       ],
     );
@@ -1200,7 +1331,7 @@ class MapPreview extends StatelessWidget {
 }
 
 /// Paso 3: Información Operativa
-class OperationsStep extends StatelessWidget {
+class OperationsStep extends StatefulWidget {
   final Map<String, TextEditingController> controllers;
   final Set<String> selectedMaterials;
   final bool hasTransport;
@@ -1227,6 +1358,65 @@ class OperationsStep extends StatelessWidget {
   });
 
   @override
+  State<OperationsStep> createState() => _OperationsStepState();
+}
+
+class _OperationsStepState extends State<OperationsStep> {
+  String? _errorMessage;
+  
+  bool _validateFields() {
+    setState(() {
+      _errorMessage = null;
+    });
+    
+    // Validar que haya al menos un material seleccionado
+    if (widget.selectedMaterials.isEmpty) {
+      setState(() {
+        _errorMessage = 'Debes seleccionar al menos un tipo de material';
+      });
+      return false;
+    }
+    
+    // Validar capacidad si se muestra esa sección
+    if (widget.showCapacitySection) {
+      final largo = widget.controllers['largo']!.text.trim();
+      final ancho = widget.controllers['ancho']!.text.trim();
+      final peso = widget.controllers['peso']!.text.trim();
+      
+      if (largo.isEmpty || ancho.isEmpty || peso.isEmpty) {
+        setState(() {
+          _errorMessage = 'Debes completar todas las dimensiones de capacidad';
+        });
+        return false;
+      }
+      
+      // Validar que sean números válidos
+      if (double.tryParse(largo) == null || double.tryParse(ancho) == null || double.tryParse(peso) == null) {
+        setState(() {
+          _errorMessage = 'Las dimensiones deben ser números válidos';
+        });
+        return false;
+      }
+      
+      // Validar que sean valores positivos
+      if (double.parse(largo) <= 0 || double.parse(ancho) <= 0 || double.parse(peso) <= 0) {
+        setState(() {
+          _errorMessage = 'Las dimensiones deben ser mayores a cero';
+        });
+        return false;
+      }
+    }
+    
+    return true;
+  }
+  
+  void _handleNext() {
+    if (_validateFields()) {
+      widget.onNext();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1235,9 +1425,9 @@ class OperationsStep extends StatelessWidget {
         const SizedBox(height: 32),
 
         MaterialSelector(
-          selectedMaterials: selectedMaterials,
-          onMaterialToggle: onMaterialToggle,
-          customMaterials: customMaterials,
+          selectedMaterials: widget.selectedMaterials,
+          onMaterialToggle: widget.onMaterialToggle,
+          customMaterials: widget.customMaterials,
         ),
         const SizedBox(height: 24),
 
@@ -1283,8 +1473,8 @@ class OperationsStep extends StatelessWidget {
                 ),
               ),
               Switch(
-                value: hasTransport,
-                onChanged: isTransportLocked ? null : onTransportChanged,
+                value: widget.hasTransport,
+                onChanged: widget.isTransportLocked ? null : widget.onTransportChanged,
                 activeColor: BioWayColors.petBlue,
               ),
             ],
@@ -1292,27 +1482,52 @@ class OperationsStep extends StatelessWidget {
         ),
         const SizedBox(height: 24),
 
-        if (showCapacitySection) ...[
+        if (widget.showCapacitySection) ...[
           CapacitySection(
-            largoController: controllers['largo']!,
-            anchoController: controllers['ancho']!,
-            weightController: controllers['peso']!,
+            largoController: widget.controllers['largo']!,
+            anchoController: widget.controllers['ancho']!,
+            weightController: widget.controllers['peso']!,
           ),
           const SizedBox(height: 24),
         ],
 
         buildTextField(
-          controller: controllers['linkRedSocial']!,
+          controller: widget.controllers['linkRedSocial']!,
           label: 'Página web o red social (opcional)',
           hint: 'https://www.ejemplo.com',
           icon: Icons.language,
           keyboardType: TextInputType.url,
         ),
+        
+        if (_errorMessage != null) ...[
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.red, fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        
         const SizedBox(height: 40),
 
         buildNavigationButtons(
-          onNext: onNext,
-          onPrevious: onPrevious,
+          onNext: _handleNext,
+          onPrevious: widget.onPrevious,
         ),
       ],
     );
@@ -1382,7 +1597,7 @@ class _DimensionsInputState extends State<DimensionsInput> {
                     border: InputBorder.none,
                   ),
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                    DecimalTextInputFormatter(),
                   ],
                 ),
               ),
@@ -1410,7 +1625,7 @@ class _DimensionsInputState extends State<DimensionsInput> {
                     border: InputBorder.none,
                   ),
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                    DecimalTextInputFormatter(),
                   ],
                 ),
               ),
@@ -1531,19 +1746,71 @@ class CapacitySection extends StatelessWidget {
 }
 
 /// Paso 4: Datos Fiscales y Documentos
-class FiscalDataStep extends StatelessWidget {
+class FiscalDataStep extends StatefulWidget {
   final Map<String, String?> selectedFiles;
-  final Function(String) onFileToggle;
+  final Map<String, PlatformFile?> platformFiles;
+  final Function(String, PlatformFile?, String?) onFileSelected;
   final VoidCallback onNext;
   final VoidCallback onPrevious;
+  final bool isUploading;
 
   const FiscalDataStep({
     super.key,
     required this.selectedFiles,
-    required this.onFileToggle,
+    required this.platformFiles,
+    required this.onFileSelected,
     required this.onNext,
     required this.onPrevious,
+    this.isUploading = false,
   });
+  
+  @override
+  State<FiscalDataStep> createState() => _FiscalDataStepState();
+}
+
+class _FiscalDataStepState extends State<FiscalDataStep> {
+  String? _errorMessage;
+  
+  bool _validateDocuments() {
+    setState(() {
+      _errorMessage = null;
+    });
+    
+    // Verificar que todos los documentos estén seleccionados
+    final missingDocs = <String>[];
+    
+    if (widget.selectedFiles['const_sit_fis'] == null) {
+      missingDocs.add('Constancia de Situación Fiscal');
+    }
+    if (widget.selectedFiles['comp_domicilio'] == null) {
+      missingDocs.add('Comprobante de Domicilio');
+    }
+    if (widget.selectedFiles['banco_caratula'] == null) {
+      missingDocs.add('Carátula de Estado de Cuenta');
+    }
+    if (widget.selectedFiles['ine'] == null) {
+      missingDocs.add('INE');
+    }
+    
+    if (missingDocs.isNotEmpty) {
+      setState(() {
+        if (missingDocs.length == 1) {
+          _errorMessage = 'Falta subir: ${missingDocs.first}';
+        } else {
+          _errorMessage = 'Faltan ${missingDocs.length} documentos por subir';
+        }
+      });
+      return false;
+    }
+    
+    return true;
+  }
+  
+  void _handleNext() {
+    if (_validateDocuments()) {
+      widget.onNext();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1557,9 +1824,9 @@ class FiscalDataStep extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: BioWayColors.info.withOpacity(0.1),
+            color: BioWayColors.info.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: BioWayColors.info.withOpacity(0.3)),
+            border: Border.all(color: BioWayColors.info.withValues(alpha: 0.3)),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1580,7 +1847,7 @@ class FiscalDataStep extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Sube los documentos en formato PDF o imagen. Máximo 5MB por archivo.\nTienes 2 semanas para completar esta documentación.',
+                      'Sube los documentos en formato PDF o imagen. Máximo 5MB por archivo.\nTodos los documentos son obligatorios para continuar.',
                       style: TextStyle(
                         fontSize: 12,
                         color: BioWayColors.textGrey,
@@ -1596,14 +1863,41 @@ class FiscalDataStep extends StatelessWidget {
         const SizedBox(height: 24),
 
         DocumentUploader(
-          selectedFiles: selectedFiles,
-          onFileToggle: onFileToggle,
+          selectedFiles: widget.selectedFiles,
+          onFileSelected: widget.onFileSelected,
+          platformFiles: widget.platformFiles,
+          isUploading: widget.isUploading,
         ),
+        
+        if (_errorMessage != null) ...[
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.red, fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        
         const SizedBox(height: 40),
 
         buildNavigationButtons(
-          onNext: onNext,
-          onPrevious: onPrevious,
+          onNext: _handleNext,
+          onPrevious: widget.onPrevious,
           nextLabel: 'Siguiente',
         ),
       ],
@@ -1612,7 +1906,7 @@ class FiscalDataStep extends StatelessWidget {
 }
 
 /// Paso 5: Credenciales de Acceso
-class CredentialsStep extends StatelessWidget {
+class CredentialsStep extends StatefulWidget {
   final Map<String, TextEditingController> controllers;
   final bool acceptTerms;
   final bool obscurePassword;
@@ -1639,6 +1933,86 @@ class CredentialsStep extends StatelessWidget {
   });
 
   @override
+  State<CredentialsStep> createState() => _CredentialsStepState();
+}
+
+class _CredentialsStepState extends State<CredentialsStep> {
+  String? _errorMessage;
+  
+  bool _validateFields() {
+    setState(() {
+      _errorMessage = null;
+    });
+    
+    final email = widget.controllers['email']!.text.trim();
+    final password = widget.controllers['password']!.text;
+    final confirmPassword = widget.controllers['confirmPassword']!.text;
+    
+    // Validar email
+    if (email.isEmpty) {
+      setState(() {
+        _errorMessage = 'El correo electrónico es obligatorio';
+      });
+      return false;
+    }
+    
+    // Validar formato de email
+    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+    if (!emailRegex.hasMatch(email)) {
+      setState(() {
+        _errorMessage = 'Ingresa un correo electrónico válido';
+      });
+      return false;
+    }
+    
+    // Validar contraseña
+    if (password.isEmpty) {
+      setState(() {
+        _errorMessage = 'La contraseña es obligatoria';
+      });
+      return false;
+    }
+    
+    if (password.length < 6) {
+      setState(() {
+        _errorMessage = 'La contraseña debe tener al menos 6 caracteres';
+      });
+      return false;
+    }
+    
+    // Validar confirmación de contraseña
+    if (confirmPassword.isEmpty) {
+      setState(() {
+        _errorMessage = 'Debes confirmar tu contraseña';
+      });
+      return false;
+    }
+    
+    if (password != confirmPassword) {
+      setState(() {
+        _errorMessage = 'Las contraseñas no coinciden';
+      });
+      return false;
+    }
+    
+    // Validar términos
+    if (!widget.acceptTerms) {
+      setState(() {
+        _errorMessage = 'Debes aceptar los términos y condiciones';
+      });
+      return false;
+    }
+    
+    return true;
+  }
+  
+  void _handleComplete() {
+    if (_validateFields()) {
+      widget.onComplete();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1647,29 +2021,54 @@ class CredentialsStep extends StatelessWidget {
         const SizedBox(height: 32),
 
         CredentialsSection(
-          emailController: controllers['email']!,
-          passwordController: controllers['password']!,
-          confirmPasswordController: controllers['confirmPassword']!,
-          obscurePassword: obscurePassword,
-          obscureConfirmPassword: obscureConfirmPassword,
-          onPasswordVisibilityToggle: onPasswordVisibilityToggle,
-          onConfirmPasswordVisibilityToggle: onConfirmPasswordVisibilityToggle,
+          emailController: widget.controllers['email']!,
+          passwordController: widget.controllers['password']!,
+          confirmPasswordController: widget.controllers['confirmPassword']!,
+          obscurePassword: widget.obscurePassword,
+          obscureConfirmPassword: widget.obscureConfirmPassword,
+          onPasswordVisibilityToggle: widget.onPasswordVisibilityToggle,
+          onConfirmPasswordVisibilityToggle: widget.onConfirmPasswordVisibilityToggle,
         ),
         const SizedBox(height: 24),
 
         TermsSection(
-          acceptTerms: acceptTerms,
-          onTermsChanged: onTermsChanged,
+          acceptTerms: widget.acceptTerms,
+          onTermsChanged: widget.onTermsChanged,
         ),
+        
+        if (_errorMessage != null) ...[
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.red, fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        
         const SizedBox(height: 40),
 
         buildNavigationButtons(
-          onNext: onComplete,
-          onPrevious: onPrevious,
+          onNext: _handleComplete,
+          onPrevious: widget.onPrevious,
           nextLabel: 'Completar Registro',
           nextColor: BioWayColors.success,
           nextIcon: Icons.check,
-          isLoading: isLoading,
+          isLoading: widget.isLoading,
         ),
       ],
     );
@@ -1981,6 +2380,53 @@ class SuccessDialog extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Formatter personalizado para agregar punto decimal automáticamente después de 2 dígitos
+class DecimalTextInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // Remover cualquier carácter no numérico excepto el punto
+    String newText = newValue.text.replaceAll(RegExp(r'[^0-9.]'), '');
+    
+    // Si el texto está vacío, permitir
+    if (newText.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+    
+    // Remover puntos existentes para reformatear
+    String numbersOnly = newText.replaceAll('.', '');
+    
+    // Limitar a 4 dígitos máximo
+    if (numbersOnly.length > 4) {
+      numbersOnly = numbersOnly.substring(0, 4);
+    }
+    
+    // Si hay más de 2 dígitos, insertar el punto después del segundo dígito
+    if (numbersOnly.length > 2) {
+      newText = numbersOnly.substring(0, 2) + '.' + numbersOnly.substring(2);
+    } else {
+      newText = numbersOnly;
+    }
+    
+    // Calcular la nueva posición del cursor
+    int selectionIndex = newText.length;
+    
+    // Si estamos borrando y el cursor estaba después del punto, ajustar
+    if (oldValue.text.length > newValue.text.length && 
+        oldValue.selection.baseOffset == 3 && 
+        newText.length == 2) {
+      selectionIndex = 2;
+    }
+    
+    return TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: selectionIndex),
     );
   }
 }

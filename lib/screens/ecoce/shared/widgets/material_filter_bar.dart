@@ -42,7 +42,7 @@ class MaterialFilterBar extends StatelessWidget {
                       selected: isSelected,
                       onSelected: (_) => onMaterialChanged(material),
                       backgroundColor: Colors.grey[200],
-                      selectedColor: color.withOpacity(0.3),
+                      selectedColor: color.withValues(alpha: 0.3),
                       labelStyle: TextStyle(
                         color: isSelected ? color : Colors.grey[700],
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,

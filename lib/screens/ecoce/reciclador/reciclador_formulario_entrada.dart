@@ -185,14 +185,14 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                   'Completa los datos de entrada',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -225,7 +225,7 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 5),
                           ),
@@ -289,7 +289,7 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide(
-                                  color: BioWayColors.ecoceGreen.withOpacity(0.3),
+                                  color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
                                   width: 1,
                                 ),
                               ),
@@ -365,7 +365,7 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide(
-                                        color: BioWayColors.ecoceGreen.withOpacity(0.3),
+                                        color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
                                         width: 1,
                                       ),
                                     ),
@@ -393,10 +393,10 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
                                 decoration: BoxDecoration(
-                                  color: BioWayColors.ecoceGreen.withOpacity(0.1),
+                                  color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: BioWayColors.ecoceGreen.withOpacity(0.3),
+                                    color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
                                     width: 1,
                                   ),
                                 ),
@@ -482,10 +482,10 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
                                 decoration: BoxDecoration(
-                                  color: BioWayColors.ecoceGreen.withOpacity(0.1),
+                                  color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: BioWayColors.ecoceGreen.withOpacity(0.3),
+                                    color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
                                     width: 1,
                                   ),
                                 ),
@@ -515,7 +515,7 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 5),
                           ),
@@ -580,7 +580,7 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide(
-                                  color: BioWayColors.ecoceGreen.withOpacity(0.3),
+                                  color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
                                   width: 1,
                                 ),
                               ),
@@ -637,7 +637,7 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                               width: double.infinity,
                               decoration: BoxDecoration(
                                 color: _hasSignature 
-                                    ? BioWayColors.ecoceGreen.withOpacity(0.05)
+                                    ? BioWayColors.ecoceGreen.withValues(alpha: 0.05)
                                     : Colors.grey[100],
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
@@ -716,7 +716,7 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                                                   shape: BoxShape.circle,
                                                   boxShadow: [
                                                     BoxShadow(
-                                                      color: Colors.black.withOpacity(0.1),
+                                                      color: Colors.black.withValues(alpha: 0.1),
                                                       blurRadius: 4,
                                                     ),
                                                   ],
@@ -742,7 +742,7 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                                                   shape: BoxShape.circle,
                                                   boxShadow: [
                                                     BoxShadow(
-                                                      color: Colors.black.withOpacity(0.1),
+                                                      color: Colors.black.withValues(alpha: 0.1),
                                                       blurRadius: 4,
                                                     ),
                                                   ],

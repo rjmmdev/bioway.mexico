@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
-import '../../../models/ecoce/ecoce_profile_model.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/loading_indicator.dart';
 
@@ -17,7 +17,8 @@ class _MaestroAprobacionesScreenState extends State<MaestroAprobacionesScreen>
   final EcoceProfileService _profileService = EcoceProfileService();
   late TabController _tabController;
   
-  List<EcoceProfileModel> _pendingProfiles = [];
+  List<Map<String, dynamic>> _pendingSolicitudes = [];
+  List<Map<String, dynamic>> _approvedSolicitudes = [];
   bool _isLoading = true;
   
   // ID del usuario maestro (por ahora hardcodeado, luego se obtendría del usuario actual)
@@ -40,85 +41,75 @@ class _MaestroAprobacionesScreenState extends State<MaestroAprobacionesScreen>
     setState(() => _isLoading = true);
     
     try {
-      // Cargar todos los perfiles
-      final allProfiles = await _profileService.getPendingProfiles();
+      // Cargar solicitudes pendientes y aprobadas
+      // Las rechazadas se eliminan, no se cargan
+      final pendientes = await _profileService.getPendingSolicitudes();
+      final aprobadas = await _profileService.getApprovedSolicitudes();
       
-      // Por ahora solo obtenemos los pendientes
-      // En una implementación completa, cargaríamos todos y los filtrarías
       setState(() {
-        _pendingProfiles = allProfiles;
+        _pendingSolicitudes = pendientes;
+        _approvedSolicitudes = aprobadas;
+        // Las rechazadas se eliminan, no se cargan
         _isLoading = false;
       });
     } catch (e) {
-      debugPrint('Error al cargar perfiles: $e');
       setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _approveProfile(EcoceProfileModel profile) async {
+  Future<void> _approveSolicitud(Map<String, dynamic> solicitud) async {
+    final datosPerfil = solicitud['datos_perfil'] as Map<String, dynamic>;
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) => _ApprovalConfirmationDialog(
         title: 'Aprobar Cuenta',
-        message: '¿Estás seguro de aprobar la cuenta de ${profile.ecoce_nombre}?',
+        message: '¿Estás seguro de aprobar la cuenta de ${datosPerfil['ecoce_nombre']}?',
         isApproval: true,
       ),
     );
 
     if (confirm == true) {
       try {
-        await _profileService.approveProfile(
-          profileId: profile.id,
+        await _profileService.approveSolicitud(
+          solicitudId: solicitud['solicitud_id'],
           approvedById: _maestroUserId,
           comments: 'Documentación verificada y aprobada',
         );
         
-        _showSuccessMessage('Cuenta aprobada exitosamente');
+        // Mostrar el folio asignado basado en el subtipo
+        final subtipo = datosPerfil['ecoce_subtipo'];
+        final prefijo = subtipo == 'A' ? 'A' : 'P';
+        
+        _showSuccessMessage('Cuenta aprobada exitosamente\nSe asignará folio con prefijo: $prefijo');
         _loadProfiles();
       } catch (e) {
-        _showErrorMessage('Error al aprobar la cuenta');
+        _showErrorMessage('Error al aprobar la cuenta: ${e.toString()}');
       }
     }
   }
 
-  Future<void> _rejectProfile(EcoceProfileModel profile) async {
+  Future<void> _rejectSolicitud(Map<String, dynamic> solicitud) async {
+    final datosPerfil = solicitud['datos_perfil'] as Map<String, dynamic>;
     final String? reason = await showDialog<String>(
       context: context,
-      builder: (context) => _RejectionReasonDialog(profileName: profile.ecoce_nombre),
+      builder: (context) => _RejectionReasonDialog(profileName: datosPerfil['ecoce_nombre']),
     );
 
     if (reason != null && reason.isNotEmpty) {
       try {
-        await _profileService.rejectProfile(
-          profileId: profile.id,
+        await _profileService.rejectSolicitud(
+          solicitudId: solicitud['solicitud_id'],
           rejectedById: _maestroUserId,
           reason: reason,
         );
         
-        // Preguntar si eliminar la cuenta
-        if (!mounted) return;
-        
-        final bool? deleteAccount = await showDialog<bool>(
-          context: context,
-          builder: (context) => _DeleteAccountDialog(),
-        );
-        
-        if (deleteAccount == true) {
-          await _profileService.deleteRejectedProfile(profile.id);
-          if (mounted) {
-            _showSuccessMessage('Cuenta rechazada y eliminada');
-          }
-        } else {
-          if (mounted) {
-            _showSuccessMessage('Cuenta rechazada');
-          }
-        }
+        _showSuccessMessage('Solicitud rechazada y eliminada correctamente');
         
         if (mounted) {
           _loadProfiles();
         }
       } catch (e) {
-        _showErrorMessage('Error al rechazar la cuenta');
+        _showErrorMessage('Error al rechazar la solicitud');
       }
     }
   }
@@ -288,7 +279,7 @@ class _MaestroAprobacionesScreenState extends State<MaestroAprobacionesScreen>
   }
 
   Widget _buildPendingList() {
-    if (_pendingProfiles.isEmpty) {
+    if (_pendingSolicitudes.isEmpty) {
       return _buildEmptyState(
         icon: Icons.inbox,
         title: 'No hay solicitudes pendientes',
@@ -300,14 +291,14 @@ class _MaestroAprobacionesScreenState extends State<MaestroAprobacionesScreen>
       onRefresh: _loadProfiles,
       child: ListView.builder(
         padding: EdgeInsets.all(16),
-        itemCount: _pendingProfiles.length,
+        itemCount: _pendingSolicitudes.length,
         itemBuilder: (context, index) {
-          final profile = _pendingProfiles[index];
-          return _ProfileCard(
-            profile: profile,
-            onApprove: () => _approveProfile(profile),
-            onReject: () => _rejectProfile(profile),
-            onViewDetails: () => _viewProfileDetails(profile),
+          final solicitud = _pendingSolicitudes[index];
+          return _SolicitudCard(
+            solicitud: solicitud,
+            onApprove: () => _approveSolicitud(solicitud),
+            onReject: () => _rejectSolicitud(solicitud),
+            onViewDetails: () => _viewSolicitudDetails(solicitud),
           );
         },
       ),
@@ -315,18 +306,38 @@ class _MaestroAprobacionesScreenState extends State<MaestroAprobacionesScreen>
   }
 
   Widget _buildApprovedList() {
-    return _buildEmptyState(
-      icon: Icons.check_circle_outline,
-      title: 'Cuentas aprobadas',
-      subtitle: 'Aquí se mostrarán las cuentas aprobadas',
+    if (_approvedSolicitudes.isEmpty) {
+      return _buildEmptyState(
+        icon: Icons.check_circle_outline,
+        title: 'No hay cuentas aprobadas',
+        subtitle: 'Las cuentas aprobadas aparecerán aquí',
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadProfiles,
+      child: ListView.builder(
+        padding: EdgeInsets.all(16),
+        itemCount: _approvedSolicitudes.length,
+        itemBuilder: (context, index) {
+          final solicitud = _approvedSolicitudes[index];
+          return _SolicitudCard(
+            solicitud: solicitud,
+            onApprove: () {}, // No se puede aprobar de nuevo
+            onReject: () {}, // No se puede rechazar una vez aprobada
+            onViewDetails: () => _viewSolicitudDetails(solicitud),
+            isApproved: true,
+          );
+        },
+      ),
     );
   }
 
   Widget _buildRejectedList() {
     return _buildEmptyState(
-      icon: Icons.cancel_outlined,
-      title: 'Cuentas rechazadas',
-      subtitle: 'Aquí se mostrarán las cuentas rechazadas',
+      icon: Icons.delete_forever,
+      title: 'Solicitudes rechazadas se eliminan',
+      subtitle: 'Las solicitudes rechazadas son eliminadas permanentemente del sistema',
     );
   }
 
@@ -362,32 +373,39 @@ class _MaestroAprobacionesScreenState extends State<MaestroAprobacionesScreen>
     );
   }
 
-  void _viewProfileDetails(EcoceProfileModel profile) {
+  void _viewSolicitudDetails(Map<String, dynamic> solicitud) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ProfileDetailsScreen(profile: profile),
+        builder: (context) => SolicitudDetailsScreen(solicitud: solicitud),
       ),
     );
   }
 }
 
-// Widget de tarjeta de perfil
-class _ProfileCard extends StatelessWidget {
-  final EcoceProfileModel profile;
+// Widget de tarjeta de solicitud
+class _SolicitudCard extends StatelessWidget {
+  final Map<String, dynamic> solicitud;
   final VoidCallback onApprove;
   final VoidCallback onReject;
   final VoidCallback onViewDetails;
+  final bool isApproved;
 
-  const _ProfileCard({
-    required this.profile,
+  const _SolicitudCard({
+    required this.solicitud,
     required this.onApprove,
     required this.onReject,
     required this.onViewDetails,
+    this.isApproved = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final datosPerfil = solicitud['datos_perfil'] as Map<String, dynamic>;
+    final fechaSolicitud = solicitud['fecha_solicitud'] != null 
+        ? (solicitud['fecha_solicitud'] as Timestamp).toDate()
+        : DateTime.now();
+    
     return Card(
       elevation: 2,
       margin: EdgeInsets.only(bottom: 16),
@@ -409,12 +427,12 @@ class _ProfileCard extends StatelessWidget {
                     width: 50,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: _getActorColor(profile.ecoce_tipo_actor).withValues(alpha: 0.1),
+                      color: _getSubtipoColor(datosPerfil['ecoce_subtipo']).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
-                      _getActorIcon(profile.ecoce_tipo_actor),
-                      color: _getActorColor(profile.ecoce_tipo_actor),
+                      _getSubtipoIcon(datosPerfil['ecoce_subtipo']),
+                      color: _getSubtipoColor(datosPerfil['ecoce_subtipo']),
                       size: 24,
                     ),
                   ),
@@ -424,7 +442,7 @@ class _ProfileCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          profile.ecoce_nombre,
+                          datosPerfil['ecoce_nombre'] ?? 'Sin nombre',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -432,7 +450,7 @@ class _ProfileCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          profile.tipoActorLabel,
+                          _getSubtipoLabel(datosPerfil['ecoce_subtipo']),
                           style: TextStyle(
                             fontSize: 13,
                             color: BioWayColors.textGrey,
@@ -444,15 +462,19 @@ class _ProfileCard extends StatelessWidget {
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: BioWayColors.warning.withValues(alpha: 0.1),
+                      color: isApproved 
+                          ? BioWayColors.success.withValues(alpha: 0.1)
+                          : BioWayColors.warning.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      'Pendiente',
+                      isApproved ? 'Aprobado' : 'Pendiente',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: BioWayColors.warning,
+                        color: isApproved 
+                            ? BioWayColors.success
+                            : BioWayColors.warning,
                       ),
                     ),
                   ),
@@ -461,14 +483,17 @@ class _ProfileCard extends StatelessWidget {
               SizedBox(height: 16),
               
               // Información
-              _buildInfoRow(Icons.badge, 'Folio', profile.ecoce_folio),
-              _buildInfoRow(Icons.person, 'Contacto', profile.ecoce_nombre_contacto),
-              _buildInfoRow(Icons.email, 'Email', profile.ecoce_correo_contacto),
-              _buildInfoRow(Icons.phone, 'Teléfono', profile.ecoce_tel_contacto),
+              _buildInfoRow(Icons.badge, 'Folio', 
+                isApproved && solicitud['folio_asignado'] != null 
+                    ? solicitud['folio_asignado'] 
+                    : 'Se asignará al aprobar'),
+              _buildInfoRow(Icons.person, 'Contacto', datosPerfil['ecoce_nombre_contacto'] ?? 'N/A'),
+              _buildInfoRow(Icons.email, 'Email', datosPerfil['ecoce_correo_contacto'] ?? 'N/A'),
+              _buildInfoRow(Icons.phone, 'Teléfono', datosPerfil['ecoce_tel_contacto'] ?? 'N/A'),
               _buildInfoRow(Icons.location_on, 'Ubicación', 
-                '${profile.ecoce_municipio}, ${profile.ecoce_estado}'),
-              _buildInfoRow(Icons.calendar_today, 'Fecha registro', 
-                _formatDate(profile.ecoce_fecha_reg)),
+                '${datosPerfil['ecoce_municipio'] ?? 'N/A'}, ${datosPerfil['ecoce_estado'] ?? 'N/A'}'),
+              _buildInfoRow(Icons.calendar_today, 'Fecha solicitud', 
+                _formatDate(fechaSolicitud)),
               
               // Documentos
               SizedBox(height: 12),
@@ -494,54 +519,100 @@ class _ProfileCard extends StatelessWidget {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        if (profile.ecoce_const_sit_fis != null)
-                          _buildDocChip('Situación Fiscal'),
-                        if (profile.ecoce_comp_domicilio != null)
-                          _buildDocChip('Comp. Domicilio'),
-                        if (profile.ecoce_banco_caratula != null)
-                          _buildDocChip('Carátula Banco'),
-                        if (profile.ecoce_ine != null)
-                          _buildDocChip('INE'),
+                        if (datosPerfil['ecoce_const_sit_fis'] != null)
+                          _buildDocChip(
+                            context,
+                            'Situación Fiscal',
+                            datosPerfil['ecoce_const_sit_fis'],
+                          ),
+                        if (datosPerfil['ecoce_comp_domicilio'] != null)
+                          _buildDocChip(
+                            context,
+                            'Comp. Domicilio',
+                            datosPerfil['ecoce_comp_domicilio'],
+                          ),
+                        if (datosPerfil['ecoce_banco_caratula'] != null)
+                          _buildDocChip(
+                            context,
+                            'Carátula Banco',
+                            datosPerfil['ecoce_banco_caratula'],
+                          ),
+                        if (datosPerfil['ecoce_ine'] != null)
+                          _buildDocChip(
+                            context,
+                            'INE',
+                            datosPerfil['ecoce_ine'],
+                          ),
                       ],
                     ),
                   ],
                 ),
               ),
               
-              // Botones de acción
-              SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: onReject,
-                      icon: Icon(Icons.close, size: 18),
-                      label: Text('Rechazar'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BioWayColors.error,
-                        side: BorderSide(color: BioWayColors.error),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+              // Botones de acción o información adicional
+              if (!isApproved) ...[
+                SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: onReject,
+                        icon: Icon(Icons.close, size: 18),
+                        label: Text('Rechazar'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: BioWayColors.error,
+                          side: BorderSide(color: BioWayColors.error),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: onApprove,
-                      icon: Icon(Icons.check, size: 18),
-                      label: Text('Aprobar'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: BioWayColors.success,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: onApprove,
+                        icon: Icon(Icons.check, size: 18),
+                        label: Text('Aprobar'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: BioWayColors.success,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ),
+                  ],
+                ),
+              ] else if (isApproved && solicitud['fecha_revision'] != null) ...[
+                SizedBox(height: 16),
+                // Mostrar información de aprobación
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: BioWayColors.success.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ],
-              ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.check_circle, 
+                        size: 16, 
+                        color: BioWayColors.success,
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Aprobado el ${_formatDate((solicitud['fecha_revision'] as Timestamp).toDate())}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: BioWayColors.success,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -578,27 +649,76 @@ class _ProfileCard extends StatelessWidget {
     );
   }
 
-  Widget _buildDocChip(String label) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: BioWayColors.petBlue.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: BioWayColors.petBlue.withValues(alpha: 0.3),
+  Widget _buildDocChip(BuildContext context, String label, String? url) {
+    final isUrl = url != null && (url.startsWith('http') || url.startsWith('https'));
+    
+    return InkWell(
+      onTap: isUrl ? () => _viewDocument(context, label, url) : null,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: BioWayColors.petBlue.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: BioWayColors.petBlue.withValues(alpha: 0.3),
+          ),
         ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.check_circle, size: 12, color: BioWayColors.petBlue),
-          SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.check_circle, 
+              size: 12, 
               color: BioWayColors.petBlue,
             ),
+            SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: BioWayColors.petBlue,
+                decoration: isUrl ? TextDecoration.underline : null,
+              ),
+            ),
+            if (isUrl) ...[
+              SizedBox(width: 4),
+              Icon(
+                Icons.open_in_new,
+                size: 10,
+                color: BioWayColors.petBlue,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+  
+  void _viewDocument(BuildContext context, String documentName, String url) {
+    // TODO: Implementar visualización de documento
+    // Por ahora, mostrar un diálogo simple
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(documentName),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.description, size: 48, color: BioWayColors.petBlue),
+            SizedBox(height: 16),
+            Text('Documento disponible para revisión'),
+            SizedBox(height: 8),
+            Text(
+              'URL: ${url.length > 50 ? '${url.substring(0, 50)}...' : url}',
+              style: TextStyle(fontSize: 10, color: BioWayColors.textGrey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cerrar'),
           ),
         ],
       ),
@@ -609,41 +729,36 @@ class _ProfileCard extends StatelessWidget {
     return '${date.day}/${date.month}/${date.year}';
   }
 
-  Color _getActorColor(String tipoActor) {
-    switch (tipoActor) {
+  Color _getSubtipoColor(String? subtipo) {
+    switch (subtipo) {
       case 'A':
         return BioWayColors.darkGreen;
       case 'P':
         return BioWayColors.ppPurple;
-      case 'R':
-        return BioWayColors.petBlue;
-      case 'T':
-        return BioWayColors.recycleOrange;
-      case 'V':
-        return BioWayColors.deepBlue;
-      case 'L':
-        return BioWayColors.otherPurple;
       default:
         return BioWayColors.textGrey;
     }
   }
 
-  IconData _getActorIcon(String tipoActor) {
-    switch (tipoActor) {
+  IconData _getSubtipoIcon(String? subtipo) {
+    switch (subtipo) {
       case 'A':
         return Icons.warehouse;
       case 'P':
         return Icons.sort;
-      case 'R':
-        return Icons.recycling;
-      case 'T':
-        return Icons.precision_manufacturing;
-      case 'V':
-        return Icons.local_shipping;
-      case 'L':
-        return Icons.science;
       default:
         return Icons.business;
+    }
+  }
+  
+  String _getSubtipoLabel(String? subtipo) {
+    switch (subtipo) {
+      case 'A':
+        return 'Centro de Acopio';
+      case 'P':
+        return 'Planta de Separación';
+      default:
+        return 'Usuario Origen';
     }
   }
 }
@@ -736,6 +851,38 @@ class _RejectionReasonDialogState extends State<_RejectionReasonDialog> {
                 color: BioWayColors.textGrey,
               ),
             ),
+            SizedBox(height: 16),
+            // Advertencia de eliminación
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: BioWayColors.error.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: BioWayColors.error.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: BioWayColors.error,
+                    size: 20,
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'La solicitud será eliminada permanentemente',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: BioWayColors.error,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             SizedBox(height: 20),
             Text(
               'Razones comunes:',
@@ -800,50 +947,20 @@ class _RejectionReasonDialogState extends State<_RejectionReasonDialog> {
   }
 }
 
-// Diálogo para confirmar eliminación de cuenta
-class _DeleteAccountDialog extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Row(
-        children: [
-          Icon(Icons.warning, color: BioWayColors.warning),
-          SizedBox(width: 8),
-          Text('Eliminar cuenta'),
-        ],
-      ),
-      content: Text(
-        '¿Deseas eliminar permanentemente esta cuenta rechazada?\n\n'
-        'Esta acción no se puede deshacer.',
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: Text('Mantener cuenta'),
-        ),
-        ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: BioWayColors.error,
-          ),
-          child: Text('Eliminar permanentemente'),
-        ),
-      ],
-    );
-  }
-}
 
-// Pantalla de detalles del perfil
-class ProfileDetailsScreen extends StatelessWidget {
-  final EcoceProfileModel profile;
+// Pantalla de detalles de la solicitud
+class SolicitudDetailsScreen extends StatelessWidget {
+  final Map<String, dynamic> solicitud;
 
-  const ProfileDetailsScreen({super.key, required this.profile});
+  const SolicitudDetailsScreen({super.key, required this.solicitud});
 
   @override
   Widget build(BuildContext context) {
+    final datosPerfil = solicitud['datos_perfil'] as Map<String, dynamic>;
+    
     return Scaffold(
       appBar: AppBar(
-        title: Text('Detalles del Perfil'),
+        title: Text('Detalles de la Solicitud'),
         backgroundColor: BioWayColors.ecoceGreen,
       ),
       body: SingleChildScrollView(
@@ -851,10 +968,10 @@ class ProfileDetailsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // TODO: Implementar vista detallada del perfil
+            // TODO: Implementar vista detallada de la solicitud
             Center(
               child: Text(
-                'Vista detallada del perfil\n${profile.ecoce_nombre}',
+                'Vista detallada de la solicitud\n${datosPerfil['ecoce_nombre'] ?? 'Sin nombre'}',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 18),
               ),

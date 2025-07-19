@@ -226,7 +226,7 @@ class _ECOCETipoProveedorSelectorState extends State<ECOCETipoProveedorSelector>
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -239,7 +239,7 @@ class _ECOCETipoProveedorSelectorState extends State<ECOCETipoProveedorSelector>
                     icon: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: BioWayColors.ecoceGreen.withOpacity(0.1),
+                        color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
@@ -276,7 +276,7 @@ class _ECOCETipoProveedorSelectorState extends State<ECOCETipoProveedorSelector>
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: BioWayColors.ecoceGreen.withOpacity(0.1),
+                      color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -311,7 +311,7 @@ class _ECOCETipoProveedorSelectorState extends State<ECOCETipoProveedorSelector>
                                 borderRadius: BorderRadius.circular(20),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: BioWayColors.ecoceGreen.withOpacity(0.1),
+                                    color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
                                     blurRadius: 20,
                                     offset: const Offset(0, 10),
                                   ),
@@ -383,10 +383,10 @@ class _ECOCETipoProveedorSelectorState extends State<ECOCETipoProveedorSelector>
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: BioWayColors.info.withOpacity(0.1),
+                        color: BioWayColors.info.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: BioWayColors.info.withOpacity(0.3),
+                          color: BioWayColors.info.withValues(alpha: 0.3),
                           width: 1,
                         ),
                       ),
@@ -453,7 +453,7 @@ class _ECOCETipoProveedorSelectorState extends State<ECOCETipoProveedorSelector>
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -466,7 +466,7 @@ class _ECOCETipoProveedorSelectorState extends State<ECOCETipoProveedorSelector>
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: provider.color.withOpacity(0.1),
+                  color: provider.color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
@@ -487,7 +487,7 @@ class _ECOCETipoProveedorSelectorState extends State<ECOCETipoProveedorSelector>
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: provider.color.withOpacity(0.1),
+                  color: provider.color.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(

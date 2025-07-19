@@ -232,7 +232,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: BioWayColors.ecoceGreen.withOpacity(0.3),
+                color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -329,7 +329,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: BioWayColors.ecoceGreen.withOpacity(0.3),
+                color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -568,7 +568,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: BioWayColors.info.withOpacity(0.1),
+                            color: BioWayColors.info.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -597,7 +597,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -611,7 +611,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: BioWayColors.ecoceGreen.withOpacity(0.1),
+                            color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
@@ -716,7 +716,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -730,7 +730,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: BioWayColors.info.withOpacity(0.1),
+                            color: BioWayColors.info.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(

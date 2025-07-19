@@ -152,8 +152,8 @@ class _AnimatedLogoState extends State<AnimatedLogo>
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: BioWayColors.primaryGreen.withOpacity(
-                                _isPressed ? 0.6 : _isHovered ? 0.5 : 0.3,
+                              color: BioWayColors.primaryGreen.withValues(
+                                alpha: _isPressed ? 0.6 : _isHovered ? 0.5 : 0.3,
                               ),
                               blurRadius: _isPressed ? 30 : _isHovered ? 25 : 20,
                               spreadRadius: _isPressed ? 8 : _isHovered ? 6 : 4,
@@ -199,7 +199,7 @@ class _AnimatedLogoState extends State<AnimatedLogo>
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: BioWayColors.switchBlue.withOpacity(0.6),
+                                        color: BioWayColors.switchBlue.withValues(alpha: 0.6),
                                         blurRadius: 12,
                                         offset: const Offset(0, 2),
                                       ),
@@ -234,8 +234,8 @@ class _AnimatedLogoState extends State<AnimatedLogo>
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: BioWayColors.primaryGreen.withOpacity(
-                                  0.3 - (index * 0.15),
+                                color: BioWayColors.primaryGreen.withValues(
+                                  alpha: 0.3 - (index * 0.15),
                                 ),
                                 width: 1,
                               ),
@@ -275,7 +275,7 @@ class _AnimatedLogoState extends State<AnimatedLogo>
                     letterSpacing: 0.5,
                     shadows: [
                       Shadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         offset: const Offset(0, 2),
                         blurRadius: 4,
                       ),
@@ -292,7 +292,7 @@ class _AnimatedLogoState extends State<AnimatedLogo>
                   fontSize: 14,
                   color: _isHovered || _isPressed
                       ? BioWayColors.primaryGreen
-                      : BioWayColors.darkGreen.withOpacity(0.7),
+                      : BioWayColors.darkGreen.withValues(alpha: 0.7),
                   fontWeight: FontWeight.w500,
                 ),
                 child: const Text('Toca para cambiar plataforma'),
