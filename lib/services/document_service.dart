@@ -56,47 +56,106 @@ class DocumentService {
     }
   }
 
-  // Comprimir PDF (implementación básica)
+  // Comprimir PDF
   Future<Uint8List?> _compressPDF(PlatformFile file) async {
-    // Por ahora retornamos el PDF sin comprimir
-    // En producción, podrías usar una librería como pdf_compressor
-    // o implementar compresión del lado del servidor
+    if (file.bytes == null) return null;
     
-    // Verificar tamaño del PDF
-    if (file.bytes != null) {
+    try {
+      // Verificar tamaño del PDF
       final sizeInMB = file.bytes!.length / (1024 * 1024);
-      // Log PDF size - En producción usar un servicio de logging
-      // Tamaño del PDF: ${sizeInMB.toStringAsFixed(2)} MB
+      print('Tamaño original del PDF: ${sizeInMB.toStringAsFixed(2)} MB');
+      
+      // Si el PDF es menor a 1MB, no comprimir
+      if (sizeInMB < 1.0) {
+        return file.bytes;
+      }
+      
+      // NOTA: La compresión de PDF es compleja y generalmente requiere:
+      // 1. Librerías especializadas como pdf_compressor (no disponible en Flutter)
+      // 2. Procesamiento del lado del servidor
+      // 3. Reducción de calidad de imágenes dentro del PDF
+      // 4. Eliminación de metadatos
+      
+      // Por ahora, solo validamos el tamaño y rechazamos PDFs muy grandes
+      const maxSizeMB = 5.0;
+      if (sizeInMB > maxSizeMB) {
+        throw Exception('El PDF excede el tamaño máximo permitido de ${maxSizeMB}MB');
+      }
+      
+      return file.bytes;
+    } catch (e) {
+      print('Error al procesar PDF: $e');
+      rethrow;
     }
-    
-    return file.bytes;
   }
 
-  // Comprimir imagen
+  // Comprimir imagen con compresión máxima
   Future<Uint8List?> _compressImage(PlatformFile file) async {
     if (file.bytes == null) return null;
     
     try {
-      // Comprimir la imagen manteniendo una calidad razonable
-      final result = await FlutterImageCompress.compressWithList(
-        file.bytes!,
-        minHeight: 1920,
-        minWidth: 1080,
-        quality: 85, // Calidad del 85%
-        format: CompressFormat.jpeg,
-      );
+      Uint8List result = file.bytes!;
+      int attempts = 0;
+      const int maxAttempts = 5;
+      const int targetSizeKB = 100; // Objetivo: 100KB máximo
+      
+      // Parámetros iniciales
+      int quality = 70;
+      int minWidth = 1024;
+      int minHeight = 1024;
+      
+      // Intentar comprimir hasta alcanzar el tamaño objetivo
+      while (attempts < maxAttempts) {
+        result = await FlutterImageCompress.compressWithList(
+          file.bytes!,
+          minHeight: minHeight,
+          minWidth: minWidth,
+          quality: quality,
+          format: CompressFormat.jpeg,
+          autoCorrectionAngle: true,
+          keepExif: false, // Eliminar metadatos para reducir tamaño
+        );
+        
+        final sizeInKB = result.length / 1024;
+        
+        print('Intento ${attempts + 1}: ${sizeInKB.toStringAsFixed(1)}KB (quality: $quality, dimensions: ${minWidth}x${minHeight})');
+        
+        // Si el tamaño es aceptable, terminar
+        if (sizeInKB <= targetSizeKB) {
+          break;
+        }
+        
+        // Ajustar parámetros para el siguiente intento
+        if (sizeInKB > targetSizeKB * 2) {
+          // Si es más del doble, reducir agresivamente
+          quality = (quality * 0.6).round();
+          minWidth = (minWidth * 0.7).round();
+          minHeight = (minHeight * 0.7).round();
+        } else {
+          // Si está cerca, reducir gradualmente
+          quality = (quality * 0.8).round();
+          minWidth = (minWidth * 0.85).round();
+          minHeight = (minHeight * 0.85).round();
+        }
+        
+        // Límites mínimos
+        if (quality < 20) quality = 20;
+        if (minWidth < 400) minWidth = 400;
+        if (minHeight < 400) minHeight = 400;
+        
+        attempts++;
+      }
       
       // Verificar reducción de tamaño
       final originalSize = file.bytes!.length / 1024; // KB
       final compressedSize = result.length / 1024; // KB
-      final reduction = ((originalSize - compressedSize) / originalSize * 100).toStringAsFixed(1);
+      final reduction = ((originalSize - compressedSize) / originalSize * 100);
       
-      // Log compression stats - En producción usar un servicio de logging
-      // Compresión: ${originalSize.toStringAsFixed(1)}KB -> ${compressedSize.toStringAsFixed(1)}KB ($reduction% reducción)
+      print('Compresión final: ${originalSize.toStringAsFixed(1)}KB -> ${compressedSize.toStringAsFixed(1)}KB (${reduction.toStringAsFixed(1)}% reducción)');
       
       return result;
     } catch (e) {
-      // Log error - En producción usar un servicio de logging
+      print('Error al comprimir imagen: $e');
       return file.bytes;
     }
   }
@@ -213,6 +272,98 @@ class DocumentService {
         return 'INE';
       default:
         return documentType;
+    }
+  }
+  
+  // Subir múltiples documentos para una solicitud
+  Future<Map<String, String?>> uploadSolicitudDocuments({
+    required String solicitudId,
+    required Map<String, PlatformFile?> documents,
+    Function(String documentType, double progress)? onProgress,
+  }) async {
+    final Map<String, String?> uploadedUrls = {};
+    
+    for (final entry in documents.entries) {
+      final documentType = entry.key;
+      final file = entry.value;
+      
+      if (file != null) {
+        try {
+          print('Subiendo documento: $documentType');
+          
+          // Notificar progreso inicial
+          onProgress?.call(documentType, 0.0);
+          
+          final url = await uploadDocument(
+            userId: 'temp_$solicitudId',
+            documentType: documentType,
+            file: file,
+            solicitudId: solicitudId,
+          );
+          
+          uploadedUrls[documentType] = url;
+          
+          // Notificar completado
+          onProgress?.call(documentType, 1.0);
+          
+          if (url != null) {
+            print('✓ Documento $documentType subido exitosamente');
+          } else {
+            print('✗ Error al subir documento $documentType');
+          }
+        } catch (e) {
+          print('Error al subir $documentType: $e');
+          uploadedUrls[documentType] = null;
+          onProgress?.call(documentType, -1.0); // -1 indica error
+        }
+      }
+    }
+    
+    return uploadedUrls;
+  }
+  
+  // Eliminar todos los documentos de una solicitud
+  Future<void> deleteSolicitudDocuments(Map<String, dynamic> solicitudData) async {
+    final datosPerfil = solicitudData['datos_perfil'] as Map<String, dynamic>?;
+    if (datosPerfil == null) return;
+    
+    final documentFields = [
+      'ecoce_const_sit_fis',
+      'ecoce_comp_domicilio',
+      'ecoce_banco_caratula',
+      'ecoce_ine',
+    ];
+    
+    for (final field in documentFields) {
+      final url = datosPerfil[field];
+      if (url != null && url is String && url.isNotEmpty) {
+        try {
+          await deleteDocument(url);
+          print('✓ Documento $field eliminado');
+        } catch (e) {
+          print('✗ Error al eliminar $field: $e');
+        }
+      }
+    }
+  }
+  
+  // Obtener información de un documento desde su URL
+  Future<Map<String, dynamic>?> getDocumentInfo(String documentUrl) async {
+    try {
+      final ref = _storage.refFromURL(documentUrl);
+      final metadata = await ref.getMetadata();
+      
+      return {
+        'name': metadata.name,
+        'size': metadata.size,
+        'contentType': metadata.contentType,
+        'createdAt': metadata.timeCreated,
+        'updatedAt': metadata.updated,
+        'customMetadata': metadata.customMetadata,
+      };
+    } catch (e) {
+      print('Error al obtener información del documento: $e');
+      return null;
     }
   }
 }

@@ -166,7 +166,8 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
     });
     
     try {
-      // Obtener subtipo según el tipo de proveedor (solo para origen)
+      // Obtener tipo de usuario y subtipo
+      String tipoUsuario = _getTipoUsuario();
       String subtipo = _getSubtipo();
       
       // Preparar dimensiones de capacidad si aplica
@@ -200,7 +201,8 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
       });
       
       // Crear solicitud de cuenta en Firebase (sin crear usuario en Auth)
-      final solicitudId = await _profileService.createOrigenAccountRequest(
+      final solicitudId = await _profileService.createAccountRequest(
+        tipoUsuario: tipoUsuario,
         email: _controllers['email']!.text.trim(),
         password: _controllers['password']!.text,
         subtipo: subtipo,
@@ -266,12 +268,38 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
     }
   }
   
+  String _getTipoUsuario() {
+    switch (providerType) {
+      case 'Acopiador':
+      case 'Planta de Separación':
+        return 'origen';
+      case 'Reciclador':
+        return 'reciclador';
+      case 'Transformador':
+        return 'transformador';
+      case 'Transportista':
+        return 'transportista';
+      case 'Laboratorio':
+        return 'laboratorio';
+      default:
+        return 'origen';
+    }
+  }
+  
   String _getSubtipo() {
     switch (providerType) {
       case 'Acopiador':
         return 'A';
       case 'Planta de Separación':
         return 'P';
+      case 'Reciclador':
+        return 'R';
+      case 'Transformador':
+        return 'T';
+      case 'Transportista':
+        return 'V';
+      case 'Laboratorio':
+        return 'L';
       default:
         return 'A'; // Por defecto acopiador para usuarios origen
     }
@@ -713,6 +741,32 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
           {'id': 'ecoce_epf_poli', 'label': 'EPF - Poli (PE)'},
           {'id': 'ecoce_epf_pp', 'label': 'EPF - PP'},
           {'id': 'ecoce_epf_multi', 'label': 'EPF - Multi'},
+        ];
+      case 'R': // Reciclador
+        return [
+          {'id': 'material_separado', 'label': 'Material Separado'},
+          {'id': 'material_pacas', 'label': 'Pacas'},
+          {'id': 'material_sacos', 'label': 'Sacos'},
+          {'id': 'material_procesado', 'label': 'Material Procesado'},
+        ];
+      case 'T': // Transformador
+        return [
+          {'id': 'pellets_pe', 'label': 'Pellets PE'},
+          {'id': 'pellets_pp', 'label': 'Pellets PP'},
+          {'id': 'flakes_pet', 'label': 'Flakes PET'},
+          {'id': 'material_procesado', 'label': 'Material Procesado'},
+        ];
+      case 'V': // Transportista
+        return [
+          {'id': 'transporte_general', 'label': 'Transporte General'},
+          {'id': 'carga_pesada', 'label': 'Carga Pesada'},
+          {'id': 'contenedores', 'label': 'Contenedores'},
+        ];
+      case 'L': // Laboratorio
+        return [
+          {'id': 'analisis_composicion', 'label': 'Análisis de Composición'},
+          {'id': 'pruebas_calidad', 'label': 'Pruebas de Calidad'},
+          {'id': 'certificacion', 'label': 'Certificación'},
         ];
       default:
         return [

@@ -126,6 +126,8 @@ lib/screens/
     ├── planta_separacion/        # Separation plant screens
     ├── transformador/            # Transformer screens
     ├── laboratorio/              # Laboratory screens
+    ├── maestro/                  # Master admin screens
+    ├── repositorio/              # Repository screens
     └── shared/                   # Shared ECOCE components
 ```
 
@@ -133,8 +135,9 @@ lib/screens/
 Services handle business logic and external integrations:
 
 - **AuthService**: Multi-tenant authentication with platform switching
-- **EcoceProfileService**: ECOCE user profile management with role-based data
+- **EcoceProfileService**: ECOCE user profile management with role-based data and solicitudes system
 - **ImageService**: Image compression (max 50KB) and management
+- **DocumentService**: Document upload with compression and Firebase Storage integration
 - **FirebaseManager**: Centralized Firebase instance management
 
 ### Widget Reusability Pattern
@@ -146,6 +149,13 @@ Common widgets are organized for maximum reusability:
 
 ## Key Features & Implementation
 
+### User Registration & Approval Flow
+1. Users fill multi-step registration form (5 steps)
+2. Request saved to `solicitudes_cuentas` collection (NO Auth user created yet)
+3. Maestro user reviews in unified dashboard
+4. On approval: Auth user created, folio assigned, profile moved to `ecoce_profiles`
+5. On rejection: Request deleted completely
+
 ### QR Code System
 - **Scanner**: `QrScannerWidget` using `mobile_scanner` package
 - **Generator**: `qr_flutter` for creating QR codes
@@ -153,8 +163,9 @@ Common widgets are organized for maximum reusability:
 
 ### Document Management
 - **Upload**: `DocumentUploadWidget` with multi-file support
-- **Storage**: Firebase Storage with compressed paths
-- **Supported Types**: PDF, images (auto-compressed)
+- **Compression**: Images compressed to ~100KB target, PDFs validated (5MB max)
+- **Storage**: Firebase Storage organized by solicitud/user ID
+- **Supported Types**: PDF, images (JPG, PNG)
 
 ### Location Services
 - **No GPS Required**: Uses geocoding without device location permissions
@@ -167,6 +178,12 @@ Materials are role-specific:
 - **Reciclador**: Processing states (separados, pacas, sacos)
 - **Transformador**: Pellets and flakes
 - **Laboratorio**: Sample types
+
+### User Deletion (Maestro)
+- Complete removal from `ecoce_profiles` and `solicitudes_cuentas`
+- Storage files deleted
+- Marked for Auth deletion in `users_pending_deletion` collection
+- Requires Cloud Function for actual Auth removal (see `docs/CLOUD_FUNCTION_DELETE_USERS.md`)
 
 ## Navigation & Routing
 
@@ -204,15 +221,29 @@ Example flows:
 
 ### Collection Structure
 ```
-ecoce_profiles/
-├── [userId]
-│   ├── ecoce_tipo_actor: "A"/"P"/"R"/"T"/"V"/"L"
-│   ├── ecoce_folio: "A0000001"
-│   └── ... profile data
+solicitudes_cuentas/           # Account requests pending approval
+├── [solicitudId]
+│   ├── estado: "pendiente"/"aprobada"/"rechazada"
+│   ├── datos_perfil: {...}
+│   └── documentos: {...}
 
-bioway_users/ (future)
+ecoce_profiles/                # Main user profiles (index)
 ├── [userId]
-│   └── ... user data
+│   ├── path: "ecoce_profiles/[type]/usuarios/[userId]"
+│   ├── folio: "A0000001"
+│   └── aprobado: true
+
+ecoce_profiles/[type]/usuarios/  # Actual profile data by type
+├── origen/centro_acopio/
+├── origen/planta_separacion/
+├── reciclador/usuarios/
+├── transformador/usuarios/
+├── transporte/usuarios/
+└── laboratorio/usuarios/
+
+users_pending_deletion/        # Users marked for Auth deletion
+├── [userId]
+│   └── status: "pending"/"completed"/"failed"
 ```
 
 ### Security Rules
@@ -253,7 +284,7 @@ isCompact: screenHeight < 700
 
 ### Image Handling
 - Auto-compression to 50KB for storage
-- Use `ImageService.compressImage()`
+- Use `ImageService.optimizeImageForDatabase()`
 - Support camera and gallery sources
 
 ### Form Validation
@@ -279,7 +310,7 @@ isCompact: screenHeight < 700
 - Add `key` to list items for better diffing
 
 ### Image Performance
-- Compress before upload (50KB max)
+- Compress before upload (100KB target)
 - Use `cached_network_image` for remote images
 - Implement progressive loading
 
@@ -289,13 +320,14 @@ isCompact: screenHeight < 700
 1. Create registration screen in `lib/screens/login/ecoce/providers/`
 2. Extend `BaseProviderRegisterScreen`
 3. Override required properties (type, title, icon, etc.)
-4. Add route in `main.dart`
-5. Update provider selector screen
+4. Add to `ECOCETipoProveedorSelector._providerTypes`
+5. Update `_getTipoUsuario()` and `_getSubtipo()` in base class
+6. Add materials in `_getMaterialesBySubtipo()`
 
 ### Adding a New Material Type
-1. Update material lists in `BaseProviderRegisterScreen._getMaterialesByTipo()`
+1. Update material lists in `BaseProviderRegisterScreen._getMaterialesBySubtipo()`
 2. Add color in `BioWayColors` if needed
-3. Update `material_utils.dart` helpers
+3. Update material handling in relevant screens
 
 ### Implementing a New Screen
 1. Create in appropriate feature folder
@@ -320,3 +352,8 @@ isCompact: screenHeight < 700
 - Verify API key in `google_maps_config.dart`
 - Check API enablement in Google Cloud Console
 - Ensure internet connectivity for geocoding
+
+### User Management Issues
+- Deleted users still showing: Use refresh button or pull-to-refresh
+- Can't delete Auth users: Requires Cloud Function implementation
+- Duplicate emails: Check both `solicitudes_cuentas` and `ecoce_profiles`

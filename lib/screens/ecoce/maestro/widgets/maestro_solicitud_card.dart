@@ -8,6 +8,7 @@ class MaestroSolicitudCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onApprove;
   final VoidCallback? onReject;
+  final VoidCallback? onDelete;
   final bool showActions;
   final bool showAdminInfo;
   
@@ -17,6 +18,7 @@ class MaestroSolicitudCard extends StatelessWidget {
     required this.onTap,
     this.onApprove,
     this.onReject,
+    this.onDelete,
     this.showActions = true,
     this.showAdminInfo = false,
   });
@@ -144,6 +146,27 @@ class MaestroSolicitudCard extends StatelessWidget {
                     ],
                   ),
                 ),
+                
+                // Botón de eliminar para usuarios en administración
+                if (onDelete != null) ...[
+                  SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: onDelete,
+                      icon: Icon(Icons.delete_outline, size: 18),
+                      label: Text('Eliminar Usuario'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: BioWayColors.error,
+                        side: BorderSide(color: BioWayColors.error),
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ],
               
               // Botones de acción

@@ -4,6 +4,7 @@ import '../../../services/firebase/ecoce_profile_service.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/loading_indicator.dart';
 import 'widgets/maestro_solicitud_card.dart';
+import 'widgets/delete_user_dialog.dart';
 import 'maestro_solicitud_details_screen.dart';
 
 /// Pantalla unificada para la gestión de usuarios maestro ECOCE
@@ -49,18 +50,46 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
     setState(() => _isLoading = true);
     
     try {
-      // Cargar solicitudes pendientes y aprobadas desde Firebase
+      // Cargar solicitudes pendientes desde Firebase
       final pendientes = await _profileService.getPendingSolicitudes();
-      final aprobadas = await _profileService.getApprovedSolicitudes();
+      
+      // Para la pestaña de administración, obtener TODOS los usuarios de ecoce_profiles
+      // no solo las solicitudes aprobadas
+      final allProfiles = await _profileService.getAllActiveProfiles();
+      
+      // Convertir perfiles a formato de solicitud para mantener compatibilidad con la UI
+      final approvedUsers = allProfiles.map((profile) {
+        return {
+          'solicitud_id': profile.id,
+          'usuario_creado_id': profile.id,
+          'folio_asignado': profile.ecoceFolio,
+          'estado': 'aprobada',
+          'datos_perfil': {
+            'ecoce_nombre': profile.ecoceNombre,
+            'ecoce_rfc': profile.ecoceRfc,
+            'ecoce_correo_contacto': profile.ecoceCorreoContacto,
+            'ecoce_tel_contacto': profile.ecoceTelContacto,
+            'ecoce_subtipo': profile.ecoceSubtipo,
+            'ecoce_tipo_actor': profile.ecoceTipoActor,
+            'ecoce_calle': profile.ecoceCalle,
+            'ecoce_num_ext': profile.ecoceNumExt,
+            'ecoce_colonia': profile.ecoceColonia,
+            'ecoce_municipio': profile.ecoceMunicipio,
+            'ecoce_estado': profile.ecoceEstado,
+            'ecoce_cp': profile.ecoceCp,
+          },
+          'fecha_revision': profile.ecoceFechaAprobacion?.toIso8601String(),
+        };
+      }).toList();
       
       setState(() {
         _pendingSolicitudes = pendientes;
-        _approvedSolicitudes = aprobadas;
+        _approvedSolicitudes = approvedUsers;
         _isLoading = false;
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      _showErrorMessage('Error al cargar solicitudes: ${e.toString()}');
+      _showErrorMessage('Error al cargar datos: ${e.toString()}');
     }
   }
 
@@ -166,6 +195,74 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
         ),
       ),
     );
+  }
+  
+  Future<void> _deleteUser(Map<String, dynamic> usuario) async {
+    final datosPerfil = usuario['datos_perfil'] as Map<String, dynamic>;
+    final userId = usuario['usuario_creado_id'] ?? usuario['id'];
+    final folio = usuario['folio_asignado'] ?? 'SIN FOLIO';
+    
+    final bool? shouldDelete = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => DeleteUserDialog(
+        userName: datosPerfil['ecoce_nombre'] ?? 'Usuario sin nombre',
+        userFolio: folio,
+        userId: userId,
+      ),
+    );
+    
+    if (shouldDelete == true) {
+      try {
+        // Mostrar indicador de carga
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => Center(
+            child: Container(
+              padding: EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(BioWayColors.error),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Eliminando usuario...',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: BioWayColors.darkGreen,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        
+        // Eliminar usuario
+        await _profileService.deleteUserCompletely(
+          userId: userId,
+          deletedBy: _maestroUserId,
+        );
+        
+        // Cerrar diálogo de carga
+        if (mounted) Navigator.pop(context);
+        
+        _showSuccessMessage('Usuario eliminado exitosamente');
+        _loadSolicitudes();
+      } catch (e) {
+        // Cerrar diálogo de carga si hay error
+        if (mounted) Navigator.pop(context);
+        
+        _showErrorMessage('Error al eliminar usuario: ${e.toString()}');
+      }
+    }
   }
 
   void _mostrarFiltroTipoUsuario() {
@@ -534,38 +631,79 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
     final solicitudes = _solicitudesFiltradas;
     
     if (solicitudes.isEmpty) {
-      return _buildEmptyState(
-        icon: isPending ? Icons.inbox : Icons.check_circle_outline,
-        title: isPending ? 'No hay solicitudes pendientes' : 'No hay cuentas aprobadas',
-        subtitle: isPending ? 'Las nuevas solicitudes aparecerán aquí' : 'Las cuentas aprobadas aparecerán aquí',
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildEmptyState(
+              icon: isPending ? Icons.inbox : Icons.check_circle_outline,
+              title: isPending ? 'No hay solicitudes pendientes' : 'No hay cuentas aprobadas',
+              subtitle: isPending ? 'Las nuevas solicitudes aparecerán aquí' : 'Las cuentas aprobadas aparecerán aquí',
+            ),
+            SizedBox(height: 24),
+            _buildReloadButton(),
+          ],
+        ),
       );
     }
 
     return RefreshIndicator(
       onRefresh: _loadSolicitudes,
-      child: ListView.builder(
-        padding: EdgeInsets.all(16),
-        itemCount: solicitudes.length,
-        itemBuilder: (context, index) {
-          final solicitud = solicitudes[index];
-          
-          return MaestroSolicitudCard(
-            solicitud: solicitud,
-            onTap: () => _viewSolicitudDetails(solicitud),
-            onApprove: isPending ? () => _approveSolicitud(solicitud) : null,
-            onReject: isPending ? () => _rejectSolicitud(solicitud) : null,
-            showActions: isPending,
-          );
-        },
+      child: Stack(
+        children: [
+          ListView.builder(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: 80, // Space for floating button
+            ),
+            itemCount: solicitudes.length,
+            itemBuilder: (context, index) {
+              final solicitud = solicitudes[index];
+              
+              return MaestroSolicitudCard(
+                solicitud: solicitud,
+                onTap: () => _viewSolicitudDetails(solicitud),
+                onApprove: isPending ? () => _approveSolicitud(solicitud) : null,
+                onReject: isPending ? () => _rejectSolicitud(solicitud) : null,
+                showActions: isPending,
+              );
+            },
+          ),
+          // Floating reload button
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: FloatingActionButton.extended(
+              onPressed: _loadSolicitudes,
+              backgroundColor: BioWayColors.ecoceGreen,
+              icon: Icon(Icons.refresh, color: Colors.white),
+              label: Text(
+                'Actualizar',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildRejectedList() {
-    return _buildEmptyState(
-      icon: Icons.delete_forever,
-      title: 'Solicitudes rechazadas se eliminan',
-      subtitle: 'Las solicitudes rechazadas son eliminadas permanentemente del sistema',
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildEmptyState(
+            icon: Icons.delete_forever,
+            title: 'Solicitudes rechazadas se eliminan',
+            subtitle: 'Las solicitudes rechazadas son eliminadas permanentemente del sistema',
+          ),
+          SizedBox(height: 24),
+          _buildReloadButton(),
+        ],
+      ),
     );
   }
 
@@ -589,26 +727,62 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
     }).toList();
 
     if (approvedUsers.isEmpty) {
-      return _buildEmptyState(
-        icon: Icons.people_outline,
-        title: 'No hay usuarios en el sistema',
-        subtitle: 'Los usuarios aprobados aparecerán aquí',
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildEmptyState(
+              icon: Icons.people_outline,
+              title: 'No hay usuarios en el sistema',
+              subtitle: 'Los usuarios aprobados aparecerán aquí',
+            ),
+            SizedBox(height: 24),
+            _buildReloadButton(),
+          ],
+        ),
       );
     }
 
-    return ListView.builder(
-      padding: EdgeInsets.all(16),
-      itemCount: approvedUsers.length,
-      itemBuilder: (context, index) {
-        final usuario = approvedUsers[index];
-        
-        return MaestroSolicitudCard(
-          solicitud: usuario,
-          onTap: () => _viewSolicitudDetails(usuario),
-          showActions: false,
-          showAdminInfo: true,
-        );
-      },
+    return RefreshIndicator(
+      onRefresh: _loadSolicitudes,
+      child: Stack(
+        children: [
+          ListView.builder(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: 80, // Space for floating button
+            ),
+            itemCount: approvedUsers.length,
+            itemBuilder: (context, index) {
+              final usuario = approvedUsers[index];
+              
+              return MaestroSolicitudCard(
+                solicitud: usuario,
+                onTap: () => _viewSolicitudDetails(usuario),
+                onDelete: () => _deleteUser(usuario),
+                showActions: false,
+                showAdminInfo: true,
+              );
+            },
+          ),
+          // Floating reload button
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: FloatingActionButton.extended(
+              onPressed: _loadSolicitudes,
+              backgroundColor: BioWayColors.ecoceGreen,
+              icon: Icon(Icons.refresh, color: Colors.white),
+              label: Text(
+                'Actualizar',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -617,30 +791,47 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
     required String title,
     required String subtitle,
   }) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 80, color: BioWayColors.lightGrey),
-          SizedBox(height: 16),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: BioWayColors.darkGreen,
-            ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 80, color: BioWayColors.lightGrey),
+        SizedBox(height: 16),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: BioWayColors.darkGreen,
           ),
-          SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 14,
-              color: BioWayColors.textGrey,
-            ),
-            textAlign: TextAlign.center,
+        ),
+        SizedBox(height: 8),
+        Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 14,
+            color: BioWayColors.textGrey,
           ),
-        ],
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildReloadButton() {
+    return OutlinedButton.icon(
+      onPressed: () async {
+        setState(() => _isLoading = true);
+        await _loadSolicitudes();
+      },
+      icon: Icon(Icons.refresh, size: 20),
+      label: Text('Recargar datos'),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: BioWayColors.ecoceGreen,
+        side: BorderSide(color: BioWayColors.ecoceGreen, width: 2),
+        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
       ),
     );
   }

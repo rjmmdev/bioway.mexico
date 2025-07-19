@@ -1,11 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../models/ecoce/ecoce_profile_model.dart';
+import '../document_service.dart';
 import 'firebase_manager.dart';
 
 class EcoceProfileService {
   final FirebaseManager _firebaseManager = FirebaseManager();
+  final DocumentService _documentService = DocumentService();
   
   FirebaseFirestore get _firestore {
     final app = _firebaseManager.currentApp;
@@ -50,6 +53,62 @@ class EcoceProfileService {
       default:
         return _profilesCollection.doc('otros').collection('usuarios');
     }
+  }
+  
+  // Método mantenido por compatibilidad - redirige al método genérico
+  Future<String> createOrigenAccountRequest({
+    required String email,
+    required String password,
+    required String subtipo,
+    required String nombre,
+    required String rfc,
+    required String nombreContacto,
+    required String telefonoContacto,
+    required String telefonoEmpresa,
+    required String calle,
+    required String numExt,
+    required String cp,
+    String? estado,
+    String? municipio,
+    String? colonia,
+    String? referencias,
+    required List<String> materiales,
+    required bool transporte,
+    String? linkRedSocial,
+    Map<String, double>? dimensionesCapacidad,
+    double? pesoCapacidad,
+    Map<String, String?>? documentos,
+    String? linkMaps,
+    double? latitud,
+    double? longitud,
+  }) async {
+    return createAccountRequest(
+      tipoUsuario: 'origen',
+      email: email,
+      password: password,
+      subtipo: subtipo,
+      nombre: nombre,
+      rfc: rfc,
+      nombreContacto: nombreContacto,
+      telefonoContacto: telefonoContacto,
+      telefonoEmpresa: telefonoEmpresa,
+      calle: calle,
+      numExt: numExt,
+      cp: cp,
+      estado: estado,
+      municipio: municipio,
+      colonia: colonia,
+      referencias: referencias,
+      materiales: materiales,
+      transporte: transporte,
+      linkRedSocial: linkRedSocial,
+      dimensionesCapacidad: dimensionesCapacidad,
+      pesoCapacidad: pesoCapacidad,
+      documentos: documentos,
+      linkMaps: linkMaps,
+      latitud: latitud,
+      longitud: longitud,
+    );
   }
 
   // Generar folio único según el subtipo para usuarios origen
@@ -228,8 +287,9 @@ class EcoceProfileService {
     }
   }
   
-  // Crear solicitud de cuenta para usuario Origen (sin crear usuario en Auth)
-  Future<String> createOrigenAccountRequest({
+  // Crear solicitud de cuenta genérica para cualquier tipo de usuario (sin crear usuario en Auth)
+  Future<String> createAccountRequest({
+    required String tipoUsuario, // 'origen', 'reciclador', 'transformador', 'transportista', 'laboratorio'
     required String email,
     required String password,
     required String subtipo, // 'A' (Acopiador) o 'P' (Planta de Separación)
@@ -278,15 +338,37 @@ class EcoceProfileService {
       // Generar ID único para la solicitud
       final solicitudId = _solicitudesCollection.doc().id;
 
+      // Determinar el tipo de actor según el tipo de usuario
+      String tipoActor;
+      switch (tipoUsuario) {
+        case 'origen':
+          tipoActor = 'O';
+          break;
+        case 'reciclador':
+          tipoActor = 'R';
+          break;
+        case 'transformador':
+          tipoActor = 'T';
+          break;
+        case 'transportista':
+          tipoActor = 'V';
+          break;
+        case 'laboratorio':
+          tipoActor = 'L';
+          break;
+        default:
+          tipoActor = 'O';
+      }
+      
       // Crear documento de solicitud
       final solicitudData = {
         'id': solicitudId,
-        'tipo': 'origen',
+        'tipo': tipoUsuario,
         'subtipo': subtipo,
         'email': email,
         'password': password, // En producción, esto debería estar encriptado
         'datos_perfil': {
-          'ecoce_tipo_actor': 'O',
+          'ecoce_tipo_actor': tipoActor,
           'ecoce_subtipo': subtipo,
           'ecoce_nombre': nombre,
           'ecoce_folio': 'PENDIENTE',
@@ -624,29 +706,128 @@ class EcoceProfileService {
     }
   }
 
-  // Eliminar perfil y sus datos asociados
-  Future<void> deleteProfile(String userId) async {
+  // Eliminar perfil completo y sus datos asociados
+  Future<void> deleteUserCompletely({
+    required String userId,
+    required String deletedBy,
+  }) async {
     try {
-      // Obtener la ruta del perfil desde el índice
+      // 1. Obtener la ruta del perfil desde el índice
       final indexDoc = await _profilesCollection.doc(userId).get();
-      if (!indexDoc.exists) return;
+      if (!indexDoc.exists) {
+        throw Exception('Usuario no encontrado');
+      }
       
       final indexData = indexDoc.data() as Map<String, dynamic>;
       final profilePath = indexData['path'] as String?;
       
+      // 2. Obtener el perfil completo para acceder a los documentos
+      Map<String, dynamic>? profileData;
       if (profilePath != null) {
-        // Eliminar el documento de la subcolección
+        final profileDoc = await _firestore.doc(profilePath).get();
+        if (profileDoc.exists) {
+          profileData = profileDoc.data() as Map<String, dynamic>;
+        }
+      }
+      
+      // 3. Eliminar archivos de Storage si existen
+      if (profileData != null) {
+        await _deleteUserStorageFiles(userId, profileData);
+      }
+      
+      // 4. Eliminar el documento de la subcolección
+      if (profilePath != null) {
         await _firestore.doc(profilePath).delete();
       }
       
-      // Eliminar el índice
+      // 5. Eliminar el índice
       await _profilesCollection.doc(userId).delete();
       
-      // TODO: Eliminar archivos de Storage asociados al usuario
-      // TODO: Eliminar usuario de Auth (requiere Admin SDK o usuario autenticado)
+      // 6. Eliminar completamente la solicitud correspondiente en solicitudes_cuentas
+      // Buscar solicitudes aprobadas con este userId
+      final solicitudQuery = await _solicitudesCollection
+          .where('usuario_creado_id', isEqualTo: userId)
+          .where('estado', isEqualTo: 'aprobada')
+          .get();
+      
+      // Eliminar completamente las solicitudes
+      for (final doc in solicitudQuery.docs) {
+        await doc.reference.delete();
+      }
+      
+      // 7. Registrar la eliminación en un log de auditoría
+      await _firestore.collection('audit_logs').add({
+        'action': 'user_deleted',
+        'userId': userId,
+        'userFolio': indexData['folio'] ?? profileData?['ecoce_folio'] ?? 'SIN FOLIO',
+        'userName': indexData['nombre'] ?? profileData?['ecoce_nombre'] ?? 'Sin nombre',
+        'deletedBy': deletedBy,
+        'deletedAt': FieldValue.serverTimestamp(),
+      });
+      
+      // 8. Marcar el usuario para eliminación en Firebase Auth
+      // IMPORTANTE: La eliminación real del usuario de Firebase Auth requiere Firebase Admin SDK
+      // que solo puede ejecutarse en un entorno seguro del servidor (Cloud Functions)
+      // 
+      // Por ahora, creamos un documento en una colección especial para que una Cloud Function
+      // procese la eliminación del usuario de Authentication
+      await _firestore.collection('users_pending_deletion').doc(userId).set({
+        'userId': userId,
+        'userEmail': profileData?['ecoce_correo_contacto'] ?? indexData['email'] ?? 'unknown',
+        'requestedBy': deletedBy,
+        'requestedAt': FieldValue.serverTimestamp(),
+        'status': 'pending',
+        'userFolio': indexData['folio'] ?? profileData?['ecoce_folio'] ?? 'SIN FOLIO',
+        'userName': indexData['nombre'] ?? profileData?['ecoce_nombre'] ?? 'Sin nombre',
+      });
+      
+      // El usuario no podrá acceder al sistema aunque exista en Auth porque:
+      // 1. No tiene perfil en ecoce_profiles
+      // 2. No tiene solicitud aprobada
+      // 3. La Cloud Function lo eliminará de Auth cuando se ejecute
       
     } catch (e) {
       rethrow;
+    }
+  }
+  
+  // Eliminar archivos de Storage de un usuario
+  Future<void> _deleteUserStorageFiles(String userId, Map<String, dynamic> profileData) async {
+    try {
+      final storage = FirebaseStorage.instanceFor(app: _firebaseManager.currentApp);
+      
+      // Lista de campos que contienen URLs de documentos
+      final documentFields = [
+        'ecoce_const_sit_fis',
+        'ecoce_comp_domicilio',
+        'ecoce_banco_caratula',
+        'ecoce_ine',
+      ];
+      
+      for (final field in documentFields) {
+        final url = profileData[field];
+        if (url != null && url is String && url.isNotEmpty) {
+          try {
+            // Extraer la ruta del archivo desde la URL
+            final uri = Uri.parse(url);
+            final pathSegments = uri.pathSegments;
+            if (pathSegments.isNotEmpty) {
+              // Construir la ruta del archivo
+              final filePath = pathSegments.skip(pathSegments.indexOf('o') + 1).join('/');
+              final decodedPath = Uri.decodeComponent(filePath);
+              
+              // Eliminar el archivo
+              await storage.ref(decodedPath).delete();
+            }
+          } catch (e) {
+            // Continuar si falla la eliminación de un archivo específico
+            print('Error al eliminar archivo $field: $e');
+          }
+        }
+      }
+    } catch (e) {
+      // No lanzar excepción si falla la eliminación de archivos
+      print('Error al eliminar archivos de Storage: $e');
     }
   }
 
@@ -783,6 +964,56 @@ class EcoceProfileService {
     }
   }
   
+  // Obtener TODOS los perfiles activos del sistema
+  Future<List<EcoceProfileModel>> getAllActiveProfiles() async {
+    try {
+      // Obtener todos los documentos de la colección principal ecoce_profiles
+      final query = await _profilesCollection.get();
+      
+      List<EcoceProfileModel> allProfiles = [];
+      
+      for (final doc in query.docs) {
+        try {
+          // Intentar obtener como perfil directo (usuarios antiguos)
+          final data = doc.data() as Map<String, dynamic>;
+          
+          // Si tiene los campos de perfil directamente, es un usuario antiguo
+          if (data.containsKey('ecoce_nombre') && data.containsKey('ecoce_folio')) {
+            final profile = EcoceProfileModel.fromFirestore(doc);
+            allProfiles.add(profile);
+          } 
+          // Si no, podría ser un índice que apunta a una subcolección
+          else if (data.containsKey('path')) {
+            final profilePath = data['path'] as String;
+            final profileDoc = await _firestore.doc(profilePath).get();
+            if (profileDoc.exists) {
+              final profile = EcoceProfileModel.fromFirestore(profileDoc);
+              allProfiles.add(profile);
+            }
+          }
+        } catch (e) {
+          // Continuar con el siguiente documento si hay error
+          print('Error procesando documento ${doc.id}: $e');
+        }
+      }
+      
+      // Ordenar por fecha de registro o nombre
+      allProfiles.sort((a, b) {
+        // Primero intentar ordenar por fecha
+        if (a.ecoceFechaReg != null && b.ecoceFechaReg != null) {
+          return b.ecoceFechaReg!.compareTo(a.ecoceFechaReg!);
+        }
+        // Si no hay fecha, ordenar por nombre
+        return (a.ecoceNombre ?? '').compareTo(b.ecoceNombre ?? '');
+      });
+      
+      return allProfiles;
+    } catch (e) {
+      print('Error al obtener todos los perfiles: $e');
+      return [];
+    }
+  }
+  
   // Obtener todos los perfiles de origen (centros de acopio y plantas de separación)
   Future<List<EcoceProfileModel>> getOrigenProfiles() async {
     try {
@@ -815,6 +1046,58 @@ class EcoceProfileService {
       return profiles;
     } catch (e) {
       return [];
+    }
+  }
+  
+  // Subir documentos de una solicitud y actualizar URLs en Firestore
+  Future<bool> uploadAndUpdateSolicitudDocuments({
+    required String solicitudId,
+    required Map<String, PlatformFile?> documents,
+    Function(String, double)? onProgress,
+  }) async {
+    try {
+      // Subir todos los documentos
+      final uploadedUrls = await _documentService.uploadSolicitudDocuments(
+        solicitudId: solicitudId,
+        documents: documents,
+        onProgress: onProgress,
+      );
+      
+      // Filtrar solo las URLs válidas
+      final validUrls = <String, dynamic>{};
+      uploadedUrls.forEach((key, url) {
+        if (url != null && url.isNotEmpty) {
+          validUrls['datos_perfil.ecoce_$key'] = url;
+        }
+      });
+      
+      // Si hay URLs válidas, actualizar el documento
+      if (validUrls.isNotEmpty) {
+        await _solicitudesCollection.doc(solicitudId).update(validUrls);
+        print('✓ Documentos actualizados en la solicitud');
+        return true;
+      }
+      
+      return false;
+    } catch (e) {
+      print('Error al subir documentos: $e');
+      return false;
+    }
+  }
+  
+  // Obtener solicitud por ID
+  Future<Map<String, dynamic>?> getSolicitudById(String solicitudId) async {
+    try {
+      final doc = await _solicitudesCollection.doc(solicitudId).get();
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        data['solicitud_id'] = doc.id;
+        return data;
+      }
+      return null;
+    } catch (e) {
+      print('Error al obtener solicitud: $e');
+      return null;
     }
   }
 }
