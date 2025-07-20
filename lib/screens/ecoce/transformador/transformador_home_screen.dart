@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
+import '../../../services/user_session_service.dart';
+import '../../../models/ecoce/ecoce_profile_model.dart';
 import '../shared/widgets/unified_stat_card.dart';
 import 'transformador_navigation.dart';
 import 'transformador_lote_detail_screen.dart';
@@ -17,9 +19,18 @@ class _TransformadorHomeScreenState extends State<TransformadorHomeScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   
-  // Datos de ejemplo para el transformador
-  final String _nombreEmpresa = "La Venta S.A. de C.V.";
-  final String _folioTransformador = "T0000001";
+  // Servicio de sesión
+  final UserSessionService _sessionService = UserSessionService();
+  
+  // Datos del usuario
+  EcoceProfileModel? _userProfile;
+  bool _isLoading = true;
+  
+  // Datos que vienen del perfil
+  String get _nombreEmpresa => _userProfile?.ecoceNombre ?? 'Cargando...';
+  String get _folioTransformador => _userProfile?.ecoceFolio ?? 'PENDIENTE';
+  
+  // Estadísticas (temporalmente hardcodeadas)
   final int _lotesRecibidos = 47;
   final int _productosCreados = 28;
   final double _materialProcesado = 4.5; // en toneladas

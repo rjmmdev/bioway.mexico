@@ -355,6 +355,37 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
     );
   }
 
+  // Función para migrar usuarios existentes
+  Future<void> _migrateExistingUsers() async {
+    final bool confirm = await DialogUtils.showConfirmDialog(
+      context: context,
+      title: 'Migrar Usuarios',
+      message: '¿Deseas migrar los usuarios existentes a la nueva estructura de carpetas?\n\nEsto organizará los usuarios por tipo en subcarpetas.',
+      confirmText: 'Migrar',
+      cancelText: 'Cancelar',
+      confirmColor: BioWayColors.warning,
+    );
+    
+    if (confirm) {
+      DialogUtils.showLoadingDialog(
+        context: context,
+        message: 'Migrando usuarios...',
+      );
+      
+      try {
+        await _profileService.migrateExistingUsersToSubcollections();
+        
+        Navigator.pop(context); // Cerrar loading
+        
+        _showSuccessMessage('Usuarios migrados exitosamente');
+        _loadSolicitudes(); // Recargar datos
+      } catch (e) {
+        Navigator.pop(context); // Cerrar loading
+        _showErrorMessage('Error al migrar usuarios: ${e.toString()}');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -404,34 +435,63 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                             ],
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.admin_panel_settings,
-                                size: 16,
+                        Row(
+                          children: [
+                            // Botón de opciones
+                            PopupMenuButton<String>(
+                              icon: const Icon(
+                                Icons.more_vert,
                                 color: Colors.white,
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'ADMIN',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white.withValues(alpha: 0.9),
+                              onSelected: (value) {
+                                if (value == 'migrate') {
+                                  _migrateExistingUsers();
+                                }
+                              },
+                              itemBuilder: (BuildContext context) => [
+                                const PopupMenuItem<String>(
+                                  value: 'migrate',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.sync, size: 20),
+                                      SizedBox(width: 8),
+                                      Text('Migrar usuarios existentes'),
+                                    ],
+                                  ),
                                 ),
+                              ],
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
                               ),
-                            ],
-                          ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.admin_panel_settings,
+                                    size: 16,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'ADMIN',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),

@@ -29,7 +29,7 @@ import 'screens/ecoce/transformador/transformador_lote_form_screen.dart';
 import 'screens/ecoce/transformador/transformador_documentos_screen.dart';
 
 // Screens - Laboratorio
-import 'screens/ecoce/laboratorio/laboratorio_inicio.dart';
+import 'screens/ecoce/laboratorio/laboratorio_inicio_screen.dart';
 
 // Screens - Maestro
 import 'screens/ecoce/maestro/maestro_unified_screen.dart';

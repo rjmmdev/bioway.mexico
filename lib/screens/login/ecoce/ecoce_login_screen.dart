@@ -8,7 +8,6 @@ import '../../../services/firebase/ecoce_profile_service.dart';
 import '../../ecoce/shared/utils/dialog_utils.dart';
 import 'ecoce_tipo_proveedor_selector.dart';
 import '../../ecoce/reciclador/reciclador_home_screen.dart';
-import '../../ecoce/origen/origen_config.dart';
 // TEMPORAL: Importar pantallas de inicio
 import '../../ecoce/origen/origen_inicio_screen.dart';
 import '../../ecoce/transporte/transporte_home_screen.dart';
@@ -217,85 +216,55 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
           return;
         }
 
-        // PRIMERO: Verificar estado de la solicitud
-        final solicitud = await _profileService.checkAccountRequestStatus(email);
-        
-        if (solicitud == null) {
-          // No existe solicitud - cuenta no registrada o rechazada
-          setState(() {
-            _isLoading = false;
-          });
-          
-          _showErrorDialog(
-            'Cuenta no encontrada',
-            'No existe una cuenta registrada con este correo electrónico. Si tu solicitud fue rechazada, deberás registrarte nuevamente.',
-          );
-          return;
-        }
-        
-        // Verificar estado de la solicitud
-        final estado = solicitud['estado'];
-        
-        if (estado == 'rechazada') {
-          setState(() {
-            _isLoading = false;
-          });
-          
-          final razon = solicitud['comentarios_revision'] ?? 'Tu solicitud fue rechazada.';
-          _showRejectedDialog(razon);
-          return;
-        }
-        
-        if (estado == 'pendiente') {
-          // Intentar login para verificar credenciales
-          try {
-            await _authService.signInWithEmailAndPassword(
-              email: email,
-              password: userPassword,
-            );
-            await _authService.signOut(); // Cerrar sesión inmediatamente
-            
-            setState(() {
-              _isLoading = false;
-            });
-            
-            // Navegar a pantalla de pendiente
-            final datosPerfil = solicitud['datos_perfil'] as Map<String, dynamic>;
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => PendingApprovalScreen(
-                  userName: datosPerfil['ecoce_nombre'] ?? 'Usuario',
-                  userEmail: email,
-                ),
-              ),
-            );
-            return;
-          } catch (e) {
-            setState(() {
-              _isLoading = false;
-            });
-            
-            // Credenciales incorrectas
-            _showErrorDialog(
-              'Credenciales incorrectas',
-              'El usuario o contraseña son incorrectos.',
-            );
-            return;
-          }
-        }
-        
-        // Si llegamos aquí, la cuenta está aprobada
+        // Intentar autenticación con Firebase Auth primero
         try {
-          // Intentar login con Firebase
           final userCredential = await _authService.signInWithEmailAndPassword(
             email: email,
             password: userPassword,
           );
 
           if (userCredential.user != null && mounted) {
-            // Verificar el estado de aprobación del usuario
             final userId = userCredential.user!.uid;
+            
+            // Primero verificar si existe una solicitud
+            final solicitud = await _profileService.checkAccountRequestStatus(email);
+            
+            if (solicitud != null) {
+              // Existe una solicitud, verificar su estado
+              final estado = solicitud['estado'];
+              
+              if (estado == 'pendiente') {
+                // Cuenta pendiente de aprobación
+                await _authService.signOut();
+                setState(() {
+                  _isLoading = false;
+                });
+                
+                final datosPerfil = solicitud['datos_perfil'] as Map<String, dynamic>;
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PendingApprovalScreen(
+                      userName: datosPerfil['ecoce_nombre'] ?? 'Usuario',
+                      userEmail: email,
+                    ),
+                  ),
+                );
+                return;
+              } else if (estado == 'rechazada') {
+                // Cuenta rechazada
+                await _authService.signOut();
+                setState(() {
+                  _isLoading = false;
+                });
+                
+                final razon = solicitud['comentarios_revision'] ?? 'Tu solicitud fue rechazada.';
+                _showRejectedDialog(razon);
+                return;
+              }
+            }
+            
+            // Si no hay solicitud o está aprobada, obtener el perfil
             final profile = await _profileService.getProfile(userId);
             
             setState(() {
@@ -309,6 +278,22 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                 'No se encontró información de tu cuenta. Contacta al administrador.',
               );
               await _authService.signOut();
+              return;
+            }
+            
+            // Verificar si el perfil está aprobado (para usuarios antiguos sin solicitud)
+            if (profile.ecoceEstatusAprobacion == 0) {
+              // Usuario pendiente de aprobación (caso antiguo)
+              await _authService.signOut();
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PendingApprovalScreen(
+                    userName: profile.ecoceNombre,
+                    userEmail: email,
+                  ),
+                ),
+              );
               return;
             }
 
@@ -340,10 +325,22 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
             _isLoading = false;
           });
           
-          // Error de credenciales
+          // Error de autenticación - verificar el tipo de error
+          String errorMessage = 'Usuario o contraseña incorrectos.';
+          
+          if (firebaseError.toString().contains('user-not-found')) {
+            errorMessage = 'No existe una cuenta con este correo electrónico.';
+          } else if (firebaseError.toString().contains('wrong-password')) {
+            errorMessage = 'La contraseña es incorrecta.';
+          } else if (firebaseError.toString().contains('invalid-email')) {
+            errorMessage = 'El formato del correo electrónico es inválido.';
+          } else if (firebaseError.toString().contains('user-disabled')) {
+            errorMessage = 'Esta cuenta ha sido deshabilitada.';
+          }
+          
           _showErrorDialog(
             'Error de autenticación',
-            'Usuario o contraseña incorrectos.',
+            errorMessage,
           );
         }
       } catch (e) {
@@ -426,11 +423,9 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         targetScreen = const RecicladorHomeScreen();
         break;
       case 'acopiador':
-        OrigenUserConfig.current = OrigenUserConfig.acopiador;
         targetScreen = const OrigenInicioScreen();
         break;
       case 'planta de separación':
-        OrigenUserConfig.current = OrigenUserConfig.planta;
         targetScreen = const OrigenInicioScreen();
         break;
       case 'transformador':
@@ -565,25 +560,6 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
   }
 
   void _navigateToUserScreen(String tipoActor, dynamic profile) {
-    // Si es Origen, configurar el tipo correcto
-    if (tipoActor == 'O' && profile != null) {
-      // Determinar si es Acopiador o Planta de Separación
-      final subtipo = profile.ecoceSubtipo;
-      if (subtipo == 'A') {
-        OrigenUserConfig.current = OrigenUserConfig.acopiador;
-      } else if (subtipo == 'P') {
-        OrigenUserConfig.current = OrigenUserConfig.planta;
-      }
-      
-      // Configurar los datos del usuario en OrigenUserConfig
-      OrigenUserConfig.current = OrigenUserConfig(
-        nombre: profile.ecoceNombre,
-        folio: profile.ecoceFolio,
-        tipoUsuario: subtipo == 'A' ? 'Centro de Acopio' : 'Planta de Separación',
-        color: subtipo == 'A' ? BioWayColors.darkGreen : BioWayColors.ppPurple,
-      );
-    }
-    
     // Navegar según el tipo de usuario
     switch (tipoActor) {
       case 'O': // Origen (Acopiador o Planta)
