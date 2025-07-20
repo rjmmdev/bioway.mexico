@@ -14,7 +14,6 @@ import 'screens/ecoce/reciclador/reciclador_lot_management_screen.dart';
 import 'screens/ecoce/reciclador/reciclador_documentacion.dart';
 
 // Screens - Transporte
-import 'screens/ecoce/transporte/transporte_home_screen.dart';
 import 'screens/ecoce/transporte/transporte_lot_management_screen.dart';
 import 'screens/ecoce/transporte/transporte_delivery_screen.dart';
 
@@ -23,10 +22,10 @@ import 'screens/ecoce/shared/ecoce_perfil_screen.dart';
 import 'screens/ecoce/shared/ecoce_ayuda_screen.dart';
 
 // Screens - Transformador
-import 'screens/ecoce/transformador/transformador_home_screen.dart';
+import 'screens/ecoce/transformador/transformador_inicio_screen.dart';
 import 'screens/ecoce/transformador/transformador_produccion_screen.dart';
-import 'screens/ecoce/transformador/transformador_lote_form_screen.dart';
-import 'screens/ecoce/transformador/transformador_documentos_screen.dart';
+import 'screens/ecoce/transformador/transformador_recibir_lote_screen.dart';
+import 'screens/ecoce/transformador/transformador_documentacion_screen.dart';
 
 // Screens - Laboratorio
 import 'screens/ecoce/laboratorio/laboratorio_inicio_screen.dart';
@@ -229,19 +228,18 @@ class BioWayApp extends StatelessWidget {
         },
         
         // Rutas de Transporte
-        '/transporte_inicio': (context) => const TransporteHomeScreen(),
         '/transporte_recoger': (context) => const TransporteLotManagementScreen(),
         '/transporte_entregar': (context) => const TransporteDeliveryScreen(),
         '/transporte_ayuda': (context) => const EcoceAyudaScreen(),
         '/transporte_perfil': (context) => const EcocePerfilScreen(),
         
         // Rutas de Transformador
-        '/transformador_inicio': (context) => const TransformadorHomeScreen(),
+        '/transformador_inicio': (context) => const TransformadorInicioScreen(),
         '/transformador_produccion': (context) => const TransformadorProduccionScreen(),
         '/transformador_ayuda': (context) => const EcoceAyudaScreen(),
         '/transformador_perfil': (context) => const EcocePerfilScreen(),
-        '/transformador_recibir_lote': (context) => const TransformadorLoteFormScreen(),
-        '/transformador_documentacion': (context) => const TransformadorDocumentosScreen(),
+        '/transformador_recibir_lote': (context) => const TransformadorRecibirLoteScreen(),
+        '/transformador_documentacion': (context) => const TransformadorDocumentacionScreen(),
         
         // Rutas de Planta de Separación
         '/planta_separacion_perfil': (context) => const EcocePerfilScreen(),

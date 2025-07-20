@@ -333,7 +333,8 @@ class _TransporteLotManagementScreenState extends State<TransporteLotManagementS
         selectedIndex: 0,
         onItemTapped: _onBottomNavTapped,
         primaryColor: BioWayColors.petBlue,
-        items: TransporteServices.navigationItems,
+        items: EcoceNavigationConfigs.transporteItems,
+        fabConfig: null, // Transportista no tiene FAB
       ),
     );
   }

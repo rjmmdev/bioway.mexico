@@ -12,6 +12,7 @@ import '../shared/ecoce_perfil_screen.dart';
 import 'origen_lote_detalle_screen.dart';
 import '../shared/widgets/lote_card_unified.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
+import '../shared/widgets/unified_stat_card.dart';
 import 'origen_config.dart';
 
 class OrigenInicioScreen extends StatefulWidget {
@@ -430,158 +431,32 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          // Estadísticas compactas y elegantes
-                          IntrinsicHeight(
-                            child: Row(
-                              children: [
-                                // Estadística de Lotes
-                                Expanded(
-                                  child: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha:  0.95),
-                                      borderRadius: BorderRadius.circular(16),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(alpha:  0.08),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(10),
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: [
-                                                Colors.blue.shade400,
-                                                Colors.blue.shade600,
-                                              ],
-                                            ),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(
-                                            Icons.inventory_2,
-                                            size: 20,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                _lotesCreados.toString(),
-                                                style: const TextStyle(
-                                                  fontSize: 24,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.black87,
-                                                  height: 1,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                'Lotes creados',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey[600],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                          // Estadísticas con UnifiedStatCard
+                          Row(
+                            children: [
+                              // Estadística de Lotes
+                              Expanded(
+                                child: UnifiedStatCard.horizontal(
+                                  title: 'Lotes creados',
+                                  value: _lotesCreados.toString(),
+                                  icon: Icons.inventory_2,
+                                  color: Colors.blue,
+                                  height: 70,
                                 ),
-                                const SizedBox(width: 12),
-                                // Estadística de Material
-                                Expanded(
-                                  child: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha:  0.95),
-                                      borderRadius: BorderRadius.circular(16),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(alpha:  0.08),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(10),
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: [
-                                                Colors.green.shade400,
-                                                Colors.green.shade600,
-                                              ],
-                                            ),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(
-                                            Icons.recycling,
-                                            size: 20,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                crossAxisAlignment: CrossAxisAlignment.baseline,
-                                                textBaseline: TextBaseline.alphabetic,
-                                                children: [
-                                                  Flexible(
-                                                    child: Text(
-                                                      '$_materialProcesado',
-                                                      style: const TextStyle(
-                                                        fontSize: 24,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: Colors.black87,
-                                                        height: 1,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Text(
-                                                    'ton',
-                                                    style: TextStyle(
-                                                      fontSize: 13,
-                                                      fontWeight: FontWeight.w600,
-                                                      color: Colors.green.shade600,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                'Material procesado',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey[600],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                              ),
+                              const SizedBox(width: 12),
+                              // Estadística de Material
+                              Expanded(
+                                child: UnifiedStatCard.horizontal(
+                                  title: 'Material procesado',
+                                  value: '$_materialProcesado',
+                                  unit: 'ton',
+                                  icon: Icons.scale,
+                                  color: Colors.green,
+                                  height: 70,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -761,6 +636,15 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
           tooltip: 'Nuevo Lote',
         ),
       ),
+      
+      // Floating Action Button
+      floatingActionButton: EcoceFloatingActionButton(
+        onPressed: _navigateToNewLot,
+        icon: Icons.add,
+        backgroundColor: BioWayColors.ecoceGreen,
+        tooltip: 'Nuevo Lote',
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 

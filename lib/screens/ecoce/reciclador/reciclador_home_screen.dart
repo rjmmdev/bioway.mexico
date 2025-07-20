@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/format_utils.dart';
 import '../../../services/user_session_service.dart';
 import '../../../models/ecoce/ecoce_profile_model.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
@@ -8,6 +10,7 @@ import '../shared/widgets/unified_stat_card.dart';
 import '../shared/widgets/unified_container.dart';
 import '../shared/widgets/quick_action_button.dart';
 import '../shared/widgets/loading_wrapper.dart';
+import '../shared/widgets/common_widgets.dart';
 import 'reciclador_services.dart';
 import 'reciclador_lot_management_screen.dart';
 import 'reciclador_forms_screen.dart';
@@ -172,164 +175,327 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return LoadingWrapper(
-      isLoading: _isLoading,
-      hasError: !_isLoading && _userProfile == null,
-      onRetry: _loadUserData,
-      primaryColor: BioWayColors.recycleOrange,
-      child: Scaffold(
+    if (_isLoading) {
+      return Scaffold(
         backgroundColor: const Color(0xFFF5F5F5),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                GradientHeader(
-                  title: _userProfile?.ecoceNombre ?? 'Reciclador',
-                  subtitle: 'Gestión de Reciclaje',
-                  icon: Icons.recycling,
-                  gradientColors: [
+        body: Center(
+          child: CircularProgressIndicator(
+            color: BioWayColors.recycleOrange,
+          ),
+        ),
+      );
+    }
+    
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
+      body: CustomScrollView(
+        slivers: [
+          // Header moderno con gradiente que se extiende hasta arriba
+          SliverToBoxAdapter(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
                     BioWayColors.recycleOrange,
                     BioWayColors.recycleOrange.withValues(alpha: 0.8),
                   ],
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      _userProfile?.ecoceFolio ?? 'R0000001',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                ),
+              ),
+              child: Stack(
+                children: [
+                  // Patrón de fondo
+                  Positioned(
+                    right: -50,
+                    top: -50,
+                    child: Container(
+                      width: 200,
+                      height: 200,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.1),
                       ),
                     ),
                   ),
-                ),
-                
-                // Statistics
-                Container(
-                  height: 120,
-                  margin: const EdgeInsets.only(top: 20),
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    children: [
-                      StatisticCard(
-                        icon: Icons.inbox_rounded,
-                        label: 'Lotes Recibidos',
-                        value: _lotesRecibidos.toString(),
-                        iconColor: BioWayColors.recycleOrange,
-                        width: 140,
+                  Positioned(
+                    left: -30,
+                    bottom: -30,
+                    child: Container(
+                      width: 150,
+                      height: 150,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.05),
                       ),
-                      const SizedBox(width: 12),
-                      StatisticCard(
-                        icon: Icons.output_rounded,
-                        label: 'Lotes Creados',
-                        value: _lotesCreados.toString(),
-                        iconColor: BioWayColors.success,
-                        width: 140,
-                      ),
-                      const SizedBox(width: 12),
-                      StatisticCard(
-                        icon: Icons.scale_rounded,
-                        label: 'Peso Procesado',
-                        value: RecicladorServices.formatWeight(_pesoProcesado),
-                        iconColor: BioWayColors.info,
-                        width: 140,
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-                
-                // Quick Actions
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Acciones Rápidas',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: BioWayColors.darkGreen,
+                  // Contenido
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 16, 20, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Logo ECOCE y fecha
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Logo ECOCE
+                            SvgPicture.asset(
+                              'assets/logos/ecoce_logo.svg',
+                              width: 70,
+                              height: 35,
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.calendar_today,
+                                    size: 14,
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    FormatUtils.formatDate(DateTime.now()),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: QuickActionButton(
-                              icon: Icons.qr_code_scanner,
-                              label: 'Escanear\nLotes',
-                              backgroundColor: BioWayColors.recycleOrange,
-                              onPressed: _navigateToScanLots,
-                            ),
+                        const SizedBox(height: 12),
+                        // Nombre del reciclador
+                        Text(
+                          _userProfile?.ecoceNombre ?? 'Reciclador',
+                          style: const TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: QuickActionButton(
-                              icon: Icons.inventory_2,
-                              label: 'Administrar\nLotes',
-                              backgroundColor: BioWayColors.petBlue,
-                              onPressed: _navigateToLotManagement,
+                          maxLines: 2,
+                          overflow: TextOverflow.visible,
+                        ),
+                        const SizedBox(height: 8),
+                        // Badge con tipo y folio
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.9),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.recycling,
+                                    size: 16,
+                                    color: BioWayColors.recycleOrange,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Reciclador',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: BioWayColors.recycleOrange,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.amber,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                _userProfile?.ecoceFolio ?? 'R0000001',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        // Estadísticas con UnifiedStatCard
+                        Row(
+                          children: [
+                            Expanded(
+                              child: UnifiedStatCard.horizontal(
+                                title: 'Lotes Recibidos',
+                                value: _lotesRecibidos.toString(),
+                                icon: Icons.inbox_rounded,
+                                color: BioWayColors.recycleOrange,
+                                height: 70,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: UnifiedStatCard.horizontal(
+                                title: 'Peso Procesado',
+                                value: '$_pesoProcesado',
+                                unit: 'kg',
+                                icon: Icons.scale_rounded,
+                                color: BioWayColors.success,
+                                height: 70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                
-                // Recent Lots
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Lotes Recientes',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: BioWayColors.darkGreen,
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: _navigateToLotManagement,
-                            child: const Text('Ver todos'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      ..._lotesRecientes.map((lote) => _buildLoteCard(lote)),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-        bottomNavigationBar: EcoceBottomNavigation(
-          selectedIndex: 0,
-          onItemTapped: _onBottomNavTapped,
-          primaryColor: BioWayColors.recycleOrange,
-          items: EcoceNavigationConfigs.recicladorItems,
-        ),
-        floatingActionButton: EcoceFloatingActionButton(
-          onPressed: _navigateToScanLots,
+
+          // Contenido principal
+          SliverToBoxAdapter(
+            child: Container(
+              margin: const EdgeInsets.only(top: 10),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(30),
+                  topRight: Radius.circular(30),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Acciones rápidas
+                    const Text(
+                      'Acciones Rápidas',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: BioWayColors.darkGreen,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: QuickActionButton(
+                            icon: Icons.qr_code_scanner,
+                            label: 'Escanear\nLotes',
+                            backgroundColor: BioWayColors.recycleOrange,
+                            onPressed: _navigateToScanLots,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: QuickActionButton(
+                            icon: Icons.inventory_2,
+                            label: 'Administrar\nLotes',
+                            backgroundColor: BioWayColors.petBlue,
+                            onPressed: _navigateToLotManagement,
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // Sección de lotes recientes
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Lotes Recientes',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: BioWayColors.darkGreen,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _navigateToLotManagement,
+                          child: Row(
+                            children: [
+                              Text(
+                                'Ver todos',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: BioWayColors.recycleOrange,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.arrow_forward,
+                                size: 16,
+                                color: BioWayColors.recycleOrange,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Lista de lotes existente
+                    ..._lotesRecientes.map((lote) => _buildLoteCard(lote)),
+                    
+                    const SizedBox(height: 100), // Espacio para el FAB
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+
+      // Bottom Navigation Bar con FAB
+      bottomNavigationBar: EcoceBottomNavigation(
+        selectedIndex: 0,
+        onItemTapped: _onBottomNavTapped,
+        primaryColor: BioWayColors.recycleOrange,
+        items: EcoceNavigationConfigs.recicladorItems,
+        fabConfig: FabConfig(
           icon: Icons.add,
-          backgroundColor: BioWayColors.recycleOrange,
+          onPressed: _navigateToScanLots,
           tooltip: 'Escanear Lotes',
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
+      
+      // Floating Action Button
+      floatingActionButton: EcoceFloatingActionButton(
+        onPressed: _navigateToScanLots,
+        icon: Icons.add,
+        backgroundColor: BioWayColors.recycleOrange,
+        tooltip: 'Escanear Lotes',
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 

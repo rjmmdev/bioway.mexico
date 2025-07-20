@@ -232,12 +232,8 @@ class _TransporteDeliveryScreenState extends State<TransporteDeliveryScreen> {
         selectedIndex: 1,
         onItemTapped: _onBottomNavTapped,
         primaryColor: BioWayColors.petBlue,
-        items: const [
-          NavigationItem(icon: Icons.download_rounded, label: 'Recoger'),
-          NavigationItem(icon: Icons.upload_rounded, label: 'Entregar'),
-          NavigationItem(icon: Icons.help_outline_rounded, label: 'Ayuda'),
-          NavigationItem(icon: Icons.person_rounded, label: 'Perfil'),
-        ],
+        items: EcoceNavigationConfigs.transporteItems,
+        fabConfig: null, // Transportista no tiene FAB
       ),
     );
   }

@@ -10,7 +10,6 @@ import 'ecoce_tipo_proveedor_selector.dart';
 import '../../ecoce/reciclador/reciclador_home_screen.dart';
 // TEMPORAL: Importar pantallas de inicio
 import '../../ecoce/origen/origen_inicio_screen.dart';
-import '../../ecoce/transporte/transporte_home_screen.dart';
 import '../../ecoce/maestro/maestro_unified_screen.dart';
 import '../../ecoce/repositorio/repositorio_lotes_screen.dart';
 import '../../ecoce/shared/pending_approval_screen.dart';
@@ -432,8 +431,9 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         targetScreen = const OrigenInicioScreen(); // TEMPORAL
         break;
       case 'transportista':
-        targetScreen = const TransporteHomeScreen();
-        break;
+        // Transportista va directo a recoger material
+        Navigator.pushReplacementNamed(context, '/transporte_recoger');
+        return;
       case 'laboratorio':
         targetScreen = const OrigenInicioScreen(); // TEMPORAL
         break;
@@ -570,7 +570,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         Navigator.pushReplacementNamed(context, '/reciclador_inicio');
         break;
       case 'V': // Transportista
-        Navigator.pushReplacementNamed(context, '/transporte_inicio');
+        Navigator.pushReplacementNamed(context, '/transporte_recoger');
         break;
       case 'T': // Transformador
         Navigator.pushReplacementNamed(context, '/transformador_inicio');

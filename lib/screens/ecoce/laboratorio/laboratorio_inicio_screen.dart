@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/format_utils.dart';
 import '../../../services/user_session_service.dart';
 import '../../../models/ecoce/ecoce_profile_model.dart';
 import '../shared/widgets/unified_stat_card.dart';
@@ -140,42 +142,189 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen>
         ),
       );
     }
-
+    
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      body: Column(
-        children: [
-          // Header con gradiente
-          Container(
-            padding: const EdgeInsets.only(top: 40, bottom: 20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  BioWayColors.otherPurple,
-                  BioWayColors.otherPurple.withValues(alpha: 0.8),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+      body: CustomScrollView(
+        slivers: [
+          // Header moderno con gradiente que se extiende hasta arriba
+          SliverToBoxAdapter(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    BioWayColors.otherPurple,
+                    BioWayColors.otherPurple.withValues(alpha: 0.8),
+                  ],
+                ),
               ),
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Column(
+              child: Stack(
                 children: [
-                  Text(
-                    'Laboratorio',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: screenWidth * 0.06,
-                      fontWeight: FontWeight.bold,
+                  // Patrón de fondo
+                  Positioned(
+                    right: -50,
+                    top: -50,
+                    child: Container(
+                      width: 200,
+                      height: 200,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _nombreLaboratorio,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontSize: screenWidth * 0.04,
+                  Positioned(
+                    left: -30,
+                    bottom: -30,
+                    child: Container(
+                      width: 150,
+                      height: 150,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.05),
+                      ),
+                    ),
+                  ),
+                  // Contenido
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 16, 20, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Logo ECOCE y fecha
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Logo ECOCE
+                            SvgPicture.asset(
+                              'assets/logos/ecoce_logo.svg',
+                              width: 70,
+                              height: 35,
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.calendar_today,
+                                    size: 14,
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    FormatUtils.formatDate(DateTime.now()),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        // Nombre del laboratorio
+                        Text(
+                          _nombreLaboratorio,
+                          style: const TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.visible,
+                        ),
+                        const SizedBox(height: 8),
+                        // Badge con tipo y folio
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.9),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.science,
+                                    size: 16,
+                                    color: BioWayColors.otherPurple,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Laboratorio',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: BioWayColors.otherPurple,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.amber,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                _folioLaboratorio,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        // Estadísticas con UnifiedStatCard
+                        Row(
+                          children: [
+                            Expanded(
+                              child: UnifiedStatCard.horizontal(
+                                title: 'Muestras Analizadas',
+                                value: _muestrasAnalizadas.toString(),
+                                icon: Icons.analytics,
+                                color: BioWayColors.success,
+                                height: 70,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: UnifiedStatCard.horizontal(
+                                title: 'Certificados',
+                                value: _certificadosEmitidos.toString(),
+                                icon: Icons.verified,
+                                color: BioWayColors.petBlue,
+                                height: 70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -184,34 +333,31 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen>
           ),
 
           // Contenido principal
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () async {
-                await Future.delayed(const Duration(seconds: 1));
-              },
-              color: BioWayColors.otherPurple,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.all(screenWidth * 0.04),
+          SliverToBoxAdapter(
+            child: Container(
+              margin: const EdgeInsets.only(top: 10),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(30),
+                  topRight: Radius.circular(30),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
                 child: FadeTransition(
                   opacity: _fadeAnimation,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Información del laboratorio
-                      _buildInfoSection(screenWidth),
-                      SizedBox(height: screenHeight * 0.02),
-                      
-                      // Estadísticas
-                      _buildStatsSection(screenWidth, isTablet),
-                      SizedBox(height: screenHeight * 0.02),
-                      
                       // Acciones rápidas
                       _buildQuickActions(screenWidth),
                       SizedBox(height: screenHeight * 0.02),
                       
                       // Muestras recientes
                       _buildRecentSamples(screenWidth),
+                      
+                      const SizedBox(height: 100), // Espacio para el FAB
                     ],
                   ),
                 ),
@@ -220,6 +366,8 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen>
           ),
         ],
       ),
+
+      // Bottom Navigation Bar con FAB
       bottomNavigationBar: EcoceBottomNavigation(
         selectedIndex: 0,
         onItemTapped: (index) {
@@ -229,35 +377,33 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen>
               // Ya estamos en inicio
               break;
             case 1:
-              // Navegar a otra pantalla
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Navegación en desarrollo'),
-                  backgroundColor: BioWayColors.info,
-                ),
-              );
+              Navigator.pushNamed(context, '/laboratorio_gestion_muestras');
               break;
             case 2:
+              Navigator.pushNamed(context, '/laboratorio_ayuda');
+              break;
+            case 3:
               Navigator.pushNamed(context, '/laboratorio_perfil');
               break;
           }
         },
-        items: const [
-          NavigationItem(
-            icon: Icons.home,
-            label: 'Inicio',
-          ),
-          NavigationItem(
-            icon: Icons.science,
-            label: 'Análisis',
-          ),
-          NavigationItem(
-            icon: Icons.person,
-            label: 'Perfil',
-          ),
-        ],
+        items: EcoceNavigationConfigs.laboratorioItems,
         primaryColor: BioWayColors.otherPurple,
+        fabConfig: FabConfig(
+          icon: Icons.add,
+          onPressed: _navigateToNuevaMuestra,
+          tooltip: 'Nueva Muestra',
+        ),
       ),
+      
+      // Floating Action Button
+      floatingActionButton: EcoceFloatingActionButton(
+        onPressed: _navigateToNuevaMuestra,
+        icon: Icons.add,
+        backgroundColor: BioWayColors.otherPurple,
+        tooltip: 'Nueva Muestra',
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
@@ -327,26 +473,26 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen>
       crossAxisSpacing: 16,
       childAspectRatio: isTablet ? 1.5 : 1.3,
       children: [
-        UnifiedStatCard(
-          label: 'Muestras\nAnalizadas',
+        UnifiedStatCard.horizontal(
+          title: 'Muestras Analizadas',
           value: _muestrasAnalizadas.toString(),
           icon: Icons.analytics,
-          iconColor: BioWayColors.success,
-          unit: 'total',
+          color: BioWayColors.success,
+          height: 70,
         ),
-        UnifiedStatCard(
-          label: 'Certificados\nEmitidos',
+        UnifiedStatCard.horizontal(
+          title: 'Certificados Emitidos',
           value: _certificadosEmitidos.toString(),
           icon: Icons.verified,
-          iconColor: BioWayColors.petBlue,
-          unit: 'total',
+          color: BioWayColors.petBlue,
+          height: 70,
         ),
-        UnifiedStatCard(
-          label: 'Muestras\nPendientes',
+        UnifiedStatCard.horizontal(
+          title: 'Muestras Pendientes',
           value: _muestrasPendientes.toString(),
           icon: Icons.pending_actions,
-          iconColor: BioWayColors.warning,
-          unit: 'en espera',
+          color: BioWayColors.warning,
+          height: 70,
         ),
       ],
     );

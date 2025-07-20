@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
-import 'transformador_home_screen.dart';
+import 'transformador_inicio_screen.dart';
 import '../shared/widgets/qr_code_display_widget.dart';
 
-class TransformadorLoteDetailScreen extends StatefulWidget {
+class TransformadorLoteDetalleScreen extends StatefulWidget {
   final String firebaseId;
   final double peso;
   final List<String> tiposAnalisis;
@@ -14,8 +14,9 @@ class TransformadorLoteDetailScreen extends StatefulWidget {
   final bool mostrarMensajeExito;
   final List<String>? procesosAplicados;
   final String? comentarios;
+  final String? tipoPolimero;
 
-  const TransformadorLoteDetailScreen({
+  const TransformadorLoteDetalleScreen({
     super.key,
     required this.firebaseId,
     required this.peso,
@@ -26,13 +27,14 @@ class TransformadorLoteDetailScreen extends StatefulWidget {
     this.mostrarMensajeExito = false,
     this.procesosAplicados,
     this.comentarios,
+    this.tipoPolimero,
   });
 
   @override
-  State<TransformadorLoteDetailScreen> createState() => _TransformadorLoteDetailScreenState();
+  State<TransformadorLoteDetalleScreen> createState() => _TransformadorLoteDetalleScreenState();
 }
 
-class _TransformadorLoteDetailScreenState extends State<TransformadorLoteDetailScreen>
+class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetalleScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -85,7 +87,7 @@ class _TransformadorLoteDetailScreenState extends State<TransformadorLoteDetailS
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder: (context) => const TransformadorHomeScreen(),
+        builder: (context) => const TransformadorInicioScreen(),
       ),
       (route) => false,
     );
@@ -138,6 +140,7 @@ class _TransformadorLoteDetailScreenState extends State<TransformadorLoteDetailS
       'productoFabricado': widget.productoFabricado,
       'composicionMaterial': widget.composicionMaterial,
       'tipoUsuario': 'transformador',
+      if (widget.tipoPolimero != null) 'tipoPolimero': widget.tipoPolimero,
     };
     
     return Scaffold(
@@ -314,6 +317,8 @@ class _TransformadorLoteDetailScreenState extends State<TransformadorLoteDetailS
                           const SizedBox(height: 20),
                           _buildInfoRow('Peso:', '${widget.peso} kg', icon: Icons.scale),
                           _buildInfoRow('Producto:', widget.productoFabricado, icon: Icons.inventory_2),
+                          if (widget.tipoPolimero != null)
+                            _buildInfoRow('Tipo de polímero:', widget.tipoPolimero!, icon: Icons.science_outlined),
                           _buildInfoRow('Análisis:', widget.tiposAnalisis.join(', '), icon: Icons.science),
                           if (widget.procesosAplicados != null && widget.procesosAplicados!.isNotEmpty)
                             _buildInfoRow('Procesos aplicados:', widget.procesosAplicados!.join(', '), icon: Icons.settings),
@@ -331,11 +336,11 @@ class _TransformadorLoteDetailScreenState extends State<TransformadorLoteDetailS
                 material: widget.productoFabricado, // Producto fabricado
                 peso: widget.peso,
                 presentacion: widget.productoFabricado, // Usar producto como presentación
-                origen: 'Transformador',
+                origen: 'La Venta S.A. de C.V.', // Nombre del transformador
                 fechaCreacion: widget.fechaCreacion,
                 datosAdicionales: datosAdicionales,
                 titulo: 'Código QR del Lote Transformado',
-                subtitulo: 'QR Code',
+                subtitulo: widget.tipoPolimero != null ? 'Tipo de polímero: ${widget.tipoPolimero}' : 'QR Code',
                 colorPrincipal: _primaryColor,
                 iconoPrincipal: Icons.factory,
                 tipoUsuario: 'transformador',

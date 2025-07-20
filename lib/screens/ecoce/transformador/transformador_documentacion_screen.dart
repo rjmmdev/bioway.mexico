@@ -4,14 +4,14 @@ import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../utils/colors.dart';
 
-class TransformadorDocumentosScreen extends StatefulWidget {
-  const TransformadorDocumentosScreen({super.key});
+class TransformadorDocumentacionScreen extends StatefulWidget {
+  const TransformadorDocumentacionScreen({super.key});
 
   @override
-  State<TransformadorDocumentosScreen> createState() => _TransformadorDocumentosScreenState();
+  State<TransformadorDocumentacionScreen> createState() => _TransformadorDocumentacionScreenState();
 }
 
-class _TransformadorDocumentosScreenState extends State<TransformadorDocumentosScreen> {
+class _TransformadorDocumentacionScreenState extends State<TransformadorDocumentacionScreen> {
   // Lista de archivos cargados
   final List<PlatformFile> _archivosSeleccionados = [];
   

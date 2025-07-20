@@ -26,9 +26,9 @@ class UserTypeHelper {
       case 'V':
         return BioWayColors.petBlue; // Transporte
       case 'T':
-        return BioWayColors.ppPurple; // Transformador
+        return BioWayColors.ecoceGreen; // Transformador
       case 'L':
-        return BioWayColors.info; // Laboratorio
+        return BioWayColors.otherPurple; // Laboratorio
       case 'M':
         return BioWayColors.warning; // Maestro
       case 'P':
@@ -76,8 +76,28 @@ class UserTypeHelper {
       case 'R':
         return FabConfig(
           icon: Icons.add,
-          onPressed: () => Navigator.pushNamed(context, '/reciclador_escaneo'),
-          tooltip: 'Escanear',
+          onPressed: () => Navigator.pushNamed(context, '/reciclador_lotes'),
+          tooltip: 'Escanear Lotes',
+        );
+      case 'V':
+        return null; // Transportista no tiene FAB
+      case 'T':
+        return FabConfig(
+          icon: Icons.add,
+          onPressed: () => Navigator.pushNamed(context, '/transformador_recibir_lote'),
+          tooltip: 'Recibir Lote',
+        );
+      case 'L':
+        return FabConfig(
+          icon: Icons.add,
+          onPressed: () => Navigator.pushNamed(context, '/laboratorio_gestion_muestras'),
+          tooltip: 'Nueva Muestra',
+        );
+      case 'M':
+        return FabConfig(
+          icon: Icons.add,
+          onPressed: () => Navigator.pushNamed(context, '/maestro_solicitudes'),
+          tooltip: 'Ver Solicitudes',
         );
       default:
         return null;
@@ -173,11 +193,19 @@ class UserTypeHelper {
     
     switch (index) {
       case 0:
+        // Transportista va directo a recoger, no tiene inicio
+        if (tipoActor == 'V') {
+          return '${basePath}_recoger';
+        }
         return '${basePath}_inicio';
       case 1:
         // Para maestro es diferente
         if (tipoActor == 'M') {
           return '${basePath}_solicitudes';
+        }
+        // Transportista tiene entregar en índice 1
+        if (tipoActor == 'V') {
+          return '${basePath}_entregar';
         }
         return '${basePath}_lotes';
       case 2:

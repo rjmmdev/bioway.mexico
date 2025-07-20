@@ -202,7 +202,7 @@ class _TransporteFormsScreenState extends State<TransporteFormsScreen> {
             onPressed: () {
               Navigator.pushNamedAndRemoveUntil(
                 context,
-                '/transporte_inicio',
+                '/transporte_recoger',
                 (route) => false,
               );
             },

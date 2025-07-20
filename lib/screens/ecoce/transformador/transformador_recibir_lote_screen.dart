@@ -7,17 +7,17 @@ import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
 import '../shared/widgets/weight_input_widget.dart';
 import '../shared/widgets/unified_container.dart';
-import '../shared/widgets/form_widgets.dart';
-import 'transformador_lote_detail_screen.dart';
+import '../shared/widgets/field_label.dart';
+import 'transformador_lote_detalle_screen.dart';
 
-class TransformadorLoteFormScreen extends StatefulWidget {
-  const TransformadorLoteFormScreen({super.key});
+class TransformadorRecibirLoteScreen extends StatefulWidget {
+  const TransformadorRecibirLoteScreen({super.key});
 
   @override
-  State<TransformadorLoteFormScreen> createState() => _TransformadorLoteFormScreenState();
+  State<TransformadorRecibirLoteScreen> createState() => _TransformadorRecibirLoteScreenState();
 }
 
-class _TransformadorLoteFormScreenState extends State<TransformadorLoteFormScreen> {
+class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLoteScreen> {
   final _formKey = GlobalKey<FormState>();
   final Color _primaryColor = BioWayColors.ecoceGreen;
   
@@ -27,6 +27,9 @@ class _TransformadorLoteFormScreenState extends State<TransformadorLoteFormScree
   final TextEditingController _comentariosController = TextEditingController();
   final TextEditingController _productoFabricadoController = TextEditingController();
   final TextEditingController _composicionMaterialController = TextEditingController();
+  
+  // Variable para el tipo de polímero
+  String? _tipoPolimero;
   
   // Variables para los tipos de análisis
   final Map<String, bool> _tiposAnalisis = {
@@ -112,6 +115,21 @@ class _TransformadorLoteFormScreenState extends State<TransformadorLoteFormScree
       return;
     }
     
+    // Validar tipo de polímero
+    if (_tipoPolimero == null || _tipoPolimero!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Por favor seleccione el tipo de polímero'),
+          backgroundColor: BioWayColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+      return;
+    }
+    
     // Validar que haya al menos un tipo de análisis seleccionado
     final analisisSeleccionados = _tiposAnalisis.entries
         .where((entry) => entry.value)
@@ -170,7 +188,7 @@ class _TransformadorLoteFormScreenState extends State<TransformadorLoteFormScree
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => TransformadorLoteDetailScreen(
+        builder: (context) => TransformadorLoteDetalleScreen(
           firebaseId: firebaseId,
           peso: double.tryParse(_pesoController.text) ?? 0,
           tiposAnalisis: analisisSeleccionados,
@@ -178,6 +196,7 @@ class _TransformadorLoteFormScreenState extends State<TransformadorLoteFormScree
           composicionMaterial: _composicionMaterialController.text,
           fechaCreacion: fechaCreacion,
           mostrarMensajeExito: true,
+          tipoPolimero: _tipoPolimero,
         ),
       ),
     );
@@ -262,6 +281,65 @@ class _TransformadorLoteFormScreenState extends State<TransformadorLoteFormScree
                     final peso = double.tryParse(value);
                     if (peso == null || peso <= 0) {
                       return 'Por favor ingrese un peso válido';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+            
+            // Sección de tipo de polímero
+            SectionCard(
+              icon: '🧬',
+              title: 'Tipo de Polímero',
+              children: [
+                DropdownButtonFormField<String>(
+                  value: _tipoPolimero,
+                  decoration: InputDecoration(
+                    hintText: 'Seleccione el tipo de polímero',
+                    prefixIcon: Icon(
+                      Icons.category,
+                      color: _primaryColor,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: Colors.grey[300]!,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: _primaryColor,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'PEBD',
+                      child: Text('PEBD'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'PP',
+                      child: Text('PP'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Multilaminado',
+                      child: Text('Multilaminado'),
+                    ),
+                  ],
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _tipoPolimero = newValue;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor seleccione el tipo de polímero';
                     }
                     return null;
                   },

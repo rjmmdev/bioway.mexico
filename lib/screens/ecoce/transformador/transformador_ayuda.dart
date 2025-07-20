@@ -394,11 +394,6 @@ class _TransformadorAyudaScreenState extends State<TransformadorAyudaScreen> wit
                         ),
                       ),
                       
-                      // Curva decorativa
-                      CustomPaint(
-                        size: const Size(double.infinity, 30),
-                        painter: _CurvePainter(),
-                      ),
                     ],
                   ),
                 ),
@@ -954,24 +949,3 @@ class _TransformadorAyudaScreenState extends State<TransformadorAyudaScreen> wit
   }
 }
 
-// Custom painter para la curva decorativa
-class _CurvePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFFF8F9FA)
-      ..style = PaintingStyle.fill;
-
-    final path = Path()
-      ..moveTo(0, 0)
-      ..lineTo(0, size.height - 30)
-      ..quadraticBezierTo(size.width / 2, size.height, size.width, size.height - 30)
-      ..lineTo(size.width, 0)
-      ..close();
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}

@@ -164,27 +164,17 @@ class UnifiedStatCard extends StatelessWidget {
     final effectiveHeight = height ?? 70;
     final isCompact = effectiveHeight < 100;
     
-    // Determine background gradient color
-    final backgroundGradientColor = _getBackgroundGradientColor();
-    
     return Container(
       width: width,
       height: effectiveHeight,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            backgroundColor ?? Colors.white,
-            backgroundGradientColor,
-          ],
-        ),
+        color: backgroundColor ?? Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: iconColor.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -299,19 +289,6 @@ class UnifiedStatCard extends StatelessWidget {
     );
   }
 
-  Color _getBackgroundGradientColor() {
-    if (iconColor == Colors.blue) {
-      return Colors.blue.shade50;
-    } else if (iconColor == Colors.green) {
-      return Colors.green.shade50;
-    } else if (iconColor == Colors.purple) {
-      return Colors.purple.shade50;
-    } else if (iconColor == Colors.orange) {
-      return Colors.orange.shade50;
-    } else {
-      return iconColor.withValues(alpha: 0.05);
-    }
-  }
 
   IconData _getOutlinedIcon() {
     switch (icon) {
