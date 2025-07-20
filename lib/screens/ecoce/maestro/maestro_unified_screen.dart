@@ -6,6 +6,7 @@ import '../shared/utils/dialog_utils.dart';
 import 'widgets/maestro_solicitud_card.dart';
 import 'widgets/delete_user_dialog.dart';
 import 'maestro_solicitud_details_screen.dart';
+import 'maestro_utilities_screen.dart';
 
 /// Pantalla unificada para la gestión de usuarios maestro ECOCE
 /// Combina la funcionalidad de aprobación y administración de usuarios
@@ -355,36 +356,8 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
     );
   }
 
-  // Función para migrar usuarios existentes
-  Future<void> _migrateExistingUsers() async {
-    final bool confirm = await DialogUtils.showConfirmDialog(
-      context: context,
-      title: 'Migrar Usuarios',
-      message: '¿Deseas migrar los usuarios existentes a la nueva estructura de carpetas?\n\nEsto organizará los usuarios por tipo en subcarpetas.',
-      confirmText: 'Migrar',
-      cancelText: 'Cancelar',
-      confirmColor: BioWayColors.warning,
-    );
-    
-    if (confirm) {
-      DialogUtils.showLoadingDialog(
-        context: context,
-        message: 'Migrando usuarios...',
-      );
-      
-      try {
-        await _profileService.migrateExistingUsersToSubcollections();
-        
-        Navigator.pop(context); // Cerrar loading
-        
-        _showSuccessMessage('Usuarios migrados exitosamente');
-        _loadSolicitudes(); // Recargar datos
-      } catch (e) {
-        Navigator.pop(context); // Cerrar loading
-        _showErrorMessage('Error al migrar usuarios: ${e.toString()}');
-      }
-    }
-  }
+  // Métodos de migración y limpieza eliminados - Ya no son necesarios
+  // La estructura de datos ahora se mantiene automáticamente correcta
 
   @override
   Widget build(BuildContext context) {
@@ -437,30 +410,7 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                         ),
                         Row(
                           children: [
-                            // Botón de opciones
-                            PopupMenuButton<String>(
-                              icon: const Icon(
-                                Icons.more_vert,
-                                color: Colors.white,
-                              ),
-                              onSelected: (value) {
-                                if (value == 'migrate') {
-                                  _migrateExistingUsers();
-                                }
-                              },
-                              itemBuilder: (BuildContext context) => [
-                                const PopupMenuItem<String>(
-                                  value: 'migrate',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.sync, size: 20),
-                                      SizedBox(width: 8),
-                                      Text('Migrar usuarios existentes'),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
+                            // Sin botón de opciones por ahora
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(

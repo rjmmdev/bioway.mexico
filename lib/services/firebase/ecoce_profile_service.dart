@@ -224,101 +224,7 @@ class EcoceProfileService {
     }
   }
 
-  // Crear perfil de usuario Origen (Acopiador o Planta de Separación)
-  Future<EcoceProfileModel> createOrigenProfile({
-    required String email,
-    required String password,
-    required String subtipo, // 'A' (Acopiador) o 'P' (Planta de Separación)
-    required String nombre,
-    required String rfc,
-    required String nombreContacto,
-    required String telefonoContacto,
-    required String telefonoEmpresa,
-    required String calle,
-    required String numExt,
-    required String cp,
-    String? estado,
-    String? municipio,
-    String? colonia,
-    String? referencias,
-    required List<String> materiales,
-    required bool transporte,
-    String? linkRedSocial,
-    Map<String, double>? dimensionesCapacidad,
-    double? pesoCapacidad,
-    Map<String, String?>? documentos,
-    String? linkMaps,
-    double? latitud,
-    double? longitud,
-  }) async {
-    try {
-      // Inicializar Firebase para ECOCE si no está inicializado
-      if (_firebaseManager.currentApp == null) {
-        await _firebaseManager.initializeForPlatform(FirebasePlatform.ecoce);
-      }
-
-      // Crear usuario en Firebase Auth
-      final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      final userId = userCredential.user!.uid;
-
-      // No generar folio al registrar - se asignará al aprobar
-      final folio = 'PENDIENTE';
-
-      // Usar el linkMaps proporcionado o generar uno simple si no se proporciona
-      final finalLinkMaps = linkMaps ?? 'https://maps.google.com/?q=$calle+$numExt,$colonia,$municipio,$estado,$cp';
-
-      // Crear modelo de perfil
-      final profile = EcoceProfileModel(
-        id: userId,
-        ecoceTipoActor: 'O', // Todos los origen son tipo 'O'
-        ecoceSubtipo: subtipo, // 'A' para Acopiador, 'P' para Planta
-        ecoceNombre: nombre,
-        ecoceFolio: folio, // Se asignará folio real al aprobar
-        ecoceRfc: rfc,
-        ecoceNombreContacto: nombreContacto,
-        ecoceCorreoContacto: email,
-        ecoceTelContacto: telefonoContacto,
-        ecoceTelEmpresa: telefonoEmpresa,
-        ecoceCalle: calle,
-        ecoceNumExt: numExt,
-        ecoceCp: cp,
-        ecoceEstado: estado,
-        ecoceMunicipio: municipio,
-        ecoceColonia: colonia,
-        ecoceRefUbi: referencias,
-        ecoceLinkMaps: finalLinkMaps,
-        ecocePoligonoLoc: null, // Se asignará posteriormente
-        ecoceLatitud: latitud,
-        ecoceLongitud: longitud,
-        ecoceFechaReg: DateTime.now(),
-        ecoceListaMateriales: materiales,
-        ecoceTransporte: transporte,
-        ecoceLinkRedSocial: linkRedSocial,
-        ecoceConstSitFis: documentos?['const_sit_fis'],
-        ecoceCompDomicilio: documentos?['comp_domicilio'],
-        ecoceBancoCaratula: documentos?['banco_caratula'],
-        ecoceIne: documentos?['ine'],
-        ecoceDimCap: dimensionesCapacidad,
-        ecocePesoCap: pesoCapacidad,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-
-      // Guardar perfil en Firestore
-      await _profilesCollection.doc(userId).set(profile.toFirestore());
-
-      // Actualizar displayName del usuario
-      await userCredential.user!.updateDisplayName(nombre);
-
-      return profile;
-    } catch (e) {
-      rethrow;
-    }
-  }
+  // Método createOrigenProfile eliminado - Usar solo el flujo de solicitudes
   
   // Crear solicitud de cuenta genérica para cualquier tipo de usuario (sin crear usuario en Auth)
   Future<String> createAccountRequest({
@@ -558,25 +464,8 @@ class EcoceProfileService {
       // Obtener la subcolección según el tipo
       final subcollection = _getProfileSubcollection(tipoActor, subtipo);
       
-      // Guardar en la subcolección correspondiente
+      // Guardar SOLO en la subcolección correspondiente (sin crear índice)
       await subcollection.doc(userId).set(datosPerfil);
-      
-      // Crear índice en la colección principal
-      final indexData = {
-        'id': userId,
-        'path': getProfileCollectionPath(tipoActor, subtipo)! + '/$userId',
-        'folio': folio,
-        'nombre': datosPerfil['ecoce_nombre'],
-        'email': datosPerfil['ecoce_correo_contacto'],
-        'tipo_actor': tipoActor,
-        'subtipo': subtipo,
-        'aprobado': true,
-        'fecha_aprobacion': datosPerfil['ecoce_fecha_aprobacion'],
-        'createdAt': datosPerfil['createdAt'],
-        'updatedAt': datosPerfil['updatedAt'],
-      };
-      
-      await _profilesCollection.doc(userId).set(indexData);
       
       // Actualizar nombre del usuario
       await userCredential.user!.updateDisplayName(datosPerfil['ecoce_nombre']);
@@ -668,75 +557,126 @@ class EcoceProfileService {
     }
   }
 
-  // Obtener perfil por ID (busca primero en índice y luego en subcolección)
+  // Obtener perfil por ID (busca directamente en las subcarpetas)
   Future<EcoceProfileModel?> getProfile(String userId) async {
     try {
-      // Primero buscar en el índice principal
-      final indexDoc = await _profilesCollection.doc(userId).get();
-      if (!indexDoc.exists) return null;
+      // Lista de todas las subcolecciónes posibles
+      final subcollections = [
+        'origen/centro_acopio',
+        'origen/planta_separacion',
+        'reciclador/usuarios',
+        'transformador/usuarios',
+        'transporte/usuarios',
+        'laboratorio/usuarios',
+        'maestro/usuarios',
+      ];
       
-      final indexData = indexDoc.data() as Map<String, dynamic>;
-      
-      // Verificar si es un documento antiguo (perfil directo)
-      if (indexData.containsKey('ecoce_nombre') && indexData.containsKey('ecoce_folio')) {
-        // Es un perfil antiguo, devolverlo directamente
-        return EcoceProfileModel.fromFirestore(indexDoc);
-      }
-      
-      // Si tiene path, es un índice que apunta a una subcolección
-      final profilePath = indexData['path'] as String?;
-      if (profilePath != null) {
-        // Obtener el documento desde la subcolección
-        final profileDoc = await _firestore.doc(profilePath).get();
-        if (profileDoc.exists) {
-          return EcoceProfileModel.fromFirestore(profileDoc);
+      // Buscar en cada subcolección hasta encontrar el usuario
+      for (final subcollection in subcollections) {
+        try {
+          final doc = await _profilesCollection
+              .doc(subcollection.split('/')[0])
+              .collection(subcollection.split('/')[1])
+              .doc(userId)
+              .get();
+          
+          if (doc.exists) {
+            return EcoceProfileModel.fromFirestore(doc);
+          }
+        } catch (e) {
+          // Continuar con la siguiente subcolección
+          continue;
         }
       }
       
+      // Si no se encontró en ninguna subcolección, el usuario no existe
       return null;
     } catch (e) {
       return null;
     }
   }
 
-  // Actualizar perfil completo
+  // Actualizar perfil completo (busca directamente en subcarpetas)
   Future<void> updateProfileData(String userId, Map<String, dynamic> data) async {
     try {
       data['updatedAt'] = Timestamp.fromDate(DateTime.now());
       
-      // Primero obtener la ruta del perfil desde el índice
-      final indexDoc = await _profilesCollection.doc(userId).get();
-      if (!indexDoc.exists) throw Exception('Usuario no encontrado');
+      // Lista de todas las subcolecciónes posibles
+      final subcollections = [
+        'origen/centro_acopio',
+        'origen/planta_separacion',
+        'reciclador/usuarios',
+        'transformador/usuarios',
+        'transporte/usuarios',
+        'laboratorio/usuarios',
+        'maestro/usuarios',
+      ];
       
-      final indexData = indexDoc.data() as Map<String, dynamic>;
-      final profilePath = indexData['path'] as String?;
-      
-      if (profilePath != null) {
-        // Actualizar el documento en la subcolección
-        await _firestore.doc(profilePath).update(data);
-        
-        // Si se actualiza el nombre, actualizar también en el índice
-        if (data.containsKey('ecoce_nombre')) {
-          await _profilesCollection.doc(userId).update({
-            'nombre': data['ecoce_nombre'],
-            'updatedAt': data['updatedAt'],
-          });
+      // Buscar en cada subcolección hasta encontrar el usuario
+      bool updated = false;
+      for (final subcollection in subcollections) {
+        try {
+          final docRef = _profilesCollection
+              .doc(subcollection.split('/')[0])
+              .collection(subcollection.split('/')[1])
+              .doc(userId);
+          
+          final doc = await docRef.get();
+          if (doc.exists) {
+            await docRef.update(data);
+            updated = true;
+            break;
+          }
+        } catch (e) {
+          // Continuar con la siguiente subcolección
+          continue;
         }
+      }
+      
+      // Si no se encontró en subcolecciónes, el usuario no existe
+      if (!updated) {
+        throw Exception('Usuario no encontrado');
       }
     } catch (e) {
       rethrow;
     }
   }
 
-  // Verificar si el email ya está registrado
+  // Verificar si el email ya está registrado (busca en todas las subcarpetas)
   Future<bool> isEmailRegistered(String email) async {
     try {
-      // Check if user exists in Firestore instead of using deprecated method
-      final query = await _profilesCollection
-          .where('ecoce_correo_contacto', isEqualTo: email)
-          .limit(1)
-          .get();
-      return query.docs.isNotEmpty;
+      // Lista de todas las subcolecciónes posibles
+      final subcollections = [
+        'origen/centro_acopio',
+        'origen/planta_separacion',
+        'reciclador/usuarios',
+        'transformador/usuarios',
+        'transporte/usuarios',
+        'laboratorio/usuarios',
+        'maestro/usuarios',
+      ];
+      
+      // Buscar en cada subcolección
+      for (final subcollection in subcollections) {
+        try {
+          final query = await _profilesCollection
+              .doc(subcollection.split('/')[0])
+              .collection(subcollection.split('/')[1])
+              .where('ecoce_correo_contacto', isEqualTo: email)
+              .limit(1)
+              .get();
+          
+          if (query.docs.isNotEmpty) {
+            return true;
+          }
+        } catch (e) {
+          // Continuar con la siguiente subcolección
+          continue;
+        }
+      }
+      
+      // Si no se encontró en ninguna subcolección, el email no está registrado
+      return false;
     } catch (e) {
       return false;
     }
@@ -1076,45 +1016,50 @@ class EcoceProfileService {
     }
   }
   
-  // Obtener TODOS los perfiles activos del sistema
+  // Obtener TODOS los perfiles activos del sistema (busca directamente en subcarpetas)
   Future<List<EcoceProfileModel>> getAllActiveProfiles() async {
     try {
-      // Obtener todos los documentos de la colección principal ecoce_profiles
-      final query = await _profilesCollection.get();
-      
       List<EcoceProfileModel> allProfiles = [];
       
-      for (final doc in query.docs) {
-        Map<String, dynamic>? data;
+      // Lista de todas las subcolecciónes posibles
+      final subcollections = [
+        'origen/centro_acopio',
+        'origen/planta_separacion',
+        'reciclador/usuarios',
+        'transformador/usuarios',
+        'transporte/usuarios',
+        'laboratorio/usuarios',
+        'maestro/usuarios',
+      ];
+      
+      // Buscar en cada subcolección
+      for (final subcollection in subcollections) {
         try {
-          // Intentar obtener como perfil directo (usuarios antiguos)
-          data = doc.data() as Map<String, dynamic>;
+          final query = await _profilesCollection
+              .doc(subcollection.split('/')[0])
+              .collection(subcollection.split('/')[1])
+              .where('ecoce_estatus_aprobacion', isEqualTo: 1)
+              .get();
           
-          // Si tiene los campos de perfil directamente, es un usuario antiguo
-          if (data.containsKey('ecoce_nombre') && data.containsKey('ecoce_folio')) {
-            final profile = EcoceProfileModel.fromFirestore(doc);
-            allProfiles.add(profile);
-          } 
-          // Si no, podría ser un índice que apunta a una subcolección
-          else if (data.containsKey('path')) {
-            final profilePath = data['path'] as String;
-            final profileDoc = await _firestore.doc(profilePath).get();
-            if (profileDoc.exists) {
-              final profile = EcoceProfileModel.fromFirestore(profileDoc);
+          for (final doc in query.docs) {
+            try {
+              final profile = EcoceProfileModel.fromFirestore(doc);
               allProfiles.add(profile);
+            } catch (e) {
+              // Continuar si hay error parseando un documento
+              continue;
             }
           }
         } catch (e) {
-          // Continuar con el siguiente documento si hay error
-          // En producción, considerar usar un sistema de logging como Firebase Crashlytics
-          // Por ahora, solo continuamos con el siguiente documento
+          // Continuar con la siguiente subcolección si hay error
           continue;
         }
       }
       
-      // Ordenar por fecha de registro o nombre
+      // No buscar en la colección principal - todos los usuarios están en subcarpetas
+      
+      // Ordenar por fecha de registro (descendente - más recientes primero)
       allProfiles.sort((a, b) {
-        // Ordenar por fecha de registro (descendente - más recientes primero)
         return b.ecoceFechaReg.compareTo(a.ecoceFechaReg);
       });
       
@@ -1212,39 +1157,40 @@ class EcoceProfileService {
     }
   }
   
-  // Obtener perfil por folio
+  // Obtener perfil por folio (busca directamente en subcarpetas)
   Future<EcoceProfileModel?> getProfileByFolio(String folio) async {
     try {
-      // Primero buscar en el índice principal por folio
-      final queryIndex = await _profilesCollection
-          .where('folio', isEqualTo: folio)
-          .limit(1)
-          .get();
+      // Lista de todas las subcolecciónes posibles
+      final subcollections = [
+        'origen/centro_acopio',
+        'origen/planta_separacion',
+        'reciclador/usuarios',
+        'transformador/usuarios',
+        'transporte/usuarios',
+        'laboratorio/usuarios',
+        'maestro/usuarios',
+      ];
       
-      if (queryIndex.docs.isNotEmpty) {
-        final indexDoc = queryIndex.docs.first;
-        final indexData = indexDoc.data() as Map<String, dynamic>;
-        final profilePath = indexData['path'] as String?;
-        
-        if (profilePath != null) {
-          // Obtener el perfil completo de la subcolección
-          final profileDoc = await _firestore.doc(profilePath).get();
-          if (profileDoc.exists) {
-            return EcoceProfileModel.fromFirestore(profileDoc);
+      // Buscar en cada subcolección
+      for (final subcollection in subcollections) {
+        try {
+          final query = await _profilesCollection
+              .doc(subcollection.split('/')[0])
+              .collection(subcollection.split('/')[1])
+              .where('ecoce_folio', isEqualTo: folio)
+              .limit(1)
+              .get();
+          
+          if (query.docs.isNotEmpty) {
+            return EcoceProfileModel.fromFirestore(query.docs.first);
           }
+        } catch (e) {
+          // Continuar con la siguiente subcolección
+          continue;
         }
       }
       
-      // Si no se encuentra en el índice, buscar en perfiles antiguos
-      final queryOld = await _profilesCollection
-          .where('ecoce_folio', isEqualTo: folio)
-          .limit(1)
-          .get();
-      
-      if (queryOld.docs.isNotEmpty) {
-        return EcoceProfileModel.fromFirestore(queryOld.docs.first);
-      }
-      
+      // Si no se encontró en subcolecciónes, el perfil no existe
       return null;
     } catch (e) {
       // Log: Error al obtener perfil por folio: $e
@@ -1315,15 +1261,23 @@ class EcoceProfileService {
             
             // Obtener la subcolección correspondiente
             final subcollection = _getProfileSubcollection(tipoActor, subtipo);
+            final collectionPath = getProfileCollectionPath(tipoActor, subtipo);
             
-            // Asegurar que todos los campos requeridos estén presentes
-            data['ecoce_tipo_actor'] = tipoActor;
-            if (tipoActor == 'O' && subtipo != null) {
-              data['ecoce_subtipo'] = subtipo;
+            // Verificar si ya existe en la subcolección
+            final existingDoc = await subcollection.doc(userId).get();
+            if (existingDoc.exists) {
+              print('Usuario ya existe en subcolección, actualizando índice: ${data['ecoce_nombre']}');
+              // Si ya existe, solo actualizar el índice
+            } else {
+              // Asegurar que todos los campos requeridos estén presentes
+              data['ecoce_tipo_actor'] = tipoActor;
+              if (tipoActor == 'O' && subtipo != null) {
+                data['ecoce_subtipo'] = subtipo;
+              }
+              
+              // Copiar el perfil a la subcolección
+              await subcollection.doc(userId).set(data);
             }
-            
-            // Copiar el perfil a la subcolección
-            await subcollection.doc(userId).set(data);
             
             // Actualizar el documento principal para que sea un índice
             final indexData = {
@@ -1358,6 +1312,292 @@ class EcoceProfileService {
       print('Migración completada: $migrated usuarios migrados, $skipped ya estaban migrados, $errors errores');
     } catch (e) {
       print('Error en migración: $e');
+      rethrow;
+    }
+  }
+  
+  // Método de diagnóstico para analizar la estructura de perfiles
+  Future<Map<String, dynamic>> analyzeProfileStructure() async {
+    try {
+      print('\n=== ANÁLISIS DE ESTRUCTURA DE PERFILES ===\n');
+      
+      final stats = {
+        'indices_limpios': 0,
+        'indices_con_datos_extra': 0,
+        'perfiles_completos_en_principal': 0,
+        'documentos_huerfanos': 0,
+        'usuarios_en_subcollecciones': 0,
+        'detalles': <String, dynamic>{},
+      };
+      
+      // Paso 1: Obtener todos los usuarios en subcolecciones
+      final validUsersInSubcollections = <String, String>{}; // userId -> path
+      
+      final subcollections = [
+        'origen/centro_acopio',
+        'origen/planta_separacion',
+        'reciclador/usuarios',
+        'transformador/usuarios',
+        'transporte/usuarios',
+        'laboratorio/usuarios',
+        'maestro/usuarios',
+      ];
+      
+      for (final subcollection in subcollections) {
+        try {
+          final query = await _profilesCollection.doc(subcollection.split('/')[0])
+              .collection(subcollection.split('/')[1])
+              .get();
+          
+          for (final doc in query.docs) {
+            validUsersInSubcollections[doc.id] = 'ecoce_profiles/$subcollection/${doc.id}';
+            stats['usuarios_en_subcollecciones'] = (stats['usuarios_en_subcollecciones'] as int) + 1;
+          }
+        } catch (e) {
+          print('Error revisando subcolección $subcollection: $e');
+        }
+      }
+      
+      // Paso 2: Analizar documentos en la colección principal
+      final allDocs = await _profilesCollection.get();
+      
+      for (final doc in allDocs.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final userId = doc.id;
+        
+        // Saltar documentos de estructura
+        if (['origen', 'reciclador', 'transformador', 'transporte', 'laboratorio', 'maestro'].contains(userId)) {
+          continue;
+        }
+        
+        final detalles = <String, dynamic>{
+          'id': userId,
+          'tiene_path': data.containsKey('path'),
+          'tiene_nombre': data.containsKey('ecoce_nombre'),
+          'tiene_folio': data.containsKey('ecoce_folio'),
+          'campos_totales': data.keys.length,
+          'campos': data.keys.toList(),
+        };
+        
+        if (validUsersInSubcollections.containsKey(userId)) {
+          // Usuario existe en subcolección
+          if (data.containsKey('path')) {
+            // Es un índice
+            final expectedFields = ['id', 'path', 'folio', 'nombre', 'email', 'tipo', 'subtipo', 'aprobado', 'createdAt', 'updatedAt'];
+            final hasOnlyIndexFields = data.keys.every((key) => expectedFields.contains(key));
+            
+            if (hasOnlyIndexFields) {
+              stats['indices_limpios'] = (stats['indices_limpios'] as int) + 1;
+              detalles['tipo'] = 'índice_limpio';
+            } else {
+              stats['indices_con_datos_extra'] = (stats['indices_con_datos_extra'] as int) + 1;
+              detalles['tipo'] = 'índice_con_datos_extra';
+              detalles['campos_extra'] = data.keys.where((key) => !expectedFields.contains(key)).toList();
+            }
+          } else if (data.containsKey('ecoce_nombre')) {
+            stats['perfiles_completos_en_principal'] = (stats['perfiles_completos_en_principal'] as int) + 1;
+            detalles['tipo'] = 'perfil_completo_duplicado';
+          }
+        } else {
+          // Usuario no existe en subcolección
+          stats['documentos_huerfanos'] = (stats['documentos_huerfanos'] as int) + 1;
+          detalles['tipo'] = 'huerfano';
+        }
+        
+        (stats['detalles'] as Map<String, dynamic>)[userId] = detalles;
+      }
+      
+      // Imprimir resumen
+      print('=== RESUMEN DEL ANÁLISIS ===');
+      print('Usuarios en subcolecciones: ${stats['usuarios_en_subcollecciones']}');
+      print('Índices limpios: ${stats['indices_limpios']}');
+      print('Índices con datos extra: ${stats['indices_con_datos_extra']}');
+      print('Perfiles completos duplicados: ${stats['perfiles_completos_en_principal']}');
+      print('Documentos huérfanos: ${stats['documentos_huerfanos']}');
+      print('============================\n');
+      
+      // Imprimir detalles de problemas
+      if ((stats['indices_con_datos_extra'] as int) > 0) {
+        print('\n=== ÍNDICES CON DATOS EXTRA ===');
+        (stats['detalles'] as Map<String, dynamic>).forEach((userId, detalles) {
+          if (detalles['tipo'] == 'índice_con_datos_extra') {
+            print('Usuario: $userId');
+            print('  Campos extra: ${detalles['campos_extra']}');
+          }
+        });
+      }
+      
+      if ((stats['perfiles_completos_en_principal'] as int) > 0) {
+        print('\n=== PERFILES COMPLETOS DUPLICADOS ===');
+        (stats['detalles'] as Map<String, dynamic>).forEach((userId, detalles) {
+          if (detalles['tipo'] == 'perfil_completo_duplicado') {
+            print('Usuario: $userId');
+            print('  Total de campos: ${detalles['campos_totales']}');
+          }
+        });
+      }
+      
+      return stats;
+    } catch (e) {
+      print('Error en análisis: $e');
+      rethrow;
+    }
+  }
+
+  // Limpiar usuarios duplicados y reorganizar los que están fuera de sus carpetas
+  Future<Map<String, int>> cleanupDuplicateProfiles() async {
+    try {
+      print('Iniciando limpieza de perfiles duplicados...');
+      
+      // Paso 1: Obtener todos los usuarios que existen en subcolecciónes
+      final validUsersInSubcollections = <String>{}; // Set de IDs de usuarios válidos
+      
+      // Revisar todas las subcolecciónes posibles
+      final subcollections = [
+        'origen/centro_acopio',
+        'origen/planta_separacion',
+        'reciclador/usuarios',
+        'transformador/usuarios',
+        'transporte/usuarios',
+        'laboratorio/usuarios',
+        'maestro/usuarios',
+      ];
+      
+      print('Buscando usuarios en subcolecciónes...');
+      for (final subcollection in subcollections) {
+        try {
+          final query = await _profilesCollection.doc(subcollection.split('/')[0])
+              .collection(subcollection.split('/')[1])
+              .get();
+          
+          for (final doc in query.docs) {
+            validUsersInSubcollections.add(doc.id);
+            print('Usuario encontrado en $subcollection: ${doc.id}');
+          }
+        } catch (e) {
+          print('Error revisando subcolección $subcollection: $e');
+        }
+      }
+      
+      print('Total de usuarios válidos en subcolecciónes: ${validUsersInSubcollections.length}');
+      
+      // Paso 2: Revisar todos los documentos en la colección principal
+      final allDocs = await _profilesCollection.get();
+      int cleaned = 0;
+      int keptIndices = 0;
+      int errors = 0;
+      
+      print('\nRevisando ${allDocs.docs.length} documentos en la colección principal...');
+      
+      for (final doc in allDocs.docs) {
+        try {
+          final data = doc.data() as Map<String, dynamic>;
+          final userId = doc.id;
+          
+          // Saltar documentos de estructura (origen, reciclador, etc.)
+          if (['origen', 'reciclador', 'transformador', 'transporte', 'laboratorio', 'maestro'].contains(userId)) {
+            print('Saltando documento de estructura: $userId');
+            continue;
+          }
+          
+          // Si el usuario existe en una subcolección
+          if (validUsersInSubcollections.contains(userId)) {
+            // Determinar qué tipo de documento es
+            final hasPath = data.containsKey('path');
+            final hasProfileFields = data.containsKey('ecoce_nombre') || 
+                                   data.containsKey('ecoce_folio') || 
+                                   data.containsKey('ecoce_rfc') || 
+                                   data.containsKey('ecoce_tel_contacto') ||
+                                   data.containsKey('ecoce_calle') ||
+                                   data.containsKey('ecoce_lista_materiales');
+            
+            // Campos válidos para un índice limpio
+            final validIndexFields = ['id', 'path', 'folio', 'nombre', 'email', 'tipo', 'subtipo', 
+                                    'tipo_actor', 'aprobado', 'fecha_aprobacion', 'createdAt', 'updatedAt'];
+            final hasOnlyIndexFields = data.keys.every((key) => validIndexFields.contains(key));
+            
+            if (hasPath && hasOnlyIndexFields && !hasProfileFields) {
+              // Es un índice limpio, mantenerlo
+              keptIndices++;
+              print('Manteniendo índice limpio para: $userId');
+            } else {
+              // Es un perfil completo O un índice con datos extra
+              // En ambos casos, necesitamos limpiarlo
+              print('Detectado documento con datos extra o perfil completo: $userId');
+              print('  Tiene path: $hasPath, Tiene campos de perfil: $hasProfileFields');
+              print('  Campos encontrados: ${data.keys.toList()}');
+              
+              // Eliminar el documento actual
+              await _profilesCollection.doc(userId).delete();
+              cleaned++;
+              
+              // Si tenía path, recrear como índice limpio
+              if (hasPath) {
+                try {
+                  final profilePath = data['path'] as String;
+                  final profileDoc = await _firestore.doc(profilePath).get();
+                  
+                  if (profileDoc.exists) {
+                    final profileData = profileDoc.data() as Map<String, dynamic>;
+                    
+                    // Crear índice limpio
+                    final cleanIndex = {
+                      'id': userId,
+                      'path': profilePath,
+                      'folio': profileData['ecoce_folio'] ?? data['ecoce_folio'] ?? data['folio'] ?? 'PENDIENTE',
+                      'nombre': profileData['ecoce_nombre'] ?? data['ecoce_nombre'] ?? data['nombre'] ?? '',
+                      'email': profileData['ecoce_correo_contacto'] ?? data['ecoce_correo_contacto'] ?? data['email'] ?? '',
+                      'tipo': profileData['ecoce_tipo_actor'] ?? data['ecoce_tipo_actor'] ?? data['tipo'] ?? '',
+                      'subtipo': profileData['ecoce_subtipo'] ?? data['ecoce_subtipo'] ?? data['subtipo'] ?? '',
+                      'aprobado': (profileData['ecoce_estatus_aprobacion'] ?? data['ecoce_estatus_aprobacion'] ?? 1) == 1,
+                      'createdAt': data['createdAt'] ?? Timestamp.fromDate(DateTime.now()),
+                      'updatedAt': Timestamp.fromDate(DateTime.now()),
+                    };
+                    
+                    // Recrear el índice limpio
+                    await _profilesCollection.doc(userId).set(cleanIndex);
+                    print('RECREADO índice limpio para: ${cleanIndex['nombre']} (${cleanIndex['folio']})');
+                  }
+                } catch (e) {
+                  print('Error recreando índice para $userId: $e');
+                  errors++;
+                }
+              } else {
+                // Era un perfil completo sin path (duplicado puro)
+                print('ELIMINADO perfil completo duplicado: ${data['ecoce_nombre'] ?? 'sin nombre'} (${data['ecoce_folio'] ?? 'sin folio'})');
+              }
+            }
+          } else {
+            // El usuario NO existe en ninguna subcolección
+            if (data.containsKey('path') || data.containsKey('ecoce_nombre')) {
+              // Es un documento huérfano, eliminarlo
+              await _profilesCollection.doc(userId).delete();
+              cleaned++;
+              print('ELIMINADO documento huérfano: $userId');
+            }
+          }
+        } catch (e) {
+          print('Error procesando documento ${doc.id}: $e');
+          errors++;
+        }
+      }
+      
+      print('\n=== RESUMEN DE LIMPIEZA ===');
+      print('Usuarios válidos en subcolecciónes: ${validUsersInSubcollections.length}');
+      print('Índices válidos mantenidos: $keptIndices');
+      print('Documentos eliminados: $cleaned');
+      print('Errores: $errors');
+      print('========================\n');
+      
+      // Retornar resumen
+      return {
+        'usuarios_validos': validUsersInSubcollections.length,
+        'indices_mantenidos': keptIndices,
+        'documentos_eliminados': cleaned,
+        'errores': errors,
+      };
+    } catch (e) {
+      print('Error en limpieza: $e');
       rethrow;
     }
   }
