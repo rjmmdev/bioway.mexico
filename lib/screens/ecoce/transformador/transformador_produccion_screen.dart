@@ -33,6 +33,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
       'estadoColor': Colors.blue,
       'procesosAplicados': ['Lavado', 'Secado', 'Extrusión'],
       'producto': 'Perfiles PVC',
+      'tipoPolimero': 'Multilaminado',
       'tiposAnalisis': ['Extrusión', 'Termoformado'],
       'composicion': 'PVC reciclado 75%, aditivos estabilizantes 5%, pigmentos 2%',
       'origen': 'RECICLADOR PLASTICOS DEL NORTE',
@@ -47,6 +48,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
       'estadoColor': Colors.blue,
       'procesosAplicados': ['Trituración', 'Lavado', 'Clasificación', 'Secado'],
       'producto': 'Láminas transparentes',
+      'tipoPolimero': 'PP',
       'tiposAnalisis': ['Laminado', 'Termoformado', 'Soplado'],
       'composicion': 'PET reciclado 85%, aditivos UV 3%, clarificantes 2%',
       'origen': 'CENTRO DE ACOPIO SUSTENTABLE',
@@ -61,6 +63,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
       'estadoColor': Colors.blue,
       'procesosAplicados': ['Lavado', 'Extrusión'],
       'producto': 'Tuberías HDPE',
+      'tipoPolimero': 'PEBD',
       'tiposAnalisis': ['Extrusión', 'Inyección'],
       'composicion': 'HDPE reciclado 80%, HDPE virgen 18%, antioxidantes 2%',
       'origen': 'PLANTA DE RECICLAJE INDUSTRIAL',
@@ -80,6 +83,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
       'estadoColor': Colors.green,
       'procesosAplicados': ['Lavado', 'Secado', 'Extrusión', 'Empaque'],
       'producto': 'Contenedores industriales',
+      'tipoPolimero': 'PP',
       'tiposAnalisis': ['Inyección', 'Rotomoldeo'],
       'composicion': 'PP reciclado 70%, PP virgen 28%, estabilizadores 2%',
       'origen': 'RECICLADOR ZONA INDUSTRIAL',
@@ -95,6 +99,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
       'estadoColor': Colors.green,
       'procesosAplicados': ['Trituración', 'Lavado', 'Secado'],
       'producto': 'Bolsas de plástico',
+      'tipoPolimero': 'PEBD',
       'tiposAnalisis': ['Soplado', 'Laminado'],
       'composicion': 'LDPE reciclado 90%, aditivos biodegradables 10%',
       'origen': 'ACOPIADOR MUNICIPAL',
@@ -159,6 +164,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
           fechaCreacion: DateTime.parse(lote['fechaISO'] ?? DateTime.now().toIso8601String()),
           procesosAplicados: lote['procesosAplicados'] ?? [],
           comentarios: lote['comentarios'],
+          tipoPolimero: lote['tipoPolimero'],
         ),
       ),
     );
@@ -365,16 +371,57 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                               ],
                             ),
                             const SizedBox(height: 6),
-                            // Segunda línea: Producto
-                            Text(
-                              lote['producto'] ?? 'Producto en proceso',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
+                            // Segunda línea: Producto y tipo de polímero
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    lote['producto'] ?? 'Producto en proceso',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                ),
+                                if (lote['tipoPolimero'] != null) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.deepPurple.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: Colors.deepPurple.withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.science_outlined,
+                                          size: 12,
+                                          color: Colors.deepPurple,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          lote['tipoPolimero'],
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.deepPurple,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                             const SizedBox(height: 4),
                             // Tercera línea: Peso, Inicio/Fin, Procesos y Composición

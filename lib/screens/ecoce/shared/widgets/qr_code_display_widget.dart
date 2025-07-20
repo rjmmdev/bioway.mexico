@@ -26,7 +26,7 @@ class QRCodeDisplayWidget extends StatefulWidget {
   final String material;
   final double peso;
   final String presentacion;
-  final String origen;
+  final String? origen;
   final DateTime? fechaCreacion;
   
   // Información adicional opcional
@@ -55,7 +55,7 @@ class QRCodeDisplayWidget extends StatefulWidget {
     required this.material,
     required this.peso,
     required this.presentacion,
-    required this.origen,
+    this.origen,
     this.fechaCreacion,
     this.pesoFinal,
     this.fechaSalida,
@@ -97,7 +97,7 @@ class _QRCodeDisplayWidgetState extends State<QRCodeDisplayWidget> {
       'material': widget.material,
       'peso': widget.peso,
       'presentacion': widget.presentacion,
-      'origen': widget.origen,
+      if (widget.origen != null) 'origen': widget.origen,
       'fechaCreacion': _fechaFormateada,
       if (widget.pesoFinal != null) 'pesoFinal': widget.pesoFinal,
       if (widget.fechaSalida != null) 'fechaSalida': _fechaSalidaFormateada,
@@ -424,8 +424,7 @@ Código QR - Lote ${widget.loteId}
 Material: ${widget.material}
 Peso: ${widget.peso} kg
 Presentación: ${widget.presentacion}
-Origen: ${widget.origen}
-Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pesoFinal} kg' : ''}${widget.fechaSalida != null ? '\nFecha Salida: $_fechaSalidaFormateada' : ''}
+${widget.origen != null ? 'Origen: ${widget.origen}\n' : ''}Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pesoFinal} kg' : ''}${widget.fechaSalida != null ? '\nFecha Salida: $_fechaSalidaFormateada' : ''}
       ''';
       
       await Share.shareXFiles(
@@ -487,7 +486,8 @@ Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pes
                   pw.Text('Material: ${widget.material}'),
                   pw.Text('Peso: ${widget.peso} kg'),
                   pw.Text('Presentación: ${widget.presentacion}'),
-                  pw.Text('Origen: ${widget.origen}'),
+                  if (widget.origen != null)
+                    pw.Text('Origen: ${widget.origen}'),
                   pw.Text('Fecha: $_fechaFormateada'),
                 ],
               ),
@@ -739,13 +739,15 @@ Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pes
                     value: widget.presentacion,
                     color: Colors.green,
                   ),
-                const SizedBox(height: 16),
-                _buildInfoRow(
-                  icon: widget.tipoUsuario == 'origen' ? Icons.factory_outlined : Icons.location_on_outlined,
-                  label: widget.tipoUsuario == 'origen' ? 'Fuente' : 'Origen',
-                  value: widget.origen,
-                  color: Colors.purple,
-                ),
+                if (widget.origen != null) ...[
+                  const SizedBox(height: 16),
+                  _buildInfoRow(
+                    icon: widget.tipoUsuario == 'origen' ? Icons.factory_outlined : Icons.location_on_outlined,
+                    label: widget.tipoUsuario == 'origen' ? 'Fuente' : 'Origen',
+                    value: widget.origen!,
+                    color: Colors.purple,
+                  ),
+                ],
                 const SizedBox(height: 16),
                 _buildInfoRow(
                   icon: Icons.calendar_today_outlined,

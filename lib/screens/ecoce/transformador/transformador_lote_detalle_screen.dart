@@ -14,6 +14,7 @@ class TransformadorLoteDetalleScreen extends StatefulWidget {
   final bool mostrarMensajeExito;
   final List<String>? procesosAplicados;
   final String? comentarios;
+  final String? tipoPolimero;
 
   const TransformadorLoteDetalleScreen({
     super.key,
@@ -26,6 +27,7 @@ class TransformadorLoteDetalleScreen extends StatefulWidget {
     this.mostrarMensajeExito = false,
     this.procesosAplicados,
     this.comentarios,
+    this.tipoPolimero,
   });
 
   @override
@@ -138,6 +140,7 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
       'productoFabricado': widget.productoFabricado,
       'composicionMaterial': widget.composicionMaterial,
       'tipoUsuario': 'transformador',
+      if (widget.tipoPolimero != null) 'tipoPolimero': widget.tipoPolimero,
     };
     
     return Scaffold(
@@ -314,6 +317,8 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
                           const SizedBox(height: 20),
                           _buildInfoRow('Peso:', '${widget.peso} kg', icon: Icons.scale),
                           _buildInfoRow('Producto:', widget.productoFabricado, icon: Icons.inventory_2),
+                          if (widget.tipoPolimero != null)
+                            _buildInfoRow('Tipo de polímero:', widget.tipoPolimero!, icon: Icons.science_outlined),
                           _buildInfoRow('Análisis:', widget.tiposAnalisis.join(', '), icon: Icons.science),
                           if (widget.procesosAplicados != null && widget.procesosAplicados!.isNotEmpty)
                             _buildInfoRow('Procesos aplicados:', widget.procesosAplicados!.join(', '), icon: Icons.settings),
@@ -331,11 +336,11 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
                 material: widget.productoFabricado, // Producto fabricado
                 peso: widget.peso,
                 presentacion: widget.productoFabricado, // Usar producto como presentación
-                origen: 'Transformador',
+                origen: null, // Eliminar el origen
                 fechaCreacion: widget.fechaCreacion,
                 datosAdicionales: datosAdicionales,
                 titulo: 'Código QR del Lote Transformado',
-                subtitulo: 'QR Code',
+                subtitulo: widget.tipoPolimero != null ? 'Tipo de polímero: ${widget.tipoPolimero}' : 'QR Code',
                 colorPrincipal: _primaryColor,
                 iconoPrincipal: Icons.factory,
                 tipoUsuario: 'transformador',

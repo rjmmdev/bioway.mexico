@@ -28,6 +28,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
       'id': 'Firebase_ID_1x7h9k3',
       'origen': 'RECICLADOR PLASTICOS DEL NORTE',
       'material': 'PET',
+      'tipoPolimero': 'PP',
       'fecha': '14/07/2025',
       'fechaISO': '2025-07-14T10:30:00',
       'peso': 120.0,
@@ -43,6 +44,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
       'id': 'Firebase_ID_2a9m5p1',
       'origen': 'CENTRO DE ACOPIO SUSTENTABLE',
       'material': 'LDPE',
+      'tipoPolimero': 'PEBD',
       'fecha': '14/07/2025',
       'fechaISO': '2025-07-14T08:15:00',
       'peso': 85.5,
@@ -113,6 +115,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
           fechaCreacion: DateTime.parse(lote['fechaISO'] ?? DateTime.now().toIso8601String()),
           procesosAplicados: lote['procesosAplicados'] ?? [],
           comentarios: lote['comentarios'],
+          tipoPolimero: lote['tipoPolimero'],
         ),
       ),
     );
@@ -190,7 +193,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                               ],
                             ),
                             const SizedBox(height: 6),
-                            // Segunda línea: Tipo de material
+                            // Segunda línea: Tipo de material y polímero
                             Row(
                               children: [
                                 Icon(
@@ -209,6 +212,41 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
                                 ),
+                                if (lote['tipoPolimero'] != null) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.deepPurple.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: Colors.deepPurple.withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.science_outlined,
+                                          size: 12,
+                                          color: Colors.deepPurple,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          lote['tipoPolimero'],
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.deepPurple,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                             const SizedBox(height: 4),
