@@ -717,4 +717,69 @@ class EcoceProfileService {
       return [];
     }
   }
+  
+  // Obtener todos los perfiles activos (para administración)
+  Future<List<EcoceProfileModel>> getAllActiveProfiles() async {
+    try {
+      final query = await _profilesCollection
+          .where('ecoce_estatus_aprobacion', isEqualTo: 1)
+          .orderBy('ecoce_fecha_reg', descending: true)
+          .get();
+      
+      return query.docs
+          .map((doc) => EcoceProfileModel.fromFirestore(doc))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+  
+  // Eliminar usuario completamente (perfil + auth + archivos)
+  Future<void> deleteUserCompletely(String userId) async {
+    try {
+      // 1. Obtener el perfil para tener toda la información
+      final profileDoc = await _profilesCollection.doc(userId).get();
+      if (!profileDoc.exists) {
+        throw Exception('Usuario no encontrado');
+      }
+      
+      // final profileData = profileDoc.data() as Map<String, dynamic>;
+      // final email = profileData['ecoce_correo_contacto'] as String?; // Variable no utilizada
+      
+      // 2. Eliminar el perfil de Firestore
+      await _profilesCollection.doc(userId).delete();
+      
+      // 3. Eliminar solicitudes asociadas si existen
+      final solicitudes = await _solicitudesCollection
+          .where('usuario_creado_id', isEqualTo: userId)
+          .get();
+      
+      for (final doc in solicitudes.docs) {
+        await doc.reference.delete();
+      }
+      
+      // 4. TODO: Eliminar archivos de Storage
+      // Esto requeriría acceso a Firebase Storage para eliminar la carpeta del usuario
+      // Por ejemplo: storage.ref('usuarios/$userId').delete();
+      
+      // 5. Nota: No podemos eliminar el usuario de Firebase Auth desde el cliente
+      // Esto requeriría Firebase Admin SDK en un backend
+      // El usuario quedará en Auth pero sin acceso a datos
+      
+    } catch (e) {
+      throw Exception('Error al eliminar usuario: $e');
+    }
+  }
+  
+  // Migrar usuarios existentes a subcolecciones (método administrativo)
+  Future<void> migrateExistingUsersToSubcollections() async {
+    try {
+      // Este método sería usado una sola vez para migrar datos existentes
+      // Por ahora solo retornamos sin hacer nada
+      // En producción, implementaría la lógica de migración
+      return;
+    } catch (e) {
+      throw Exception('Error en migración: $e');
+    }
+  }
 }

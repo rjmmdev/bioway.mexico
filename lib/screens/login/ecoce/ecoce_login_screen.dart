@@ -7,13 +7,10 @@ import '../../../services/firebase/firebase_manager.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
 import 'ecoce_tipo_proveedor_selector.dart';
 import '../../ecoce/reciclador/reciclador_inicio.dart';
-import '../../ecoce/reciclador/reciclador_perfil.dart';
 import '../../ecoce/origen/origen_config.dart';
 // TEMPORAL: Importar pantallas de inicio
 import '../../ecoce/origen/origen_inicio_screen.dart';
-import '../../ecoce/origen/origen_perfil.dart';
 import '../../ecoce/transporte/transporte_escaneo.dart';
-import '../../ecoce/transporte/transporte_perfil_screen.dart';
 import '../../ecoce/transformador/transformador_inicio_screen.dart';
 import '../../ecoce/maestro/maestro_aprobaciones_screen.dart';
 

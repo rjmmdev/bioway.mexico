@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'dart:io';
-import '../../../utils/colors.dart';
 import '../shared/utils/dialog_utils.dart';
 import 'maestro_aprobacion.dart';
 

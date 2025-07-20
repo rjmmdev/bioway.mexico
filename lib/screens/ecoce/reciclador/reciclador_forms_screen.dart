@@ -195,16 +195,7 @@ class _RecicladorFormsScreenState extends State<RecicladorFormsScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => RecicladorDocumentacion(
-          loteData: {
-            ...widget.lotData!,
-            'pesoSalida': double.parse(_pesoSalidaController.text),
-            'merma': _mermaPercentage,
-            'procesos': _selectedProcesses,
-            'destino': _destinoController.text,
-            'comentarios': _comentariosController.text,
-            'operador': _operadorController.text,
-            'fotos': _photos,
-          },
+          lotId: widget.lotData!['id'] ?? 'LOTE-${DateTime.now().millisecondsSinceEpoch}',
         ),
       ),
     );

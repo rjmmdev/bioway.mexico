@@ -451,4 +451,27 @@ class EcoceNavigationConfigs {
       testKey: 'lab_nav_perfil',
     ),
   ];
+  
+  static List<NavigationItem> get maestroItems => const [
+    NavigationItem(
+      icon: Icons.dashboard_rounded,
+      label: 'Panel',
+      testKey: 'maestro_nav_panel',
+    ),
+    NavigationItem(
+      icon: Icons.people_rounded,
+      label: 'Usuarios',
+      testKey: 'maestro_nav_usuarios',
+    ),
+    NavigationItem(
+      icon: Icons.analytics_rounded,
+      label: 'Reportes',
+      testKey: 'maestro_nav_reportes',
+    ),
+    NavigationItem(
+      icon: Icons.person_rounded,
+      label: 'Perfil',
+      testKey: 'maestro_nav_perfil',
+    ),
+  ];
 }

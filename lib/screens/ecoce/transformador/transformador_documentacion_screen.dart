@@ -12,28 +12,40 @@ class TransformadorDocumentacionScreen extends StatefulWidget {
 }
 
 class _TransformadorDocumentacionScreenState extends State<TransformadorDocumentacionScreen> {
-  // Lista de archivos cargados
-  final List<PlatformFile> _archivosSeleccionados = [];
-  
-  // Estado de los checkboxes
-  final Map<String, bool> _documentosRequeridos = {
-    'ficha_tecnica_pellet': false,
-    'resultados_mezcla_inicial': false,
-    'resultados_transformacion': false,
-    'ficha_tecnica_mezcla_final': false,
+  // Mapa para almacenar archivos por tipo de documento
+  final Map<String, List<PlatformFile>> _archivosPorDocumento = {
+    'ficha_tecnica_pellet': [],
+    'resultados_mezcla_inicial': [],
+    'resultados_transformacion': [],
+    'ficha_tecnica_mezcla_final': [],
   };
   
   // Descripciones de los documentos
   final Map<String, String> _descripcionesDocumentos = {
     'ficha_tecnica_pellet': 'Ficha técnica del pellet reciclado recibido',
-    'resultados_mezcla_inicial': 'Resultados de prueba de mezcla inicial (pellet + virgen)',
+    'resultados_mezcla_inicial': 'Resultados de prueba de mezcla inicial',
     'resultados_transformacion': 'Resultados del proceso de transformación',
     'ficha_tecnica_mezcla_final': 'Ficha técnica de la mezcla final utilizada',
   };
 
+  // Iconos para cada tipo de documento
+  final Map<String, IconData> _iconosDocumentos = {
+    'ficha_tecnica_pellet': Icons.description,
+    'resultados_mezcla_inicial': Icons.science,
+    'resultados_transformacion': Icons.engineering,
+    'ficha_tecnica_mezcla_final': Icons.verified,
+  };
+
+  // Documentos obligatorios (todos excepto ficha_tecnica_mezcla_final)
+  final Set<String> _documentosObligatorios = {
+    'ficha_tecnica_pellet',
+    'resultados_mezcla_inicial',
+    'resultados_transformacion',
+  };
+
   bool _isLoading = false;
 
-  Future<void> _seleccionarArchivos() async {
+  Future<void> _seleccionarArchivos(String tipoDocumento) async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -43,7 +55,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
 
       if (result != null) {
         setState(() {
-          _archivosSeleccionados.addAll(result.files);
+          _archivosPorDocumento[tipoDocumento]!.addAll(result.files);
         });
       }
     } catch (e) {
@@ -58,10 +70,10 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
     }
   }
 
-  void _eliminarArchivo(int index) {
+  void _eliminarArchivo(String tipoDocumento, int index) {
     HapticFeedback.lightImpact();
     setState(() {
-      _archivosSeleccionados.removeAt(index);
+      _archivosPorDocumento[tipoDocumento]!.removeAt(index);
     });
   }
 
@@ -105,19 +117,25 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
     }
   }
 
-  bool get _todosDocumentosSeleccionados {
-    return _documentosRequeridos.values.every((value) => value == true);
+  bool get _todosDocumentosCargados {
+    // Verificar que todos los documentos obligatorios tengan archivos
+    for (String docObligatorio in _documentosObligatorios) {
+      if (_archivosPorDocumento[docObligatorio]!.isEmpty) {
+        return false;
+      }
+    }
+    return true;
   }
 
-  bool get _hayArchivosYDocumentos {
-    return _archivosSeleccionados.isNotEmpty && _todosDocumentosSeleccionados;
+  int get _totalArchivos {
+    return _archivosPorDocumento.values.fold(0, (sum, archivos) => sum + archivos.length);
   }
 
   void _confirmarDocumentacion() async {
-    if (!_hayArchivosYDocumentos) {
+    if (!_todosDocumentosCargados) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Por favor, carga archivos y marca todos los documentos requeridos'),
+          content: Text('Por favor, carga los documentos obligatorios marcados con (*)'),
           backgroundColor: BioWayColors.error,
         ),
       );
@@ -151,6 +169,216 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
     }
   }
 
+  Widget _buildDocumentSection(String tipoDocumento) {
+    final archivos = _archivosPorDocumento[tipoDocumento]!;
+    final descripcion = _descripcionesDocumentos[tipoDocumento]!;
+    final icono = _iconosDocumentos[tipoDocumento]!;
+    final tieneArchivos = archivos.isNotEmpty;
+    final esObligatorio = _documentosObligatorios.contains(tipoDocumento);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Encabezado del documento
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: tieneArchivos 
+                      ? BioWayColors.ecoceGreen.withValues(alpha: 0.1)
+                      : Colors.grey.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  icono,
+                  color: tieneArchivos ? BioWayColors.ecoceGreen : Colors.grey,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            descripcion,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+                        if (esObligatorio)
+                          Text(
+                            ' *',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: BioWayColors.error,
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (tieneArchivos) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '${archivos.length} archivo${archivos.length > 1 ? 's' : ''} cargado${archivos.length > 1 ? 's' : ''}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: BioWayColors.ecoceGreen,
+                        ),
+                      ),
+                    ] else if (esObligatorio) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Documento obligatorio',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: BioWayColors.error,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (tieneArchivos)
+                Icon(
+                  Icons.check_circle,
+                  color: BioWayColors.ecoceGreen,
+                  size: 24,
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Área de carga
+          InkWell(
+            onTap: () => _seleccionarArchivos(tipoDocumento),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.grey[300]!,
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.add_circle_outline,
+                    color: BioWayColors.ecoceGreen,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    tieneArchivos ? 'Agregar más archivos' : 'Seleccionar archivos',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: BioWayColors.ecoceGreen,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Lista de archivos cargados
+          if (tieneArchivos) ...[
+            const SizedBox(height: 12),
+            ...archivos.asMap().entries.map((entry) {
+              final index = entry.key;
+              final file = entry.value;
+              final color = _getFileColor(file.extension);
+              
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.grey[200]!,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _getFileIcon(file.extension),
+                      color: color,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            file.name,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            _formatFileSize(file.size),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.close,
+                        color: Colors.grey[600],
+                        size: 18,
+                      ),
+                      onPressed: () => _eliminarArchivo(tipoDocumento, index),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -170,6 +398,42 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(right: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _todosDocumentosCargados 
+                    ? BioWayColors.ecoceGreen.withValues(alpha: 0.1)
+                    : Colors.grey.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.cloud_upload,
+                    size: 16,
+                    color: _todosDocumentosCargados 
+                        ? BioWayColors.ecoceGreen
+                        : Colors.grey,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$_totalArchivos archivo${_totalArchivos != 1 ? 's' : ''}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _todosDocumentosCargados 
+                          ? BioWayColors.ecoceGreen
+                          : Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -196,175 +460,12 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
               ),
               const SizedBox(height: 24),
 
-              // Área de carga de archivos
-              InkWell(
-                onTap: _seleccionarArchivos,
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  height: 160,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
-                      width: 2,
-                      style: BorderStyle.solid,
-                    ),
-                  ),
-                  child: Stack(
-                    children: [
-                      // Patrón de líneas punteadas
-                      CustomPaint(
-                        size: Size.infinite,
-                        painter: DashedBorderPainter(
-                          color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
-                          strokeWidth: 2,
-                          gap: 5,
-                        ),
-                      ),
-                      // Contenido
-                      Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              width: 64,
-                              height: 64,
-                              decoration: BoxDecoration(
-                                color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.cloud_upload_outlined,
-                                size: 32,
-                                color: BioWayColors.ecoceGreen,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'Presione aquí para subir archivos',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'PDF, JPG, PNG',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Lista de archivos seleccionados
-              if (_archivosSeleccionados.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Archivos seleccionados (${_archivosSeleccionados.length})',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ..._archivosSeleccionados.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final file = entry.value;
-                        final color = _getFileColor(file.extension);
-                        
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: color.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  _getFileIcon(file.extension),
-                                  color: color,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      file.name,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.black87,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Text(
-                                      _formatFileSize(file.size),
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              IconButton(
-                                icon: Icon(
-                                  Icons.close,
-                                  color: Colors.grey[600],
-                                  size: 20,
-                                ),
-                                onPressed: () => _eliminarArchivo(index),
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 32),
-
-              // Lista de documentos requeridos
+              // Indicador de progreso
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.05),
@@ -374,101 +475,93 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
                   ],
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Icon(
-                          Icons.checklist,
-                          color: BioWayColors.ecoceGreen,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Documentos Requeridos',
+                        Text(
+                          'Documentos obligatorios',
                           style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                        Text(
+                          '${_documentosObligatorios.where((doc) => _archivosPorDocumento[doc]!.isNotEmpty).length} de ${_documentosObligatorios.length}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
                             color: Colors.black87,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    ..._documentosRequeridos.entries.map((entry) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: InkWell(
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            setState(() {
-                              _documentosRequeridos[entry.key] = !entry.value;
-                            });
-                          },
-                          borderRadius: BorderRadius.circular(8),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 24,
-                                  height: 24,
-                                  decoration: BoxDecoration(
-                                    color: entry.value 
-                                        ? BioWayColors.ecoceGreen 
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(
-                                      color: entry.value 
-                                          ? BioWayColors.ecoceGreen 
-                                          : Colors.grey[400]!,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: entry.value
-                                      ? const Icon(
-                                          Icons.check,
-                                          size: 16,
-                                          color: Colors.white,
-                                        )
-                                      : null,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    _descripcionesDocumentos[entry.key] ?? '',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: entry.value 
-                                          ? Colors.black87 
-                                          : Colors.grey[700],
-                                      fontWeight: entry.value 
-                                          ? FontWeight.w500 
-                                          : FontWeight.normal,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
+                    const SizedBox(height: 12),
+                    LinearProgressIndicator(
+                      value: _documentosObligatorios.isEmpty 
+                          ? 0 
+                          : _documentosObligatorios.where((doc) => _archivosPorDocumento[doc]!.isNotEmpty).length / _documentosObligatorios.length,
+                      backgroundColor: Colors.grey[200],
+                      valueColor: AlwaysStoppedAnimation<Color>(BioWayColors.ecoceGreen),
+                      minHeight: 6,
+                    ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
+
+              // Secciones de documentos
+              ..._archivosPorDocumento.keys.map((tipoDocumento) => 
+                _buildDocumentSection(tipoDocumento)
+              ).toList(),
+
+              const SizedBox(height: 12),
+
+              // Nota sobre documentos obligatorios
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.amber.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 20,
+                      color: Colors.amber[700],
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Los documentos marcados con (*) son obligatorios',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.amber[900],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
 
               // Botón de confirmación
               SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _confirmarDocumentacion,
+                  onPressed: _isLoading || !_todosDocumentosCargados 
+                      ? null 
+                      : _confirmarDocumentacion,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: BioWayColors.ecoceGreen,
-                    disabledBackgroundColor: BioWayColors.ecoceGreen.withValues(alpha: 0.5),
+                    disabledBackgroundColor: Colors.grey[300],
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -483,12 +576,14 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
                             strokeWidth: 2.5,
                           ),
                         )
-                      : const Text(
+                      : Text(
                           'Confirmar Documentación',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: _todosDocumentosCargados 
+                                ? Colors.white 
+                                : Colors.grey[600],
                           ),
                         ),
                 ),
@@ -501,51 +596,4 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
       ),
     );
   }
-}
-
-// Custom painter para el borde punteado
-class DashedBorderPainter extends CustomPainter {
-  final Color color;
-  final double strokeWidth;
-  final double gap;
-
-  DashedBorderPainter({
-    required this.color,
-    required this.strokeWidth,
-    required this.gap,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke;
-
-    final path = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        const Radius.circular(16),
-      ));
-
-    final dashPath = Path();
-    final dashWidth = 5.0;
-    final dashSpace = gap;
-    double distance = 0.0;
-
-    for (ui.PathMetric pathMetric in path.computeMetrics()) {
-      while (distance < pathMetric.length) {
-        dashPath.addPath(
-          pathMetric.extractPath(distance, distance + dashWidth),
-          Offset.zero,
-        );
-        distance += dashWidth + dashSpace;
-      }
-    }
-
-    canvas.drawPath(dashPath, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

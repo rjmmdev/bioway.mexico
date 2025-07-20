@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
-import '../../../widgets/common/gradient_background.dart';
 import 'providers/acopiador_register_screen.dart';
 import 'providers/planta_separacion_register_screen.dart';
 import 'providers/reciclador_register_screen.dart';

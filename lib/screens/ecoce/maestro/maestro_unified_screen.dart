@@ -257,10 +257,7 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
         );
         
         // Eliminar usuario
-        await _profileService.deleteUserCompletely(
-          userId: userId,
-          deletedBy: _maestroUserId,
-        );
+        await _profileService.deleteUserCompletely(userId);
         
         // Cerrar diálogo de carga
         if (mounted) DialogUtils.hideLoadingDialog(context);

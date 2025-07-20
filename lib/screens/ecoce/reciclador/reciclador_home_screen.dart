@@ -128,7 +128,7 @@ class _RecicladorHomeScreenState extends State<RecicladorHomeScreen> {
           context,
           MaterialPageRoute(
             builder: (context) => RecicladorDocumentacion(
-              loteData: lote,
+              lotId: lote['id'] ?? 'LOTE-${DateTime.now().millisecondsSinceEpoch}',
             ),
           ),
         );

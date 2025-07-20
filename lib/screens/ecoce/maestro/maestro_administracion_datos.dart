@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import '../../../utils/colors.dart';
 import 'maestro_administracion_perfiles.dart';
 
 /// Modelo para documentos
