@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../utils/colors.dart';
+import '../../../../utils/format_utils.dart';
 
 /// Tarjeta simplificada para mostrar solicitudes en la pantalla maestro unificada
 class MaestroSolicitudCard extends StatelessWidget {
@@ -26,9 +27,21 @@ class MaestroSolicitudCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final datosPerfil = solicitud['datos_perfil'] as Map<String, dynamic>;
-    final fechaSolicitud = solicitud['fecha_solicitud'] != null 
-        ? (solicitud['fecha_solicitud'] as Timestamp).toDate()
-        : DateTime.now();
+    
+    // Handle fecha_solicitud - can be Timestamp or String
+    DateTime fechaSolicitud;
+    if (solicitud['fecha_solicitud'] != null) {
+      if (solicitud['fecha_solicitud'] is Timestamp) {
+        fechaSolicitud = (solicitud['fecha_solicitud'] as Timestamp).toDate();
+      } else if (solicitud['fecha_solicitud'] is String) {
+        fechaSolicitud = DateTime.parse(solicitud['fecha_solicitud'] as String);
+      } else {
+        fechaSolicitud = DateTime.now();
+      }
+    } else {
+      fechaSolicitud = DateTime.now();
+    }
+    
     final isApproved = solicitud['estado'] == 'aprobada';
     
     return Card(
@@ -136,7 +149,7 @@ class MaestroSolicitudCard extends StatelessWidget {
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Aprobado el ${_formatDate((solicitud['fecha_revision'] as Timestamp).toDate())}',
+                          'Aprobado el ${_formatDate(_parseFecha(solicitud['fecha_revision']))}',
                           style: TextStyle(
                             fontSize: 12,
                             color: BioWayColors.success,
@@ -242,7 +255,25 @@ class MaestroSolicitudCard extends StatelessWidget {
   }
   
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+    return FormatUtils.formatDate(date);
+  }
+  
+  DateTime _parseFecha(dynamic fecha) {
+    if (fecha == null) return DateTime.now();
+    
+    if (fecha is Timestamp) {
+      return fecha.toDate();
+    } else if (fecha is String) {
+      try {
+        return DateTime.parse(fecha);
+      } catch (e) {
+        return DateTime.now();
+      }
+    } else if (fecha is DateTime) {
+      return fecha;
+    }
+    
+    return DateTime.now();
   }
   
   Color _getSubtipoColor(String? subtipo) {

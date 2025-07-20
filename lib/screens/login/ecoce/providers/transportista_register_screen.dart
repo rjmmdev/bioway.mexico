@@ -26,7 +26,7 @@ class _TransportistaRegisterScreenState extends BaseProviderRegisterScreenState<
   Color get providerColor => BioWayColors.deepBlue;
   
   @override
-  String get folioPrefix => 'TR';
+  String get folioPrefix => 'V';
   
   @override
   void initState() {

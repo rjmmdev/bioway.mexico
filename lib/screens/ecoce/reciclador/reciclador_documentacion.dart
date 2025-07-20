@@ -4,12 +4,14 @@ import 'reciclador_lote_qr_screen.dart';
 import '../shared/widgets/document_upload_widget.dart';
 
 class RecicladorDocumentacion extends StatelessWidget {
-  final String lotId;
+  final String? lotId;
+  final Map<String, dynamic>? loteData;
   
   const RecicladorDocumentacion({
     super.key,
-    required this.lotId,
-  });
+    this.lotId,
+    this.loteData,
+  }) : assert(lotId != null || loteData != null, 'Either lotId or loteData must be provided');
 
   void _onDocumentsSubmitted(BuildContext context, List<DocumentInfo> documents) {
     // Mostrar diálogo de éxito
@@ -57,7 +59,7 @@ class RecicladorDocumentacion extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) => RecicladorLoteQRScreen(
-                      loteId: lotId,
+                      loteId: lotId ?? loteData?['id'] ?? '',
                       material: 'PET', // En producción vendría de la base de datos
                       pesoOriginal: 100.0, // En producción vendría de la base de datos
                       presentacion: 'Pacas', // En producción vendría de la base de datos
@@ -90,7 +92,7 @@ class RecicladorDocumentacion extends StatelessWidget {
     return DocumentUploadWidget(
       title: 'Documentación Técnica',
       subtitle: 'Carga los documentos técnicos',
-      lotId: lotId,
+      lotId: lotId ?? loteData?['id'] ?? '',
       requiredDocuments: const [
         'Ficha Técnica del Pellet',
         'Reporte de Resultados de Reciclaje',

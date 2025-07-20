@@ -125,6 +125,22 @@ class EcoceProfileModel {
     required this.updatedAt,
   });
 
+  // Helper para convertir campos Timestamp de forma segura
+  static DateTime? _timestampToDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    // Si es un string, intentar parsearlo
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
   // Convertir de Firebase Document
   factory EcoceProfileModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -151,14 +167,12 @@ class EcoceProfileModel {
       ecocePoligonoLoc: data['ecoce_poligono_loc'],
       ecoceLatitud: data['ecoce_latitud']?.toDouble(),
       ecoceLongitud: data['ecoce_longitud']?.toDouble(),
-      ecoceFechaReg: (data['ecoce_fecha_reg'] as Timestamp).toDate(),
+      ecoceFechaReg: _timestampToDateTime(data['ecoce_fecha_reg']) ?? DateTime.now(),
       ecoceListaMateriales: List<String>.from(data['ecoce_lista_materiales'] ?? []),
       ecoceTransporte: data['ecoce_transporte'],
       ecoceLinkRedSocial: data['ecoce_link_red_social'],
       ecoceEstatusAprobacion: data['ecoce_estatus_aprobacion'] ?? 0,
-      ecoceFechaAprobacion: data['ecoce_fecha_aprobacion'] != null 
-          ? (data['ecoce_fecha_aprobacion'] as Timestamp).toDate() 
-          : null,
+      ecoceFechaAprobacion: _timestampToDateTime(data['ecoce_fecha_aprobacion']),
       ecoceAprobadoPor: data['ecoce_aprobado_por'],
       ecoceComentariosRevision: data['ecoce_comentarios_revision'],
       ecoceConstSitFis: data['ecoce_const_sit_fis'],
@@ -166,11 +180,13 @@ class EcoceProfileModel {
       ecoceBancoCaratula: data['ecoce_banco_caratula'],
       ecoceIne: data['ecoce_ine'],
       ecoceDimCap: data['ecoce_dim_cap'] != null 
-          ? Map<String, double>.from(data['ecoce_dim_cap'])
+          ? (data['ecoce_dim_cap'] as Map<String, dynamic>).map(
+              (key, value) => MapEntry(key, (value as num).toDouble())
+            )
           : null,
       ecocePesoCap: data['ecoce_peso_cap']?.toDouble(),
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      createdAt: _timestampToDateTime(data['createdAt']) ?? DateTime.now(),
+      updatedAt: _timestampToDateTime(data['updatedAt']) ?? DateTime.now(),
     );
   }
 

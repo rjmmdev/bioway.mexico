@@ -1,6 +1,7 @@
 // Archivo: widgets/material_selector.dart
 import 'package:flutter/material.dart';
 import '../../../../utils/colors.dart';
+import '../../../ecoce/shared/utils/material_utils.dart';
 
 class MaterialSelector extends StatelessWidget {
   final Set<String> selectedMaterials;
@@ -61,22 +62,30 @@ class MaterialSelector extends StatelessWidget {
   }
   
   Color _getColorForMaterial(String materialId) {
-    // Assign colors based on material type
-    if (materialId.contains('poli') || materialId.contains('pe')) {
-      return BioWayColors.petBlue;
-    } else if (materialId.contains('pp')) {
-      return BioWayColors.ppOrange;
-    } else if (materialId.contains('multi')) {
-      return BioWayColors.warning;
-    } else if (materialId.contains('pellets')) {
-      return BioWayColors.success;
-    } else if (materialId.contains('hojuelas')) {
-      return BioWayColors.hdpeGreen;
-    } else if (materialId.contains('muestra')) {
-      return BioWayColors.info;
-    } else {
-      return BioWayColors.primaryGreen;
+    // Try to use MaterialUtils first
+    final color = MaterialUtils.getMaterialColor(materialId.toUpperCase());
+    
+    // If MaterialUtils returns default grey, use custom logic for special cases
+    if (color == BioWayColors.darkGrey) {
+      // Assign colors based on material type for custom materials
+      if (materialId.contains('poli') || materialId.contains('pe')) {
+        return BioWayColors.petBlue;
+      } else if (materialId.contains('pp')) {
+        return BioWayColors.ppOrange;
+      } else if (materialId.contains('multi')) {
+        return BioWayColors.warning;
+      } else if (materialId.contains('pellets')) {
+        return BioWayColors.success;
+      } else if (materialId.contains('hojuelas')) {
+        return BioWayColors.hdpeGreen;
+      } else if (materialId.contains('muestra')) {
+        return BioWayColors.info;
+      } else {
+        return BioWayColors.primaryGreen;
+      }
     }
+    
+    return color;
   }
 
   @override

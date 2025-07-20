@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../utils/colors.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
-import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/loading_indicator.dart';
+import '../shared/utils/dialog_utils.dart';
 import 'widgets/maestro_solicitud_card.dart';
 import 'widgets/delete_user_dialog.dart';
 import 'maestro_solicitud_details_screen.dart';
@@ -17,7 +17,7 @@ class MaestroUnifiedScreen extends StatefulWidget {
 }
 
 class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen> 
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final EcoceProfileService _profileService = EcoceProfileService();
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
@@ -35,15 +35,33 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(_handleTabChange);
+    _loadSolicitudes();
+  }
+  
+  void _handleTabChange() {
+    if (_tabController.indexIsChanging) return;
+    // Recargar datos cuando se cambia de pestaña
     _loadSolicitudes();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Recargar cuando la app vuelve al primer plano
+      _loadSolicitudes();
+    }
   }
 
   Future<void> _loadSolicitudes() async {
@@ -79,6 +97,7 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
             'ecoce_cp': profile.ecoceCp,
           },
           'fecha_revision': profile.ecoceFechaAprobacion?.toIso8601String(),
+          'fecha_solicitud': profile.ecoceFechaReg.toIso8601String(),
         };
       }).toList();
       
@@ -89,54 +108,61 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      _showErrorMessage('Error al cargar datos: ${e.toString()}');
+      _showErrorMessage('Error al cargar solicitudes: ${e.toString()}');
     }
   }
 
-  List<Map<String, dynamic>> get _solicitudesFiltradas {
-    var solicitudes = _tabController.index == 0 ? _pendingSolicitudes : 
-                     _tabController.index == 1 ? _approvedSolicitudes : <Map<String, dynamic>>[];
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: BioWayColors.error,
+      ),
+    );
+  }
+
+  void _showSuccessMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: BioWayColors.success,
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> get _filteredSolicitudes {
+    List<Map<String, dynamic>> solicitudes = 
+        _selectedIndex == 0 ? _pendingSolicitudes : _approvedSolicitudes;
+    
+    final searchQuery = _searchController.text.toLowerCase();
     
     return solicitudes.where((solicitud) {
       final datosPerfil = solicitud['datos_perfil'] as Map<String, dynamic>;
+      final matchesSearch = searchQuery.isEmpty ||
+          datosPerfil['ecoce_nombre'].toString().toLowerCase().contains(searchQuery) ||
+          datosPerfil['ecoce_rfc'].toString().toLowerCase().contains(searchQuery) ||
+          datosPerfil['ecoce_correo_contacto'].toString().toLowerCase().contains(searchQuery) ||
+          (solicitud['folio_asignado'] ?? '').toString().toLowerCase().contains(searchQuery);
       
-      // Filtro por búsqueda
-      if (_searchController.text.isNotEmpty) {
-        final searchLower = _searchController.text.toLowerCase();
-        final nombre = (datosPerfil['ecoce_nombre'] ?? '').toString().toLowerCase();
-        final folio = (solicitud['folio_asignado'] ?? '').toString().toLowerCase();
-        
-        if (!nombre.contains(searchLower) && !folio.contains(searchLower)) {
-          return false;
-        }
-      }
+      final matchesFilter = _filtrosTipoUsuario.isEmpty ||
+          _filtrosTipoUsuario.contains(datosPerfil['ecoce_subtipo']);
       
-      // Filtro por tipo de usuario
-      if (_filtrosTipoUsuario.isNotEmpty) {
-        final subtipo = datosPerfil['ecoce_subtipo'] ?? '';
-        final tipoUsuario = _getSubtipoLabel(subtipo);
-        
-        if (!_filtrosTipoUsuario.contains(tipoUsuario)) {
-          return false;
-        }
-      }
-      
-      return true;
+      return matchesSearch && matchesFilter;
     }).toList();
   }
 
   Future<void> _approveSolicitud(Map<String, dynamic> solicitud) async {
     final datosPerfil = solicitud['datos_perfil'] as Map<String, dynamic>;
-    final bool? confirm = await showDialog<bool>(
+    final bool confirm = await DialogUtils.showConfirmDialog(
       context: context,
-      builder: (context) => _ApprovalConfirmationDialog(
-        title: 'Aprobar Cuenta',
-        message: '¿Estás seguro de aprobar la cuenta de ${datosPerfil['ecoce_nombre']}?',
-        isApproval: true,
-      ),
+      title: 'Aprobar Cuenta',
+      message: '¿Estás seguro de aprobar la cuenta de ${datosPerfil['ecoce_nombre']}?',
+      confirmText: 'Aprobar',
+      cancelText: 'Cancelar',
+      confirmColor: Colors.green,
     );
 
-    if (confirm == true) {
+    if (confirm) {
       try {
         await _profileService.approveSolicitud(
           solicitudId: solicitud['solicitud_id'],
@@ -157,9 +183,14 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
 
   Future<void> _rejectSolicitud(Map<String, dynamic> solicitud) async {
     final datosPerfil = solicitud['datos_perfil'] as Map<String, dynamic>;
-    final String? reason = await showDialog<String>(
+    final String? reason = await DialogUtils.showInputDialog(
       context: context,
-      builder: (context) => _RejectionReasonDialog(profileName: datosPerfil['ecoce_nombre']),
+      title: 'Rechazar Cuenta',
+      message: 'Por favor, indica el motivo del rechazo para ${datosPerfil['ecoce_nombre']}:',
+      hintText: 'Motivo del rechazo',
+      confirmText: 'Rechazar',
+      cancelText: 'Cancelar',
+      maxLines: 3,
     );
 
     if (reason != null && reason.isNotEmpty) {
@@ -178,28 +209,32 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
     }
   }
 
-  void _viewSolicitudDetails(Map<String, dynamic> solicitud) {
-    Navigator.push(
+  void _viewSolicitudDetails(Map<String, dynamic> solicitud) async {
+    await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => MaestroSolicitudDetailsScreen(
-          solicitud: solicitud,
-          onApprove: () async {
-            Navigator.pop(context);
-            await _approveSolicitud(solicitud);
-          },
-          onReject: () async {
-            Navigator.pop(context);
-            await _rejectSolicitud(solicitud);
-          },
-        ),
+        builder: (context) => MaestroSolicitudDetailsScreen(solicitud: solicitud),
       ),
     );
+    // Recargar por si se hicieron cambios
+    _loadSolicitudes();
   }
-  
+
+  String _getPrefijoFolio(String subtipo) {
+    final Map<String, String> prefijos = {
+      'A': 'A',  // Acopiador
+      'P': 'P',  // Planta de separación
+      'R': 'R',  // Reciclador
+      'T': 'T',  // Transformador
+      'V': 'V',  // Transportista
+      'L': 'L',  // Laboratorio
+    };
+    return prefijos[subtipo] ?? 'X';
+  }
+
   Future<void> _deleteUser(Map<String, dynamic> usuario) async {
     final datosPerfil = usuario['datos_perfil'] as Map<String, dynamic>;
-    final userId = usuario['usuario_creado_id'] ?? usuario['id'];
+    final userId = usuario['usuario_creado_id'] ?? usuario['solicitud_id'];
     final folio = usuario['folio_asignado'] ?? 'SIN FOLIO';
     
     final bool? shouldDelete = await showDialog<bool>(
@@ -215,34 +250,10 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
     if (shouldDelete == true) {
       try {
         // Mostrar indicador de carga
-        showDialog(
+        if (!mounted) return;
+        DialogUtils.showLoadingDialog(
           context: context,
-          barrierDismissible: false,
-          builder: (context) => Center(
-            child: Container(
-              padding: EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(BioWayColors.error),
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'Eliminando usuario...',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: BioWayColors.darkGreen,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          message: 'Eliminando usuario...',
         );
         
         // Eliminar usuario
@@ -252,13 +263,13 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
         );
         
         // Cerrar diálogo de carga
-        if (mounted) Navigator.pop(context);
+        if (mounted) DialogUtils.hideLoadingDialog(context);
         
         _showSuccessMessage('Usuario eliminado exitosamente');
         _loadSolicitudes();
       } catch (e) {
         // Cerrar diálogo de carga si hay error
-        if (mounted) Navigator.pop(context);
+        if (mounted) DialogUtils.hideLoadingDialog(context);
         
         _showErrorMessage('Error al eliminar usuario: ${e.toString()}');
       }
@@ -286,12 +297,12 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildCheckboxTile('Centro de Acopio', 'A', Icons.warehouse, BioWayColors.darkGreen, setDialogState),
-                    _buildCheckboxTile('Planta de Separación', 'P', Icons.sort, BioWayColors.ppPurple, setDialogState),
-                    _buildCheckboxTile('Reciclador', 'R', Icons.recycling, BioWayColors.recycleOrange, setDialogState),
-                    _buildCheckboxTile('Transformador', 'T', Icons.auto_fix_high, BioWayColors.petBlue, setDialogState),
-                    _buildCheckboxTile('Transportista', 'V', Icons.local_shipping, BioWayColors.deepBlue, setDialogState),
-                    _buildCheckboxTile('Laboratorio', 'L', Icons.science, BioWayColors.otherPurple, setDialogState),
+                    _buildFilterChip('A', 'Acopiador', setDialogState),
+                    _buildFilterChip('P', 'Planta de Separación', setDialogState),
+                    _buildFilterChip('R', 'Reciclador', setDialogState),
+                    _buildFilterChip('T', 'Transformador', setDialogState),
+                    _buildFilterChip('V', 'Transportista', setDialogState),
+                    _buildFilterChip('L', 'Laboratorio', setDialogState),
                   ],
                 ),
               ),
@@ -301,11 +312,9 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                     setDialogState(() {
                       _filtrosTipoUsuario.clear();
                     });
+                    setState(() {});
                   },
-                  child: Text(
-                    'Limpiar',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
+                  child: const Text('Limpiar'),
                 ),
                 ElevatedButton(
                   onPressed: () {
@@ -314,14 +323,8 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: BioWayColors.ecoceGreen,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
                   ),
-                  child: const Text(
-                    'Aplicar',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                  child: const Text('Aplicar'),
                 ),
               ],
             );
@@ -331,454 +334,403 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
     );
   }
 
-  Widget _buildCheckboxTile(String titulo, String codigo, IconData icon, Color color, StateSetter setDialogState) {
-    final isSelected = _filtrosTipoUsuario.contains(titulo);
-    
-    return ListTile(
-      leading: Icon(icon, color: color),
-      title: Text(
-        titulo,
-        style: TextStyle(
-          color: isSelected ? color : Colors.black87,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        ),
-      ),
-      trailing: Checkbox(
-        value: isSelected,
-        onChanged: (bool? value) {
+  Widget _buildFilterChip(String value, String label, StateSetter setDialogState) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: FilterChip(
+        label: Text(label),
+        selected: _filtrosTipoUsuario.contains(value),
+        onSelected: (selected) {
           setDialogState(() {
-            if (value == true) {
-              _filtrosTipoUsuario.add(titulo);
+            if (selected) {
+              _filtrosTipoUsuario.add(value);
             } else {
-              _filtrosTipoUsuario.remove(titulo);
+              _filtrosTipoUsuario.remove(value);
             }
           });
         },
-        activeColor: color,
-        side: BorderSide(color: color, width: 2),
-      ),
-      onTap: () {
-        setDialogState(() {
-          if (isSelected) {
-            _filtrosTipoUsuario.remove(titulo);
-          } else {
-            _filtrosTipoUsuario.add(titulo);
-          }
-        });
-      },
-    );
-  }
-
-  void _showSuccessMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: 12),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: BioWayColors.success,
-        behavior: SnackBarBehavior.floating,
+        selectedColor: BioWayColors.ecoceGreen.withValues(alpha: 0.2),
+        checkmarkColor: BioWayColors.ecoceGreen,
       ),
     );
   }
-
-  void _showErrorMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.error_outline, color: Colors.white),
-            SizedBox(width: 12),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: BioWayColors.error,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  // Helpers
-  String _getSubtipoLabel(String? subtipo) {
-    switch (subtipo) {
-      case 'A': return 'Centro de Acopio';
-      case 'P': return 'Planta de Separación';
-      case 'R': return 'Reciclador';
-      case 'T': return 'Transformador';
-      case 'V': return 'Transportista';
-      case 'L': return 'Laboratorio';
-      default: return 'Usuario Origen';
-    }
-  }
-
-  String _getPrefijoFolio(String? subtipo) {
-    switch (subtipo) {
-      case 'A': return 'A';
-      case 'P': return 'P';
-      case 'R': return 'R';
-      case 'T': return 'T';
-      case 'V': return 'V';
-      case 'L': return 'L';
-      default: return 'U';
-    }
-  }
-
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-
     return Scaffold(
-      backgroundColor: BioWayColors.backgroundGrey,
-      body: Column(
-        children: [
-          // Header con tabs
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  BioWayColors.ecoceGreen,
-                  BioWayColors.ecoceGreen.withValues(alpha: 0.8),
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
+      backgroundColor: const Color(0xFFF5F5F5),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header con gradiente
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    BioWayColors.ecoceGreen,
+                    BioWayColors.ecoceGreen.withValues(alpha: 0.8),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-              ],
-            ),
-            child: SafeArea(
+              ),
               child: Column(
                 children: [
-                  // Contenido del header
+                  // Título y badge
                   Padding(
-                    padding: EdgeInsets.all(screenWidth * 0.04),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                    child: Row(
                       children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.admin_panel_settings,
-                              color: Colors.white,
-                              size: 40,
-                            ),
-                            SizedBox(width: 12),
-                            Expanded(
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Panel de Administración',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Gestión de usuarios ECOCE',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.admin_panel_settings,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'ADMIN',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Tabs
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _selectedIndex = 0),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: _selectedIndex == 0
+                                    ? Colors.white
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  Icon(
+                                    Icons.pending_actions,
+                                    size: 20,
+                                    color: _selectedIndex == 0
+                                        ? BioWayColors.ecoceGreen
+                                        : Colors.white70,
+                                  ),
+                                  const SizedBox(height: 4),
                                   Text(
-                                    'Usuario Maestro ECOCE',
+                                    'Pendientes',
                                     style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: _selectedIndex == 0
+                                          ? BioWayColors.ecoceGreen
+                                          : Colors.white70,
                                     ),
                                   ),
-                                  SizedBox(height: 4),
+                                  if (_pendingSolicitudes.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _selectedIndex == 0
+                                            ? BioWayColors.warning
+                                            : Colors.white30,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        '${_pendingSolicitudes.length}',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _selectedIndex = 1),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: _selectedIndex == 1
+                                    ? Colors.white
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.people,
+                                    size: 20,
+                                    color: _selectedIndex == 1
+                                        ? BioWayColors.ecoceGreen
+                                        : Colors.white70,
+                                  ),
+                                  const SizedBox(height: 4),
                                   Text(
-                                    'Gestión de Solicitudes',
+                                    'Usuarios',
                                     style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.white.withValues(alpha: 0.9),
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: _selectedIndex == 1
+                                          ? BioWayColors.ecoceGreen
+                                          : Colors.white70,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _selectedIndex == 1
+                                          ? BioWayColors.success
+                                          : Colors.white30,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      '${_approvedSolicitudes.length}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  // TabBar
-                  if (_selectedIndex == 0) // Solo mostrar tabs en la vista de aprobación
-                    TabBar(
-                      controller: _tabController,
-                      indicatorColor: Colors.white,
-                      indicatorWeight: 3,
-                      labelColor: Colors.white,
-                      unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
-                      onTap: (_) => setState(() {}),
-                      tabs: [
-                        Tab(
-                          text: 'Pendientes (${_pendingSolicitudes.length})',
-                          icon: Icon(Icons.pending_actions, size: 20),
+                  const SizedBox(height: 12),
+                  
+                  // Barra de búsqueda y filtros
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: TextField(
+                              controller: _searchController,
+                              onChanged: (value) => setState(() {}),
+                              decoration: InputDecoration(
+                                hintText: _selectedIndex == 0
+                                    ? 'Buscar solicitudes pendientes...'
+                                    : 'Buscar por nombre, RFC o folio...',
+                                hintStyle: const TextStyle(fontSize: 14),
+                                prefixIcon: const Icon(Icons.search, size: 20),
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                        Tab(
-                          text: 'Aprobados (${_approvedSolicitudes.length})',
-                          icon: Icon(Icons.check_circle, size: 20),
-                        ),
-                        Tab(
-                          text: 'Rechazados',
-                          icon: Icon(Icons.cancel, size: 20),
+                        const SizedBox(width: 8),
+                        Material(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          elevation: 2,
+                          child: InkWell(
+                            onTap: _mostrarFiltroTipoUsuario,
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              height: 44,
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.filter_list,
+                                    color: _filtrosTipoUsuario.isNotEmpty
+                                        ? BioWayColors.ecoceGreen
+                                        : Colors.grey,
+                                    size: 20,
+                                  ),
+                                  if (_filtrosTipoUsuario.isNotEmpty) ...[
+                                    const SizedBox(width: 4),
+                                    Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: BioWayColors.ecoceGreen,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Text(
+                                        '${_filtrosTipoUsuario.length}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
+                  ),
                 ],
               ),
             ),
-          ),
-          
-          // Barra de búsqueda y filtros
-          Container(
-            padding: EdgeInsets.all(screenWidth * 0.04),
-            color: Colors.white,
-            child: Column(
-              children: [
-                // Buscador
-                TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Buscar por nombre o folio...',
-                    prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey[300]!),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey[300]!),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: BioWayColors.ecoceGreen, width: 2),
-                    ),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                  onChanged: (value) => setState(() {}),
-                ),
-                
-                SizedBox(height: screenHeight * 0.015),
-                
-                // Filtro tipo usuario
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: _mostrarFiltroTipoUsuario,
-                    icon: Icon(Icons.filter_list),
-                    label: Text(
-                      _filtrosTipoUsuario.isEmpty
-                          ? 'Filtrar por Tipo de Usuario'
-                          : 'Tipos: ${_filtrosTipoUsuario.length} seleccionados',
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: BioWayColors.ecoceGreen,
-                      side: BorderSide(color: BioWayColors.ecoceGreen),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.04,
-                        vertical: screenHeight * 0.015,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+            
+            // Contenido
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: LoadingIndicator())
+                  : _filteredSolicitudes.isEmpty
+                      ? _buildEmptyState()
+                      : ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                          itemCount: _filteredSolicitudes.length,
+                          itemBuilder: (context, index) {
+                            final solicitud = _filteredSolicitudes[index];
+                            return MaestroSolicitudCard(
+                              solicitud: solicitud,
+                              onTap: () => _viewSolicitudDetails(solicitud),
+                              onApprove: _selectedIndex == 0 ? () => _approveSolicitud(solicitud) : null,
+                              onReject: _selectedIndex == 0 ? () => _rejectSolicitud(solicitud) : null,
+                              onDelete: _selectedIndex == 1 ? () => _deleteUser(solicitud) : null,
+                              showActions: true,
+                              showAdminInfo: _selectedIndex == 1,
+                            );
+                          },
+                        ),
             ),
-          ),
-          
-          // Contenido
-          Expanded(
-            child: _isLoading
-                ? Center(child: LoadingIndicator())
-                : _selectedIndex == 0
-                    ? TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildSolicitudesList(isPending: true),
-                          _buildSolicitudesList(isPending: false),
-                          _buildRejectedList(),
-                        ],
-                      )
-                    : _buildAdministrationView(),
-          ),
-        ],
-      ),
-      bottomNavigationBar: EcoceBottomNavigation(
-        selectedIndex: _selectedIndex,
-        onItemTapped: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        primaryColor: BioWayColors.ecoceGreen,
-        items: const [
-          NavigationItem(
-            icon: Icons.how_to_reg,
-            label: 'Aprobación',
-          ),
-          NavigationItem(
-            icon: Icons.admin_panel_settings,
-            label: 'Administración',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSolicitudesList({required bool isPending}) {
-    final solicitudes = _solicitudesFiltradas;
-    
-    if (solicitudes.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildEmptyState(
-              icon: isPending ? Icons.inbox : Icons.check_circle_outline,
-              title: isPending ? 'No hay solicitudes pendientes' : 'No hay cuentas aprobadas',
-              subtitle: isPending ? 'Las nuevas solicitudes aparecerán aquí' : 'Las cuentas aprobadas aparecerán aquí',
-            ),
-            SizedBox(height: 24),
-            _buildReloadButton(),
           ],
         ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadSolicitudes,
-      child: Stack(
-        children: [
-          ListView.builder(
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 16,
-              bottom: 80, // Space for floating button
-            ),
-            itemCount: solicitudes.length,
-            itemBuilder: (context, index) {
-              final solicitud = solicitudes[index];
-              
-              return MaestroSolicitudCard(
-                solicitud: solicitud,
-                onTap: () => _viewSolicitudDetails(solicitud),
-                onApprove: isPending ? () => _approveSolicitud(solicitud) : null,
-                onReject: isPending ? () => _rejectSolicitud(solicitud) : null,
-                showActions: isPending,
-              );
-            },
-          ),
-          // Floating reload button
-          Positioned(
-            bottom: 16,
-            right: 16,
-            child: FloatingActionButton.extended(
-              onPressed: _loadSolicitudes,
-              backgroundColor: BioWayColors.ecoceGreen,
-              icon: Icon(Icons.refresh, color: Colors.white),
-              label: Text(
-                'Actualizar',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-        ],
       ),
+      // Removed bottom navigation since ECOCE user only needs the dashboard
     );
   }
 
-  Widget _buildRejectedList() {
+  Widget _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _buildEmptyState(
-            icon: Icons.delete_forever,
-            title: 'Solicitudes rechazadas se eliminan',
-            subtitle: 'Las solicitudes rechazadas son eliminadas permanentemente del sistema',
+          Icon(
+            _selectedIndex == 0 ? Icons.inbox : Icons.people_outline,
+            size: 80,
+            color: BioWayColors.lightGrey,
           ),
-          SizedBox(height: 24),
-          _buildReloadButton(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAdministrationView() {
-    // Vista de administración de usuarios aprobados
-    final approvedUsers = _approvedSolicitudes.where((solicitud) {
-      final datosPerfil = solicitud['datos_perfil'] as Map<String, dynamic>;
-      
-      // Aplicar filtros de búsqueda
-      if (_searchController.text.isNotEmpty) {
-        final searchLower = _searchController.text.toLowerCase();
-        final nombre = (datosPerfil['ecoce_nombre'] ?? '').toString().toLowerCase();
-        final folio = (solicitud['folio_asignado'] ?? '').toString().toLowerCase();
-        
-        if (!nombre.contains(searchLower) && !folio.contains(searchLower)) {
-          return false;
-        }
-      }
-      
-      return true;
-    }).toList();
-
-    if (approvedUsers.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildEmptyState(
-              icon: Icons.people_outline,
-              title: 'No hay usuarios en el sistema',
-              subtitle: 'Los usuarios aprobados aparecerán aquí',
+          const SizedBox(height: 16),
+          Text(
+            _selectedIndex == 0
+                ? 'No hay solicitudes pendientes'
+                : 'No se encontraron usuarios',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey,
             ),
-            SizedBox(height: 24),
-            _buildReloadButton(),
+          ),
+          if (_searchController.text.isNotEmpty ||
+              _filtrosTipoUsuario.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Intenta con otros filtros de búsqueda',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+            ),
           ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadSolicitudes,
-      child: Stack(
-        children: [
-          ListView.builder(
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 16,
-              bottom: 80, // Space for floating button
-            ),
-            itemCount: approvedUsers.length,
-            itemBuilder: (context, index) {
-              final usuario = approvedUsers[index];
-              
-              return MaestroSolicitudCard(
-                solicitud: usuario,
-                onTap: () => _viewSolicitudDetails(usuario),
-                onDelete: () => _deleteUser(usuario),
-                showActions: false,
-                showAdminInfo: true,
-              );
+          const SizedBox(height: 24),
+          OutlinedButton.icon(
+            onPressed: () {
+              _searchController.clear();
+              _filtrosTipoUsuario.clear();
+              setState(() {});
             },
-          ),
-          // Floating reload button
-          Positioned(
-            bottom: 16,
-            right: 16,
-            child: FloatingActionButton.extended(
-              onPressed: _loadSolicitudes,
-              backgroundColor: BioWayColors.ecoceGreen,
-              icon: Icon(Icons.refresh, color: Colors.white),
-              label: Text(
-                'Actualizar',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
+            icon: const Icon(Icons.clear),
+            label: const Text('Limpiar filtros'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: BioWayColors.ecoceGreen,
             ),
           ),
         ],
@@ -786,240 +738,4 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
     );
   }
 
-  Widget _buildEmptyState({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 80, color: BioWayColors.lightGrey),
-        SizedBox(height: 16),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: BioWayColors.darkGreen,
-          ),
-        ),
-        SizedBox(height: 8),
-        Text(
-          subtitle,
-          style: TextStyle(
-            fontSize: 14,
-            color: BioWayColors.textGrey,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-  
-  Widget _buildReloadButton() {
-    return OutlinedButton.icon(
-      onPressed: () async {
-        setState(() => _isLoading = true);
-        await _loadSolicitudes();
-      },
-      icon: Icon(Icons.refresh, size: 20),
-      label: Text('Recargar datos'),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: BioWayColors.ecoceGreen,
-        side: BorderSide(color: BioWayColors.ecoceGreen, width: 2),
-        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-    );
-  }
-}
-
-// Diálogo de confirmación de aprobación
-class _ApprovalConfirmationDialog extends StatelessWidget {
-  final String title;
-  final String message;
-  final bool isApproval;
-
-  const _ApprovalConfirmationDialog({
-    required this.title,
-    required this.message,
-    required this.isApproval,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      title: Text(title),
-      content: Text(message),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: Text('Cancelar'),
-        ),
-        ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: isApproval ? BioWayColors.success : BioWayColors.error,
-          ),
-          child: Text(isApproval ? 'Aprobar' : 'Rechazar'),
-        ),
-      ],
-    );
-  }
-}
-
-// Diálogo para ingresar razón de rechazo
-class _RejectionReasonDialog extends StatefulWidget {
-  final String profileName;
-
-  const _RejectionReasonDialog({required this.profileName});
-
-  @override
-  State<_RejectionReasonDialog> createState() => _RejectionReasonDialogState();
-}
-
-class _RejectionReasonDialogState extends State<_RejectionReasonDialog> {
-  final TextEditingController _reasonController = TextEditingController();
-  final List<String> _commonReasons = [
-    'Documentación incompleta',
-    'Documentación ilegible',
-    'Información incorrecta',
-    'No cumple con los requisitos',
-    'Documentos vencidos',
-  ];
-
-  @override
-  void dispose() {
-    _reasonController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Container(
-        padding: EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Rechazar cuenta',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: BioWayColors.darkGreen,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              widget.profileName,
-              style: TextStyle(
-                fontSize: 14,
-                color: BioWayColors.textGrey,
-              ),
-            ),
-            SizedBox(height: 16),
-            // Advertencia de eliminación
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: BioWayColors.error.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: BioWayColors.error.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.warning_amber_rounded,
-                    color: BioWayColors.error,
-                    size: 20,
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'La solicitud será eliminada permanentemente',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: BioWayColors.error,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 20),
-            Text(
-              'Razones comunes:',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: BioWayColors.darkGreen,
-              ),
-            ),
-            SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _commonReasons.map((reason) {
-                return ActionChip(
-                  label: Text(reason),
-                  onPressed: () {
-                    _reasonController.text = reason;
-                  },
-                  backgroundColor: BioWayColors.lightGrey,
-                );
-              }).toList(),
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: _reasonController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                labelText: 'Razón del rechazo',
-                hintText: 'Ingresa o selecciona una razón',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text('Cancelar'),
-                ),
-                SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: () {
-                    if (_reasonController.text.trim().isNotEmpty) {
-                      Navigator.of(context).pop(_reasonController.text.trim());
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: BioWayColors.error,
-                  ),
-                  child: Text('Rechazar'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

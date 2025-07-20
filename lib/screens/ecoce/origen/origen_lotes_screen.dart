@@ -4,9 +4,9 @@ import '../../../utils/colors.dart';
 import 'origen_inicio_screen.dart';
 import 'origen_lote_detalle_screen.dart';
 import 'origen_crear_lote_screen.dart';
-import 'origen_ayuda.dart';
-import 'origen_perfil.dart';
-import '../shared/widgets/lote_card.dart';
+import '../shared/ecoce_ayuda_screen.dart';
+import '../shared/ecoce_perfil_screen.dart';
+import '../shared/widgets/lote_card_unified.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import 'origen_config.dart';
 
@@ -179,7 +179,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
           context,
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
-                const OrigenAyudaScreen(),
+                const EcoceAyudaScreen(),
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
               return FadeTransition(
                 opacity: animation,
@@ -195,7 +195,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
           context,
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
-                const OrigenPerfilScreen(),
+                const EcocePerfilScreen(),
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
               return FadeTransition(
                 opacity: animation,

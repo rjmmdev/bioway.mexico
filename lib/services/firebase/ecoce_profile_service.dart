@@ -30,6 +30,32 @@ class EcoceProfileService {
   CollectionReference get _solicitudesCollection => 
       _firestore.collection('solicitudes_cuentas');
       
+  // Obtener la ruta de la colección como string
+  String? getProfileCollectionPath(String? tipoActor, String? subtipo) {
+    if (tipoActor == null) return null;
+    
+    switch (tipoActor) {
+      case 'O': // Origen (Acopiador o Planta de Separación)
+      case 'A': // A veces viene como A
+        if (subtipo == 'A') {
+          return 'ecoce_profiles/origen/centro_acopio';
+        } else if (subtipo == 'P') {
+          return 'ecoce_profiles/origen/planta_separacion';
+        }
+        return 'ecoce_profiles/origen/usuarios';
+      case 'R': // Reciclador
+        return 'ecoce_profiles/reciclador/usuarios';
+      case 'T': // Transformador
+        return 'ecoce_profiles/transformador/usuarios';
+      case 'V': // Transporte/Vehicular
+        return 'ecoce_profiles/transporte/usuarios';
+      case 'L': // Laboratorio
+        return 'ecoce_profiles/laboratorio/usuarios';
+      default:
+        return 'ecoce_profiles/otros/usuarios';
+    }
+  }
+  
   // Obtener la subcolección según el tipo de usuario
   CollectionReference _getProfileSubcollection(String tipoActor, String? subtipo) {
     // Mapear tipos de actor a sus colecciones
@@ -137,7 +163,7 @@ class EcoceProfileService {
           prefix = 'T';
           break;
         case 'V':
-          prefix = 'TR'; // Transportista
+          prefix = 'V'; // Transportista
           break;
         case 'L':
           prefix = 'L';
@@ -432,6 +458,57 @@ class EcoceProfileService {
     }
   }
   
+  // Verificar estado de solicitud por email antes de hacer login
+  Future<Map<String, dynamic>?> checkAccountRequestStatus(String email) async {
+    try {
+      // Buscar en solicitudes pendientes o aprobadas
+      final query = await _solicitudesCollection
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+          
+      if (query.docs.isNotEmpty) {
+        final data = query.docs.first.data() as Map<String, dynamic>;
+        data['solicitud_id'] = query.docs.first.id;
+        return data;
+      }
+      
+      return null;
+    } catch (e) {
+      // Log error
+      return null;
+    }
+  }
+  
+  // Actualizar perfil de usuario
+  Future<void> updateProfile(String userId, Map<String, dynamic> updates) async {
+    try {
+      // Agregar timestamp de actualización
+      updates['updatedAt'] = FieldValue.serverTimestamp();
+      
+      // Actualizar en la colección principal
+      await _profilesCollection.doc(userId).update(updates);
+      
+      // Si hay cambios en los campos principales, actualizar también en el índice
+      final profile = await getProfile(userId);
+      if (profile != null) {
+        final collectionPath = getProfileCollectionPath(
+          profile.ecoceTipoActor, 
+          profile.ecoceSubtipo
+        );
+        
+        if (collectionPath != null) {
+          await FirebaseFirestore.instance
+              .collection(collectionPath)
+              .doc(userId)
+              .update(updates);
+        }
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+  
   // Aprobar solicitud y crear usuario
   Future<void> approveSolicitud({
     required String solicitudId,
@@ -540,7 +617,7 @@ class EcoceProfileService {
             await ref.delete();
           } catch (e) {
             // Continuar si falla eliminar un archivo
-            print('Error al eliminar archivo $field: $e');
+            // Log: Error al eliminar archivo $field: $e
           }
         }
       }
@@ -556,11 +633,11 @@ class EcoceProfileService {
         }
       } catch (e) {
         // No es crítico si falla
-        print('Error al eliminar carpeta de solicitud: $e');
+        // Log: Error al eliminar carpeta de solicitud: $e
       }
     } catch (e) {
       // No lanzar error si falla la limpieza de archivos
-      print('Error general al limpiar archivos: $e');
+      // Log: Error general al limpiar archivos: $e
     }
   }
 
@@ -587,8 +664,8 @@ class EcoceProfileService {
     }
   }
 
-  // Actualizar perfil
-  Future<void> updateProfile(String userId, Map<String, dynamic> data) async {
+  // Actualizar perfil completo
+  Future<void> updateProfileData(String userId, Map<String, dynamic> data) async {
     try {
       data['updatedAt'] = Timestamp.fromDate(DateTime.now());
       
@@ -821,13 +898,13 @@ class EcoceProfileService {
             }
           } catch (e) {
             // Continuar si falla la eliminación de un archivo específico
-            print('Error al eliminar archivo $field: $e');
+            // Log: Error al eliminar archivo $field: $e
           }
         }
       }
     } catch (e) {
       // No lanzar excepción si falla la eliminación de archivos
-      print('Error al eliminar archivos de Storage: $e');
+      // Log: Error al eliminar archivos de Storage: $e
     }
   }
 
@@ -973,9 +1050,10 @@ class EcoceProfileService {
       List<EcoceProfileModel> allProfiles = [];
       
       for (final doc in query.docs) {
+        Map<String, dynamic>? data;
         try {
           // Intentar obtener como perfil directo (usuarios antiguos)
-          final data = doc.data() as Map<String, dynamic>;
+          data = doc.data() as Map<String, dynamic>;
           
           // Si tiene los campos de perfil directamente, es un usuario antiguo
           if (data.containsKey('ecoce_nombre') && data.containsKey('ecoce_folio')) {
@@ -993,23 +1071,21 @@ class EcoceProfileService {
           }
         } catch (e) {
           // Continuar con el siguiente documento si hay error
-          print('Error procesando documento ${doc.id}: $e');
+          // En producción, considerar usar un sistema de logging como Firebase Crashlytics
+          // Por ahora, solo continuamos con el siguiente documento
+          continue;
         }
       }
       
       // Ordenar por fecha de registro o nombre
       allProfiles.sort((a, b) {
-        // Primero intentar ordenar por fecha
-        if (a.ecoceFechaReg != null && b.ecoceFechaReg != null) {
-          return b.ecoceFechaReg!.compareTo(a.ecoceFechaReg!);
-        }
-        // Si no hay fecha, ordenar por nombre
-        return (a.ecoceNombre ?? '').compareTo(b.ecoceNombre ?? '');
+        // Ordenar por fecha de registro (descendente - más recientes primero)
+        return b.ecoceFechaReg.compareTo(a.ecoceFechaReg);
       });
       
       return allProfiles;
     } catch (e) {
-      print('Error al obtener todos los perfiles: $e');
+      // Log: Error al obtener todos los perfiles: $e
       return [];
     }
   }
@@ -1074,13 +1150,13 @@ class EcoceProfileService {
       // Si hay URLs válidas, actualizar el documento
       if (validUrls.isNotEmpty) {
         await _solicitudesCollection.doc(solicitudId).update(validUrls);
-        print('✓ Documentos actualizados en la solicitud');
+        // Documentos actualizados exitosamente en la solicitud
         return true;
       }
       
       return false;
     } catch (e) {
-      print('Error al subir documentos: $e');
+      // Log: Error al subir documentos: $e
       return false;
     }
   }
@@ -1096,7 +1172,48 @@ class EcoceProfileService {
       }
       return null;
     } catch (e) {
-      print('Error al obtener solicitud: $e');
+      // Log: Error al obtener solicitud: $e
+      return null;
+    }
+  }
+  
+  // Obtener perfil por folio
+  Future<EcoceProfileModel?> getProfileByFolio(String folio) async {
+    try {
+      // Buscar en el índice principal por folio
+      final query = await _profilesCollection
+          .where('folio', isEqualTo: folio)
+          .limit(1)
+          .get();
+      
+      if (query.docs.isEmpty) return null;
+      
+      final indexDoc = query.docs.first;
+      final indexData = indexDoc.data() as Map<String, dynamic>;
+      final profilePath = indexData['path'] as String?;
+      
+      if (profilePath != null) {
+        // Obtener el perfil completo de la subcolección
+        final profileDoc = await _firestore.doc(profilePath).get();
+        if (profileDoc.exists) {
+          return EcoceProfileModel.fromFirestore(profileDoc);
+        }
+      }
+      
+      return null;
+    } catch (e) {
+      // Log: Error al obtener perfil por folio: $e
+      return null;
+    }
+  }
+  
+  // Obtener correo electrónico por folio (útil para login)
+  Future<String?> getEmailByFolio(String folio) async {
+    try {
+      final profile = await getProfileByFolio(folio);
+      return profile?.ecoceCorreoContacto;
+    } catch (e) {
+      // Log: Error al obtener correo por folio: $e
       return null;
     }
   }

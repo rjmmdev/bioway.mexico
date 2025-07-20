@@ -7,8 +7,9 @@ import 'origen_config.dart';
 import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
 import '../shared/widgets/weight_input_widget.dart';
-import '../shared/widgets/section_card.dart';
-import '../shared/widgets/field_label.dart';
+import '../shared/widgets/unified_container.dart';
+import '../shared/widgets/form_widgets.dart';
+import '../shared/utils/input_decorations.dart';
 import 'origen_lote_detalle_screen.dart';
 
 class OrigenCrearLoteScreen extends StatefulWidget {
@@ -292,8 +293,9 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
                           value: _fuenteMaterialSeleccionada,
-                          decoration: _buildInputDecoration(
+                          decoration: SharedInputDecorations.ecoceStyle(
                             hintText: 'Selecciona la fuente del material',
+                            primaryColor: _primaryColor,
                           ),
                           isExpanded: true,
                           isDense: true,
@@ -416,8 +418,9 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                           const SizedBox(height: 16),
                           TextFormField(
                             controller: _otraPresentacionController,
-                            decoration: _buildInputDecoration(
+                            decoration: SharedInputDecorations.ecoceStyle(
                               hintText: 'Especifica la presentación',
+                              primaryColor: _primaryColor,
                             ),
                             textCapitalization: TextCapitalization.sentences,
                             onChanged: (value) {
@@ -435,8 +438,9 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
                           value: _tipoPolimeroSeleccionado,
-                          decoration: _buildInputDecoration(
+                          decoration: SharedInputDecorations.ecoceStyle(
                             hintText: 'Selecciona el tipo de polímero',
+                            primaryColor: _primaryColor,
                           ),
                           items: _tiposPolimeros.map((String tipo) {
                             return DropdownMenuItem<String>(
@@ -477,8 +481,9 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                           enableInteractiveSelection: true,
                           autocorrect: false,
                           enableSuggestions: false,
-                          decoration: _buildInputDecoration(
+                          decoration: SharedInputDecorations.ecoceStyle(
                             hintText: 'Describe el estado del material: limpieza, compactación, contaminación, etc.',
+                            primaryColor: _primaryColor,
                           ),
                         ),
                       ],
@@ -502,8 +507,9 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                           textInputAction: TextInputAction.next,
                           autocorrect: false,
                           enableSuggestions: false,
-                          decoration: _buildInputDecoration(
+                          decoration: SharedInputDecorations.ecoceStyle(
                             hintText: 'Ingresa el nombre completo',
+                            primaryColor: _primaryColor,
                           ),
                           // Sin validación para diseño visual
                         ),
@@ -544,8 +550,9 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                           textInputAction: TextInputAction.done,
                           autocorrect: false,
                           enableSuggestions: false,
-                          decoration: _buildInputDecoration(
+                          decoration: SharedInputDecorations.ecoceStyle(
                             hintText: 'Ingresa comentarios adicionales (opcional)',
+                            primaryColor: _primaryColor,
                           ),
                         ),
                       ],
@@ -590,72 +597,6 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
 
 
 
-  // Caché para las decoraciones de input
-  final Map<String, InputDecoration> _inputDecorationCache = {};
-
-  InputDecoration _buildInputDecoration({required String hintText}) {
-    // Revisar si ya existe en caché
-    if (_inputDecorationCache.containsKey(hintText)) {
-      return _inputDecorationCache[hintText]!;
-    }
-    
-    final screenWidth = MediaQuery.of(context).size.width;
-    final borderRadius = BorderRadius.circular(12);
-    
-    final decoration = InputDecoration(
-      hintText: hintText,
-      hintStyle: const TextStyle(
-        fontSize: 14,
-        color: Colors.grey,
-      ),
-      filled: true,
-      fillColor: BioWayColors.backgroundGrey,
-      border: OutlineInputBorder(
-        borderRadius: borderRadius,
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: borderRadius,
-        borderSide: BorderSide(
-          color: _primaryColor.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: borderRadius,
-        borderSide: BorderSide(
-          color: _primaryColor,
-          width: 2,
-        ),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: borderRadius,
-        borderSide: const BorderSide(
-          color: Colors.red,
-          width: 1,
-        ),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: borderRadius,
-        borderSide: const BorderSide(
-          color: Colors.red,
-          width: 2,
-        ),
-      ),
-      counterText: '',
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 16,
-      ),
-      hintMaxLines: 1,
-      errorMaxLines: 1,
-      isDense: true,
-    );
-    
-    // Guardar en caché
-    _inputDecorationCache[hintText] = decoration;
-    return decoration;
-  }
 
   Widget _buildSignatureArea() {
     final screenWidth = MediaQuery.of(context).size.width;

@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/format_utils.dart';
 import 'origen_config.dart';
 import 'origen_inicio_screen.dart';
-import '../shared/widgets/lote_card.dart';
+import '../shared/widgets/lote_card_unified.dart';
 import '../shared/widgets/qr_code_display_widget.dart';
 import '../shared/utils/material_utils.dart';
 
@@ -77,8 +78,7 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
   }
 
   String get _fechaFormateada {
-    final fecha = widget.fechaCreacion ?? DateTime.now();
-    return '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}/${fecha.year}';
+    return FormatUtils.formatDate(widget.fechaCreacion ?? DateTime.now());
   }
 
   Future<void> _descargarCodigoQR() async {

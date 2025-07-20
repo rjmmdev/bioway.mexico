@@ -6,23 +6,33 @@ import 'utils/colors.dart';
 // Screens - Origen
 import 'screens/ecoce/origen/origen_inicio_screen.dart';
 import 'screens/ecoce/origen/origen_lotes_screen.dart';
-import 'screens/ecoce/origen/origen_ayuda.dart';
 import 'screens/ecoce/origen/origen_crear_lote_screen.dart';
-import 'screens/ecoce/origen/origen_perfil.dart';
 
 // Screens - Reciclador
-import 'screens/ecoce/reciclador/reciclador_inicio.dart';
-import 'screens/ecoce/reciclador/reciclador_administracion_lotes.dart';
-import 'screens/ecoce/reciclador/reciclador_ayuda.dart';
-import 'screens/ecoce/reciclador/reciclador_escaneo.dart';
-import 'screens/ecoce/reciclador/reciclador_perfil.dart';
+import 'screens/ecoce/reciclador/reciclador_home_screen.dart';
+import 'screens/ecoce/reciclador/reciclador_lot_management_screen.dart';
+import 'screens/ecoce/reciclador/reciclador_documentacion.dart';
 
 // Screens - Transporte
-import 'screens/ecoce/transporte/transporte_escaneo.dart';
-import 'screens/ecoce/transporte/transporte_recoger_screen.dart';
-import 'screens/ecoce/transporte/transporte_entregar_screen.dart';
-import 'screens/ecoce/transporte/transporte_ayuda_screen.dart';
-import 'screens/ecoce/transporte/transporte_perfil_screen.dart';
+import 'screens/ecoce/transporte/transporte_home_screen.dart';
+import 'screens/ecoce/transporte/transporte_lot_management_screen.dart';
+import 'screens/ecoce/transporte/transporte_delivery_screen.dart';
+
+// Screens - Shared
+import 'screens/ecoce/shared/ecoce_perfil_screen.dart';
+import 'screens/ecoce/shared/ecoce_ayuda_screen.dart';
+
+// Screens - Transformador
+import 'screens/ecoce/transformador/transformador_home_screen.dart';
+import 'screens/ecoce/transformador/transformador_produccion_screen.dart';
+import 'screens/ecoce/transformador/transformador_lote_form_screen.dart';
+import 'screens/ecoce/transformador/transformador_documentos_screen.dart';
+
+// Screens - Laboratorio
+import 'screens/ecoce/laboratorio/laboratorio_inicio.dart';
+
+// Screens - Maestro
+import 'screens/ecoce/maestro/maestro_unified_screen.dart';
 
 void main() async {
   // Asegurar que los widgets estén inicializados
@@ -204,23 +214,52 @@ class BioWayApp extends StatelessWidget {
         // Rutas de Origen (Acopiador)
         '/origen_inicio': (context) => const OrigenInicioScreen(),
         '/origen_lotes': (context) => const OrigenLotesScreen(),
-        '/origen_ayuda': (context) => const OrigenAyudaScreen(),
+        '/origen_ayuda': (context) => const EcoceAyudaScreen(),
         '/origen_crear_lote': (context) => const OrigenCrearLoteScreen(),
-        '/origen_perfil': (context) => const OrigenPerfilScreen(),
+        '/origen_perfil': (context) => const EcocePerfilScreen(),
         
         // Rutas de Reciclador
         '/reciclador_inicio': (context) => const RecicladorHomeScreen(),
-        '/reciclador_lotes': (context) => const RecicladorAdministracionLotes(),
-        '/reciclador_ayuda': (context) => const RecicladorAyudaScreen(),
-        '/reciclador_escaneo': (context) => const QRScannerScreen(),
-        '/reciclador_perfil': (context) => const RecicladorPerfilScreen(),
+        '/reciclador_lotes': (context) => const RecicladorLotManagementScreen(),
+        '/reciclador_ayuda': (context) => const EcoceAyudaScreen(),
+        '/reciclador_perfil': (context) => const EcocePerfilScreen(),
+        '/reciclador_documentacion': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          return RecicladorDocumentacion(loteData: args ?? {});
+        },
         
         // Rutas de Transporte
-        '/transporte_inicio': (context) => const TransporteEscaneoScreen(),
-        '/transporte_recoger': (context) => const TransporteRecogerScreen(lotesSeleccionados: []),
-        '/transporte_entregar': (context) => const TransporteEntregarScreen(),
-        '/transporte_ayuda': (context) => const TransporteAyudaScreen(),
-        '/transporte_perfil': (context) => const TransportePerfilScreen(),
+        '/transporte_inicio': (context) => const TransporteHomeScreen(),
+        '/transporte_recoger': (context) => const TransporteLotManagementScreen(),
+        '/transporte_entregar': (context) => const TransporteDeliveryScreen(),
+        '/transporte_ayuda': (context) => const EcoceAyudaScreen(),
+        '/transporte_perfil': (context) => const EcocePerfilScreen(),
+        
+        // Rutas de Transformador
+        '/transformador_inicio': (context) => const TransformadorHomeScreen(),
+        '/transformador_produccion': (context) => const TransformadorProduccionScreen(),
+        '/transformador_ayuda': (context) => const EcoceAyudaScreen(),
+        '/transformador_perfil': (context) => const EcocePerfilScreen(),
+        '/transformador_recibir_lote': (context) => const TransformadorLoteFormScreen(),
+        '/transformador_documentacion': (context) => const TransformadorDocumentosScreen(),
+        
+        // Rutas de Planta de Separación
+        '/planta_separacion_perfil': (context) => const EcocePerfilScreen(),
+        '/planta_separacion_ayuda': (context) => const EcoceAyudaScreen(),
+        
+        // Rutas de Laboratorio
+        '/laboratorio_inicio': (context) {
+          // Importar la pantalla dinámicamente para evitar problemas de importación circular
+          return const LaboratorioInicioScreen();
+        },
+        '/laboratorio_perfil': (context) => const EcocePerfilScreen(),
+        '/laboratorio_ayuda': (context) => const EcoceAyudaScreen(),
+        
+        // Rutas de Maestro - Solo dashboard para gestión de usuarios
+        '/maestro_dashboard': (context) {
+          // Importar la pantalla dinámicamente para evitar problemas de importación circular
+          return const MaestroUnifiedScreen();
+        },
       },
     );
   }

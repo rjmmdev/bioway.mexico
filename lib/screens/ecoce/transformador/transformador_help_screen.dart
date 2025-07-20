@@ -2,19 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
-import 'laboratorio_inicio.dart';
-import 'laboratorio_gestion_muestras.dart';
-import 'laboratorio_perfil.dart';
-import 'laboratorio_escaneo.dart';
 
-class LaboratorioAyudaScreen extends StatefulWidget {
-  const LaboratorioAyudaScreen({super.key});
+class TransformadorAyudaScreen extends StatefulWidget {
+  const TransformadorAyudaScreen({super.key});
 
   @override
-  State<LaboratorioAyudaScreen> createState() => _LaboratorioAyudaScreenState();
+  State<TransformadorAyudaScreen> createState() => _TransformadorAyudaScreenState();
 }
 
-class _LaboratorioAyudaScreenState extends State<LaboratorioAyudaScreen> with SingleTickerProviderStateMixin {
+class _TransformadorAyudaScreenState extends State<TransformadorAyudaScreen> with SingleTickerProviderStateMixin {
   // Índice para la navegación del bottom bar
   final int _selectedIndex = 2; // Ayuda está seleccionado
   
@@ -22,57 +18,57 @@ class _LaboratorioAyudaScreenState extends State<LaboratorioAyudaScreen> with Si
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   
-  // Videos tutoriales específicos para laboratorio
+  // Videos tutoriales específicos para transformador
   final List<Map<String, dynamic>> _videosTutoriales = [
     {
-      'titulo': 'Análisis de muestras',
-      'descripcion': 'Proceso completo de laboratorio',
-      'duracion': '5:45',
-      'vistas': '1.8k',
+      'titulo': 'Recepción de lotes',
+      'descripcion': 'Cómo escanear y recibir material',
+      'duracion': '5:20',
+      'vistas': '2.5k',
       'nuevo': true,
     },
     {
-      'titulo': 'Registro de resultados',
-      'descripcion': 'Documenta análisis correctamente',
-      'duracion': '4:20',
-      'vistas': '1.5k',
+      'titulo': 'Proceso de transformación',
+      'descripcion': 'Convierte material en productos',
+      'duracion': '8:45',
+      'vistas': '3.1k',
       'nuevo': false,
     },
     {
-      'titulo': 'Técnicas de muestreo',
-      'descripcion': 'Mejores prácticas en laboratorio',
-      'duracion': '6:15',
-      'vistas': '1.2k',
+      'titulo': 'Control de calidad',
+      'descripcion': 'Verifica composición y análisis',
+      'duracion': '6:30',
+      'vistas': '1.8k',
       'nuevo': false,
     },
     {
-      'titulo': 'Generación de reportes',
-      'descripcion': 'Exporta resultados en PDF',
-      'duracion': '3:30',
-      'vistas': '980',
+      'titulo': 'Generación de códigos QR',
+      'descripcion': 'Crea QR para productos terminados',
+      'duracion': '4:15',
+      'vistas': '2.2k',
       'nuevo': true,
     },
   ];
   
-  // FAQs populares para laboratorio
+  // FAQs populares para transformador
   final List<Map<String, dynamic>> _faqsPopulares = [
     {
-      'pregunta': '¿Cómo registro múltiples análisis de una muestra?',
-      'respuesta': 'Puedes agregar varios análisis para la misma muestra desde la pantalla de gestión. Cada análisis tendrá su propio formulario y documentación.',
-      'votos': 156,
+      'pregunta': '¿Cómo registro la composición del material transformado?',
+      'respuesta': 'Al recibir un lote, ingresa la composición exacta incluyendo porcentajes de material reciclado, virgen y aditivos. Esta información es clave para la trazabilidad.',
+      'votos': 312,
+      'categoria': 'Composición',
+    },
+    {
+      'pregunta': '¿Qué tipos de análisis debo registrar?',
+      'respuesta': 'Los análisis dependen del producto: Inyección, Extrusión, Soplado, Termoformado, etc. Selecciona todos los procesos aplicables al material.',
+      'votos': 256,
       'categoria': 'Análisis',
     },
     {
-      'pregunta': '¿Qué parámetros son obligatorios en el formulario?',
-      'respuesta': 'Los campos obligatorios están marcados con asterisco (*). Incluyen: humedad, pellets por gramo, tipo de polímero, temperatura de fusión, y contenidos orgánico/inorgánico.',
-      'votos': 134,
-      'categoria': 'Formularios',
-    },
-    {
-      'pregunta': '¿Cómo interpreto los resultados del análisis?',
-      'respuesta': 'En la sección de observaciones debes incluir tu interpretación técnica basada en los valores obtenidos y las normas de referencia aplicables.',
-      'votos': 98,
-      'categoria': 'Resultados',
+      'pregunta': '¿Cómo documento el producto fabricado?',
+      'respuesta': 'Especifica el tipo exacto de producto (ej: Botellas PET, Láminas LDPE, Tuberías HDPE) y registra su composición completa para mantener la trazabilidad.',
+      'votos': 198,
+      'categoria': 'Productos',
     },
   ];
   
@@ -103,7 +99,7 @@ class _LaboratorioAyudaScreenState extends State<LaboratorioAyudaScreen> with Si
     HapticFeedback.lightImpact();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Descargando Manual del Laboratorio...'),
+        content: const Text('Descargando Manual del Transformador...'),
         backgroundColor: BioWayColors.info,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
@@ -203,12 +199,11 @@ class _LaboratorioAyudaScreenState extends State<LaboratorioAyudaScreen> with Si
                           faq['categoria'],
                           style: TextStyle(
                             fontSize: 12,
-                            fontWeight: FontWeight.w600,
                             color: BioWayColors.ecoceGreen,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
-                      
                       const SizedBox(height: 16),
                       
                       // Pregunta
@@ -218,10 +213,8 @@ class _LaboratorioAyudaScreenState extends State<LaboratorioAyudaScreen> with Si
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Colors.black87,
-                          height: 1.3,
                         ),
                       ),
-                      
                       const SizedBox(height: 16),
                       
                       // Respuesta
@@ -233,51 +226,44 @@ class _LaboratorioAyudaScreenState extends State<LaboratorioAyudaScreen> with Si
                           height: 1.5,
                         ),
                       ),
-                      
                       const SizedBox(height: 24),
                       
-                      // Votos y acciones
+                      // Votos
                       Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.thumb_up_outlined,
-                                  size: 16,
-                                  color: Colors.grey,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  '${faq['votos']} útil',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ),
+                          Icon(
+                            Icons.thumb_up_outlined,
+                            size: 20,
+                            color: Colors.grey[600],
                           ),
-                          const Spacer(),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              _contactarSoporte();
-                            },
-                            child: Text(
-                              'Necesito más ayuda',
-                              style: TextStyle(
-                                color: BioWayColors.ecoceGreen,
-                                fontWeight: FontWeight.w600,
-                              ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${faq['votos']} personas encontraron esto útil',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Botón de contacto
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _contactarSoporte,
+                          icon: const Icon(Icons.chat),
+                          label: const Text('¿Necesitas más ayuda?'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: BioWayColors.ecoceGreen,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -294,30 +280,9 @@ class _LaboratorioAyudaScreenState extends State<LaboratorioAyudaScreen> with Si
     _abrirWhatsApp();
   }
   
-  void _navigateToNewSample() {
+  void _navigateToNewLot() {
     HapticFeedback.lightImpact();
-    Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const LaboratorioEscaneoScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(0.0, 1.0);
-          const end = Offset.zero;
-          const curve = Curves.easeOutCubic;
-
-          var tween = Tween(begin: begin, end: end).chain(
-            CurveTween(curve: curve),
-          );
-
-          return SlideTransition(
-            position: animation.drive(tween),
-            child: child,
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 400),
-      ),
-    );
+    Navigator.pushNamed(context, '/transformador_recibir_lote');
   }
   
   void _onBottomNavTapped(int index) {
@@ -327,64 +292,36 @@ class _LaboratorioAyudaScreenState extends State<LaboratorioAyudaScreen> with Si
     
     switch (index) {
       case 0:
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const LaboratorioInicioScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
-        );
+        Navigator.pushReplacementNamed(context, '/transformador_inicio');
         break;
       case 1:
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const LaboratorioGestionMuestras(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
-        );
+        Navigator.pushReplacementNamed(context, '/transformador_produccion');
         break;
       case 2:
         // Ya estamos en ayuda
         break;
       case 3:
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const LaboratorioPerfilScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
-        );
+        Navigator.pushReplacementNamed(context, '/transformador_perfil');
         break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: SafeArea(
+    return GestureDetector(
+      onHorizontalDragEnd: (details) {
+        // Detectar swipe hacia la derecha (volver a producción)
+        if (details.primaryVelocity! > 100) {
+          Navigator.pushReplacementNamed(context, '/transformador_produccion');
+        }
+        // Detectar swipe hacia la izquierda (ir a perfil)
+        else if (details.primaryVelocity! < -100) {
+          Navigator.pushReplacementNamed(context, '/transformador_perfil');
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA),
+        body: SafeArea(
         bottom: false,
         child: CustomScrollView(
           slivers: [
@@ -442,7 +379,7 @@ class _LaboratorioAyudaScreenState extends State<LaboratorioAyudaScreen> with Si
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        'Guías para análisis de laboratorio',
+                                        'Todo para tu planta transformadora',
                                         style: TextStyle(
                                           fontSize: 16,
                                           color: Colors.white.withValues(alpha: 0.9),
@@ -525,7 +462,7 @@ class _LaboratorioAyudaScreenState extends State<LaboratorioAyudaScreen> with Si
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Aprende técnicas de análisis paso a paso',
+                            'Aprende los procesos de transformación paso a paso',
                             style: TextStyle(
                               fontSize: 15,
                               color: Colors.grey[600],
@@ -571,7 +508,7 @@ class _LaboratorioAyudaScreenState extends State<LaboratorioAyudaScreen> with Si
                                 child: _buildQuickAccessCard(
                                   icon: Icons.picture_as_pdf,
                                   title: 'Manual PDF',
-                                  subtitle: 'Guía del laboratorista',
+                                  subtitle: 'Guía del transformador',
                                   color: Colors.deepOrange,
                                   onTap: _descargarManual,
                                 ),
@@ -659,45 +596,22 @@ class _LaboratorioAyudaScreenState extends State<LaboratorioAyudaScreen> with Si
       bottomNavigationBar: EcoceBottomNavigation(
         selectedIndex: _selectedIndex,
         onItemTapped: _onBottomNavTapped,
-        primaryColor: const Color(0xFF9333EA), // Purple color for laboratorio
-        items: const [
-          NavigationItem(
-            icon: Icons.home,
-            label: 'Inicio',
-            testKey: 'laboratorio_nav_inicio',
-          ),
-          NavigationItem(
-            icon: Icons.science,
-            label: 'Muestras',
-            testKey: 'laboratorio_nav_muestras',
-          ),
-          NavigationItem(
-            icon: Icons.help_outline,
-            label: 'Ayuda',
-            testKey: 'laboratorio_nav_ayuda',
-          ),
-          NavigationItem(
-            icon: Icons.person,
-            label: 'Perfil',
-            testKey: 'laboratorio_nav_perfil',
-          ),
-        ],
+        primaryColor: BioWayColors.ecoceGreen,
+        items: EcoceNavigationConfigs.transformadorItems,
         fabConfig: FabConfig(
           icon: Icons.add,
-          onPressed: _navigateToNewSample,
-          tooltip: 'Nueva muestra',
+          onPressed: _navigateToNewLot,
         ),
       ),
 
       // Floating Action Button
       floatingActionButton: EcoceFloatingActionButton(
-        onPressed: _navigateToNewSample,
+        onPressed: _navigateToNewLot,
         icon: Icons.add,
-        backgroundColor: const Color(0xFF9333EA), // Purple color for laboratorio
-        tooltip: 'Nueva muestra',
-        heroTag: 'laboratorio_fab',
+        backgroundColor: BioWayColors.ecoceGreen,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      ),
     );
   }
   
@@ -897,7 +811,7 @@ class _LaboratorioAyudaScreenState extends State<LaboratorioAyudaScreen> with Si
                     Row(
                       children: [
                         Icon(
-                          Icons.visibility_outlined,
+                          Icons.remove_red_eye_outlined,
                           size: 14,
                           color: Colors.grey[500],
                         ),
@@ -914,6 +828,7 @@ class _LaboratorioAyudaScreenState extends State<LaboratorioAyudaScreen> with Si
                   ],
                 ),
               ),
+              // Flecha
               Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
@@ -936,33 +851,29 @@ class _LaboratorioAyudaScreenState extends State<LaboratorioAyudaScreen> with Si
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: Colors.grey.shade100,
+                color: Colors.grey.shade200,
                 width: 1,
               ),
             ),
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Icono de categoría
               Container(
-                width: 36,
-                height: 36,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Center(
-                  child: Text(
-                    'Q',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: BioWayColors.ecoceGreen,
-                    ),
-                  ),
+                child: Icon(
+                  _getIconForCategory(faq['categoria']),
+                  color: BioWayColors.ecoceGreen,
+                  size: 22,
                 ),
               ),
               const SizedBox(width: 16),
+              // Contenido
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -973,50 +884,48 @@ class _LaboratorioAyudaScreenState extends State<LaboratorioAyudaScreen> with Si
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
-                        height: 1.3,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
+                            color: Colors.grey[100],
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             faq['categoria'],
                             style: TextStyle(
                               fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: BioWayColors.ecoceGreen,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.thumb_up_outlined,
-                              size: 14,
-                              color: Colors.grey[500],
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${faq['votos']}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[500],
-                              ),
-                            ),
-                          ],
+                        Icon(
+                          Icons.thumb_up_outlined,
+                          size: 14,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${faq['votos']}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[400],
+                          ),
                         ),
                       ],
                     ),
                   ],
                 ),
               ),
+              // Flecha
               Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
@@ -1028,9 +937,24 @@ class _LaboratorioAyudaScreenState extends State<LaboratorioAyudaScreen> with Si
       ),
     );
   }
+  
+  IconData _getIconForCategory(String categoria) {
+    switch (categoria) {
+      case 'Composición':
+        return Icons.science_outlined;
+      case 'Análisis':
+        return Icons.analytics_outlined;
+      case 'Productos':
+        return Icons.inventory_2_outlined;
+      case 'Procesos':
+        return Icons.settings_outlined;
+      default:
+        return Icons.help_outline;
+    }
+  }
 }
 
-// Painter para la curva decorativa
+// Custom painter para la curva decorativa
 class _CurvePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -1040,9 +964,9 @@ class _CurvePainter extends CustomPainter {
 
     final path = Path()
       ..moveTo(0, 0)
-      ..quadraticBezierTo(size.width / 2, 30, size.width, 0)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
+      ..lineTo(0, size.height - 30)
+      ..quadraticBezierTo(size.width / 2, size.height, size.width, size.height - 30)
+      ..lineTo(size.width, 0)
       ..close();
 
     canvas.drawPath(path, paint);

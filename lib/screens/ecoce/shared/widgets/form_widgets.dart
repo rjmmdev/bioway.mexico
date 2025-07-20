@@ -4,6 +4,7 @@ import '../../../../utils/colors.dart';
 import '../utils/input_decorations.dart';
 import '../utils/input_formatters.dart';
 import '../utils/validation_utils.dart';
+import 'unified_container.dart';
 
 /// Widget de campo de texto estándar reutilizable
 class StandardTextField extends StatelessWidget {
@@ -257,46 +258,7 @@ class PasswordField extends StatelessWidget {
   }
 }
 
-/// Contenedor con gradiente estándar
-class GradientContainer extends StatelessWidget {
-  final Widget child;
-  final EdgeInsetsGeometry? padding;
-  final Color? primaryColor;
-  final double? borderRadius;
-
-  const GradientContainer({
-    super.key,
-    required this.child,
-    this.padding,
-    this.primaryColor,
-    this.borderRadius,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = primaryColor ?? BioWayColors.petBlue;
-    final radius = borderRadius ?? 16;
-
-    return Container(
-      padding: padding ?? const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            color.withValues(alpha: 0.05),
-            color.withValues(alpha: 0.02),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(radius),
-        border: Border.all(
-          color: color.withValues(alpha: 0.2),
-        ),
-      ),
-      child: child,
-    );
-  }
-}
+// GradientContainer moved to unified_container.dart
 
 /// Título de sección estándar
 class SectionTitle extends StatelessWidget {
@@ -498,6 +460,51 @@ class _UpperCaseTextFormatter extends TextInputFormatter {
     return TextEditingValue(
       text: newValue.text.toUpperCase(),
       selection: newValue.selection,
+    );
+  }
+}
+
+/// Widget de etiqueta de campo con indicador de requerido
+/// Migrado desde field_label.dart para consolidación
+class FieldLabel extends StatelessWidget {
+  final String text;
+  final bool isRequired;
+  final Color? color;
+  final double? fontSize;
+
+  const FieldLabel({
+    super.key,
+    required this.text,
+    this.isRequired = false,
+    this.color,
+    this.fontSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: fontSize ?? 14,
+            fontWeight: FontWeight.w600,
+            color: color ?? BioWayColors.textGrey,
+          ),
+        ),
+        if (isRequired) ...[
+          const SizedBox(width: 4),
+          Text(
+            '*',
+            style: TextStyle(
+              fontSize: fontSize ?? 14,
+              fontWeight: FontWeight.w600,
+              color: BioWayColors.error,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

@@ -5,17 +5,16 @@ import '../../../utils/colors.dart';
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
+import '../../ecoce/shared/utils/dialog_utils.dart';
 import 'ecoce_tipo_proveedor_selector.dart';
-import '../../ecoce/reciclador/reciclador_inicio.dart';
-import '../../ecoce/reciclador/reciclador_perfil.dart';
+import '../../ecoce/reciclador/reciclador_home_screen.dart';
 import '../../ecoce/origen/origen_config.dart';
 // TEMPORAL: Importar pantallas de inicio
 import '../../ecoce/origen/origen_inicio_screen.dart';
-import '../../ecoce/origen/origen_perfil.dart';
-import '../../ecoce/transporte/transporte_escaneo.dart';
-import '../../ecoce/transporte/transporte_perfil_screen.dart';
+import '../../ecoce/transporte/transporte_home_screen.dart';
 import '../../ecoce/maestro/maestro_unified_screen.dart';
 import '../../ecoce/repositorio/repositorio_lotes_screen.dart';
+import '../../ecoce/shared/pending_approval_screen.dart';
 
 class ECOCELoginScreen extends StatefulWidget {
   const ECOCELoginScreen({super.key});
@@ -184,15 +183,109 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
 
       try {
         // Intentar autenticación con Firebase
-        final userEmail = _userController.text.trim();
+        final userInput = _userController.text.trim();
         final userPassword = _passwordController.text;
         
-        // Usar un email temporal para pruebas si el usuario no es un email
-        String email = userEmail;
-        if (!userEmail.contains('@')) {
-          email = '$userEmail@ecoce.mx';
+        // Determinar si es un email o un folio
+        String email = userInput;
+        
+        // Verificar si es un folio (formato: letra seguida de números, ej: A0000001)
+        final folioPattern = RegExp(r'^[A-Z]\d{7}$');
+        if (folioPattern.hasMatch(userInput.toUpperCase())) {
+          // Es un folio, buscar el email asociado
+          final emailFromFolio = await _profileService.getEmailByFolio(userInput.toUpperCase());
+          if (emailFromFolio == null) {
+            setState(() {
+              _isLoading = false;
+            });
+            _showErrorDialog(
+              'Folio no encontrado',
+              'No se encontró una cuenta asociada con el folio $userInput',
+            );
+            return;
+          }
+          email = emailFromFolio;
+        } else if (!userInput.contains('@')) {
+          // No es un email ni un folio válido
+          setState(() {
+            _isLoading = false;
+          });
+          _showErrorDialog(
+            'Formato inválido',
+            'Por favor ingresa un correo electrónico válido o un folio (ej: A0000001)',
+          );
+          return;
         }
 
+        // PRIMERO: Verificar estado de la solicitud
+        final solicitud = await _profileService.checkAccountRequestStatus(email);
+        
+        if (solicitud == null) {
+          // No existe solicitud - cuenta no registrada o rechazada
+          setState(() {
+            _isLoading = false;
+          });
+          
+          _showErrorDialog(
+            'Cuenta no encontrada',
+            'No existe una cuenta registrada con este correo electrónico. Si tu solicitud fue rechazada, deberás registrarte nuevamente.',
+          );
+          return;
+        }
+        
+        // Verificar estado de la solicitud
+        final estado = solicitud['estado'];
+        
+        if (estado == 'rechazada') {
+          setState(() {
+            _isLoading = false;
+          });
+          
+          final razon = solicitud['comentarios_revision'] ?? 'Tu solicitud fue rechazada.';
+          _showRejectedDialog(razon);
+          return;
+        }
+        
+        if (estado == 'pendiente') {
+          // Intentar login para verificar credenciales
+          try {
+            await _authService.signInWithEmailAndPassword(
+              email: email,
+              password: userPassword,
+            );
+            await _authService.signOut(); // Cerrar sesión inmediatamente
+            
+            setState(() {
+              _isLoading = false;
+            });
+            
+            // Navegar a pantalla de pendiente
+            final datosPerfil = solicitud['datos_perfil'] as Map<String, dynamic>;
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PendingApprovalScreen(
+                  userName: datosPerfil['ecoce_nombre'] ?? 'Usuario',
+                  userEmail: email,
+                ),
+              ),
+            );
+            return;
+          } catch (e) {
+            setState(() {
+              _isLoading = false;
+            });
+            
+            // Credenciales incorrectas
+            _showErrorDialog(
+              'Credenciales incorrectas',
+              'El usuario o contraseña son incorrectos.',
+            );
+            return;
+          }
+        }
+        
+        // Si llegamos aquí, la cuenta está aprobada
         try {
           // Intentar login con Firebase
           final userCredential = await _authService.signInWithEmailAndPassword(
@@ -219,17 +312,6 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
               return;
             }
 
-            // Verificar estado de aprobación
-            if (profile.isPending) {
-              _showPendingApprovalDialog();
-              await _authService.signOut();
-              return;
-            } else if (profile.isRejected) {
-              _showRejectedDialog(profile.ecoceComentariosRevision ?? 'Tu solicitud ha sido rechazada.');
-              await _authService.signOut();
-              return;
-            }
-
             // Usuario aprobado - mostrar mensaje de éxito
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -251,41 +333,18 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
             );
 
             // Navegar según el tipo de usuario
-            _navigateToUserScreen(profile.ecoceTipoActor);
+            _navigateToUserScreen(profile.ecoceTipoActor, profile);
           }
         } catch (firebaseError) {
-          // Si Firebase falla, usar login temporal para desarrollo
+          setState(() {
+            _isLoading = false;
+          });
           
-          // Simular proceso de login (código mock)
-          await Future.delayed(const Duration(seconds: 1));
-
-          if (mounted) {
-            setState(() {
-              _isLoading = false;
-            });
-
-            // Login temporal exitoso
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Row(
-                  children: [
-                    Icon(Icons.warning, color: Colors.white),
-                    SizedBox(width: 12),
-                    Text('Login temporal (sin Firebase)'),
-                  ],
-                ),
-                backgroundColor: BioWayColors.warning,
-                behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.all(20),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                duration: const Duration(seconds: 3),
-              ),
-            );
-
-            _showTemporarySuccessDialog();
-          }
+          // Error de credenciales
+          _showErrorDialog(
+            'Error de autenticación',
+            'Usuario o contraseña incorrectos.',
+          );
         }
       } catch (e) {
         if (mounted) {
@@ -300,7 +359,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                   const Icon(Icons.error, color: Colors.white),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(e.toString()),
+                    child: Text('Error: ${e.toString()}'),
                   ),
                 ],
               ),
@@ -378,7 +437,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         targetScreen = const OrigenInicioScreen(); // TEMPORAL
         break;
       case 'transportista':
-        targetScreen = const TransporteEscaneoScreen();
+        targetScreen = const TransporteHomeScreen();
         break;
       case 'laboratorio':
         targetScreen = const OrigenInicioScreen(); // TEMPORAL
@@ -478,214 +537,57 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
   }
 
   void _showPendingApprovalDialog() {
-    showDialog(
+    DialogUtils.showInfoDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Container(
-          padding: EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icono
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: BioWayColors.warning.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.hourglass_empty,
-                  size: 50,
-                  color: BioWayColors.warning,
-                ),
-              ),
-              SizedBox(height: 20),
-              
-              // Título
-              Text(
-                'Aprobación Pendiente',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: BioWayColors.darkGreen,
-                ),
-              ),
-              SizedBox(height: 12),
-              
-              // Mensaje
-              Text(
-                'Tu cuenta está siendo revisada por ECOCE.',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: BioWayColors.textGrey,
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 8),
-              Text(
-                'Recibirás una notificación por correo cuando tu cuenta sea aprobada.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: BioWayColors.textGrey,
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 24),
-              
-              // Botón
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BioWayColors.ecoceGreen,
-                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  'Entendido',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      title: 'Aprobación Pendiente',
+      message: 'Tu cuenta está siendo revisada por ECOCE.\n\nRecibirás una notificación por correo cuando tu cuenta sea aprobada.',
+      buttonText: 'Entendido',
+      icon: Icons.hourglass_empty,
+      iconColor: BioWayColors.warning,
     );
   }
 
   void _showRejectedDialog(String reason) {
-    showDialog(
+    DialogUtils.showErrorDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Container(
-          padding: EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icono
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: BioWayColors.error.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.cancel_outlined,
-                  size: 50,
-                  color: BioWayColors.error,
-                ),
-              ),
-              SizedBox(height: 20),
-              
-              // Título
-              Text(
-                'Solicitud Rechazada',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: BioWayColors.darkGreen,
-                ),
-              ),
-              SizedBox(height: 12),
-              
-              // Razón
-              Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: BioWayColors.error.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: BioWayColors.error.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Text(
-                  reason,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: BioWayColors.darkGreen,
-                    height: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              SizedBox(height: 16),
-              
-              // Información de contacto
-              Text(
-                'Para más información, contacta a:\nsoporte@ecoce.mx',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: BioWayColors.textGrey,
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 24),
-              
-              // Botón
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BioWayColors.ecoceGreen,
-                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  'Cerrar',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      title: 'Solicitud Rechazada',
+      message: 'Razón: $reason\n\nPara más información, contacta a:\nsoporte@ecoce.mx',
+      buttonText: 'Cerrar',
     );
   }
 
   void _showErrorDialog(String title, String message) {
-    showDialog(
+    DialogUtils.showErrorDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('OK'),
-          ),
-        ],
-      ),
+      title: title,
+      message: message,
     );
   }
 
-  void _navigateToUserScreen(String tipoActor) {
+  void _navigateToUserScreen(String tipoActor, dynamic profile) {
+    // Si es Origen, configurar el tipo correcto
+    if (tipoActor == 'O' && profile != null) {
+      // Determinar si es Acopiador o Planta de Separación
+      final subtipo = profile.ecoceSubtipo;
+      if (subtipo == 'A') {
+        OrigenUserConfig.current = OrigenUserConfig.acopiador;
+      } else if (subtipo == 'P') {
+        OrigenUserConfig.current = OrigenUserConfig.planta;
+      }
+      
+      // Configurar los datos del usuario en OrigenUserConfig
+      OrigenUserConfig.current = OrigenUserConfig(
+        nombre: profile.ecoceNombre,
+        folio: profile.ecoceFolio,
+        tipoUsuario: subtipo == 'A' ? 'Centro de Acopio' : 'Planta de Separación',
+        color: subtipo == 'A' ? BioWayColors.darkGreen : BioWayColors.ppPurple,
+      );
+    }
+    
     // Navegar según el tipo de usuario
     switch (tipoActor) {
-      case 'A': // Acopiador
-      case 'P': // Planta de Separación
+      case 'O': // Origen (Acopiador o Planta)
+      case 'A': // A veces viene como 'A' para Acopiador
         Navigator.pushReplacementNamed(context, '/origen_inicio');
         break;
       case 'R': // Reciclador
@@ -700,107 +602,28 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
       case 'L': // Laboratorio
         Navigator.pushReplacementNamed(context, '/laboratorio_inicio');
         break;
+      case 'M': // Maestro ECOCE
+        Navigator.pushReplacementNamed(context, '/maestro_dashboard');
+        break;
       default:
-        _showTemporarySuccessDialog();
+        // Si no se reconoce el tipo, mostrar error
+        _showErrorDialog(
+          'Tipo de usuario no reconocido',
+          'Tu tipo de usuario ($tipoActor) no está configurado en el sistema. Contacta al administrador.',
+        );
+        // Cerrar sesión por seguridad
+        _authService.signOut();
     }
   }
 
   void _showTemporarySuccessDialog() {
-    showDialog(
+    DialogUtils.showSuccessDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.check_circle,
-                    size: 40,
-                    color: BioWayColors.ecoceGreen,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  '¡Bienvenido a ECOCE!',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: BioWayColors.darkGreen,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Has ingresado correctamente al sistema de trazabilidad ECOCE.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: BioWayColors.textGrey,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: BioWayColors.warning.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: BioWayColors.warning,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Las pantallas del sistema ECOCE están en desarrollo.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: BioWayColors.warning,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context); // Cerrar diálogo
-                    Navigator.pop(context); // Volver al selector
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: BioWayColors.ecoceGreen,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 12,
-                    ),
-                  ),
-                  child: const Text('Volver al selector'),
-                ),
-              ],
-            ),
-          ),
-        );
+      title: '¡Bienvenido a ECOCE!',
+      message: 'Has ingresado correctamente al sistema de trazabilidad ECOCE.\n\nNota: Las pantallas del sistema ECOCE están en desarrollo.',
+      buttonText: 'Volver al selector',
+      onPressed: () {
+        Navigator.pop(context); // Volver al selector
       },
     );
   }
@@ -1098,7 +921,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Usuario',
+          'Correo o Folio',
           style: TextStyle(
             color: BioWayColors.ecoceDark,
             fontSize: 14,
@@ -1114,7 +937,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
             FocusScope.of(context).requestFocus(_passwordFocusNode);
           },
           decoration: InputDecoration(
-            hintText: 'Ingresa tu usuario',
+            hintText: 'correo@ejemplo.com o A0000001',
             hintStyle: TextStyle(
               color: Colors.grey.shade400,
               fontSize: 14,
@@ -1154,8 +977,17 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'Por favor ingresa tu usuario';
+              return 'Por favor ingresa tu correo o folio';
             }
+            
+            // Validar formato de email o folio
+            final emailPattern = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+            final folioPattern = RegExp(r'^[A-Z]\d{7}$', caseSensitive: false);
+            
+            if (!emailPattern.hasMatch(value) && !folioPattern.hasMatch(value.toUpperCase())) {
+              return 'Formato inválido. Usa tu correo o folio (ej: A0000001)';
+            }
+            
             return null;
           },
         ),

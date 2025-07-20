@@ -5,8 +5,8 @@ import 'laboratorio_inicio.dart';
 import 'laboratorio_escaneo.dart';
 import 'laboratorio_formulario.dart';
 import 'laboratorio_documentacion.dart';
-import 'laboratorio_ayuda.dart';
-import 'laboratorio_perfil.dart';
+import '../shared/ecoce_ayuda_screen.dart';
+import '../shared/ecoce_perfil_screen.dart';
 import '../shared/utils/material_utils.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import 'widgets/laboratorio_muestra_card.dart';
@@ -272,14 +272,14 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
       case 2:
         NavigationUtils.navigateWithFade(
           context,
-          const LaboratorioAyudaScreen(),
+          const EcoceAyudaScreen(),
           replacement: true,
         );
         break;
       case 3:
         NavigationUtils.navigateWithFade(
           context,
-          const LaboratorioPerfilScreen(),
+          const EcocePerfilScreen(),
           replacement: true,
         );
         break;

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
+import '../shared/widgets/ecoce_bottom_navigation.dart';
+import 'transformador_lote_detail_screen.dart';
 
 class TransformadorProduccionScreen extends StatefulWidget {
   const TransformadorProduccionScreen({super.key});
@@ -11,59 +13,91 @@ class TransformadorProduccionScreen extends StatefulWidget {
 
 class _TransformadorProduccionScreenState extends State<TransformadorProduccionScreen> 
     with SingleTickerProviderStateMixin {
+  final int _selectedIndex = 1; // Producción está en índice 1
   late TabController _tabController;
+  int _selectedTabIndex = 0;
   
-  // Datos de producción
-  final double _capacidadUtilizada = 85.0;
-  final double _materialProcesado = 1.2; // toneladas
+  // Datos de ejemplo
+  final double _capacidadUtilizada = 85;
+  final double _materialProcesado = 1.2;
   
   // Lista de lotes en proceso
   final List<Map<String, dynamic>> _lotesEnProceso = [
     {
-      'id': 'Firebase_ID_3x9k2m1',
+      'id': 'Firebase_ID_3k8m2p7',
       'fechaInicio': '14/07/2025 08:30',
-      'material': 'PELLETS',
-      'peso': 120,
+      'fechaISO': '2025-07-14T08:30:00',
+      'peso': 450.0,
       'estado': 'EN PROCESO',
-      'procesos': ['Lavado', 'Molido', 'Extrusión'],
+      'estadoColor': Colors.blue,
+      'procesosAplicados': ['Lavado', 'Secado', 'Extrusión'],
+      'producto': 'Perfiles PVC',
+      'tiposAnalisis': ['Extrusión', 'Termoformado'],
+      'composicion': 'PVC reciclado 75%, aditivos estabilizantes 5%, pigmentos 2%',
+      'origen': 'RECICLADOR PLASTICOS DEL NORTE',
+      'comentarios': 'Proceso de extrusión a temperatura controlada de 180°C',
     },
     {
-      'id': 'Firebase_ID_4m2p7k8',
+      'id': 'Firebase_ID_5n2h9j4',
       'fechaInicio': '14/07/2025 10:15',
-      'material': 'HOJUELAS',
-      'peso': 85,
+      'fechaISO': '2025-07-14T10:15:00',
+      'peso': 320.0,
       'estado': 'EN PROCESO',
-      'procesos': ['Clasificación', 'Lavado', 'Secado'],
+      'estadoColor': Colors.blue,
+      'procesosAplicados': ['Trituración', 'Lavado', 'Clasificación', 'Secado'],
+      'producto': 'Láminas transparentes',
+      'tiposAnalisis': ['Laminado', 'Termoformado', 'Soplado'],
+      'composicion': 'PET reciclado 85%, aditivos UV 3%, clarificantes 2%',
+      'origen': 'CENTRO DE ACOPIO SUSTENTABLE',
+      'comentarios': 'Material de alta transparencia para empaques',
     },
     {
-      'id': 'Firebase_ID_5n1q3r9',
-      'fechaInicio': '13/07/2025 14:45',
-      'material': 'PELLETS',
-      'peso': 150,
+      'id': 'Firebase_ID_7p4k1m8',
+      'fechaInicio': '14/07/2025 12:00',
+      'fechaISO': '2025-07-14T12:00:00',
+      'peso': 280.0,
       'estado': 'EN PROCESO',
-      'procesos': ['Molido', 'Lavado', 'Extrusión', 'Enfriamiento'],
+      'estadoColor': Colors.blue,
+      'procesosAplicados': ['Lavado', 'Extrusión'],
+      'producto': 'Tuberías HDPE',
+      'tiposAnalisis': ['Extrusión', 'Inyección'],
+      'composicion': 'HDPE reciclado 80%, HDPE virgen 18%, antioxidantes 2%',
+      'origen': 'PLANTA DE RECICLAJE INDUSTRIAL',
+      'comentarios': 'Producción para cliente industrial',
     },
   ];
   
   // Lista de lotes completados
   final List<Map<String, dynamic>> _lotesCompletados = [
     {
-      'id': 'Firebase_ID_1a5h7k3',
-      'fechaInicio': '13/07/2025 09:00',
-      'fechaFin': '13/07/2025 16:30',
-      'material': 'PELLETS',
-      'peso': 200,
+      'id': 'Firebase_ID_1a3b5c7',
+      'fechaInicio': '13/07/2025 14:00',
+      'fechaISO': '2025-07-13T14:00:00',
+      'fechaFin': '14/07/2025 06:00',
+      'peso': 500.0,
       'estado': 'COMPLETADO',
-      'procesos': ['Lavado', 'Molido', 'Extrusión', 'Enfriamiento', 'Empaque'],
+      'estadoColor': Colors.green,
+      'procesosAplicados': ['Lavado', 'Secado', 'Extrusión', 'Empaque'],
+      'producto': 'Contenedores industriales',
+      'tiposAnalisis': ['Inyección', 'Rotomoldeo'],
+      'composicion': 'PP reciclado 70%, PP virgen 28%, estabilizadores 2%',
+      'origen': 'RECICLADOR ZONA INDUSTRIAL',
+      'comentarios': 'Lote completado con éxito, calidad certificada ISO 9001',
     },
     {
-      'id': 'Firebase_ID_2b8m4p6',
-      'fechaInicio': '12/07/2025 11:00',
-      'fechaFin': '13/07/2025 08:00',
-      'material': 'HOJUELAS',
-      'peso': 175,
+      'id': 'Firebase_ID_2d4e6f8',
+      'fechaInicio': '13/07/2025 09:00',
+      'fechaISO': '2025-07-13T09:00:00',
+      'fechaFin': '13/07/2025 18:00',
+      'peso': 350.0,
       'estado': 'COMPLETADO',
-      'procesos': ['Clasificación', 'Lavado', 'Secado', 'Empaque'],
+      'estadoColor': Colors.green,
+      'procesosAplicados': ['Trituración', 'Lavado', 'Secado'],
+      'producto': 'Bolsas de plástico',
+      'tiposAnalisis': ['Soplado', 'Laminado'],
+      'composicion': 'LDPE reciclado 90%, aditivos biodegradables 10%',
+      'origen': 'ACOPIADOR MUNICIPAL',
+      'comentarios': 'Producción ecológica con aditivos biodegradables',
     },
   ];
 
@@ -71,6 +105,11 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      setState(() {
+        _selectedTabIndex = _tabController.index;
+      });
+    });
   }
 
   @override
@@ -79,159 +118,57 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: Column(
-        children: [
-          // Header que cubre todo el ancho
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  BioWayColors.ecoceGreen,
-                  BioWayColors.ecoceGreen.withValues(alpha: 0.8),
-                ],
-              ),
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Stack(
-                children: [
-                  // Patrón de fondo
-                  Positioned(
-                    right: -50,
-                    top: -50,
-                    child: Container(
-                      width: 200,
-                      height: 200,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: 0.1),
-                      ),
-                    ),
-                  ),
-                  // Contenido
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Control de Producción',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Gestión de procesos y capacidad',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.white70,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          // Capacidad Card y Tabs en un área scrollable
-          Expanded(
-            child: Column(
-              children: [
-                SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        // Card de Capacidad
-                        _buildCapacityCard(),
-                        const SizedBox(height: 20),
-                        
-                        // Tabs
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: TabBar(
-                            controller: _tabController,
-                            indicator: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.05),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            labelColor: BioWayColors.ecoceGreen,
-                            unselectedLabelColor: Colors.grey[600],
-                            labelStyle: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                            ),
-                            labelPadding: const EdgeInsets.symmetric(horizontal: 24),
-                            tabs: const [
-                              Tab(
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 16),
-                                  child: Text('En Proceso'),
-                                ),
-                              ),
-                              Tab(
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 16),
-                                  child: Text('Completados'),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                
-                // TabBarView para los lotes
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      // Tab En Proceso
-                      _buildLotesList(_lotesEnProceso),
-                      // Tab Completados
-                      _buildLotesList(_lotesCompletados),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+  void _onBottomNavTapped(int index) {
+    HapticFeedback.lightImpact();
+    
+    if (index == _selectedIndex) return;
+    
+    switch (index) {
+      case 0:
+        Navigator.pushReplacementNamed(context, '/transformador_inicio');
+        break;
+      case 1:
+        // Ya estamos en producción
+        break;
+      case 2:
+        Navigator.pushReplacementNamed(context, '/transformador_ayuda');
+        break;
+      case 3:
+        Navigator.pushReplacementNamed(context, '/transformador_perfil');
+        break;
+    }
+  }
+
+  void _onAddPressed() {
+    HapticFeedback.lightImpact();
+    Navigator.pushNamed(context, '/transformador_recibir_lote');
+  }
+
+  void _verDetallesLote(Map<String, dynamic> lote) {
+    HapticFeedback.lightImpact();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TransformadorLoteDetailScreen(
+          firebaseId: lote['id'],
+          peso: lote['peso'].toDouble(),
+          tiposAnalisis: lote['tiposAnalisis'] ?? ['Extrusión', 'Inyección'],
+          productoFabricado: lote['producto'] ?? 'Producto no especificado',
+          composicionMaterial: lote['composicion'] ?? 'Material reciclado procesado según estándares de calidad',
+          fechaCreacion: DateTime.parse(lote['fechaISO'] ?? DateTime.now().toIso8601String()),
+          procesosAplicados: lote['procesosAplicados'] ?? [],
+          comentarios: lote['comentarios'],
+        ),
       ),
     );
   }
 
-  Widget _buildCapacityCard() {
+  Widget _buildCapacidadCard() {
     return Container(
+      margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.blue[50],
+        color: Colors.blue.shade50,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -268,26 +205,26 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
               Column(
                 children: [
                   Text(
-                    '${_capacidadUtilizada.toInt()}%',
+                    '$_capacidadUtilizada%',
                     style: TextStyle(
                       fontSize: 36,
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue[700],
+                      color: Colors.blue.shade700,
                     ),
                   ),
                   Text(
                     'Capacidad Utilizada',
                     style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
+                      fontSize: 14,
+                      color: Colors.grey.shade700,
                     ),
                   ),
                 ],
               ),
               Container(
+                height: 60,
                 width: 1,
-                height: 50,
-                color: Colors.grey[300],
+                color: Colors.blue.shade200,
               ),
               Column(
                 children: [
@@ -296,14 +233,14 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                     style: TextStyle(
                       fontSize: 36,
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue[700],
+                      color: Colors.blue.shade700,
                     ),
                   ),
                   Text(
                     'Material Procesado',
                     style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
+                      fontSize: 14,
+                      color: Colors.grey.shade700,
                     ),
                   ),
                 ],
@@ -313,12 +250,12 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
           const SizedBox(height: 20),
           // Barra de progreso
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
               value: _capacidadUtilizada / 100,
-              minHeight: 8,
-              backgroundColor: Colors.grey[300],
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue[600]!),
+              minHeight: 12,
+              backgroundColor: Colors.blue.shade100,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
             ),
           ),
           const SizedBox(height: 12),
@@ -326,228 +263,253 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
             'Máxima eficiencia: ${(100 - _capacidadUtilizada).toInt()}% restante disponible',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[700],
+              color: Colors.grey.shade700,
+              fontStyle: FontStyle.italic,
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildLotesList(List<Map<String, dynamic>> lotes) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: ListView.builder(
-        padding: const EdgeInsets.only(top: 16, bottom: 100), // Espacio para el FAB y navegación
-        itemCount: lotes.length,
-        itemBuilder: (context, index) {
-          final lote = lotes[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _buildLoteCard(lote),
-          );
-        },
       ),
     );
   }
 
   Widget _buildLoteCard(Map<String, dynamic> lote) {
-    final bool isCompleted = lote['estado'] == 'COMPLETADO';
+    final bool isCompletado = lote['estado'] == 'COMPLETADO';
+    final productoColor = _getProductoColor(lote['producto'] ?? '');
     
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Header amarillo
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _verDetallesLote(lote),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
             decoration: BoxDecoration(
-              color: Colors.amber[400],
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  lote['id'],
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: Colors.black87,
-                  ),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
-                if (isCompleted)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      'COMPLETADO',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
               ],
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Fecha de inicio
-                Row(
-                  children: [
-                    Icon(
-                      Icons.access_time,
-                      size: 16,
-                      color: Colors.grey[600],
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Inicio: ${lote['fechaInicio']}',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 13,
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      // Icono del producto
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              productoColor.withValues(alpha: 0.2),
+                              productoColor.withValues(alpha: 0.1),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          _getProductoIcon(lote['producto'] ?? ''),
+                          color: productoColor,
+                          size: 24,
+                        ),
                       ),
-                    ),
-                    if (isCompleted) ...[
+                      const SizedBox(width: 16),
+                      // Información del lote
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Primera línea: Estado y ID
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: lote['estadoColor'].withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    lote['estado'],
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: lote['estadoColor'],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    lote['id'],
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey[600],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            // Segunda línea: Producto
+                            Text(
+                              lote['producto'] ?? 'Producto en proceso',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                            const SizedBox(height: 4),
+                            // Tercera línea: Peso, Inicio/Fin, Procesos y Composición
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 4,
+                                  children: [
+                                    _buildCompactChip(
+                                      Icons.scale_outlined,
+                                      '${lote['peso']} kg',
+                                      Colors.blue,
+                                    ),
+                                    _buildCompactChip(
+                                      Icons.access_time,
+                                      isCompletado && lote['fechaFin'] != null
+                                          ? 'Fin: ${lote['fechaFin'].split(' ')[0]}'
+                                          : 'Inicio: ${lote['fechaInicio'].split(' ')[0]}',
+                                      isCompletado ? Colors.green : Colors.orange,
+                                    ),
+                                    if ((lote['procesosAplicados'] as List<String>).isNotEmpty)
+                                      _buildCompactChip(
+                                        Icons.settings,
+                                        '${(lote['procesosAplicados'] as List<String>).length} procesos',
+                                        Colors.purple,
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                // Composición
+                                Text(
+                                  lote['composicion'] ?? '',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey[600],
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Flecha de navegación
                       const SizedBox(width: 12),
-                      Icon(
-                        Icons.check_circle_outline,
-                        size: 16,
-                        color: Colors.grey[600],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Fin: ${lote['fechaFin']}',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 13,
+                      InkWell(
+                        onTap: () => _verDetallesLote(lote),
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          child: Icon(
+                            Icons.arrow_forward_ios,
+                            color: Colors.grey.shade400,
+                            size: 16,
+                          ),
                         ),
                       ),
                     ],
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 12),
-                
-                // Información del lote
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildLoteInfo(
-                      Icons.recycling_outlined,
-                      lote['material'],
-                      'Material',
-                    ),
-                    Container(
-                      height: 30,
-                      width: 1,
-                      color: Colors.grey[300],
-                    ),
-                    _buildLoteInfo(
-                      Icons.scale_outlined,
-                      '${lote['peso']} kg',
-                      'Peso',
-                    ),
-                    Container(
-                      height: 30,
-                      width: 1,
-                      color: Colors.grey[300],
-                    ),
-                    _buildLoteInfo(
-                      Icons.check_circle_outline,
-                      lote['estado'],
-                      'Estado',
-                      isStatus: true,
-                      statusColor: isCompleted ? Colors.green : Colors.blue,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                
-                // Procesos aplicados
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Proceso aplicado:',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[700],
+                // Botón de acción inferior con QR para completados
+                InkWell(
+                  onTap: () => _verDetallesLote(lote),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: (isCompletado ? Colors.green : BioWayColors.ecoceGreen).withValues(alpha: 0.1),
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(16),
+                        bottomRight: Radius.circular(16),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: (lote['procesos'] as List<String>).map((proceso) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          isCompletado ? Icons.qr_code : Icons.remove_red_eye,
+                          color: isCompletado ? Colors.green : BioWayColors.ecoceGreen,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          isCompletado ? 'Ver Código QR' : 'Ver Detalles',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: isCompletado ? Colors.green : BioWayColors.ecoceGreen,
                           ),
-                          child: Text(
-                            proceso,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                
-                // Botón de acción
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      // TODO: Implementar acción
-                    },
-                    icon: Icon(
-                      isCompleted ? Icons.visibility : Icons.update,
-                      size: 18,
-                    ),
-                    label: Text(
-                      isCompleted ? 'Ver Detalles' : 'Actualizar Estado',
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: BioWayColors.ecoceGreen,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactChip(IconData icon, String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 12,
+            color: color,
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 11,
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
         ],
@@ -555,44 +517,233 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
     );
   }
 
-  Widget _buildLoteInfo(IconData icon, String value, String label, 
-      {bool isStatus = false, Color? statusColor}) {
-    return Column(
-      children: [
-        Icon(icon, color: Colors.grey[600], size: 20),
-        const SizedBox(height: 4),
-        if (isStatus && statusColor != null)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: statusColor,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
+  Color _getProductoColor(String producto) {
+    // Asignar colores basados en el tipo de producto
+    if (producto.toLowerCase().contains('pvc') || producto.toLowerCase().contains('perfil')) {
+      return Colors.deepPurple;
+    } else if (producto.toLowerCase().contains('pet') || producto.toLowerCase().contains('lámina')) {
+      return Colors.teal;
+    } else if (producto.toLowerCase().contains('hdpe') || producto.toLowerCase().contains('tubería')) {
+      return Colors.blue;
+    } else if (producto.toLowerCase().contains('pp') || producto.toLowerCase().contains('contenedor')) {
+      return Colors.indigo;
+    } else if (producto.toLowerCase().contains('ldpe') || producto.toLowerCase().contains('bolsa')) {
+      return Colors.orange;
+    } else {
+      return BioWayColors.ecoceGreen;
+    }
+  }
+
+  IconData _getProductoIcon(String producto) {
+    // Asignar iconos basados en el tipo de producto
+    if (producto.toLowerCase().contains('perfil')) {
+      return Icons.straighten;
+    } else if (producto.toLowerCase().contains('lámina')) {
+      return Icons.layers;
+    } else if (producto.toLowerCase().contains('tubería') || producto.toLowerCase().contains('tubo')) {
+      return Icons.view_column;
+    } else if (producto.toLowerCase().contains('contenedor')) {
+      return Icons.inventory_2;
+    } else if (producto.toLowerCase().contains('bolsa')) {
+      return Icons.shopping_bag;
+    } else if (producto.toLowerCase().contains('botella') || producto.toLowerCase().contains('envase')) {
+      return Icons.local_drink;
+    } else {
+      return Icons.recycling;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onHorizontalDragEnd: (details) {
+        // Detectar swipe hacia la derecha (volver a inicio)
+        if (details.primaryVelocity! > 100) {
+          Navigator.pushReplacementNamed(context, '/transformador_inicio');
+        }
+        // Detectar swipe hacia la izquierda (ir a ayuda)
+        else if (details.primaryVelocity! < -100) {
+          Navigator.pushReplacementNamed(context, '/transformador_ayuda');
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        body: SafeArea(
+          child: CustomScrollView(
+            slivers: [
+              // Header
+              SliverToBoxAdapter(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        BioWayColors.ecoceGreen,
+                        BioWayColors.ecoceGreen.withValues(alpha: 0.8),
+                      ],
+                    ),
+                  ),
+                  child: Stack(
+                    children: [
+                      // Patrón de fondo
+                      Positioned(
+                        right: -50,
+                        top: -50,
+                        child: Container(
+                          width: 200,
+                          height: 200,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.1),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: -30,
+                        bottom: -30,
+                        child: Container(
+                          width: 150,
+                          height: 150,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.05),
+                          ),
+                        ),
+                      ),
+                      // Contenido del header
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Control de Producción',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Gestión de procesos y capacidad',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white.withValues(alpha: 0.9),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          )
-        else
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 10,
+              
+              // Card de Capacidad
+              SliverToBoxAdapter(
+                child: _buildCapacidadCard(),
+              ),
+              
+              // Tabs
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _SliverAppBarDelegate(
+                  TabBar(
+                    controller: _tabController,
+                    indicatorColor: BioWayColors.ecoceGreen,
+                    indicatorWeight: 3,
+                    labelColor: BioWayColors.ecoceGreen,
+                    unselectedLabelColor: Colors.grey,
+                    labelStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.normal,
+                    ),
+                    tabs: const [
+                      Tab(text: 'En Proceso'),
+                      Tab(text: 'Completados'),
+                    ],
+                  ),
+                ),
+              ),
+              
+              // Contenido de los tabs
+              SliverToBoxAdapter(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: _selectedTabIndex == 0
+                        ? _lotesEnProceso.map((lote) => _buildLoteCard(lote)).toList()
+                        : _lotesCompletados.map((lote) => _buildLoteCard(lote)).toList(),
+                  ),
+                ),
+              ),
+              
+              // Espacio para el bottom nav
+              const SliverToBoxAdapter(
+                child: SizedBox(height: 100),
+              ),
+            ],
           ),
         ),
-      ],
+        
+        // Bottom Navigation Bar
+        bottomNavigationBar: EcoceBottomNavigation(
+          selectedIndex: _selectedIndex,
+          onItemTapped: _onBottomNavTapped,
+          primaryColor: BioWayColors.ecoceGreen,
+          items: EcoceNavigationConfigs.transformadorItems,
+          fabConfig: FabConfig(
+            icon: Icons.add,
+            onPressed: _onAddPressed,
+          ),
+        ),
+        
+        // Floating Action Button
+        floatingActionButton: EcoceFloatingActionButton(
+          onPressed: _onAddPressed,
+          icon: Icons.add,
+          backgroundColor: BioWayColors.ecoceGreen,
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      ),
     );
+  }
+}
+
+// Delegate para el TabBar pegajoso
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  _SliverAppBarDelegate(this._tabBar);
+
+  final TabBar _tabBar;
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height + 16;
+  @override
+  double get maxExtent => _tabBar.preferredSize.height + 16;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: const Color(0xFFF5F5F5),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        elevation: 2,
+        child: _tabBar,
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
+    return false;
   }
 }

@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/format_utils.dart';
 import 'laboratorio_escaneo.dart';
 import 'laboratorio_gestion_muestras.dart';
 import 'laboratorio_formulario.dart';
 import 'laboratorio_documentacion.dart';
-import 'laboratorio_ayuda.dart';
-import 'laboratorio_perfil.dart';
+import '../shared/ecoce_ayuda_screen.dart';
+import '../shared/ecoce_perfil_screen.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import 'widgets/laboratorio_muestra_card.dart';
-import '../shared/widgets/statistic_card.dart';
+import '../shared/widgets/unified_stat_card.dart';
 import '../shared/utils/navigation_utils.dart';
 
 class LaboratorioInicioScreen extends StatefulWidget {
@@ -103,13 +104,13 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
       case 2:
         NavigationUtils.navigateWithFade(
           context,
-          const LaboratorioAyudaScreen(),
+          const EcoceAyudaScreen(),
         );
         break;
       case 3:
         NavigationUtils.navigateWithFade(
           context,
-          const LaboratorioPerfilScreen(),
+          const EcocePerfilScreen(),
         );
         break;
     }
@@ -258,7 +259,7 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
-                                      '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                                      FormatUtils.formatDate(DateTime.now()),
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: Colors.white.withValues(alpha: 0.9),
@@ -342,10 +343,10 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                               // Card de Muestras Recibidas
                               Expanded(
                                 child: StatisticCard(
-                                  title: 'Muestras recibidas',
+                                  label: 'Muestras recibidas',
                                   value: _muestrasRecibidas.toString(),
                                   icon: Icons.science,
-                                  color: Colors.blue,
+                                  iconColor: Colors.blue,
                                   height: 70,
                                 ),
                               ),
@@ -353,11 +354,11 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                               // Card de Material Analizado
                               Expanded(
                                 child: StatisticCard(
-                                  title: 'Material analizado',
+                                  label: 'Material analizado',
                                   value: _materialAnalizado.toStringAsFixed(1),
                                   unit: 'kg',
                                   icon: Icons.analytics,
-                                  color: Colors.purple,
+                                  iconColor: Colors.purple,
                                   height: 70,
                                 ),
                               ),

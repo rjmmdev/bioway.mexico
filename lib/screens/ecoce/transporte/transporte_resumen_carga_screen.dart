@@ -3,9 +3,9 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 import '../../../utils/colors.dart';
 import '../shared/utils/material_utils.dart';
-import '../reciclador/widgets/reciclador_lote_card.dart';
-import 'transporte_escaneo.dart';
-import 'transporte_recoger_screen.dart';
+import '../shared/widgets/lote_card_unified.dart';
+import 'transporte_lot_management_screen.dart';
+import 'transporte_forms_screen.dart';
 
 class TransporteResumenCargaScreen extends StatefulWidget {
   final Map<String, dynamic> loteInicial;
@@ -82,7 +82,7 @@ class _TransporteResumenCargaScreenState extends State<TransporteResumenCargaScr
     final result = await Navigator.push<String>(
       context,
       MaterialPageRoute(
-        builder: (context) => const TransporteEscaneoScreen(isAddingMore: true),
+        builder: (context) => const TransporteLotManagementScreen(),
       ),
     );
 
@@ -137,8 +137,8 @@ class _TransporteResumenCargaScreenState extends State<TransporteResumenCargaScr
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => TransporteRecogerScreen(
-          lotesSeleccionados: _scannedLots,
+        builder: (context) => TransporteFormsScreen.pickup(
+          lots: _scannedLots,
         ),
       ),
     );
@@ -376,11 +376,12 @@ class _TransporteResumenCargaScreenState extends State<TransporteResumenCargaScr
                     itemBuilder: (context, index) {
                       final lot = _scannedLots[index];
                       
-                      return RecicladorLoteCard(
+                      return LoteCard(
                         lote: lot,
                         onTap: () {
                           // No hacemos nada en el tap principal
                         },
+                        showActions: false,
                         trailing: IconButton(
                           onPressed: () => _removeLot(index),
                           icon: Container(

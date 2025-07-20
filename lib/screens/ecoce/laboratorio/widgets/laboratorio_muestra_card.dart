@@ -72,7 +72,7 @@ class LaboratorioMuestraCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
-                          _getMaterialIcon(muestra['material'] ?? ''),
+                          MaterialUtils.getMaterialIcon(muestra['material'] ?? ''),
                           color: materialColor,
                           size: 24,
                         ),
@@ -290,18 +290,6 @@ class LaboratorioMuestraCard extends StatelessWidget {
     );
   }
 
-  IconData _getMaterialIcon(String material) {
-    switch (material) {
-      case 'PEBD':
-        return Icons.shopping_bag; // Bolsas
-      case 'PP':
-        return Icons.kitchen; // Contenedores
-      case 'Multilaminado':
-        return Icons.layers; // Capas múltiples
-      default:
-        return Icons.recycling;
-    }
-  }
 
   IconData _getStatusIcon(String estado) {
     switch (estado) {

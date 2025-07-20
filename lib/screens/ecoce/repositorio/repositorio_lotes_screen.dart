@@ -3,25 +3,21 @@ import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import '../shared/utils/navigation_utils.dart';
 import '../shared/utils/material_utils.dart';
-import 'widgets/lote_card.dart';
+import '../shared/widgets/lote_card_unified.dart';
 import 'widgets/dashboard_stats.dart';
 import 'widgets/filters_sheet.dart';
 import 'lote_detalle_screen.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../origen/origen_inicio_screen.dart';
 import '../origen/origen_lotes_screen.dart';
-import '../origen/origen_ayuda.dart';
-import '../origen/origen_perfil.dart';
+import '../shared/ecoce_ayuda_screen.dart';
+import '../shared/ecoce_perfil_screen.dart';
 import '../origen/origen_crear_lote_screen.dart';
-import '../reciclador/reciclador_inicio.dart';
-import '../reciclador/reciclador_administracion_lotes.dart';
-import '../reciclador/reciclador_ayuda.dart';
-import '../reciclador/reciclador_perfil.dart';
-import '../reciclador/reciclador_escaneo.dart';
-import '../transporte/transporte_escaneo.dart';
-import '../transporte/transporte_entregar_screen.dart';
-import '../transporte/transporte_ayuda_screen.dart';
-import '../transporte/transporte_perfil_screen.dart';
+import '../reciclador/reciclador_home_screen.dart';
+import '../reciclador/reciclador_lot_management_screen.dart';
+import '../transporte/transporte_lot_management_screen.dart';
+import '../transporte/transporte_delivery_screen.dart';
+import '../shared/widgets/qr_scanner_widget.dart';
 
 class RepositorioLotesScreen extends StatefulWidget {
   final Color primaryColor;
@@ -312,7 +308,7 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
         padding: const EdgeInsets.symmetric(horizontal: 20),
         itemCount: _filteredLotes.length,
         itemBuilder: (context, index) {
-          return LoteCard(
+          return LoteCard.repositorio(
             lote: _filteredLotes[index],
             onTap: () => _navigateToDetail(_filteredLotes[index]),
           );
@@ -348,7 +344,7 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 itemCount: pageLotes.length,
                 itemBuilder: (context, index) {
-                  return LoteCard(
+                  return LoteCard.repositorio(
                     lote: pageLotes[index],
                     onTap: () => _navigateToDetail(pageLotes[index]),
                   );
@@ -465,7 +461,15 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
           onPressed: () {
             NavigationUtils.navigateWithFade(
               context,
-              const QRScannerScreen(),
+              QRScannerWidget(
+                title: 'Escanear Lote',
+                subtitle: 'Escanea el código QR del lote',
+                onCodeScanned: (code) {
+                  Navigator.pop(context);
+                  // Handle scan result
+                },
+                primaryColor: widget.primaryColor,
+              ),
             );
           },
         );
@@ -511,7 +515,15 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
           onPressed: () {
             NavigationUtils.navigateWithFade(
               context,
-              const QRScannerScreen(),
+              QRScannerWidget(
+                title: 'Escanear Lote',
+                subtitle: 'Escanea el código QR del lote',
+                onCodeScanned: (code) {
+                  Navigator.pop(context);
+                  // Handle scan result
+                },
+                primaryColor: widget.primaryColor,
+              ),
             );
           },
           icon: Icons.add,
@@ -557,14 +569,14 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
       case 3:
         NavigationUtils.navigateWithFade(
           context,
-          const OrigenAyudaScreen(),
+          const EcoceAyudaScreen(),
           replacement: true,
         );
         break;
       case 4:
         NavigationUtils.navigateWithFade(
           context,
-          const OrigenPerfilScreen(),
+          const EcocePerfilScreen(),
           replacement: true,
         );
         break;
@@ -583,21 +595,21 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
       case 1:
         NavigationUtils.navigateWithFade(
           context,
-          const RecicladorAdministracionLotes(),
+          const RecicladorLotManagementScreen(),
           replacement: true,
         );
         break;
       case 3:
         NavigationUtils.navigateWithFade(
           context,
-          const RecicladorAyudaScreen(),
+          const EcoceAyudaScreen(),
           replacement: true,
         );
         break;
       case 4:
         NavigationUtils.navigateWithFade(
           context,
-          const RecicladorPerfilScreen(),
+          const EcocePerfilScreen(),
           replacement: true,
         );
         break;
@@ -609,28 +621,28 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
       case 0:
         NavigationUtils.navigateWithFade(
           context,
-          const TransporteEscaneoScreen(),
+          const TransporteLotManagementScreen(),
           replacement: true,
         );
         break;
       case 1:
         NavigationUtils.navigateWithFade(
           context,
-          const TransporteEntregarScreen(),
+          const TransporteDeliveryScreen(),
           replacement: true,
         );
         break;
       case 3:
         NavigationUtils.navigateWithFade(
           context,
-          const TransporteAyudaScreen(),
+          const EcoceAyudaScreen(),
           replacement: true,
         );
         break;
       case 4:
         NavigationUtils.navigateWithFade(
           context,
-          const TransportePerfilScreen(),
+          const EcocePerfilScreen(),
           replacement: true,
         );
         break;

@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:open_file/open_file.dart';
 import 'dart:io';
 import '../../../../utils/colors.dart';
-import '../../reciclador/services/document_picker_service.dart';
+import '../../../../services/document_service.dart';
 
 /// Widget compartido para carga de documentación técnica
 /// Puede ser utilizado por cualquier usuario del sistema ECOCE
@@ -59,15 +59,18 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
     }
     
     try {
-      final documentPickerService = DocumentPickerService();
-      final result = await documentPickerService.pickDocument();
+      final documentService = DocumentService();
+      final result = await documentService.pickDocument(
+        documentType: 'documento',
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      );
       
       if (result != null) {
         setState(() {
           _uploadedDocuments.add(DocumentInfo(
-            file: result.file,
-            fileName: result.fileName,
-            fileSize: result.fileSize,
+            file: File(result.path!),
+            fileName: result.name,
+            fileSize: result.size.toString(),
             uploadDate: DateTime.now(),
           ));
         });

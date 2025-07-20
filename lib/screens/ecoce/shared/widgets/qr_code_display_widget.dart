@@ -17,6 +17,8 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:flutter/services.dart';
 import 'package:gal/gal.dart';
 import '../../../../utils/colors.dart';
+import '../../../../utils/format_utils.dart';
+import '../utils/material_utils.dart';
 
 /// Widget compartido para mostrar códigos QR con información de lotes
 /// Puede ser utilizado por cualquier tipo de usuario del sistema
@@ -82,13 +84,11 @@ class _QRCodeDisplayWidgetState extends State<QRCodeDisplayWidget> {
   bool _isProcessing = false;
 
   String get _fechaFormateada {
-    final fecha = widget.fechaCreacion ?? DateTime.now();
-    return '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}/${fecha.year}';
+    return FormatUtils.formatDate(widget.fechaCreacion ?? DateTime.now());
   }
 
   String get _fechaSalidaFormateada {
-    final fecha = widget.fechaSalida ?? DateTime.now();
-    return '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}/${fecha.year}';
+    return FormatUtils.formatDate(widget.fechaSalida ?? DateTime.now());
   }
 
   String get _qrData {
@@ -566,29 +566,11 @@ Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pes
   }
 
   Color _getMaterialColor(String material) {
-    switch (material) {
-      case 'PEBD':
-        return BioWayColors.pebdPink;
-      case 'PP':
-        return BioWayColors.ppPurple;
-      case 'Multilaminado':
-        return BioWayColors.multilaminadoBrown;
-      default:
-        return Colors.grey;
-    }
+    return MaterialUtils.getMaterialColor(material);
   }
 
   IconData _getMaterialIcon(String material) {
-    switch (material) {
-      case 'PEBD':
-        return Icons.shopping_bag;
-      case 'PP':
-        return Icons.kitchen;
-      case 'Multilaminado':
-        return Icons.layers;
-      default:
-        return Icons.recycling;
-    }
+    return MaterialUtils.getMaterialIcon(material);
   }
 
 

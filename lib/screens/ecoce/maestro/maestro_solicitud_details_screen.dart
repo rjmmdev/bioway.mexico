@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/format_utils.dart';
 import '../shared/widgets/document_viewer_dialog.dart';
 import 'widgets/maestro_info_section.dart';
 
@@ -381,7 +382,7 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
   }
   
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+    return FormatUtils.formatDate(date);
   }
   
   IconData _getSubtipoIcon(String? subtipo) {

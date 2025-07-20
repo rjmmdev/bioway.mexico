@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/format_utils.dart';
+import '../../../services/user_session_service.dart';
+import '../../../models/ecoce/ecoce_profile_model.dart';
 import 'origen_crear_lote_screen.dart';
 import 'origen_lotes_screen.dart';
-import 'origen_ayuda.dart';
-import 'origen_perfil.dart';
+import '../shared/ecoce_ayuda_screen.dart';
+import '../shared/ecoce_perfil_screen.dart';
 import 'origen_lote_detalle_screen.dart';
-import '../shared/widgets/lote_card.dart';
+import '../shared/widgets/lote_card_unified.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import 'origen_config.dart';
 
@@ -21,11 +24,25 @@ class OrigenInicioScreen extends StatefulWidget {
 class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
   // Índice para la navegación del bottom bar
   final int _selectedIndex = 0;
+  
+  // Servicio de sesión
+  final UserSessionService _sessionService = UserSessionService();
+  
+  // Datos del usuario
+  EcoceProfileModel? _userProfile;
+  bool _isLoading = true;
 
-  String get _nombreCentro => OrigenUserConfig.current.nombre;
-  String get _folioCentro => OrigenUserConfig.current.folio;
-  String get _tipoCentro => OrigenUserConfig.current.tipoUsuario;
-  Color get _primaryColor => OrigenUserConfig.current.color;
+  String get _nombreCentro => _userProfile?.ecoceNombre ?? 'Cargando...';
+  String get _folioCentro => _userProfile?.ecoceFolio ?? 'PENDIENTE';
+  String get _tipoCentro => _userProfile?.tipoActorLabel ?? 'Usuario Origen';
+  Color get _primaryColor {
+    if (_userProfile?.ecoceSubtipo == 'A') {
+      return BioWayColors.darkGreen;
+    } else if (_userProfile?.ecoceSubtipo == 'P') {
+      return BioWayColors.ppPurple;
+    }
+    return BioWayColors.ecoceGreen;
+  }
 
   final int _lotesCreados = 127;
   final double _materialProcesado = 4.5; // en toneladas
@@ -57,6 +74,30 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
       'fecha': '14/07/2025',
     },
   ];
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+  
+  Future<void> _loadUserData() async {
+    try {
+      final profile = await _sessionService.getCurrentUserProfile();
+      if (mounted) {
+        setState(() {
+          _userProfile = profile;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   void _navigateToNewLot() {
     HapticFeedback.lightImpact();
@@ -189,7 +230,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
           context,
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
-                const OrigenAyudaScreen(),
+                const EcoceAyudaScreen(),
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
               return FadeTransition(
                 opacity: animation,
@@ -205,7 +246,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
           context,
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
-                const OrigenPerfilScreen(),
+                const EcocePerfilScreen(),
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
               return FadeTransition(
                 opacity: animation,
@@ -221,6 +262,17 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        body: Center(
+          child: CircularProgressIndicator(
+            color: BioWayColors.ecoceGreen,
+          ),
+        ),
+      );
+    }
+    
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: CustomScrollView(
@@ -234,7 +286,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                   end: Alignment.bottomRight,
                   colors: [
                     _primaryColor,
-                    _primaryColor.withValues(alpha: 0.8),
+                    _primaryColor.withValues(alpha:  0.8),
                   ],
                 ),
               ),
@@ -249,7 +301,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                         height: 200,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.1),
+                          color: Colors.white.withValues(alpha:  0.1),
                         ),
                       ),
                     ),
@@ -261,7 +313,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                         height: 150,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.05),
+                          color: Colors.white.withValues(alpha:  0.05),
                         ),
                       ),
                     ),
@@ -287,7 +339,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
+                                  color: Colors.white.withValues(alpha:  0.2),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Row(
@@ -295,14 +347,14 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                     Icon(
                                       Icons.calendar_today,
                                       size: 14,
-                                      color: Colors.white.withValues(alpha: 0.9),
+                                      color: Colors.white.withValues(alpha:  0.9),
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
-                                      '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                                      FormatUtils.formatDate(DateTime.now()),
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.white.withValues(alpha: 0.9),
+                                        color: Colors.white.withValues(alpha:  0.9),
                                       ),
                                     ),
                                   ],
@@ -334,7 +386,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.9),
+                                  color: Colors.white.withValues(alpha:  0.9),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Row(
@@ -387,11 +439,11 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.95),
+                                      color: Colors.white.withValues(alpha:  0.95),
                                       borderRadius: BorderRadius.circular(16),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.08),
+                                          color: Colors.black.withValues(alpha:  0.08),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         ),
@@ -452,11 +504,11 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.95),
+                                      color: Colors.white.withValues(alpha:  0.95),
                                       borderRadius: BorderRadius.circular(16),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.08),
+                                          color: Colors.black.withValues(alpha:  0.08),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         ),
@@ -565,13 +617,13 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               end: Alignment.bottomRight,
                               colors: [
                                 _primaryColor,
-                                _primaryColor.withValues(alpha: 0.8),
+                                _primaryColor.withValues(alpha:  0.8),
                               ],
                             ),
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: _primaryColor.withValues(alpha: 0.3),
+                                color: _primaryColor.withValues(alpha:  0.3),
                                 blurRadius: 12,
                                 offset: const Offset(0, 6),
                               ),
@@ -591,7 +643,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                       width: 40,
                                       height: 40,
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.2),
+                                        color: Colors.white.withValues(alpha:  0.2),
                                         shape: BoxShape.circle,
                                       ),
                                       child: const Icon(
@@ -618,7 +670,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                             'Genera código QR para tu material',
                                             style: TextStyle(
                                               fontSize: 13,
-                                              color: Colors.white.withValues(alpha: 0.9),
+                                              color: Colors.white.withValues(alpha:  0.9),
                                             ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -627,7 +679,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                     ),
                                     Icon(
                                       Icons.arrow_forward_ios,
-                                      color: Colors.white.withValues(alpha: 0.8),
+                                      color: Colors.white.withValues(alpha:  0.8),
                                       size: 18,
                                     ),
                                   ],
@@ -677,10 +729,15 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                         const SizedBox(height: 16),
                         
                         // Lista de lotes con nuevo diseño
-                        ..._lotesRecientes.map((lote) => LoteCard(
-                          lote: lote,
-                          onQRTap: () => _showQRCode(lote),
-                          onDownloadTap: () => _downloadLote(lote['firebaseId']),
+                        ..._lotesRecientes.map((lote) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: LoteCard(
+                            lote: lote,
+                            onQRTap: () => _showQRCode(lote),
+                            onActionTap: () => _downloadLote(lote['firebaseId']),
+                            actionButtonText: 'Descargar',
+                            actionButtonIcon: Icons.download,
+                          ),
                         )),
                         
                         const SizedBox(height: 100), // Espacio para el FAB
@@ -704,15 +761,6 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
           tooltip: 'Nuevo Lote',
         ),
       ),
-
-      // Floating Action Button
-      floatingActionButton: EcoceFloatingActionButton(
-        onPressed: _navigateToNewLot,
-        icon: Icons.add,
-        backgroundColor: BioWayColors.ecoceGreen,
-        tooltip: 'Nuevo Lote',
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
