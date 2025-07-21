@@ -193,7 +193,10 @@ class UnifiedStatCard extends StatelessWidget {
             ),
           // Content
           Padding(
-            padding: EdgeInsets.all(isCompact ? 12.0 : 12.0),
+            padding: EdgeInsets.symmetric(
+              horizontal: isCompact ? 10.0 : 12.0,
+              vertical: isCompact ? 8.0 : 10.0,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
@@ -201,8 +204,8 @@ class UnifiedStatCard extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      width: isCompact ? 32 : 32,
-                      height: isCompact ? 32 : 32,
+                      width: isCompact ? 28 : 32,
+                      height: isCompact ? 28 : 32,
                       decoration: BoxDecoration(
                         color: iconColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
@@ -210,19 +213,25 @@ class UnifiedStatCard extends StatelessWidget {
                       child: Icon(
                         icon,
                         color: iconColor,
-                        size: isCompact ? 18 : 18,
+                        size: isCompact ? 16 : 18,
                       ),
                     ),
                     const SizedBox(width: 10),
-                    Flexible(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildValueWithUnit(
-                            fontSize: isCompact ? 20 : 20,
-                            unitFontSize: isCompact ? 14 : 14,
-                            fontWeight: FontWeight.bold,
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: _buildValueWithUnit(
+                              fontSize: isCompact ? 18 : 20,
+                              unitFontSize: isCompact ? 12 : 14,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
+                          const SizedBox(height: 2),
                           Text(
                             label,
                             style: TextStyle(
@@ -231,6 +240,7 @@ class UnifiedStatCard extends StatelessWidget {
                               height: 1.1,
                             ),
                             overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                         ],
                       ),

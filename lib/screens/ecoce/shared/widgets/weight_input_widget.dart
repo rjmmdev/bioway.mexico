@@ -13,6 +13,7 @@ class WeightInputWidget extends StatefulWidget {
   final List<int> quickAddValues;
   final Function(String)? onChanged;
   final String? Function(String?)? validator;
+  final bool isRequired;
 
   const WeightInputWidget({
     super.key,
@@ -25,6 +26,7 @@ class WeightInputWidget extends StatefulWidget {
     this.quickAddValues = const [100, 250, 500, 1000],
     this.onChanged,
     this.validator,
+    this.isRequired = false,
   });
 
   @override
@@ -108,13 +110,28 @@ class _WeightInputWidgetState extends State<WeightInputWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Label
-        Text(
-          widget.label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: BioWayColors.textGrey,
-          ),
+        Row(
+          children: [
+            Text(
+              widget.label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: BioWayColors.textGrey,
+              ),
+            ),
+            if (widget.isRequired) ...[
+              const SizedBox(width: 4),
+              Text(
+                '*',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: BioWayColors.error,
+                ),
+              ),
+            ],
+          ],
         ),
         SizedBox(height: screenHeight * 0.01),
         

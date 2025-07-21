@@ -9,8 +9,10 @@ import 'screens/ecoce/origen/origen_lotes_screen.dart';
 import 'screens/ecoce/origen/origen_crear_lote_screen.dart';
 
 // Screens - Reciclador
-import 'screens/ecoce/reciclador/reciclador_home_screen.dart';
-import 'screens/ecoce/reciclador/reciclador_lot_management_screen.dart';
+import 'screens/ecoce/reciclador/reciclador_inicio.dart';
+import 'screens/ecoce/reciclador/reciclador_administracion_lotes.dart';
+import 'screens/ecoce/reciclador/qr_scanner_screen.dart';
+import 'screens/ecoce/reciclador/reciclador_escaneo_qr.dart';
 import 'screens/ecoce/reciclador/reciclador_documentacion.dart';
 
 // Screens - Transporte
@@ -218,13 +220,14 @@ class BioWayApp extends StatelessWidget {
         '/origen_perfil': (context) => const EcocePerfilScreen(),
         
         // Rutas de Reciclador
-        '/reciclador_inicio': (context) => const RecicladorHomeScreen(),
-        '/reciclador_lotes': (context) => const RecicladorLotManagementScreen(),
+        '/reciclador_inicio': (context) => const RecicladorInicio(),
+        '/reciclador_lotes': (context) => const RecicladorAdministracionLotes(),
+        '/reciclador_escaneo': (context) => const RecicladorEscaneoQR(),
         '/reciclador_ayuda': (context) => const EcoceAyudaScreen(),
         '/reciclador_perfil': (context) => const EcocePerfilScreen(),
         '/reciclador_documentacion': (context) {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-          return RecicladorDocumentacion(loteData: args ?? {});
+          return RecicladorDocumentacion(lotId: args?['lotId'] ?? 'UNKNOWN');
         },
         
         // Rutas de Transporte

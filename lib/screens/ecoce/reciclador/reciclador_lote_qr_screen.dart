@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
-import '../../../utils/format_utils.dart';
-import '../shared/utils/material_utils.dart';
-import 'reciclador_home_screen.dart';
-import '../shared/widgets/lote_card_unified.dart';
+import 'reciclador_inicio.dart';
+import 'widgets/reciclador_lote_card.dart';
 import '../shared/widgets/qr_code_display_widget.dart';
 
 class RecicladorLoteQRScreen extends StatefulWidget {
@@ -82,12 +79,15 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
     super.dispose();
   }
 
-  String get _fechaEntradaFormateada {
-    return FormatUtils.formatDate(widget.fechaEntrada ?? DateTime.now());
-  }
+  // TODO: Eliminar si no se usa
+  // String get _fechaEntradaFormateada {
+  //   final fecha = widget.fechaEntrada ?? DateTime.now();
+  //   return '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}/${fecha.year}';
+  // }
 
   String get _fechaSalidaFormateada {
-    return FormatUtils.formatDate(widget.fechaSalida ?? DateTime.now());
+    final fecha = widget.fechaSalida ?? DateTime.now();
+    return '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}/${fecha.year}';
   }
 
 
@@ -128,19 +128,38 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
   void _irAInicio() {
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => const RecicladorHomeScreen()),
+      MaterialPageRoute(builder: (context) => const RecicladorInicio()),
       (route) => false,
     );
   }
 
-  Color _getMaterialColor(String material) {
-    return MaterialUtils.getMaterialColor(material);
-  }
+  // TODO: Eliminar si no se usa - usar MaterialUtils.getMaterialColor en su lugar
+  // Color _getMaterialColor(String material) {
+  //   switch (material) {
+  //     case 'PEBD':
+  //       return BioWayColors.pebdPink;
+  //     case 'PP':
+  //       return BioWayColors.ppPurple;
+  //     case 'Multilaminado':
+  //       return BioWayColors.multilaminadoBrown;
+  //     default:
+  //       return BioWayColors.ecoceGreen;
+  //   }
+  // }
 
-  IconData _getMaterialIcon(String material) {
-    return MaterialUtils.getMaterialIcon(material);
-  }
-
+  // TODO: Eliminar si no se usa - usar MaterialUtils.getMaterialIcon en su lugar
+  // IconData _getMaterialIcon(String material) {
+  //   switch (material) {
+  //     case 'PEBD':
+  //       return Icons.shopping_bag;
+  //     case 'PP':
+  //       return Icons.kitchen;
+  //     case 'Multilaminado':
+  //       return Icons.layers;
+  //     default:
+  //       return Icons.recycling;
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -260,7 +279,7 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
                       ),
                     ),
                     const SizedBox(height: 12),
-                    LoteCard(
+                    RecicladorLoteCard(
                       lote: {
                         'id': widget.loteId,
                         'material': widget.material,
@@ -271,7 +290,6 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
                         'estado': 'finalizado',
                       },
                       showActions: false,
-                      showStatus: true,
                       onTap: null,
                     ),
                   ],

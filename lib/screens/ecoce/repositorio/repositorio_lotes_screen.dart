@@ -13,8 +13,8 @@ import '../origen/origen_lotes_screen.dart';
 import '../shared/ecoce_ayuda_screen.dart';
 import '../shared/ecoce_perfil_screen.dart';
 import '../origen/origen_crear_lote_screen.dart';
-import '../reciclador/reciclador_home_screen.dart';
-import '../reciclador/reciclador_lot_management_screen.dart';
+import '../reciclador/reciclador_inicio.dart';
+import '../reciclador/reciclador_administracion_lotes.dart';
 import '../transporte/transporte_lot_management_screen.dart';
 import '../transporte/transporte_delivery_screen.dart';
 import '../shared/widgets/qr_scanner_widget.dart';
@@ -588,14 +588,14 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
       case 0:
         NavigationUtils.navigateWithFade(
           context,
-          const RecicladorHomeScreen(),
+          const RecicladorInicio(),
           replacement: true,
         );
         break;
       case 1:
         NavigationUtils.navigateWithFade(
           context,
-          const RecicladorLotManagementScreen(),
+          const RecicladorAdministracionLotes(),
           replacement: true,
         );
         break;

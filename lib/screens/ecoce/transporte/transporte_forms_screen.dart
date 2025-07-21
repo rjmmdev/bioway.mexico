@@ -3,6 +3,7 @@ import 'dart:io';
 import '../../../utils/colors.dart';
 import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
+import '../shared/widgets/weight_input_widget.dart';
 import '../shared/utils/dialog_utils.dart';
 import '../shared/utils/shared_input_decorations.dart';
 import 'transporte_services.dart';
@@ -500,15 +501,11 @@ class _TransporteFormsScreenState extends State<TransporteFormsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          TextFormField(
+          WeightInputWidget(
             controller: _confirmWeightController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: SharedInputDecorations.ecoceStyle(
-              hintText: 'Confirma el peso recibido',
-              labelText: 'Peso Confirmado (kg)',
-              primaryColor: primaryColor,
-              prefixIcon: Icons.scale,
-            ),
+            label: 'Peso Confirmado',
+            primaryColor: primaryColor,
+            quickAddValues: const [50, 100, 250, 500],
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Este campo es requerido';

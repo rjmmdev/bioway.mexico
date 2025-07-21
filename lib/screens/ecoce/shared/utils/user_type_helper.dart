@@ -22,7 +22,7 @@ class UserTypeHelper {
     // Para otros tipos de usuario
     switch (profile.ecoceTipoActor) {
       case 'R':
-        return BioWayColors.recycleOrange; // Reciclador
+        return BioWayColors.ecoceGreen; // Reciclador
       case 'V':
         return BioWayColors.petBlue; // Transporte
       case 'T':
@@ -76,8 +76,8 @@ class UserTypeHelper {
       case 'R':
         return FabConfig(
           icon: Icons.add,
-          onPressed: () => Navigator.pushNamed(context, '/reciclador_lotes'),
-          tooltip: 'Escanear Lotes',
+          onPressed: () => Navigator.pushNamed(context, '/reciclador_escaneo'),
+          tooltip: 'Escanear Lote',
         );
       case 'V':
         return null; // Transportista no tiene FAB

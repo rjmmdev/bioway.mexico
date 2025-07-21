@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import '../../../../utils/colors.dart';
 import '../../../../services/image_service.dart';
-import '../../reciclador/widgets/image_preview.dart';
+import 'image_preview_dialog.dart';
 
 /// Widget compartido para captura y gestión de múltiples evidencias fotográficas
 /// Puede ser utilizado por cualquier usuario del sistema ECOCE
@@ -190,12 +190,15 @@ class _PhotoEvidenceWidgetState extends State<PhotoEvidenceWidget> {
   }
 
   void _viewPhoto(File photo) {
-    showDialog(
+    ImagePreviewDialog.show(
       context: context,
-      builder: (context) => ImagePreviewDialog(
-        image: photo,
-        title: 'Evidencia fotográfica',
-      ),
+      imageFile: photo,
+      onDelete: () {
+        setState(() {
+          _photos.remove(photo);
+        });
+        widget.onPhotosChanged(_photos);
+      },
     );
   }
 

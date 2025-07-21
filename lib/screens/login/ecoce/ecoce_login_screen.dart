@@ -7,7 +7,7 @@ import '../../../services/firebase/firebase_manager.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
 import '../../ecoce/shared/utils/dialog_utils.dart';
 import 'ecoce_tipo_proveedor_selector.dart';
-import '../../ecoce/reciclador/reciclador_home_screen.dart';
+import '../../ecoce/reciclador/reciclador_inicio.dart';
 // TEMPORAL: Importar pantallas de inicio
 import '../../ecoce/origen/origen_inicio_screen.dart';
 import '../../ecoce/maestro/maestro_unified_screen.dart';
@@ -419,7 +419,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
 
     switch (userType.toLowerCase()) {
       case 'reciclador':
-        targetScreen = const RecicladorHomeScreen();
+        targetScreen = const RecicladorInicio();
         break;
       case 'acopiador':
         targetScreen = const OrigenInicioScreen();

@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../../utils/colors.dart';
 import 'reciclador_lote_qr_screen.dart';
-import '../shared/widgets/document_upload_widget.dart';
+import '../shared/widgets/document_upload_per_requirement_widget.dart';
 
 class RecicladorDocumentacion extends StatelessWidget {
-  final String? lotId;
-  final Map<String, dynamic>? loteData;
+  final String lotId;
   
   const RecicladorDocumentacion({
     super.key,
-    this.lotId,
-    this.loteData,
-  }) : assert(lotId != null || loteData != null, 'Either lotId or loteData must be provided');
+    required this.lotId,
+  });
 
-  void _onDocumentsSubmitted(BuildContext context, List<DocumentInfo> documents) {
+  void _onDocumentsSubmitted(BuildContext context, Map<String, DocumentInfo> documents) {
     // Mostrar diálogo de éxito
     showDialog(
       context: context,
@@ -59,14 +57,14 @@ class RecicladorDocumentacion extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) => RecicladorLoteQRScreen(
-                      loteId: lotId ?? loteData?['id'] ?? '',
+                      loteId: lotId,
                       material: 'PET', // En producción vendría de la base de datos
                       pesoOriginal: 100.0, // En producción vendría de la base de datos
                       presentacion: 'Pacas', // En producción vendría de la base de datos
                       origen: 'Acopiador Norte', // En producción vendría de la base de datos
                       fechaEntrada: DateTime.now().subtract(const Duration(days: 2)),
                       fechaSalida: DateTime.now(),
-                      documentosCargados: documents.map((doc) => doc.fileName).toList(),
+                      documentosCargados: documents.values.map((doc) => doc.fileName).toList(),
                       mostrarMensajeExito: true,
                     ),
                   ),
@@ -89,20 +87,17 @@ class RecicladorDocumentacion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DocumentUploadWidget(
+    return DocumentUploadPerRequirementWidget(
       title: 'Documentación Técnica',
-      subtitle: 'Carga los documentos técnicos',
-      lotId: lotId ?? loteData?['id'] ?? '',
-      requiredDocuments: const [
-        'Ficha Técnica del Pellet',
-        'Reporte de Resultados de Reciclaje',
-      ],
+      subtitle: 'Carga un documento por cada requisito',
+      lotId: lotId,
+      requiredDocuments: const {
+        'ficha_tecnica': 'Ficha Técnica del Pellet',
+        'reporte_reciclaje': 'Reporte de Resultados de Reciclaje',
+      },
       onDocumentsSubmitted: (documents) => _onDocumentsSubmitted(context, documents),
       primaryColor: BioWayColors.ecoceGreen,
       userType: 'reciclador',
-      additionalInfoText: 'Mínimo 1 documento requerido, máximo 2 documentos permitidos',
-      minDocuments: 1,
-      maxDocuments: 2,
     );
   }
 }

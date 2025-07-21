@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../utils/colors.dart';
 import 'laboratorio_gestion_muestras.dart';
-import '../shared/widgets/document_upload_widget.dart';
+import '../shared/widgets/document_upload_per_requirement_widget.dart';
 
 class LaboratorioDocumentacion extends StatelessWidget {
   final String muestraId;
@@ -11,7 +11,7 @@ class LaboratorioDocumentacion extends StatelessWidget {
     required this.muestraId,
   });
 
-  void _onDocumentsSubmitted(BuildContext context, List<DocumentInfo> documents) {
+  void _onDocumentsSubmitted(BuildContext context, Map<String, DocumentInfo> documents) {
     // Mostrar diálogo de éxito
     showDialog(
       context: context,
@@ -80,13 +80,13 @@ class LaboratorioDocumentacion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DocumentUploadWidget(
+    return DocumentUploadPerRequirementWidget(
       title: 'Documentación de Análisis',
-      subtitle: 'Carga los documentos del análisis',
+      subtitle: 'Carga un documento por cada requisito',
       lotId: muestraId,
-      requiredDocuments: const [
-        'Informe Técnico o Ficha Técnica',
-      ],
+      requiredDocuments: const {
+        'informe_tecnico': 'Informe Técnico o Ficha Técnica',
+      },
       onDocumentsSubmitted: (documents) => _onDocumentsSubmitted(context, documents),
       primaryColor: BioWayColors.ecoceGreen,
       userType: 'laboratorio',
