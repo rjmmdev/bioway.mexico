@@ -9,9 +9,17 @@ import '../shared/widgets/weight_input_widget.dart';
 import '../shared/widgets/section_card.dart';
 import '../shared/widgets/field_label.dart';
 import 'transformador_lote_detalle_screen.dart';
+import 'transformador_escaneo_screen.dart';
 
 class TransformadorRecibirLoteScreen extends StatefulWidget {
-  const TransformadorRecibirLoteScreen({super.key});
+  final List<String>? lotIds;
+  final int? totalLotes;
+  
+  const TransformadorRecibirLoteScreen({
+    super.key,
+    this.lotIds,
+    this.totalLotes,
+  });
 
   @override
   State<TransformadorRecibirLoteScreen> createState() => _TransformadorRecibirLoteScreenState();
@@ -28,8 +36,6 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
   final TextEditingController _productoFabricadoController = TextEditingController();
   final TextEditingController _composicionMaterialController = TextEditingController();
   
-  // Variable para el tipo de polímero
-  String? _tipoPolimero;
   
   // Variables para los tipos de análisis
   final Map<String, bool> _tiposAnalisis = {
@@ -62,6 +68,13 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
   @override
   void initState() {
     super.initState();
+    
+    // Si no vienen con lotes, ir primero al escaneo
+    if (widget.lotIds == null || widget.lotIds!.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navigateToScanning();
+      });
+    }
     
     // Listener para el campo de comentarios
     _comentariosFocus.addListener(() {
@@ -115,20 +128,6 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
       return;
     }
     
-    // Validar tipo de polímero
-    if (_tipoPolimero == null || _tipoPolimero!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Por favor seleccione el tipo de polímero'),
-          backgroundColor: BioWayColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-      return;
-    }
     
     // Validar que haya al menos un tipo de análisis seleccionado
     final analisisSeleccionados = _tiposAnalisis.entries
@@ -196,7 +195,7 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
           composicionMaterial: _composicionMaterialController.text,
           fechaCreacion: fechaCreacion,
           mostrarMensajeExito: true,
-          tipoPolimero: _tipoPolimero,
+          tipoPolimero: null,
         ),
       ),
     );
@@ -240,15 +239,26 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
     );
   }
 
+  void _navigateToScanning() async {
+    final result = await Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const TransformadorEscaneoScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: _primaryColor,
         elevation: 0,
-        title: const Text(
-          'Crear Nuevo Lote',
-          style: TextStyle(
+        title: Text(
+          widget.totalLotes != null 
+              ? 'Recibir ${widget.totalLotes} Lote${widget.totalLotes! > 1 ? 's' : ''}'
+              : 'Crear Nuevo Lote',
+          style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -265,10 +275,63 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
           controller: _scrollController,
           padding: const EdgeInsets.all(16),
           children: [
+            // Sección de lotes a procesar
+            if (widget.lotIds != null && widget.lotIds!.isNotEmpty)
+              SectionCard(
+                icon: '📦',
+                title: 'Lotes a Procesar',
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _primaryColor.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.qr_code_2,
+                              color: _primaryColor,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${widget.lotIds!.length} lote${widget.lotIds!.length > 1 ? 's' : ''} registrado${widget.lotIds!.length > 1 ? 's' : ''}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: _primaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ...widget.lotIds!.map((id) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Text(
+                            '• $id',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        )).toList(),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            
             // Sección de peso
             SectionCard(
               icon: '⚖️',
-              title: 'Peso del Material',
+              title: 'Peso Total del Material',
               children: [
                 WeightInputWidget(
                   controller: _pesoController,
@@ -281,65 +344,6 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
                     final peso = double.tryParse(value);
                     if (peso == null || peso <= 0) {
                       return 'Por favor ingrese un peso válido';
-                    }
-                    return null;
-                  },
-                ),
-              ],
-            ),
-            
-            // Sección de tipo de polímero
-            SectionCard(
-              icon: '🧬',
-              title: 'Tipo de Polímero',
-              children: [
-                DropdownButtonFormField<String>(
-                  value: _tipoPolimero,
-                  decoration: InputDecoration(
-                    hintText: 'Seleccione el tipo de polímero',
-                    prefixIcon: Icon(
-                      Icons.category,
-                      color: _primaryColor,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: Colors.grey[300]!,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: _primaryColor,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                  items: const [
-                    DropdownMenuItem(
-                      value: 'PEBD',
-                      child: Text('PEBD'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'PP',
-                      child: Text('PP'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'Multilaminado',
-                      child: Text('Multilaminado'),
-                    ),
-                  ],
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      _tipoPolimero = newValue;
-                    });
-                  },
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor seleccione el tipo de polímero';
                     }
                     return null;
                   },

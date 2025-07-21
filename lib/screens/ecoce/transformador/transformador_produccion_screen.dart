@@ -18,6 +18,11 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
   late TabController _tabController;
   int _selectedTabIndex = 0;
   
+  // Filtros
+  String _selectedPolimero = 'Todos';
+  String _selectedTiempo = 'Este Mes';
+  List<String> _selectedProcesos = [];
+  
   // Datos de ejemplo
   final double _capacidadUtilizada = 85;
   final double _materialProcesado = 1.2;
@@ -601,6 +606,92 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
     }
   }
 
+  List<Map<String, dynamic>> get _lotesFiltrados {
+    List<Map<String, dynamic>> lotes = _selectedTabIndex == 0 ? _lotesEnProceso : _lotesCompletados;
+    
+    return lotes.where((lote) {
+      // Filtrar por polímero
+      if (_selectedPolimero != 'Todos' && lote['tipoPolimero'] != _selectedPolimero) {
+        return false;
+      }
+      
+      // Filtrar por tiempo
+      final fechaISO = DateTime.parse(lote['fechaISO']);
+      final now = DateTime.now();
+      switch (_selectedTiempo) {
+        case 'Esta Semana':
+          final weekStart = now.subtract(Duration(days: now.weekday - 1));
+          if (!fechaISO.isAfter(weekStart)) return false;
+          break;
+        case 'Este Mes':
+          if (fechaISO.month != now.month || fechaISO.year != now.year) return false;
+          break;
+        case 'Últimos tres meses':
+          final threeMonthsAgo = DateTime(now.year, now.month - 3, now.day);
+          if (!fechaISO.isAfter(threeMonthsAgo)) return false;
+          break;
+        case 'Este Año':
+          if (fechaISO.year != now.year) return false;
+          break;
+      }
+      
+      // Filtrar por procesos
+      if (_selectedProcesos.isNotEmpty) {
+        final procesosLote = List<String>.from(lote['procesosAplicados'] ?? []);
+        // Verificar que el lote tenga al menos uno de los procesos seleccionados
+        bool tieneProcesoSeleccionado = false;
+        for (String proceso in _selectedProcesos) {
+          if (procesosLote.contains(proceso)) {
+            tieneProcesoSeleccionado = true;
+            break;
+          }
+        }
+        if (!tieneProcesoSeleccionado) return false;
+      }
+      
+      return true;
+    }).toList();
+  }
+
+  Map<String, dynamic> _getEstadisticas() {
+    final lotesFiltrados = _lotesFiltrados;
+    
+    if (lotesFiltrados.isEmpty) {
+      return {
+        'total': 0,
+        'pesoTotal': 0.0,
+        'procesoMasComun': 'N/A',
+      };
+    }
+    
+    // Peso total
+    double pesoTotal = 0.0;
+    Map<String, int> conteoProcesos = {};
+    
+    for (var lote in lotesFiltrados) {
+      pesoTotal += lote['peso'] as double;
+      
+      // Contar procesos
+      List<String> procesos = List<String>.from(lote['procesosAplicados'] ?? []);
+      for (String proceso in procesos) {
+        conteoProcesos[proceso] = (conteoProcesos[proceso] ?? 0) + 1;
+      }
+    }
+    
+    // Proceso más común
+    String procesoMasComun = 'N/A';
+    if (conteoProcesos.isNotEmpty) {
+      var entrada = conteoProcesos.entries.reduce((a, b) => a.value > b.value ? a : b);
+      procesoMasComun = entrada.key;
+    }
+    
+    return {
+      'total': lotesFiltrados.length,
+      'pesoTotal': pesoTotal,
+      'procesoMasComun': procesoMasComun,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -720,15 +811,25 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                 ),
               ),
               
+              // Filtros
+              SliverToBoxAdapter(
+                child: _buildFilterSection(),
+              ),
+              
+              // Estadísticas dinámicas
+              SliverToBoxAdapter(
+                child: _buildStatisticsCard(),
+              ),
+              
               // Contenido de los tabs
               SliverToBoxAdapter(
                 child: Container(
                   padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: _selectedTabIndex == 0
-                        ? _lotesEnProceso.map((lote) => _buildLoteCard(lote)).toList()
-                        : _lotesCompletados.map((lote) => _buildLoteCard(lote)).toList(),
-                  ),
+                  child: _lotesFiltrados.isEmpty
+                      ? _buildEmptyState()
+                      : Column(
+                          children: _lotesFiltrados.map((lote) => _buildLoteCard(lote)).toList(),
+                        ),
                 ),
               ),
               
@@ -759,6 +860,339 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
           backgroundColor: BioWayColors.ecoceGreen,
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      ),
+    );
+  }
+
+  Widget _buildFilterSection() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Filtro de polímeros (chips horizontales scrollables)
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: ['Todos', 'PEBD', 'PP', 'Multilaminado'].map((polimero) {
+                final isSelected = _selectedPolimero == polimero;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(polimero),
+                    selected: isSelected,
+                    selectedColor: BioWayColors.ecoceGreen.withOpacity(0.2),
+                    labelStyle: TextStyle(
+                      color: isSelected ? BioWayColors.ecoceGreen : Colors.grey[700],
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                    onSelected: (_) {
+                      setState(() {
+                        _selectedPolimero = polimero;
+                      });
+                    },
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Filtros de tiempo y procesos
+          Row(
+            children: [
+              // Dropdown de tiempo
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _selectedTiempo,
+                      isDense: true,
+                      icon: Icon(Icons.arrow_drop_down, color: BioWayColors.ecoceGreen),
+                      style: TextStyle(fontSize: 14, color: Colors.black87),
+                      items: ['Esta Semana', 'Este Mes', 'Últimos tres meses', 'Este Año']
+                          .map((tiempo) => DropdownMenuItem(
+                                value: tiempo,
+                                child: Text(tiempo),
+                              ))
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedTiempo = value!;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Botón de filtro de procesos
+              Expanded(
+                child: InkWell(
+                  onTap: _showProcesosFilterDialog,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _selectedProcesos.isEmpty
+                              ? 'Todos los procesos'
+                              : '${_selectedProcesos.length} proceso(s)',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: _selectedProcesos.isEmpty ? Colors.black87 : BioWayColors.ecoceGreen,
+                            fontWeight: _selectedProcesos.isEmpty ? FontWeight.normal : FontWeight.bold,
+                          ),
+                        ),
+                        Icon(
+                          Icons.filter_list,
+                          size: 20,
+                          color: _selectedProcesos.isEmpty ? Colors.grey : BioWayColors.ecoceGreen,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showProcesosFilterDialog() {
+    final procesosList = [
+      'Lavado',
+      'Secado',
+      'Trituración',
+      'Extrusión',
+      'Inyección',
+      'Soplado',
+      'Termoformado',
+      'Laminado',
+      'Rotomoldeo',
+      'Clasificación',
+      'Empaque'
+    ];
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Row(
+                children: [
+                  Icon(Icons.filter_list, color: BioWayColors.ecoceGreen),
+                  const SizedBox(width: 12),
+                  const Text('Filtrar por Proceso'),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: procesosList.map((proceso) {
+                    final isSelected = _selectedProcesos.contains(proceso);
+                    return CheckboxListTile(
+                      title: Text(proceso),
+                      value: isSelected,
+                      activeColor: BioWayColors.ecoceGreen,
+                      onChanged: (bool? value) {
+                        setDialogState(() {
+                          if (value == true) {
+                            _selectedProcesos.add(proceso);
+                          } else {
+                            _selectedProcesos.remove(proceso);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    setDialogState(() {
+                      _selectedProcesos.clear();
+                    });
+                  },
+                  child: Text(
+                    'Limpiar',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {});
+                    Navigator.of(context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: BioWayColors.ecoceGreen,
+                  ),
+                  child: const Text('Aplicar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildStatisticsCard() {
+    final estadisticas = _getEstadisticas();
+    
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            BioWayColors.ecoceGreen,
+            BioWayColors.ecoceGreen.withOpacity(0.8),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: BioWayColors.ecoceGreen.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.analytics_outlined, color: Colors.white, size: 24),
+              const SizedBox(width: 8),
+              Text(
+                'Estadísticas Filtradas',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildStatisticItem(
+                'Lotes',
+                estadisticas['total'].toString(),
+                Icons.inventory_2_outlined,
+              ),
+              _buildStatisticItem(
+                'Peso Total',
+                '${estadisticas['pesoTotal'].toStringAsFixed(1)} kg',
+                Icons.scale_outlined,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildStatisticItem(
+            'Proceso Más Común',
+            estadisticas['procesoMasComun'],
+            Icons.settings,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatisticItem(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: Colors.white70, size: 16),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white70,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      height: 300,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.filter_alt_off_outlined,
+              size: 80,
+              color: Colors.grey[300],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No hay lotes con los filtros seleccionados',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Intenta ajustar los filtros',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

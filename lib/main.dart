@@ -27,6 +27,8 @@ import 'screens/ecoce/transporte/transporte_perfil_screen.dart';
 // Screens - Transformador
 import 'screens/ecoce/transformador/transformador_inicio_screen.dart';
 import 'screens/ecoce/transformador/transformador_produccion_screen.dart';
+import 'screens/ecoce/transformador/transformador_escaneo_screen.dart';
+import 'screens/ecoce/transformador/transformador_lotes_registro_screen.dart';
 import 'screens/ecoce/transformador/transformador_recibir_lote_screen.dart';
 import 'screens/ecoce/transformador/transformador_perfil.dart';
 import 'screens/ecoce/transformador/transformador_ayuda.dart';
@@ -233,6 +235,8 @@ class BioWayApp extends StatelessWidget {
         // Rutas de Transformador
         '/transformador_inicio': (context) => const TransformadorInicioScreen(),
         '/transformador_produccion': (context) => const TransformadorProduccionScreen(),
+        '/transformador_escaneo': (context) => const TransformadorEscaneoScreen(),
+        '/transformador_lotes_registro': (context) => const TransformadorLotesRegistroScreen(),
         '/transformador_recibir_lote': (context) => const TransformadorRecibirLoteScreen(),
         '/transformador_perfil': (context) => const TransformadorPerfilScreen(),
         '/transformador_ayuda': (context) => const TransformadorAyudaScreen(),
