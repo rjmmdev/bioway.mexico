@@ -13,6 +13,7 @@ import '../../ecoce/origen/origen_inicio_screen.dart';
 import '../../ecoce/maestro/maestro_unified_screen.dart';
 import '../../ecoce/repositorio/repositorio_lotes_screen.dart';
 import '../../ecoce/shared/pending_approval_screen.dart';
+import '../../ecoce/laboratorio/laboratorio_inicio.dart';
 
 class ECOCELoginScreen extends StatefulWidget {
   const ECOCELoginScreen({super.key});
@@ -435,7 +436,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         Navigator.pushReplacementNamed(context, '/transporte_recoger');
         return;
       case 'laboratorio':
-        targetScreen = const OrigenInicioScreen(); // TEMPORAL
+        targetScreen = const LaboratorioInicioScreen();
         break;
       case 'repositorio':
         targetScreen = RepositorioLotesScreen(

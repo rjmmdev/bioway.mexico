@@ -64,9 +64,37 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
       if (placemarks.isNotEmpty) {
         Placemark place = placemarks[0];
         
+        // Separar calle y número exterior
+        String streetFull = place.street ?? '';
+        String streetName = '';
+        String streetNumber = '';
+        
+        // Patrones comunes para detectar números en direcciones
+        // Busca números al final de la cadena (más común en México)
+        // Captura números como: 123, 123A, 123-A, 123 A, S/N
+        final RegExp regExpEndNumber = RegExp(r'(.+?)\s+(\d+[\s-]?[A-Za-z]?|S\/N|s\/n)$');
+        // Busca números al principio (formato anglosajón)
+        final RegExp regExpStartNumber = RegExp(r'^(\d+[\s-]?[A-Za-z]?)\s+(.+)$');
+        
+        if (regExpEndNumber.hasMatch(streetFull)) {
+          // Número al final (más común en México)
+          final match = regExpEndNumber.firstMatch(streetFull);
+          streetName = match?.group(1)?.trim() ?? '';
+          streetNumber = match?.group(2)?.trim() ?? '';
+        } else if (regExpStartNumber.hasMatch(streetFull)) {
+          // Número al principio
+          final match = regExpStartNumber.firstMatch(streetFull);
+          streetNumber = match?.group(1)?.trim() ?? '';
+          streetName = match?.group(2)?.trim() ?? '';
+        } else {
+          // No se encontró un patrón claro, usar la calle completa
+          streetName = streetFull;
+        }
+        
         setState(() {
           _addressComponents = {
-            'calle': place.street ?? '',
+            'calle': streetName,
+            'numero_exterior': streetNumber,
             'colonia': place.subLocality ?? '',
             'municipio': place.locality ?? '',
             'estado': place.administrativeArea ?? '',

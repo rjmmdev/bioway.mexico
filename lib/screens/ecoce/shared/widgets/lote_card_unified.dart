@@ -138,11 +138,15 @@ class LoteCard extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            Text(
-                              'Lote #$id',
-                              style: TextStyle(
-                                fontSize: isTablet ? 18 : 16,
-                                fontWeight: FontWeight.bold,
+                            Flexible(
+                              child: Text(
+                                'Lote #$id',
+                                style: TextStyle(
+                                  fontSize: isTablet ? 18 : 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                             ),
                             if (showStatus && estado != null) ...[
@@ -158,6 +162,8 @@ class LoteCard extends StatelessWidget {
                             fontSize: isTablet ? 14 : 12,
                             color: Colors.grey[600],
                           ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
                       ],
                     ),
@@ -217,7 +223,7 @@ class LoteCard extends StatelessWidget {
       width: 48,
       height: 48,
       decoration: BoxDecoration(
-        color: MaterialUtils.getMaterialColor(material).withValues(alpha: 0.1),
+        color: MaterialUtils.getMaterialColor(material).withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(
@@ -236,7 +242,13 @@ class LoteCard extends StatelessWidget {
         child: ElevatedButton.icon(
           onPressed: onActionTap,
           icon: Icon(actionButtonIcon ?? Icons.arrow_forward, size: 18),
-          label: Text(actionButtonText!),
+          label: Flexible(
+            child: Text(
+              actionButtonText!,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
           style: ElevatedButton.styleFrom(
             backgroundColor: actionButtonColor ?? Theme.of(context).primaryColor,
             shape: RoundedRectangleBorder(
@@ -256,7 +268,7 @@ class LoteCard extends StatelessWidget {
         icon: const Icon(Icons.qr_code),
         tooltip: 'Ver código QR',
         style: IconButton.styleFrom(
-          backgroundColor: Colors.black.withValues(alpha: 0.05),
+          backgroundColor: Colors.black.withOpacity(0.05),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
@@ -285,9 +297,9 @@ class LoteCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: statusColor.withValues(alpha: 0.1),
+        color: statusColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: statusColor.withValues(alpha: 0.5)),
+        border: Border.all(color: statusColor.withOpacity(0.5)),
       ),
       child: Text(
         estado,
@@ -302,23 +314,28 @@ class LoteCard extends StatelessWidget {
   
   Widget _buildInfoChip(IconData icon, String label, Color color) {
     return Container(
+      constraints: const BoxConstraints(maxWidth: 150),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: color),
           const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: color,
-              fontWeight: FontWeight.w500,
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: color,
+                fontWeight: FontWeight.w500,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
         ],

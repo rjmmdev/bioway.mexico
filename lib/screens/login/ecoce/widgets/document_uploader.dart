@@ -77,7 +77,7 @@ class _DocumentUploaderState extends State<DocumentUploader> {
                     ),
                   ),
                   Text(
-                    'Todos los documentos son obligatorios',
+                    'Los documentos son opcionales pero recomendados',
                     style: TextStyle(fontSize: 12, color: BioWayColors.textGrey),
                   ),
                 ],
@@ -125,7 +125,7 @@ class _DocumentUploaderState extends State<DocumentUploader> {
       // Seleccionar archivo
       final file = await _documentService.pickDocument(
         documentType: documentKey,
-        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+        allowedExtensions: ['pdf', 'doc', 'docx'],
       );
 
       if (file != null) {

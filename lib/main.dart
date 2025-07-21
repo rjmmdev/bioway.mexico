@@ -16,7 +16,7 @@ import 'screens/ecoce/reciclador/reciclador_escaneo_qr.dart';
 import 'screens/ecoce/reciclador/reciclador_documentacion.dart';
 
 // Screens - Transporte
-import 'screens/ecoce/transporte/transporte_lot_management_screen.dart';
+import 'screens/ecoce/transporte/transporte_escaneo_qr.dart';
 import 'screens/ecoce/transporte/transporte_delivery_screen.dart';
 
 // Screens - Shared
@@ -30,7 +30,8 @@ import 'screens/ecoce/transformador/transformador_recibir_lote_screen.dart';
 import 'screens/ecoce/transformador/transformador_documentacion_screen.dart';
 
 // Screens - Laboratorio
-import 'screens/ecoce/laboratorio/laboratorio_inicio_screen.dart';
+import 'screens/ecoce/laboratorio/laboratorio_inicio.dart';
+import 'screens/ecoce/laboratorio/laboratorio_gestion_muestras.dart';
 
 // Screens - Maestro
 import 'screens/ecoce/maestro/maestro_unified_screen.dart';
@@ -231,7 +232,7 @@ class BioWayApp extends StatelessWidget {
         },
         
         // Rutas de Transporte
-        '/transporte_recoger': (context) => const TransporteLotManagementScreen(),
+        '/transporte_recoger': (context) => const TransporteEscaneoQR(),
         '/transporte_entregar': (context) => const TransporteDeliveryScreen(),
         '/transporte_ayuda': (context) => const EcoceAyudaScreen(),
         '/transporte_perfil': (context) => const EcocePerfilScreen(),
@@ -253,6 +254,7 @@ class BioWayApp extends StatelessWidget {
           // Importar la pantalla dinámicamente para evitar problemas de importación circular
           return const LaboratorioInicioScreen();
         },
+        '/laboratorio_muestras': (context) => const LaboratorioGestionMuestras(),
         '/laboratorio_perfil': (context) => const EcocePerfilScreen(),
         '/laboratorio_ayuda': (context) => const EcoceAyudaScreen(),
         

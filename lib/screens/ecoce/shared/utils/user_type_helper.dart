@@ -207,6 +207,10 @@ class UserTypeHelper {
         if (tipoActor == 'V') {
           return '${basePath}_entregar';
         }
+        // Laboratorio tiene muestras en índice 1
+        if (tipoActor == 'L') {
+          return '${basePath}_muestras';
+        }
         return '${basePath}_lotes';
       case 2:
         // Todos usan la misma pantalla de ayuda

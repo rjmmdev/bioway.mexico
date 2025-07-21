@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
 import 'origen_config.dart';
 import 'origen_inicio_screen.dart';
 import '../shared/widgets/lote_card_unified.dart';
 import '../shared/widgets/qr_code_display_widget.dart';
-import '../shared/utils/material_utils.dart';
 
 class OrigenLoteDetalleScreen extends StatefulWidget {
   final String firebaseId;
@@ -169,13 +167,13 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
                           end: Alignment.bottomRight,
                           colors: [
                             BioWayColors.success,
-                            BioWayColors.success.withValues(alpha: 0.8),
+                            BioWayColors.success.withOpacity(0.8),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: BioWayColors.success.withValues(alpha: 0.3),
+                            color: BioWayColors.success.withOpacity(0.3),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -187,7 +185,7 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
                             width: 56,
                             height: 56,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
+                              color: Colors.white.withOpacity(0.2),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -213,7 +211,7 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
                                 Text(
                                   'ID: ${widget.firebaseId}',
                                   style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.9),
+                                    color: Colors.white.withOpacity(0.9),
                                     fontSize: 14,
                                   ),
                                 ),

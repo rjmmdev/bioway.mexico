@@ -10,10 +10,9 @@ import 'origen_lotes_screen.dart';
 import '../shared/ecoce_ayuda_screen.dart';
 import '../shared/ecoce_perfil_screen.dart';
 import 'origen_lote_detalle_screen.dart';
-import '../shared/widgets/lote_card_unified.dart';
+import 'widgets/origen_lote_card.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/unified_stat_card.dart';
-import 'origen_config.dart';
 
 class OrigenInicioScreen extends StatefulWidget {
   const OrigenInicioScreen({super.key});
@@ -51,28 +50,34 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
   // Lista de lotes recientes con IDs de Firebase
   final List<Map<String, dynamic>> _lotesRecientes = [
     {
+      'id': 'FID_1x7h9k3',
       'firebaseId': 'FID_1x7h9k3',
       'material': 'PEBD',
       'peso': 150.0,
       'presentacion': 'Pacas',
       'fuente': 'Programa Escolar Norte',
-      'fecha': '15/07/2025',
+      'fecha': DateTime.now().subtract(const Duration(days: 1)),
+      'estado': 'activo',
     },
     {
+      'id': 'FID_2y8j0l4',
       'firebaseId': 'FID_2y8j0l4',
       'material': 'PP',
       'peso': 200.5,
       'presentacion': 'Sacos',
       'fuente': 'Recolección Municipal',
-      'fecha': '14/07/2025',
+      'fecha': DateTime.now().subtract(const Duration(days: 2)),
+      'estado': 'activo',
     },
     {
+      'id': 'FID_3z9k1m5',
       'firebaseId': 'FID_3z9k1m5',
       'material': 'Multi',
       'peso': 175.0,
       'presentacion': 'Pacas',
       'fuente': 'Centro Comunitario Sur',
-      'fecha': '14/07/2025',
+      'fecha': DateTime.now().subtract(const Duration(days: 2)),
+      'estado': 'activo',
     },
   ];
   
@@ -152,20 +157,6 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
     );
   }
 
-  void _downloadLote(String firebaseId) {
-    HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Descargando lote $firebaseId...'),
-        backgroundColor: BioWayColors.info,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        duration: const Duration(seconds: 1),
-      ),
-    );
-  }
 
   void _showQRCode(Map<String, dynamic> lote) {
     HapticFeedback.lightImpact();
@@ -179,7 +170,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
               peso: lote['peso'].toDouble(),
               presentacion: lote['presentacion'],
               fuente: lote['fuente'],
-              fechaCreacion: DateTime.now(),
+              fechaCreacion: lote['fecha'] ?? DateTime.now(),
               mostrarMensajeExito: false,
             ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -287,7 +278,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                   end: Alignment.bottomRight,
                   colors: [
                     _primaryColor,
-                    _primaryColor.withValues(alpha:  0.8),
+                    _primaryColor.withOpacity(0.8),
                   ],
                 ),
               ),
@@ -302,7 +293,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                         height: 200,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha:  0.1),
+                          color: Colors.white.withOpacity(0.1),
                         ),
                       ),
                     ),
@@ -314,7 +305,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                         height: 150,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha:  0.05),
+                          color: Colors.white.withOpacity(0.05),
                         ),
                       ),
                     ),
@@ -340,7 +331,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha:  0.2),
+                                  color: Colors.white.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Row(
@@ -348,14 +339,14 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                     Icon(
                                       Icons.calendar_today,
                                       size: 14,
-                                      color: Colors.white.withValues(alpha:  0.9),
+                                      color: Colors.white.withOpacity(0.9),
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
                                       FormatUtils.formatDate(DateTime.now()),
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.white.withValues(alpha:  0.9),
+                                        color: Colors.white.withOpacity(0.9),
                                       ),
                                     ),
                                   ],
@@ -387,7 +378,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha:  0.9),
+                                  color: Colors.white.withOpacity(0.9),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Row(
@@ -492,13 +483,13 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               end: Alignment.bottomRight,
                               colors: [
                                 _primaryColor,
-                                _primaryColor.withValues(alpha:  0.8),
+                                _primaryColor.withOpacity(0.8),
                               ],
                             ),
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: _primaryColor.withValues(alpha:  0.3),
+                                color: _primaryColor.withOpacity(0.3),
                                 blurRadius: 12,
                                 offset: const Offset(0, 6),
                               ),
@@ -518,7 +509,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                       width: 40,
                                       height: 40,
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha:  0.2),
+                                        color: Colors.white.withOpacity(0.2),
                                         shape: BoxShape.circle,
                                       ),
                                       child: const Icon(
@@ -545,7 +536,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                             'Genera código QR para tu material',
                                             style: TextStyle(
                                               fontSize: 13,
-                                              color: Colors.white.withValues(alpha:  0.9),
+                                              color: Colors.white.withOpacity(0.9),
                                             ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -554,7 +545,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                     ),
                                     Icon(
                                       Icons.arrow_forward_ios,
-                                      color: Colors.white.withValues(alpha:  0.8),
+                                      color: Colors.white.withOpacity(0.8),
                                       size: 18,
                                     ),
                                   ],
@@ -604,15 +595,10 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                         const SizedBox(height: 16),
                         
                         // Lista de lotes con nuevo diseño
-                        ..._lotesRecientes.map((lote) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: LoteCard(
-                            lote: lote,
-                            onQRTap: () => _showQRCode(lote),
-                            onActionTap: () => _downloadLote(lote['firebaseId']),
-                            actionButtonText: 'Descargar',
-                            actionButtonIcon: Icons.download,
-                          ),
+                        ..._lotesRecientes.map((lote) => OrigenLoteCard(
+                          lote: lote,
+                          onQRTap: () => _showQRCode(lote),
+                          showActions: true,
                         )),
                         
                         const SizedBox(height: 100), // Espacio para el FAB
@@ -641,7 +627,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
       floatingActionButton: EcoceFloatingActionButton(
         onPressed: _navigateToNewLot,
         icon: Icons.add,
-        backgroundColor: BioWayColors.ecoceGreen,
+        backgroundColor: _primaryColor,
         tooltip: 'Nuevo Lote',
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,

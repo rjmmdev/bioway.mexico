@@ -115,16 +115,32 @@ class ImageService {
     int maxSizeKB = 50, // Máximo 50KB
   }) async {
     try {
+      // Verificar tamaño original
+      final int originalSizeBytes = await imageFile.length();
+      final double originalSizeKB = originalSizeBytes / 1024;
+      
+      // Si ya es menor al objetivo + 50%, no comprimir
+      if (originalSizeKB <= maxSizeKB * 1.5) {
+        debugPrint('✓ Imagen ya está optimizada: ${originalSizeKB.toStringAsFixed(1)}KB');
+        return imageFile;
+      }
+      
       // Obtener directorio temporal
       final Directory tempDir = await getTemporaryDirectory();
       String targetPath;
       File? compressedFile;
       
-      // Variables para el algoritmo iterativo
+      // Variables para el algoritmo iterativo optimizado
       int currentQuality = quality;
       int currentWidth = maxWidth;
       int attempts = 0;
-      const int maxAttempts = 5;
+      const int maxAttempts = 3; // Reducido de 5 a 3
+      
+      // Si es muy grande, empezar con parámetros más agresivos
+      if (originalSizeKB > 1000) { // > 1MB
+        currentQuality = 40;
+        currentWidth = 600;
+      }
       
       // Intentar comprimir hasta alcanzar el tamaño objetivo
       while (attempts < maxAttempts) {
@@ -135,7 +151,7 @@ class ImageService {
         
         // Comprimir la imagen
         final XFile? result = await FlutterImageCompress.compressAndGetFile(
-          imageFile.absolute.path,
+          compressedFile?.absolute.path ?? imageFile.absolute.path, // Usar resultado anterior si existe
           targetPath,
           minWidth: currentWidth,
           minHeight: (currentWidth * 0.75).round(), // Mantener proporción 4:3
@@ -146,6 +162,11 @@ class ImageService {
         );
         
         if (result == null) break;
+        
+        // Limpiar archivo anterior si existe
+        if (compressedFile != null && compressedFile.existsSync()) {
+          await compressedFile.delete();
+        }
         
         compressedFile = File(result.path);
         final int sizeInBytes = await compressedFile.length();
@@ -161,27 +182,26 @@ class ImageService {
           return compressedFile;
         }
         
-        // Si es muy grande, ajustar parámetros
-        if (sizeInKB > maxSizeKB * 2) {
-          // Si es más del doble, reducir agresivamente
+        // Ajustar parámetros más agresivamente
+        if (sizeInKB > maxSizeKB * 3) {
+          // Si es más del triple, reducir muy agresivamente
+          currentWidth = (currentWidth * 0.5).round();
+          currentQuality = (currentQuality * 0.5).round();
+        } else if (sizeInKB > maxSizeKB * 1.5) {
+          // Si es más de 1.5x, reducir moderadamente
           currentWidth = (currentWidth * 0.7).round();
           currentQuality = (currentQuality * 0.7).round();
         } else {
           // Si está cerca, reducir gradualmente
           currentWidth = (currentWidth * 0.85).round();
-          currentQuality = (currentQuality * 0.85).round();
+          currentQuality = (currentQuality * 0.9).round();
         }
         
         // Límites mínimos
         if (currentWidth < 400) currentWidth = 400;
-        if (currentQuality < 30) currentQuality = 30;
+        if (currentQuality < 20) currentQuality = 20;
         
         attempts++;
-        
-        // Limpiar archivo temporal si no es el último intento
-        if (attempts < maxAttempts && compressedFile.existsSync()) {
-          await compressedFile.delete();
-        }
       }
       
       // Si no se logró el tamaño objetivo, usar la última compresión

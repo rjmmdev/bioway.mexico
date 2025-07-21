@@ -260,28 +260,16 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
     
     switch (index) {
       case 0:
-        NavigationUtils.navigateWithFade(
-          context,
-          const LaboratorioInicioScreen(),
-          replacement: true,
-        );
+        Navigator.pushReplacementNamed(context, '/laboratorio_inicio');
         break;
       case 1:
         // Ya estamos en muestras
         break;
       case 2:
-        NavigationUtils.navigateWithFade(
-          context,
-          const EcoceAyudaScreen(),
-          replacement: true,
-        );
+        Navigator.pushReplacementNamed(context, '/laboratorio_ayuda');
         break;
       case 3:
-        NavigationUtils.navigateWithFade(
-          context,
-          const EcocePerfilScreen(),
-          replacement: true,
-        );
+        Navigator.pushReplacementNamed(context, '/laboratorio_perfil');
         break;
     }
   }
@@ -299,7 +287,7 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
     return Scaffold(
       backgroundColor: BioWayColors.backgroundGrey,
       appBar: AppBar(
-        backgroundColor: BioWayColors.ecoceGreen,
+        backgroundColor: const Color(0xFF9333EA), // Purple color for laboratorio
         title: const Text(
           'Gestión de Muestras',
           style: TextStyle(
@@ -314,7 +302,7 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
         children: [
           // TabBar
           Container(
-            color: BioWayColors.ecoceGreen,
+            color: const Color(0xFF9333EA), // Purple color for laboratorio
             child: TabBar(
               controller: _tabController,
               indicatorColor: Colors.white,

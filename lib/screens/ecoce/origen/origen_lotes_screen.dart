@@ -6,7 +6,7 @@ import 'origen_lote_detalle_screen.dart';
 import 'origen_crear_lote_screen.dart';
 import '../shared/ecoce_ayuda_screen.dart';
 import '../shared/ecoce_perfil_screen.dart';
-import '../shared/widgets/lote_card_unified.dart';
+import 'widgets/origen_lote_card.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import 'origen_config.dart';
 
@@ -19,7 +19,7 @@ class OrigenLotesScreen extends StatefulWidget {
 
 class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
   // Índice para la navegación del bottom bar
-  int _selectedIndex = 1; // Lotes está seleccionado
+  final int _selectedIndex = 1; // Lotes está seleccionado
 
   Color get _primaryColor => OrigenUserConfig.current.color;
 
@@ -34,44 +34,54 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
   // Lista de lotes (datos de ejemplo)
   final List<Map<String, dynamic>> _lotes = [
     {
+      'id': 'FID_1x7h9k3',
       'firebaseId': 'FID_1x7h9k3',
       'material': 'PEBD',
-      'peso': 125,
-      'fecha': '15/07/2025',
+      'peso': 125.0,
+      'fecha': DateTime.now().subtract(const Duration(days: 1)),
       'presentacion': 'Pacas',
       'fuente': 'Programa Escolar Norte',
+      'estado': 'activo',
     },
     {
+      'id': 'FID_2y8j0l4',
       'firebaseId': 'FID_2y8j0l4',
       'material': 'PP',
-      'peso': 175,
-      'fecha': '14/07/2025',
+      'peso': 175.0,
+      'fecha': DateTime.now().subtract(const Duration(days: 2)),
       'presentacion': 'Sacos',
       'fuente': 'Programa Escolar Norte',
+      'estado': 'activo',
     },
     {
+      'id': 'FID_3z9k1m5',
       'firebaseId': 'FID_3z9k1m5',
       'material': 'Multilaminado',
-      'peso': 150,
-      'fecha': '14/07/2025',
+      'peso': 150.0,
+      'fecha': DateTime.now().subtract(const Duration(days: 2)),
       'presentacion': 'Pacas',
       'fuente': 'Programa Escolar Centro',
+      'estado': 'activo',
     },
     {
+      'id': 'FID_4a0b2n6',
       'firebaseId': 'FID_4a0b2n6',
       'material': 'PEBD',
-      'peso': 200,
-      'fecha': '13/07/2025',
+      'peso': 200.0,
+      'fecha': DateTime.now().subtract(const Duration(days: 3)),
       'presentacion': 'Sacos',
       'fuente': 'Recolección Municipal',
+      'estado': 'activo',
     },
     {
+      'id': 'FID_5c1d3p7',
       'firebaseId': 'FID_5c1d3p7',
       'material': 'PP',
-      'peso': 180,
-      'fecha': '13/07/2025',
+      'peso': 180.0,
+      'fecha': DateTime.now().subtract(const Duration(days: 3)),
       'presentacion': 'Pacas',
       'fuente': 'Centro Comunitario Sur',
+      'estado': 'activo',
     },
   ];
 
@@ -116,7 +126,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
           peso: lote['peso'].toDouble(),
           presentacion: lote['presentacion'],
           fuente: lote['fuente'],
-          fechaCreacion: DateTime.now(),
+          fechaCreacion: lote['fecha'] ?? DateTime.now(),
           mostrarMensajeExito: false,
         ),
       ),
@@ -254,7 +264,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                         // Botón de filtros
                         Container(
                           decoration: BoxDecoration(
-                            color: _primaryColor.withValues(alpha: 0.1),
+                            color: _primaryColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: IconButton(
@@ -402,9 +412,10 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                             top: isFirst ? 0 : 6,
                             bottom: isLast ? 0 : 6,
                           ),
-                          child: LoteCard(
+                          child: OrigenLoteCard(
                             lote: lote,
                             onQRTap: () => _verCodigoQR(lote),
+                            showActions: true,
                           ),
                         );
                       },
@@ -431,7 +442,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
       floatingActionButton: EcoceFloatingActionButton(
         onPressed: _navigateToNewLot,
         icon: Icons.add,
-        backgroundColor: BioWayColors.ecoceGreen,
+        backgroundColor: _primaryColor,
         tooltip: 'Nuevo Lote',
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
@@ -637,7 +648,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: _primaryColor.withValues(alpha: 0.05),
+                color: _primaryColor.withOpacity(0.05),
                 shape: BoxShape.circle,
               ),
               child: Stack(
@@ -646,7 +657,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                   Icon(
                     Icons.inventory_2_outlined,
                     size: 60,
-                    color: _primaryColor.withValues(alpha: 0.3),
+                    color: _primaryColor.withOpacity(0.3),
                   ),
                   Positioned(
                     right: 25,
@@ -659,7 +670,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.orange.withValues(alpha: 0.3),
+                            color: Colors.orange.withOpacity(0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),

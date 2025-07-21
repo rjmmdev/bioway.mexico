@@ -219,6 +219,107 @@ Widget buildStepTitle(int currentStep, int totalSteps, String title, String subt
 }
 
 /// Construye un TextFormField estándar
+class _TextFieldBuilder extends StatefulWidget {
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+  final IconData icon;
+  final String? helperText;
+  final String? Function(String?)? validator;
+  final List<TextInputFormatter>? inputFormatters;
+  final TextInputType? keyboardType;
+  final int maxLines;
+  final int? maxLength;
+  final bool obscureText;
+  final Widget? suffixIcon;
+  final Function(String)? onChanged;
+  final bool showError;
+
+  const _TextFieldBuilder({
+    required this.controller,
+    required this.label,
+    required this.hint,
+    required this.icon,
+    this.helperText,
+    this.validator,
+    this.inputFormatters,
+    this.keyboardType,
+    this.maxLines = 1,
+    this.maxLength,
+    this.obscureText = false,
+    this.suffixIcon,
+    this.onChanged,
+    this.showError = false,
+  });
+
+  @override
+  State<_TextFieldBuilder> createState() => _TextFieldBuilderState();
+}
+
+class _TextFieldBuilderState extends State<_TextFieldBuilder> {
+  bool _hasInteracted = false;
+  
+  @override
+  Widget build(BuildContext context) {
+    final bool showError = widget.showError && widget.controller.text.trim().isEmpty;
+    
+    return TextFormField(
+      controller: widget.controller,
+      validator: widget.validator,
+      inputFormatters: widget.inputFormatters,
+      keyboardType: widget.keyboardType,
+      maxLines: widget.maxLines,
+      maxLength: widget.maxLength,
+      obscureText: widget.obscureText,
+      onChanged: (value) {
+        setState(() {
+          _hasInteracted = true;
+        });
+        widget.onChanged?.call(value);
+      },
+      textCapitalization: widget.maxLines == 1
+          ? TextCapitalization.words
+          : TextCapitalization.sentences,
+      decoration: InputDecoration(
+        labelText: widget.label,
+        hintText: widget.hint,
+        helperText: widget.helperText,
+        prefixIcon: Icon(widget.icon, color: showError ? BioWayColors.error : BioWayColors.petBlue),
+        suffixIcon: widget.suffixIcon,
+        filled: true,
+        fillColor: BioWayColors.lightGrey.withValues(alpha: 0.5),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: showError ? BioWayColors.error : BioWayColors.lightGrey,
+            width: showError ? 2 : 1,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: showError ? BioWayColors.error : BioWayColors.petBlue,
+            width: 2,
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: BioWayColors.error, width: 2),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: BioWayColors.error, width: 2),
+        ),
+        counterText: widget.maxLength != null ? '' : null,
+      ),
+    );
+  }
+}
+
 Widget buildTextField({
   required TextEditingController controller,
   required String label,
@@ -233,49 +334,23 @@ Widget buildTextField({
   bool obscureText = false,
   Widget? suffixIcon,
   Function(String)? onChanged,
+  bool showError = false,
 }) {
-  return TextFormField(
+  return _TextFieldBuilder(
     controller: controller,
+    label: label,
+    hint: hint,
+    icon: icon,
+    helperText: helperText,
     validator: validator,
     inputFormatters: inputFormatters,
     keyboardType: keyboardType,
     maxLines: maxLines,
     maxLength: maxLength,
     obscureText: obscureText,
+    suffixIcon: suffixIcon,
     onChanged: onChanged,
-    textCapitalization: maxLines == 1
-        ? TextCapitalization.words
-        : TextCapitalization.sentences,
-    decoration: InputDecoration(
-      labelText: label,
-      hintText: hint,
-      helperText: helperText,
-      prefixIcon: Icon(icon, color: BioWayColors.petBlue),
-      suffixIcon: suffixIcon,
-      filled: true,
-      fillColor: BioWayColors.lightGrey.withValues(alpha: 0.5),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: BioWayColors.lightGrey, width: 1),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: BioWayColors.petBlue, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: BioWayColors.error, width: 1),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: BioWayColors.error, width: 2),
-      ),
-      counterText: maxLength != null ? '' : null,
-    ),
+    showError: showError,
   );
 }
 
@@ -330,19 +405,24 @@ Widget buildNavigationButtons({
           )
               : Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              if (nextIcon == Icons.check) Icon(nextIcon, color: Colors.white),
-              if (nextIcon == Icons.check) const SizedBox(width: 8),
-              Text(
-                nextLabel,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              if (nextIcon == Icons.check) Icon(nextIcon, color: Colors.white, size: 20),
+              if (nextIcon == Icons.check) const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  nextLabel,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
-              if (nextIcon != Icons.check) const SizedBox(width: 8),
-              if (nextIcon != Icons.check) Icon(nextIcon, color: Colors.white),
+              if (nextIcon != Icons.check) const SizedBox(width: 6),
+              if (nextIcon != Icons.check) Icon(nextIcon, color: Colors.white, size: 20),
             ],
           ),
         ),
@@ -368,10 +448,12 @@ class BasicInfoStep extends StatefulWidget {
 
 class _BasicInfoStepState extends State<BasicInfoStep> {
   String? _errorMessage;
+  bool _showFieldErrors = false;
   
   bool _validateFields() {
     setState(() {
       _errorMessage = null;
+      _showFieldErrors = true;
     });
     
     if (widget.controllers['nombreComercial']!.text.trim().isEmpty) {
@@ -442,6 +524,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
           label: 'Nombre Comercial *',
           hint: 'Ej: Centro de Acopio San Juan',
           icon: Icons.business,
+          showError: _showFieldErrors,
         ),
         const SizedBox(height: 20),
 
@@ -450,6 +533,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
           label: 'RFC *',
           hint: 'XXXX000000XXX',
           icon: Icons.article,
+          showError: _showFieldErrors,
           inputFormatters: [
             LengthLimitingTextInputFormatter(13),
             FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9]')),
@@ -465,6 +549,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
           label: 'Nombre del Contacto *',
           hint: 'Nombre completo',
           icon: Icons.person,
+          showError: _showFieldErrors,
         ),
         const SizedBox(height: 20),
 
@@ -477,6 +562,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                 hint: '10 dígitos',
                 icon: Icons.phone_android,
                 keyboardType: TextInputType.phone,
+                showError: _showFieldErrors,
                 inputFormatters: [
                   LengthLimitingTextInputFormatter(15),
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9+\-\s()]')),
@@ -559,6 +645,7 @@ class _LocationStepState extends State<LocationStep> {
   LatLng? _selectedLocation;
   bool _locationConfirmed = false;
   bool _hasAttemptedToContinue = false;
+  bool _showFieldErrors = false;
 
   @override
   void initState() {
@@ -812,6 +899,13 @@ class _LocationStepState extends State<LocationStep> {
             widget.controllers['direccion']!.text = addressComponents['calle']!;
           }
         }
+        // Si viene el número exterior, actualizar el campo correspondiente
+        if (addressComponents['numero_exterior']?.isNotEmpty ?? false) {
+          // Solo actualizar si el campo está vacío para no sobrescribir entrada manual
+          if (widget.controllers['numExt']!.text.isEmpty) {
+            widget.controllers['numExt']!.text = addressComponents['numero_exterior']!;
+          }
+        }
       }
     });
     // Notificar al padre
@@ -934,6 +1028,7 @@ class _LocationStepState extends State<LocationStep> {
                 label: 'Estado *',
                 hint: 'Selecciona tu estado',
                 icon: Icons.map,
+                showError: _showFieldErrors,
               ),
               const SizedBox(height: 16),
 
@@ -943,6 +1038,7 @@ class _LocationStepState extends State<LocationStep> {
                 label: 'Municipio *',
                 hint: 'Selecciona tu municipio',
                 icon: Icons.location_city,
+                showError: _showFieldErrors,
               ),
               const SizedBox(height: 16),
 
@@ -952,6 +1048,7 @@ class _LocationStepState extends State<LocationStep> {
                 label: 'Colonia *',
                 hint: 'Selecciona tu colonia',
                 icon: Icons.holiday_village,
+                showError: _showFieldErrors,
               ),
               const SizedBox(height: 16),
               
@@ -963,35 +1060,32 @@ class _LocationStepState extends State<LocationStep> {
                 icon: Icons.location_on,
                 keyboardType: TextInputType.number,
                 maxLength: 5,
+                showError: _showFieldErrors,
               ),
             ],
           ),
         ),
         const SizedBox(height: 24),
 
-        // Dirección completa
-        Row(
-          children: [
-            Expanded(
-              flex: 2,
-              child: buildTextField(
-                controller: widget.controllers['direccion']!,
-                label: 'Nombre de calle *',
-                hint: 'Ej: Av. Universidad',
-                icon: Icons.home,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: buildTextField(
-                controller: widget.controllers['numExt']!,
-                label: 'Núm. Exterior *',
-                hint: '123',
-                icon: Icons.numbers,
-                inputFormatters: [LengthLimitingTextInputFormatter(10)],
-              ),
-            ),
-          ],
+        // Dirección - Calle
+        buildTextField(
+          controller: widget.controllers['direccion']!,
+          label: 'Nombre de calle *',
+          hint: 'Ej: Av. Universidad, Calle Reforma, Blvd. López Mateos',
+          icon: Icons.home,
+          showError: _showFieldErrors,
+        ),
+        const SizedBox(height: 20),
+        
+        // Número exterior en su propia fila
+        buildTextField(
+          controller: widget.controllers['numExt']!,
+          label: 'Número Exterior *',
+          hint: 'Ej: 123, 456-A, S/N',
+          icon: Icons.numbers,
+          showError: _showFieldErrors,
+          inputFormatters: [LengthLimitingTextInputFormatter(10)],
+          helperText: 'Este campo se llena automáticamente al seleccionar ubicación en el mapa',
         ),
         const SizedBox(height: 20),
 
@@ -1002,6 +1096,7 @@ class _LocationStepState extends State<LocationStep> {
           icon: Icons.near_me,
           maxLines: 3,
           maxLength: 150,
+          showError: _showFieldErrors,
         ),
         const SizedBox(height: 24),
 
@@ -1135,7 +1230,14 @@ class _LocationStepState extends State<LocationStep> {
         const SizedBox(height: 40),
 
         buildNavigationButtons(
-          onNext: _canContinue() ? _showConfirmationDialog : () {},
+          onNext: () {
+            setState(() {
+              _showFieldErrors = true;
+            });
+            if (_canContinue()) {
+              _showConfirmationDialog();
+            }
+          },
           onPrevious: widget.onPrevious,
         ),
       ],
@@ -1772,38 +1874,26 @@ class _FiscalDataStepState extends State<FiscalDataStep> {
   String? _errorMessage;
   
   bool _validateDocuments() {
+    // Según CLAUDE.md, los documentos son opcionales
+    // Solo mostrar advertencia si no hay documentos
     setState(() {
       _errorMessage = null;
     });
     
-    // Verificar que todos los documentos estén seleccionados
-    final missingDocs = <String>[];
-    
-    if (widget.selectedFiles['const_sit_fis'] == null) {
-      missingDocs.add('Constancia de Situación Fiscal');
-    }
-    if (widget.selectedFiles['comp_domicilio'] == null) {
-      missingDocs.add('Comprobante de Domicilio');
-    }
-    if (widget.selectedFiles['banco_caratula'] == null) {
-      missingDocs.add('Carátula de Estado de Cuenta');
-    }
-    if (widget.selectedFiles['ine'] == null) {
-      missingDocs.add('INE');
+    // Contar documentos subidos
+    int documentsCount = 0;
+    for (final file in widget.selectedFiles.values) {
+      if (file != null) documentsCount++;
     }
     
-    if (missingDocs.isNotEmpty) {
+    // Si no hay ningún documento, mostrar advertencia pero permitir continuar
+    if (documentsCount == 0) {
       setState(() {
-        if (missingDocs.length == 1) {
-          _errorMessage = 'Falta subir: ${missingDocs.first}';
-        } else {
-          _errorMessage = 'Faltan ${missingDocs.length} documentos por subir';
-        }
+        _errorMessage = 'Nota: No has subido ningún documento. Puedes continuar sin ellos, pero el proceso de aprobación podría demorar más.';
       });
-      return false;
     }
     
-    return true;
+    return true; // Siempre permitir continuar
   }
   
   void _handleNext() {
@@ -1838,7 +1928,7 @@ class _FiscalDataStepState extends State<FiscalDataStep> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Documentos Fiscales Requeridos',
+                      'Documentos Fiscales (Opcionales)',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -1847,7 +1937,7 @@ class _FiscalDataStepState extends State<FiscalDataStep> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Sube los documentos en formato PDF o imagen. Máximo 5MB por archivo.\nTodos los documentos son obligatorios para continuar.',
+                      'Sube los documentos en formato PDF o Word (DOC/DOCX). Máximo 5MB por archivo.\nLos documentos son opcionales, pero subirlos agilizará el proceso de aprobación.',
                       style: TextStyle(
                         fontSize: 12,
                         color: BioWayColors.textGrey,
@@ -1874,18 +1964,19 @@ class _FiscalDataStepState extends State<FiscalDataStep> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.red.withValues(alpha: 0.1),
+              color: BioWayColors.warning.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+              border: Border.all(color: BioWayColors.warning.withValues(alpha: 0.3)),
             ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                Icon(Icons.info_outline, color: BioWayColors.warning, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     _errorMessage!,
-                    style: const TextStyle(color: Colors.red, fontSize: 14),
+                    style: TextStyle(color: BioWayColors.warning, fontSize: 13),
                   ),
                 ),
               ],

@@ -89,31 +89,40 @@ class DocumentService {
     }
   }
 
-  // Comprimir imagen con compresión máxima
+  // Comprimir imagen con compresión optimizada
   Future<Uint8List?> _compressImage(PlatformFile file) async {
     if (file.bytes == null) return null;
     
     try {
       Uint8List result = file.bytes!;
-      int attempts = 0;
-      const int maxAttempts = 5;
-      const int targetSizeKB = 100; // Objetivo: 100KB máximo
+      final originalSizeKB = file.bytes!.length / 1024;
       
-      // Parámetros iniciales
-      int quality = 70;
-      int minWidth = 1024;
-      int minHeight = 1024;
+      // Si ya es menor a 150KB, no comprimir
+      if (originalSizeKB <= 150) {
+        print('Imagen ya es pequeña: ${originalSizeKB.toStringAsFixed(1)}KB');
+        return file.bytes;
+      }
+      
+      int attempts = 0;
+      const int maxAttempts = 3; // Reducir intentos
+      const int targetSizeKB = 100;
+      
+      // Parámetros iniciales más agresivos para archivos grandes
+      int quality = originalSizeKB > 1000 ? 50 : 70;
+      int minWidth = originalSizeKB > 1000 ? 800 : 1024;
+      int minHeight = originalSizeKB > 1000 ? 800 : 1024;
       
       // Intentar comprimir hasta alcanzar el tamaño objetivo
       while (attempts < maxAttempts) {
         result = await FlutterImageCompress.compressWithList(
-          file.bytes!,
+          attempts == 0 ? file.bytes! : result, // Usar resultado anterior
           minHeight: minHeight,
           minWidth: minWidth,
           quality: quality,
           format: CompressFormat.jpeg,
           autoCorrectionAngle: true,
-          keepExif: false, // Eliminar metadatos para reducir tamaño
+          keepExif: false,
+          rotate: 0, // Evitar rotación automática
         );
         
         final sizeInKB = result.length / 1024;
@@ -125,17 +134,22 @@ class DocumentService {
           break;
         }
         
-        // Ajustar parámetros para el siguiente intento
-        if (sizeInKB > targetSizeKB * 2) {
-          // Si es más del doble, reducir agresivamente
-          quality = (quality * 0.6).round();
-          minWidth = (minWidth * 0.7).round();
-          minHeight = (minHeight * 0.7).round();
+        // Ajustar parámetros más agresivamente
+        if (sizeInKB > targetSizeKB * 3) {
+          // Muy grande, reducir drásticamente
+          quality = 30;
+          minWidth = 600;
+          minHeight = 600;
+        } else if (sizeInKB > targetSizeKB * 2) {
+          // Doble del objetivo
+          quality = (quality * 0.5).round();
+          minWidth = (minWidth * 0.6).round();
+          minHeight = (minHeight * 0.6).round();
         } else {
-          // Si está cerca, reducir gradualmente
-          quality = (quality * 0.8).round();
-          minWidth = (minWidth * 0.85).round();
-          minHeight = (minHeight * 0.85).round();
+          // Cerca del objetivo
+          quality = (quality * 0.7).round();
+          minWidth = (minWidth * 0.8).round();
+          minHeight = (minHeight * 0.8).round();
         }
         
         // Límites mínimos
@@ -168,10 +182,23 @@ class DocumentService {
     String? solicitudId,
   }) async {
     try {
-      // Comprimir el documento
-      final compressedBytes = await compressDocument(file);
-      if (compressedBytes == null) {
-        throw Exception('No se pudo comprimir el documento');
+      // Obtener bytes del documento
+      Uint8List? bytesToUpload;
+      
+      // Si es PDF o documento Word, no comprimir (solo validar tamaño)
+      final extension = file.extension?.toLowerCase();
+      if (extension == 'pdf' || extension == 'doc' || extension == 'docx') {
+        if (!validateFileSize(file, maxSizeMB: 5)) {
+          throw Exception('El archivo excede el tamaño máximo de 5MB');
+        }
+        bytesToUpload = file.bytes;
+      } else {
+        // Solo comprimir imágenes
+        bytesToUpload = await compressDocument(file);
+      }
+      
+      if (bytesToUpload == null) {
+        throw Exception('No se pudo procesar el documento');
       }
 
       // Generar nombre único para el archivo
@@ -193,14 +220,14 @@ class DocumentService {
           'uploadedAt': DateTime.now().toIso8601String(),
           'originalName': file.name,
           'documentType': documentType,
-          'compressed': 'true',
+          'compressed': extension != 'pdf' && extension != 'doc' && extension != 'docx' ? 'true' : 'false',
           'originalSize': '${file.bytes?.length ?? 0}',
-          'compressedSize': '${compressedBytes.length}',
+          'compressedSize': '${bytesToUpload.length}',
         },
       );
       
       // Subir archivo
-      final uploadTask = ref.putData(compressedBytes, metadata);
+      final uploadTask = ref.putData(bytesToUpload, metadata);
       
       // Monitorear progreso (opcional)
       uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
@@ -241,6 +268,10 @@ class DocumentService {
     switch (extension.toLowerCase()) {
       case 'pdf':
         return 'application/pdf';
+      case 'doc':
+        return 'application/msword';
+      case 'docx':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
       case 'jpg':
       case 'jpeg':
         return 'image/jpeg';

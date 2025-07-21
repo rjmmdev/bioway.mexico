@@ -200,6 +200,12 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
         _isUploadingDocuments = true;
       });
       
+      // Mostrar diálogo de progreso
+      _showProgressDialog();
+      
+      // Pequeña pausa para asegurar que el diálogo se muestre
+      await Future.delayed(Duration(milliseconds: 100));
+      
       // Crear solicitud de cuenta en Firebase (sin crear usuario en Auth)
       final solicitudId = await _profileService.createAccountRequest(
         tipoUsuario: tipoUsuario,
@@ -229,29 +235,59 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
         longitud: longitud,
       );
       
-      // Ahora subir los documentos usando el ID de la solicitud
-      final uploadedDocs = <String, String?>{};
+      // Solo subir documentos si hay alguno seleccionado
+      final hasDocuments = _platformFiles.values.any((file) => file != null);
       
-      for (final entry in _platformFiles.entries) {
-        if (entry.value != null) {
-          try {
-            final url = await _documentService.uploadDocument(
-              userId: solicitudId, // Usar el ID de la solicitud
+      if (hasDocuments) {
+        final uploadedDocs = <String, String?>{};
+        
+        // Crear lista de futures para subida paralela
+        final uploadFutures = <Future<MapEntry<String, String?>>>[];
+        
+        for (final entry in _platformFiles.entries) {
+          if (entry.value != null) {
+            final future = _documentService.uploadDocument(
+              userId: solicitudId,
               documentType: entry.key,
               file: entry.value!,
               solicitudId: solicitudId,
-            );
-            uploadedDocs[entry.key] = url;
-          } catch (e) {
-            // Log error - En producción usar un servicio de logging
-            // Continuar con otros documentos aunque uno falle
+            ).then((url) {
+              return MapEntry(entry.key, url);
+            }).catchError((e) {
+              // Log error pero continuar con otros documentos
+              debugPrint('Error subiendo ${entry.key}: $e');
+              return MapEntry(entry.key, null);
+            });
+            
+            uploadFutures.add(future);
           }
         }
-      }
-      
-      // Actualizar la solicitud con las URLs de los documentos
-      if (uploadedDocs.isNotEmpty) {
-        await _updateSolicitudDocuments(solicitudId, uploadedDocs);
+        
+        // Ejecutar todas las subidas en paralelo con timeout
+        if (uploadFutures.isNotEmpty) {
+          try {
+            final results = await Future.wait(uploadFutures)
+                .timeout(Duration(seconds: 30), onTimeout: () {
+              debugPrint('Timeout al subir documentos');
+              return [];
+            });
+            
+            for (final result in results) {
+              if (result.key.isNotEmpty) {
+                uploadedDocs[result.key] = result.value;
+              }
+            }
+          } catch (e) {
+            debugPrint('Error durante la subida de documentos: $e');
+          }
+        }
+        
+        // Actualizar la solicitud con las URLs de los documentos
+        if (uploadedDocs.isNotEmpty) {
+          await _updateSolicitudDocuments(solicitudId, uploadedDocs);
+        }
+      } else {
+        debugPrint('No hay documentos para subir - continuando sin ellos');
       }
       
       setState(() {
@@ -259,12 +295,21 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
         _isUploadingDocuments = false;
       });
       
+      // Cerrar diálogo de progreso
+      if (mounted) Navigator.of(context).pop();
+      
       _showSuccessDialog();
     } catch (e) {
       setState(() {
         _isLoading = false;
+        _isUploadingDocuments = false;
         _errorMessage = _getErrorMessage(e.toString());
       });
+      
+      // Cerrar diálogo de progreso si está abierto
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.of(context).pop();
+      }
     }
   }
   
@@ -319,6 +364,65 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
     } else {
       return 'Error al registrar. Intenta nuevamente.';
     }
+  }
+
+  void _showProgressDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(BioWayColors.ecoceGreen),
+                ),
+                SizedBox(height: 24),
+                Text(
+                  'Procesando registro...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: BioWayColors.darkGreen,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  _platformFiles.values.any((file) => file != null) 
+                    ? 'Creando solicitud y subiendo documentos'
+                    : 'Creando solicitud',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: BioWayColors.textGrey,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 16),
+                LinearProgressIndicator(
+                  backgroundColor: BioWayColors.lightGrey,
+                  valueColor: AlwaysStoppedAnimation<Color>(BioWayColors.ecoceGreen),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Por favor espera...',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: BioWayColors.textGrey,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _showSuccessDialog() {

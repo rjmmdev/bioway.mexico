@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
+import '../../../services/firebase/ecoce_profile_service.dart';
+import '../../../services/firebase/auth_service.dart';
 import 'laboratorio_escaneo.dart';
 import 'laboratorio_gestion_muestras.dart';
 import 'laboratorio_formulario.dart';
@@ -23,12 +27,42 @@ class LaboratorioInicioScreen extends StatefulWidget {
 class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
   // Índice para la navegación del bottom bar
   final int _selectedIndex = 0;
-
-  // Datos de ejemplo para el laboratorio (en producción vendrían de la base de datos)
-  final String _nombreLaboratorio = "Laboratorio Central de Análisis";
-  final String _folioLaboratorio = "L0000001";
-  final int _muestrasRecibidas = 128;
-  final double _materialAnalizado = 856.5; // en kg
+  
+  // Servicios
+  final EcoceProfileService _profileService = EcoceProfileService();
+  final AuthService _authService = AuthService();
+  
+  // Datos del usuario
+  String _nombreLaboratorio = "Cargando...";
+  String _folioLaboratorio = "L0000000";
+  int _muestrasRecibidas = 0;
+  double _materialAnalizado = 0.0; // en kg
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+  
+  Future<void> _loadUserData() async {
+    try {
+      final User? currentUser = _authService.currentUser;
+      if (currentUser != null) {
+        final profile = await _profileService.getProfile(currentUser.uid);
+        if (profile != null && mounted) {
+          setState(() {
+            _nombreLaboratorio = profile.ecoceNombre ?? "Laboratorio";
+            _folioLaboratorio = profile.ecoceFolio ?? "L0000000";
+            // Los valores de estadísticas se cargarían de la base de datos
+            _muestrasRecibidas = 128; // TODO: Cargar de Firebase
+            _materialAnalizado = 856.5; // TODO: Cargar de Firebase
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error cargando datos del usuario: $e');
+    }
+  }
 
   // Lista de muestras con diferentes estados (datos de ejemplo)
   final List<Map<String, dynamic>> _muestrasRecientes = [
@@ -186,14 +220,14 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
             // Header moderno con gradiente
             SliverToBoxAdapter(
               child: Container(
-                height: 280,
+                height: 300,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      BioWayColors.ecoceGreen,
-                      BioWayColors.ecoceGreen.withValues(alpha: 0.8),
+                      const Color(0xFF9333EA), // Purple para laboratorio
+                      const Color(0xFF9333EA).withValues(alpha: 0.8),
                     ],
                   ),
                 ),
@@ -226,20 +260,19 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                     ),
                     // Contenido
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                      padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 16, 20, 24),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Saludo y fecha
+                          // Logo ECOCE y fecha
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'Buen día 👋',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                ),
+                              // Logo ECOCE
+                              SvgPicture.asset(
+                                'assets/logos/ecoce_logo.svg',
+                                width: 70,
+                                height: 35,
                               ),
                               Container(
                                 padding: const EdgeInsets.symmetric(
@@ -270,21 +303,23 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 12),
                           // Nombre del laboratorio
                           Text(
                             _nombreLaboratorio,
                             style: const TextStyle(
-                              fontSize: 24,
+                              fontSize: 26,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
-                            overflow: TextOverflow.ellipsis,
                             maxLines: 2,
+                            overflow: TextOverflow.visible,
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 8),
                           // Badge con tipo y folio
-                          Row(
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
                             children: [
                               Container(
                                 padding: const EdgeInsets.symmetric(
@@ -301,7 +336,7 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                     Icon(
                                       Icons.science,
                                       size: 16,
-                                      color: BioWayColors.ecoceGreen,
+                                      color: const Color(0xFF9333EA), // Purple para laboratorio
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
@@ -309,7 +344,7 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
-                                        color: BioWayColors.ecoceGreen,
+                                        color: const Color(0xFF9333EA), // Purple para laboratorio
                                       ),
                                     ),
                                   ],
@@ -322,7 +357,7 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.amber,
+                                  color: const Color(0xFF9333EA), // Purple para laboratorio
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
@@ -330,39 +365,42 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                   style: const TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
+                                    color: Colors.white,
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 10),
-                          // Estadísticas
-                          Row(
-                            children: [
-                              // Card de Muestras Recibidas
-                              Expanded(
-                                child: StatisticCard(
-                                  label: 'Muestras recibidas',
-                                  value: _muestrasRecibidas.toString(),
-                                  icon: Icons.science,
-                                  iconColor: Colors.blue,
-                                  height: 70,
+                          const SizedBox(height: 16),
+                          // Estadísticas con UnifiedStatCard
+                          SizedBox(
+                            height: 70,
+                            child: Row(
+                              children: [
+                                // Estadística de Muestras Recibidas
+                                Expanded(
+                                  child: UnifiedStatCard.horizontal(
+                                    title: 'Muestras recibidas',
+                                    value: _muestrasRecibidas.toString(),
+                                    icon: Icons.science,
+                                    color: Colors.blue,
+                                    height: 70,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              // Card de Material Analizado
-                              Expanded(
-                                child: StatisticCard(
-                                  label: 'Material analizado',
-                                  value: _materialAnalizado.toStringAsFixed(1),
-                                  unit: 'kg',
-                                  icon: Icons.analytics,
-                                  iconColor: Colors.purple,
-                                  height: 70,
+                                const SizedBox(width: 12),
+                                // Estadística de Material Analizado
+                                Expanded(
+                                  child: UnifiedStatCard.horizontal(
+                                    title: 'Material analizado',
+                                    value: _materialAnalizado.toStringAsFixed(1),
+                                    unit: 'kg',
+                                    icon: Icons.analytics,
+                                    color: Colors.purple,
+                                    height: 70,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -388,7 +426,7 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Acción rápida única centrada más compacta
+                      // Acción rápida con diseño unificado
                       Container(
                         width: double.infinity,
                         height: 70,
@@ -397,14 +435,14 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              BioWayColors.ecoceGreen,
-                              BioWayColors.ecoceGreen.withValues(alpha: 0.8),
+                              const Color(0xFF9333EA), // Purple para laboratorio
+                              const Color(0xFF9333EA).withValues(alpha: 0.8),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
+                              color: const Color(0xFF9333EA).withValues(alpha: 0.3),
                               blurRadius: 12,
                               offset: const Offset(0, 6),
                             ),
@@ -428,7 +466,7 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(
-                                      Icons.qr_code_scanner,
+                                      Icons.add_circle_outline,
                                       color: Colors.white,
                                       size: 24,
                                     ),
@@ -440,7 +478,7 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         const Text(
-                                          'Escanear Nueva Muestra',
+                                          'Registrar Nueva Muestra',
                                           style: TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.bold,
@@ -448,7 +486,7 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                           ),
                                         ),
                                         Text(
-                                          'Registra entrada de muestra',
+                                          'Escanea código QR del lote',
                                           style: TextStyle(
                                             fontSize: 13,
                                             color: Colors.white.withValues(alpha: 0.9),
@@ -492,7 +530,7 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                   'Ver todos',
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: BioWayColors.ecoceGreen,
+                                    color: const Color(0xFF9333EA), // Purple para laboratorio
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -500,7 +538,7 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                 Icon(
                                   Icons.arrow_forward,
                                   size: 16,
-                                  color: BioWayColors.ecoceGreen,
+                                  color: const Color(0xFF9333EA), // Purple para laboratorio
                                 ),
                               ],
                             ),
@@ -581,9 +619,8 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
       floatingActionButton: EcoceFloatingActionButton(
         onPressed: _navigateToNewMuestra,
         icon: Icons.add,
-        backgroundColor: const Color(0xFF9333EA), // Purple color for laboratorio
+        backgroundColor: const Color(0xFF9333EA),
         tooltip: 'Nueva muestra',
-        heroTag: 'laboratorio_fab',
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
