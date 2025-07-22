@@ -220,7 +220,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                             vertical: screenHeight * 0.005,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha:0.2),
                             borderRadius: BorderRadius.circular(screenWidth * 0.04),
                           ),
                           child: Text(
@@ -321,7 +321,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                                     Icon(
                                       _fuenteMaterialIcons[index],
                                       size: screenWidth * 0.05,
-                                      color: _primaryColor.withOpacity(0.7),
+                                      color: _primaryColor.withValues(alpha:0.7),
                                     ),
                                     SizedBox(width: screenWidth * 0.03),
                                     Expanded(
@@ -618,7 +618,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
         border: Border.all(
           color: _hasSignature 
               ? _primaryColor 
-              : _primaryColor.withOpacity(0.3),
+              : _primaryColor.withValues(alpha:0.3),
           width: 1,
         ),
         borderRadius: BorderRadius.circular(12),
@@ -662,7 +662,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: BioWayColors.success.withOpacity(0.1),
+                            color: BioWayColors.success.withValues(alpha:0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -752,10 +752,10 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
       child: Container(
         padding: EdgeInsets.symmetric(vertical: screenWidth * 0.05),
         decoration: BoxDecoration(
-          color: isSelected ? _primaryColor.withOpacity(0.1) : BioWayColors.backgroundGrey,
+          color: isSelected ? _primaryColor.withValues(alpha:0.1) : BioWayColors.backgroundGrey,
           borderRadius: BorderRadius.circular(screenWidth * 0.03),
           border: Border.all(
-            color: isSelected ? _primaryColor : _primaryColor.withOpacity(0.3),
+            color: isSelected ? _primaryColor : _primaryColor.withValues(alpha:0.3),
             width: isSelected ? 2 : 1,
           ),
         ),

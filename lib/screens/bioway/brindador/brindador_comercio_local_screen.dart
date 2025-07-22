@@ -208,8 +208,8 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withOpacity(0.0),
-                  Colors.black.withOpacity(0.1),
+                  Colors.black.withValues(alpha: 0.0),
+                  Colors.black.withValues(alpha: 0.1),
                 ],
               ),
             ),
@@ -269,7 +269,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                                     Shadow(
                                       offset: const Offset(0, 1),
                                       blurRadius: 2,
-                                      color: Colors.white.withOpacity(0.5),
+                                      color: Colors.white.withValues(alpha: 0.5),
                                     ),
                                   ],
                                 ),
@@ -310,7 +310,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                                                 Shadow(
                                                   offset: const Offset(0, 1),
                                                   blurRadius: 2,
-                                                  color: Colors.white.withOpacity(0.5),
+                                                  color: Colors.white.withValues(alpha: 0.5),
                                                 ),
                                               ],
                                             ),
@@ -327,7 +327,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                                     child: Text(
                                       'Canjea tus BioCoins por descuentos exclusivos',
                                       style: TextStyle(
-                                        color: BioWayColors.darkGreen.withOpacity(0.8),
+                                        color: BioWayColors.darkGreen.withValues(alpha: 0.8),
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -344,11 +344,11 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                                 vertical: 10 - (animationProgress * 4),
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.95),
+                                color: Colors.white.withValues(alpha: 0.95),
                                 borderRadius: BorderRadius.circular(20 - (animationProgress * 4)),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
+                                    color: Colors.black.withValues(alpha: 0.1),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),
@@ -362,8 +362,8 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                                     decoration: BoxDecoration(
                                       gradient: LinearGradient(
                                         colors: [
-                                          BioWayColors.primaryGreen.withOpacity(0.1),
-                                          BioWayColors.lightGreen.withOpacity(0.1),
+                                          BioWayColors.primaryGreen.withValues(alpha: 0.1),
+                                          BioWayColors.lightGreen.withValues(alpha: 0.1),
                                         ],
                                       ),
                                       shape: BoxShape.circle,
@@ -531,7 +531,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: BioWayColors.primaryGreen.withOpacity(0.3),
+              color: BioWayColors.primaryGreen.withValues(alpha: 0.3),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -547,7 +547,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -625,7 +625,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Text(
@@ -691,7 +691,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -740,7 +740,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -797,7 +797,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -890,7 +890,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -906,8 +906,8 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      BioWayColors.primaryGreen.withOpacity(0.1),
-                      BioWayColors.lightGreen.withOpacity(0.1),
+                      BioWayColors.primaryGreen.withValues(alpha: 0.1),
+                      BioWayColors.lightGreen.withValues(alpha: 0.1),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -985,7 +985,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: BioWayColors.primaryGreen.withOpacity(0.1),
+                      color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -1055,8 +1055,8 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              BioWayColors.primaryGreen.withOpacity(0.1),
-                              BioWayColors.lightGreen.withOpacity(0.1),
+                              BioWayColors.primaryGreen.withValues(alpha: 0.1),
+                              BioWayColors.lightGreen.withValues(alpha: 0.1),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(12),
@@ -1134,7 +1134,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: BioWayColors.primaryGreen.withOpacity(0.1),
+                color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -1257,8 +1257,8 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              BioWayColors.primaryGreen.withOpacity(0.1),
-                              BioWayColors.lightGreen.withOpacity(0.1),
+                              BioWayColors.primaryGreen.withValues(alpha: 0.1),
+                              BioWayColors.lightGreen.withValues(alpha: 0.1),
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
@@ -1331,7 +1331,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: BioWayColors.success.withOpacity(0.1),
+                              color: BioWayColors.success.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Column(
@@ -1360,7 +1360,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: BioWayColors.primaryGreen.withOpacity(0.1),
+                              color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Column(
@@ -1403,8 +1403,8 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: _userBioCoins >= producto.bioCoinsCosto
-                            ? BioWayColors.info.withOpacity(0.1)
-                            : BioWayColors.error.withOpacity(0.1),
+                            ? BioWayColors.info.withValues(alpha: 0.1)
+                            : BioWayColors.error.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -1542,7 +1542,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: BioWayColors.primaryGreen.withOpacity(0.1),
+                  color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(

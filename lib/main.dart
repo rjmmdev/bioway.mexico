@@ -11,7 +11,6 @@ import 'screens/ecoce/origen/origen_crear_lote_screen.dart';
 // Screens - Reciclador
 import 'screens/ecoce/reciclador/reciclador_inicio.dart';
 import 'screens/ecoce/reciclador/reciclador_administracion_lotes.dart';
-import 'screens/ecoce/reciclador/qr_scanner_screen.dart';
 import 'screens/ecoce/reciclador/reciclador_escaneo_qr.dart';
 import 'screens/ecoce/reciclador/reciclador_documentacion.dart';
 

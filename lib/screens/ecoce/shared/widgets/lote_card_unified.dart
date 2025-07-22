@@ -223,7 +223,7 @@ class LoteCard extends StatelessWidget {
       width: 48,
       height: 48,
       decoration: BoxDecoration(
-        color: MaterialUtils.getMaterialColor(material).withOpacity(0.1),
+        color: MaterialUtils.getMaterialColor(material).withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(
@@ -268,7 +268,7 @@ class LoteCard extends StatelessWidget {
         icon: const Icon(Icons.qr_code),
         tooltip: 'Ver código QR',
         style: IconButton.styleFrom(
-          backgroundColor: Colors.black.withOpacity(0.05),
+          backgroundColor: Colors.black.withValues(alpha:0.05),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
@@ -297,9 +297,9 @@ class LoteCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.1),
+        color: statusColor.withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: statusColor.withOpacity(0.5)),
+        border: Border.all(color: statusColor.withValues(alpha:0.5)),
       ),
       child: Text(
         estado,
@@ -317,9 +317,9 @@ class LoteCard extends StatelessWidget {
       constraints: const BoxConstraints(maxWidth: 150),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha:0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

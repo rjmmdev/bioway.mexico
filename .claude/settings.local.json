@@ -1,3 +1,10 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:384a39e7d10c125f35ab82f97e0ca8dae972dbb13164ada85d41453650b6631c
-size 1338
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter analyze:*)",
+      "Bash(flutter pub:*)",
+      "Bash(flutter build:*)"
+    ],
+    "deny": []
+  }
+}

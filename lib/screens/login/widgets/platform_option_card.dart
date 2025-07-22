@@ -146,7 +146,7 @@ class _PlatformOptionCardState extends State<PlatformOptionCard>
                             BoxShadow(
                               color: widget.isDisabled
                                   ? Colors.grey.withValues(alpha: 0.1)
-                                  : widget.iconColor.withOpacity(
+                                  : widget.iconColor.withValues(alpha:
                                   0.2 + (0.1 * _elevationAnimation.value)),
                               blurRadius: 20 + (10 * _elevationAnimation.value),
                               offset: Offset(
@@ -186,7 +186,7 @@ class _PlatformOptionCardState extends State<PlatformOptionCard>
                             decoration: BoxDecoration(
                               color: widget.isDisabled
                                   ? Colors.grey.shade300
-                                  : widget.iconColor.withOpacity(
+                                  : widget.iconColor.withValues(alpha:
                                   _isHovered || _isPressed ? 0.15 : 0.1),
                               shape: BoxShape.circle,
                             ),

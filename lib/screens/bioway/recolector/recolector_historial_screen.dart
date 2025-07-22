@@ -200,7 +200,7 @@ class _RecolectorHistorialScreenState extends State<RecolectorHistorialScreen>
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: BioWayColors.primaryGreen.withOpacity(0.3),
+                color: BioWayColors.primaryGreen.withValues(alpha:0.3),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -285,7 +285,7 @@ class _RecolectorHistorialScreenState extends State<RecolectorHistorialScreen>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha:0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -331,7 +331,7 @@ class _RecolectorHistorialScreenState extends State<RecolectorHistorialScreen>
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: BioWayColors.success.withOpacity(0.1),
+                      color: BioWayColors.success.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -368,7 +368,7 @@ class _RecolectorHistorialScreenState extends State<RecolectorHistorialScreen>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: _getMaterialColor(entry.key).withOpacity(0.1),
+                      color: _getMaterialColor(entry.key).withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -633,7 +633,7 @@ class _RecolectorHistorialScreenState extends State<RecolectorHistorialScreen>
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: _getMaterialColor(entry.key).withOpacity(0.1),
+                          color: _getMaterialColor(entry.key).withValues(alpha:0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
@@ -670,8 +670,8 @@ class _RecolectorHistorialScreenState extends State<RecolectorHistorialScreen>
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            BioWayColors.primaryGreen.withOpacity(0.1),
-                            BioWayColors.mediumGreen.withOpacity(0.1),
+                            BioWayColors.primaryGreen.withValues(alpha:0.1),
+                            BioWayColors.mediumGreen.withValues(alpha:0.1),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(16),

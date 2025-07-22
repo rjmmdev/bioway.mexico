@@ -264,8 +264,8 @@ Limpieza completada:
                   borderRadius: BorderRadius.circular(16),
                 ),
                 color: _lastResult.contains('Error') 
-                  ? BioWayColors.error.withOpacity(0.1)
-                  : BioWayColors.success.withOpacity(0.1),
+                  ? BioWayColors.error.withValues(alpha:0.1)
+                  : BioWayColors.success.withValues(alpha:0.1),
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
@@ -344,7 +344,7 @@ Limpieza completada:
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha:0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(

@@ -110,6 +110,9 @@ class BioWayColors {
 
   /// Negro suave para textos
   static const Color softBlack = Color(0xFF1F2937);
+  
+  /// Color oscuro para textos principales
+  static const Color textDark = Color(0xFF1F2937);
 
   // ===== COLORES DE ESTADO =====
 

@@ -86,7 +86,7 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha:0.1),
                     blurRadius: 10,
                     offset: const Offset(0, -2),
                   ),
@@ -123,7 +123,7 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: BioWayColors.primaryGreen.withOpacity(0.1),
+                            color: BioWayColors.primaryGreen.withValues(alpha:0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -186,7 +186,7 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha:0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -214,7 +214,7 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: BioWayColors.primaryGreen.withOpacity(0.1),
+                      color: BioWayColors.primaryGreen.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -237,7 +237,7 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: _getMaterialColor(entry.key).withOpacity(0.1),
+                      color: _getMaterialColor(entry.key).withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(

@@ -86,7 +86,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen> {
                           "Buenos días,",
                           style: TextStyle(
                             fontSize: 16,
-                            color: BioWayColors.darkGreen.withOpacity(0.8),
+                            color: BioWayColors.darkGreen.withValues(alpha:0.8),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -101,7 +101,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen> {
                               Shadow(
                                 offset: const Offset(0, 1),
                                 blurRadius: 3,
-                                color: Colors.white.withOpacity(0.8),
+                                color: Colors.white.withValues(alpha:0.8),
                               ),
                             ],
                           ),
@@ -112,15 +112,15 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen> {
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha:0.9),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: BioWayColors.darkGreen.withOpacity(0.2),
+                          color: BioWayColors.darkGreen.withValues(alpha:0.2),
                           width: 2,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha:0.1),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -187,8 +187,8 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen> {
           boxShadow: [
             BoxShadow(
               color: isSelected
-                  ? BioWayColors.primaryGreen.withOpacity(0.3)
-                  : Colors.black.withOpacity(0.05),
+                  ? BioWayColors.primaryGreen.withValues(alpha:0.3)
+                  : Colors.black.withValues(alpha:0.05),
               blurRadius: isSelected ? 12 : 6,
               offset: const Offset(0, 3),
             ),
@@ -212,8 +212,8 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen> {
                   padding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width * 0.02, vertical: MediaQuery.of(context).size.height * 0.0025),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? Colors.white.withOpacity(0.2)
-                        : BioWayColors.primaryGreen.withOpacity(0.1),
+                        ? Colors.white.withValues(alpha:0.2)
+                        : BioWayColors.primaryGreen.withValues(alpha:0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -270,15 +270,15 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  BioWayColors.primaryGreen.withOpacity(0.1),
-                  BioWayColors.lightGreen.withOpacity(0.1),
+                  BioWayColors.primaryGreen.withValues(alpha:0.1),
+                  BioWayColors.lightGreen.withValues(alpha:0.1),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: BioWayColors.primaryGreen.withOpacity(0.2),
+                color: BioWayColors.primaryGreen.withValues(alpha:0.2),
                 width: 1,
               ),
             ),
@@ -287,7 +287,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen> {
                 Container(
                   padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
                   decoration: BoxDecoration(
-                    color: BioWayColors.primaryGreen.withOpacity(0.1),
+                    color: BioWayColors.primaryGreen.withValues(alpha:0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -335,7 +335,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen> {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha:0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -405,7 +405,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen> {
         Container(
           padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.025),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha:0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
@@ -474,7 +474,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen> {
           boxShadow: isPrimary && isEnabled
               ? [
                   BoxShadow(
-                    color: BioWayColors.primaryGreen.withOpacity(0.3),
+                    color: BioWayColors.primaryGreen.withValues(alpha:0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -528,7 +528,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen> {
         boxShadow: isEnabled
             ? [
                 BoxShadow(
-                  color: BioWayColors.primaryGreen.withOpacity(0.3),
+                  color: BioWayColors.primaryGreen.withValues(alpha:0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -689,7 +689,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha:0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -700,7 +700,7 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen> {
           Container(
             padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.03),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha:0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(

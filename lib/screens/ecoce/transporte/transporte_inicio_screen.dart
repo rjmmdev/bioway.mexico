@@ -727,7 +727,7 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
+                  color: Colors.black.withValues(alpha:0.06),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -746,8 +746,8 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          materialColor.withOpacity(0.2),
-                          materialColor.withOpacity(0.1),
+                          materialColor.withValues(alpha:0.2),
+                          materialColor.withValues(alpha:0.1),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(12),
@@ -889,7 +889,7 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
         vertical: isCompact ? 3 : 4
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -929,7 +929,7 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
         vertical: isCompact ? 3 : 4
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -966,7 +966,7 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
         vertical: isCompact ? 3 : 4,
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(

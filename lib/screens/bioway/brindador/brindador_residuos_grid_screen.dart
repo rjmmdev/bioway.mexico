@@ -36,7 +36,7 @@ class _BrindadorResiduosGridScreenState extends State<BrindadorResiduosGridScree
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: BioWayColors.primaryGreen.withOpacity(0.1),
+              color: BioWayColors.primaryGreen.withValues(alpha:0.1),
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(20),
                 bottomRight: Radius.circular(20),
@@ -109,7 +109,7 @@ class _BrindadorResiduosGridScreenState extends State<BrindadorResiduosGridScree
                       duration: const Duration(milliseconds: 200),
                       decoration: BoxDecoration(
                         color: isSelected 
-                            ? material.color.withOpacity(0.1)
+                            ? material.color.withValues(alpha:0.1)
                             : Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
@@ -121,14 +121,14 @@ class _BrindadorResiduosGridScreenState extends State<BrindadorResiduosGridScree
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
-                                  color: material.color.withOpacity(0.3),
+                                  color: material.color.withValues(alpha:0.3),
                                   blurRadius: 8,
                                   offset: const Offset(0, 4),
                                 ),
                               ]
                             : [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
+                                  color: Colors.black.withValues(alpha:0.05),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
@@ -142,7 +142,7 @@ class _BrindadorResiduosGridScreenState extends State<BrindadorResiduosGridScree
                             width: 60,
                             height: 60,
                             decoration: BoxDecoration(
-                              color: material.color.withOpacity(0.2),
+                              color: material.color.withValues(alpha:0.2),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -169,7 +169,7 @@ class _BrindadorResiduosGridScreenState extends State<BrindadorResiduosGridScree
                             style: TextStyle(
                               fontSize: 12,
                               color: isSelected 
-                                  ? material.color.withOpacity(0.8)
+                                  ? material.color.withValues(alpha:0.8)
                                   : Colors.grey.shade600,
                             ),
                           ),

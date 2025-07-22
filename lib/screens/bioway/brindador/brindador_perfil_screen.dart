@@ -120,7 +120,7 @@ class _BrindadorPerfilScreenState extends State<BrindadorPerfilScreen> {
               border: Border.all(color: Colors.white, width: 2),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
+                  color: Colors.black.withValues(alpha:0.15),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
@@ -157,7 +157,7 @@ class _BrindadorPerfilScreenState extends State<BrindadorPerfilScreen> {
                       Shadow(
                         offset: const Offset(0, 1),
                         blurRadius: 3,
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha:0.8),
                       ),
                     ],
                   ),
@@ -170,7 +170,7 @@ class _BrindadorPerfilScreenState extends State<BrindadorPerfilScreen> {
                   children: [
                     Icon(
                       Icons.location_on,
-                      color: BioWayColors.darkGreen.withOpacity(0.8),
+                      color: BioWayColors.darkGreen.withValues(alpha:0.8),
                       size: 14,
                     ),
                     const SizedBox(width: 4),
@@ -179,7 +179,7 @@ class _BrindadorPerfilScreenState extends State<BrindadorPerfilScreen> {
                         '${mockUser.colonia}, ${mockUser.municipio}',
                         style: TextStyle(
                           fontSize: 13,
-                          color: BioWayColors.darkGreen.withOpacity(0.8),
+                          color: BioWayColors.darkGreen.withValues(alpha:0.8),
                           fontWeight: FontWeight.w500,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -196,11 +196,11 @@ class _BrindadorPerfilScreenState extends State<BrindadorPerfilScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha:0.9),
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha:0.1),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
@@ -236,12 +236,12 @@ class _BrindadorPerfilScreenState extends State<BrindadorPerfilScreen> {
                           color: BioWayLevels.getLevelColor(mockUser.nivel),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.5),
+                            color: Colors.white.withValues(alpha:0.5),
                             width: 1,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.15),
+                              color: Colors.black.withValues(alpha:0.15),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -340,7 +340,7 @@ class _BrindadorPerfilScreenState extends State<BrindadorPerfilScreen> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha:0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -538,7 +538,7 @@ class _BrindadorPerfilScreenState extends State<BrindadorPerfilScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha:0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -553,7 +553,7 @@ class _BrindadorPerfilScreenState extends State<BrindadorPerfilScreen> {
             child: Icon(
               icon,
               size: 60,
-              color: color.withOpacity(0.08),
+              color: color.withValues(alpha:0.08),
             ),
           ),
           // Contenido
@@ -569,7 +569,7 @@ class _BrindadorPerfilScreenState extends State<BrindadorPerfilScreen> {
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
+                        color: color.withValues(alpha:0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
@@ -616,7 +616,7 @@ class _BrindadorPerfilScreenState extends State<BrindadorPerfilScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: color.withOpacity(0.7),
+                        color: color.withValues(alpha:0.7),
                       ),
                     ),
                   ],
@@ -650,7 +650,7 @@ class _BrindadorPerfilScreenState extends State<BrindadorPerfilScreen> {
                       const SizedBox(height: 3),
                       LinearProgressIndicator(
                         value: cantidad / totalKg,
-                        backgroundColor: color.withOpacity(0.1),
+                        backgroundColor: color.withValues(alpha:0.1),
                         valueColor: AlwaysStoppedAnimation<Color>(color),
                         minHeight: 4,
                         borderRadius: BorderRadius.circular(2),
@@ -823,7 +823,7 @@ class _BrindadorPerfilScreenState extends State<BrindadorPerfilScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isCurrentLevel ? level.color.withOpacity(0.1) : Colors.grey.shade50,
+        color: isCurrentLevel ? level.color.withValues(alpha:0.1) : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isCurrentLevel ? level.color : Colors.grey.shade200,
@@ -841,7 +841,7 @@ class _BrindadorPerfilScreenState extends State<BrindadorPerfilScreen> {
                   gradient: LinearGradient(
                     colors: [
                       level.color,
-                      level.color.withOpacity(0.8),
+                      level.color.withValues(alpha:0.8),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -895,7 +895,7 @@ class _BrindadorPerfilScreenState extends State<BrindadorPerfilScreen> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: isCurrentLevel 
-                  ? level.color.withOpacity(0.08)
+                  ? level.color.withValues(alpha:0.08)
                   : Colors.grey.shade100,
               borderRadius: BorderRadius.circular(12),
             ),

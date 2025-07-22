@@ -679,10 +679,10 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: BioWayColors.warning.withOpacity(0.1),
+        color: BioWayColors.warning.withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: BioWayColors.warning.withOpacity(0.3),
+          color: BioWayColors.warning.withValues(alpha:0.3),
           width: 1,
         ),
       ),
@@ -749,10 +749,10 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: BioWayColors.primaryGreen.withOpacity(0.1),
+            color: BioWayColors.primaryGreen.withValues(alpha:0.1),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: BioWayColors.primaryGreen.withOpacity(0.3),
+              color: BioWayColors.primaryGreen.withValues(alpha:0.3),
             ),
           ),
           child: Column(

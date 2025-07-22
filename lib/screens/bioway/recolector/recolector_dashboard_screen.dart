@@ -120,7 +120,7 @@ class _RecolectorDashboardScreenState extends State<RecolectorDashboardScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha:0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -145,7 +145,7 @@ class _RecolectorDashboardScreenState extends State<RecolectorDashboardScreen> {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha:0.1),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -251,7 +251,7 @@ class _RecolectorDashboardScreenState extends State<RecolectorDashboardScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white.withValues(alpha:0.2),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -349,7 +349,7 @@ class _RecolectorDashboardScreenState extends State<RecolectorDashboardScreen> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha:0.08),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -364,8 +364,8 @@ class _RecolectorDashboardScreenState extends State<RecolectorDashboardScreen> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    BioWayColors.primaryGreen.withOpacity(0.1),
-                    BioWayColors.primaryGreen.withOpacity(0.05),
+                    BioWayColors.primaryGreen.withValues(alpha:0.1),
+                    BioWayColors.primaryGreen.withValues(alpha:0.05),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -421,7 +421,7 @@ class _RecolectorDashboardScreenState extends State<RecolectorDashboardScreen> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: _getMaterialColor(entry.key).withOpacity(0.1),
+                            color: _getMaterialColor(entry.key).withValues(alpha:0.1),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: _getMaterialColor(entry.key),
@@ -596,10 +596,10 @@ class _RecolectorDashboardScreenState extends State<RecolectorDashboardScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha:0.1),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: color.withOpacity(0.3),
+            color: color.withValues(alpha:0.3),
             width: 1,
           ),
         ),
@@ -776,7 +776,7 @@ class _RecolectorDashboardScreenState extends State<RecolectorDashboardScreen> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: BioWayColors.success.withOpacity(0.1),
+                            color: BioWayColors.success.withValues(alpha:0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -804,7 +804,7 @@ class _RecolectorDashboardScreenState extends State<RecolectorDashboardScreen> {
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: _getMaterialColor(entry.key).withOpacity(0.1),
+                          color: _getMaterialColor(entry.key).withValues(alpha:0.1),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: _getMaterialColor(entry.key),
@@ -897,13 +897,13 @@ class _RecolectorDashboardScreenState extends State<RecolectorDashboardScreen> {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            BioWayColors.primaryGreen.withOpacity(0.1),
-                            BioWayColors.mediumGreen.withOpacity(0.1),
+                            BioWayColors.primaryGreen.withValues(alpha:0.1),
+                            BioWayColors.mediumGreen.withValues(alpha:0.1),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: BioWayColors.primaryGreen.withOpacity(0.3),
+                          color: BioWayColors.primaryGreen.withValues(alpha:0.3),
                         ),
                       ),
                       child: Row(

@@ -483,13 +483,13 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
                             end: Alignment.bottomRight,
                             colors: [
                               BioWayColors.ecoceGreen,
-                              BioWayColors.ecoceGreen.withOpacity(0.8),
+                              BioWayColors.ecoceGreen.withValues(alpha:0.8),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: BioWayColors.ecoceGreen.withOpacity(0.3),
+                              color: BioWayColors.ecoceGreen.withValues(alpha:0.3),
                               blurRadius: 12,
                               offset: const Offset(0, 6),
                             ),
@@ -509,7 +509,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
                                     width: 40,
                                     height: 40,
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.2),
+                                      color: Colors.white.withValues(alpha:0.2),
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(
@@ -536,7 +536,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
                                           'Recibir material para procesamiento',
                                           style: TextStyle(
                                             fontSize: 13,
-                                            color: Colors.white.withOpacity(0.9),
+                                            color: Colors.white.withValues(alpha:0.9),
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -545,7 +545,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
                                   ),
                                   Icon(
                                     Icons.arrow_forward_ios,
-                                    color: Colors.white.withOpacity(0.8),
+                                    color: Colors.white.withValues(alpha:0.8),
                                     size: 18,
                                   ),
                                 ],
@@ -565,13 +565,13 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
                             end: Alignment.bottomRight,
                             colors: [
                               BioWayColors.petBlue,
-                              BioWayColors.petBlue.withOpacity(0.8),
+                              BioWayColors.petBlue.withValues(alpha:0.8),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: BioWayColors.petBlue.withOpacity(0.3),
+                              color: BioWayColors.petBlue.withValues(alpha:0.3),
                               blurRadius: 12,
                               offset: const Offset(0, 6),
                             ),
@@ -591,7 +591,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
                                     width: 40,
                                     height: 40,
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.2),
+                                      color: Colors.white.withValues(alpha:0.2),
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(
@@ -618,7 +618,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
                                           'Gestionar inventario y crear lotes',
                                           style: TextStyle(
                                             fontSize: 13,
-                                            color: Colors.white.withOpacity(0.9),
+                                            color: Colors.white.withValues(alpha:0.9),
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -627,7 +627,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
                                   ),
                                   Icon(
                                     Icons.arrow_forward_ios,
-                                    color: Colors.white.withOpacity(0.8),
+                                    color: Colors.white.withValues(alpha:0.8),
                                     size: 18,
                                   ),
                                 ],
