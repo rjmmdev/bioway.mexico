@@ -67,7 +67,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
   ];
   
   // Servicio de autenticación
-  final BioWayAuthService _bioWayAuthService = BioWayAuthService();
+  late final BioWayAuthService _bioWayAuthService;
   final AuthService _authService = AuthService();
 
   @override
@@ -81,6 +81,22 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
     _animationController.forward();
+    _initializeFirebase();
+  }
+
+  Future<void> _initializeFirebase() async {
+    try {
+      // Inicializar Firebase para BioWay
+      await _authService.initializeForPlatform(FirebasePlatform.bioway);
+      debugPrint('✅ Firebase inicializado para BioWay en registro');
+      
+      // Ahora es seguro crear la instancia de BioWayAuthService
+      _bioWayAuthService = BioWayAuthService();
+    } catch (e) {
+      debugPrint('❌ Error al inicializar Firebase para BioWay: $e');
+      // Crear la instancia de todos modos para evitar errores
+      _bioWayAuthService = BioWayAuthService();
+    }
   }
 
   @override

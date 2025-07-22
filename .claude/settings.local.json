@@ -3,7 +3,10 @@
     "allow": [
       "Bash(flutter analyze:*)",
       "Bash(flutter pub:*)",
-      "Bash(flutter build:*)"
+      "Bash(flutter build:*)",
+      "Bash(./gradlew:*)",
+      "Bash(sdkmanager:*)",
+      "Bash(/Users/rauljmza/Library/Android/sdk/cmdline-tools/latest/bin/sdkmanager --list)"
     ],
     "deny": []
   }

@@ -39,7 +39,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
 
   // Instancia del servicio de autenticación
   final AuthService _authService = AuthService();
-  final BioWayAuthService _bioWayAuthService = BioWayAuthService();
+  late final BioWayAuthService _bioWayAuthService;
 
   @override
   void initState() {
@@ -54,9 +54,14 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
       // Inicializar Firebase para BioWay
       await _authService.initializeForPlatform(FirebasePlatform.bioway);
       debugPrint('✅ Firebase inicializado para BioWay');
+      
+      // Ahora es seguro crear la instancia de BioWayAuthService
+      _bioWayAuthService = BioWayAuthService();
     } catch (e) {
       debugPrint('❌ Error al inicializar Firebase para BioWay: $e');
       // Por ahora no mostramos error ya que BioWay puede no tener proyecto Firebase configurado
+      // Crear la instancia de todos modos para evitar errores
+      _bioWayAuthService = BioWayAuthService();
     }
   }
 
