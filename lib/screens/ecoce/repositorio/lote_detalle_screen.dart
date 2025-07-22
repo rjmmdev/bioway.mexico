@@ -30,83 +30,141 @@ class _LoteDetalleScreenState extends State<LoteDetalleScreen>
   }
 
   List<Map<String, dynamic>> _getTimelineEvents() {
-    // Simular timeline de eventos
+    // Usar el historial de trazabilidad real si existe
+    if (widget.lote['historialTrazabilidad'] != null) {
+      final historial = widget.lote['historialTrazabilidad'] as List<dynamic>;
+      
+      return historial.map((evento) {
+        IconData icon;
+        Color color;
+        
+        // Asignar iconos y colores según el tipo de actor
+        switch (evento['tipo']) {
+          case 'Acopiador':
+            icon = Icons.warehouse;
+            color = BioWayColors.petBlue;
+            break;
+          case 'Planta de Separación':
+            icon = Icons.sort;
+            color = BioWayColors.hdpeGreen;
+            break;
+          case 'Transportista':
+            icon = Icons.local_shipping;
+            color = BioWayColors.info;
+            break;
+          case 'Reciclador':
+            icon = Icons.recycling;
+            color = BioWayColors.ecoceGreen;
+            break;
+          case 'Transformador':
+            icon = Icons.factory;
+            color = BioWayColors.ppOrange;
+            break;
+          case 'Laboratorio':
+            icon = Icons.science;
+            color = BioWayColors.otherPurple;
+            break;
+          default:
+            icon = Icons.circle;
+            color = widget.primaryColor;
+        }
+        
+        return {
+          'title': evento['accion'] ?? evento['etapa'],
+          'subtitle': evento['actor'],
+          'date': evento['fecha'],
+          'icon': icon,
+          'color': color,
+          'isCompleted': true,
+          'details': evento['detalles'],
+          'peso': evento['peso'],
+        };
+      }).toList();
+    }
+    
+    // Fallback: datos simulados si no hay historial
     return [
       {
         'title': 'Lote Creado',
-        'subtitle': 'Centro de Acopio Norte',
-        'date': DateTime.now().subtract(const Duration(days: 10)),
+        'subtitle': widget.lote['origen'] ?? 'Centro de Acopio',
+        'date': widget.lote['fechaCreacion'],
         'icon': Icons.add_circle_outline,
         'color': BioWayColors.success,
         'isCompleted': true,
+        'details': 'Creación inicial del lote',
+        'peso': widget.lote['peso'],
       },
       {
-        'title': 'Recolección',
-        'subtitle': 'Transportista TR001',
-        'date': DateTime.now().subtract(const Duration(days: 8)),
-        'icon': Icons.local_shipping,
-        'color': BioWayColors.primaryGreen,
-        'isCompleted': true,
-      },
-      {
-        'title': 'Llegada a Planta',
-        'subtitle': 'Planta de Separación Sur',
-        'date': DateTime.now().subtract(const Duration(days: 7)),
-        'icon': Icons.factory,
-        'color': BioWayColors.warning,
-        'isCompleted': true,
-      },
-      {
-        'title': 'Clasificación',
-        'subtitle': 'Material separado y clasificado',
-        'date': DateTime.now().subtract(const Duration(days: 5)),
-        'icon': Icons.sort,
-        'color': BioWayColors.info,
-        'isCompleted': true,
-      },
-      {
-        'title': 'En Tránsito',
+        'title': 'En Proceso',
         'subtitle': widget.lote['ubicacionActual'],
-        'date': DateTime.now().subtract(const Duration(days: 2)),
+        'date': DateTime.now(),
         'icon': Icons.sync,
         'color': widget.primaryColor,
         'isCompleted': true,
-      },
-      {
-        'title': 'Destino Final',
-        'subtitle': 'Pendiente de entrega',
-        'date': null,
-        'icon': Icons.check_circle,
-        'color': Colors.grey,
-        'isCompleted': false,
+        'details': 'Ubicación actual del lote',
+        'peso': widget.lote['peso'],
       },
     ];
   }
 
   Map<String, dynamic> _getDetailedInfo() {
+    final infoBasica = {
+      'ID del Lote': widget.lote['id'],
+      'Firebase ID': widget.lote['firebaseId'],
+      'Tipo de Material': widget.lote['material'],
+      'Peso Inicial': '${widget.lote['peso']} kg',
+      'Estado Actual': widget.lote['estado'],
+      'Fecha de Creación': MaterialUtils.formatDate(widget.lote['fechaCreacion']),
+    };
+    
+    // Si hay historial, agregar peso actual
+    if (widget.lote['historialTrazabilidad'] != null && 
+        (widget.lote['historialTrazabilidad'] as List).isNotEmpty) {
+      final ultimoEvento = (widget.lote['historialTrazabilidad'] as List).last;
+      if (ultimoEvento['peso'] != null) {
+        infoBasica['Peso Actual'] = '${ultimoEvento['peso']} kg';
+        final perdida = widget.lote['peso'] - ultimoEvento['peso'];
+        if (perdida > 0) {
+          infoBasica['Pérdida Total'] = '${perdida.toStringAsFixed(1)} kg (${((perdida / widget.lote['peso']) * 100).toStringAsFixed(1)}%)';
+        }
+      }
+    }
+    
+    final origenDestino = {
+      'Centro de Origen': widget.lote['origen'],
+      'Ubicación Actual': widget.lote['ubicacionActual'],
+    };
+    
+    // Agregar información del último actor si existe
+    if (widget.lote['historialTrazabilidad'] != null && 
+        (widget.lote['historialTrazabilidad'] as List).isNotEmpty) {
+      final ultimoEvento = (widget.lote['historialTrazabilidad'] as List).last;
+      origenDestino['Último Actor'] = ultimoEvento['actor'] ?? 'No especificado';
+      origenDestino['Último Proceso'] = ultimoEvento['accion'] ?? 'No especificado';
+    }
+    
+    // Información de trazabilidad
+    final trazabilidadInfo = {
+      'Total de Etapas': '${widget.lote['historialTrazabilidad']?.length ?? 0}',
+      'Días en Proceso': '${DateTime.now().difference(widget.lote['fechaCreacion']).inDays}',
+    };
+    
+    // Contar tipos de actores involucrados
+    if (widget.lote['historialTrazabilidad'] != null) {
+      final actores = <String>{};
+      for (var evento in widget.lote['historialTrazabilidad']) {
+        if (evento['tipo'] != null) {
+          actores.add(evento['tipo']);
+        }
+      }
+      trazabilidadInfo['Actores Involucrados'] = actores.length.toString();
+      trazabilidadInfo['Tipos de Actores'] = actores.join(', ');
+    }
+    
     return {
-      'Información Básica': {
-        'ID del Lote': widget.lote['id'],
-        'Firebase ID': widget.lote['firebaseId'],
-        'Tipo de Material': widget.lote['material'],
-        'Peso Total': '${widget.lote['peso']} kg',
-        'Estado Actual': widget.lote['estado'],
-        'Fecha de Creación': MaterialUtils.formatDate(widget.lote['fechaCreacion']),
-      },
-      'Origen y Destino': {
-        'Centro de Origen': widget.lote['origen'],
-        'Ubicación Actual': widget.lote['ubicacionActual'],
-        'Responsable': 'Juan Pérez',
-        'Contacto': '+52 123 456 7890',
-      },
-      'Datos Adicionales': {
-        'Presentación': 'Pacas',
-        'Cantidad': '15 unidades',
-        'Color': 'Transparente',
-        'Calidad': 'Grado A',
-        'Certificación': 'ISO 9001',
-        'Temperatura': '25°C',
-      },
+      'Información Básica': infoBasica,
+      'Origen y Destino': origenDestino,
+      'Información de Trazabilidad': trazabilidadInfo,
     };
   }
 

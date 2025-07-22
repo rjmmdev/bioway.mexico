@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
+import '../../../services/user_session_service.dart';
+import '../../../models/ecoce/ecoce_profile_model.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
+import '../shared/utils/user_type_helper.dart';
 import 'transformador_lote_detalle_screen.dart';
 
 class TransformadorProduccionScreen extends StatefulWidget {
-  const TransformadorProduccionScreen({super.key});
+  final int? initialTab;
+  
+  const TransformadorProduccionScreen({super.key, this.initialTab});
 
   @override
   State<TransformadorProduccionScreen> createState() => _TransformadorProduccionScreenState();
@@ -13,9 +18,18 @@ class TransformadorProduccionScreen extends StatefulWidget {
 
 class _TransformadorProduccionScreenState extends State<TransformadorProduccionScreen> 
     with SingleTickerProviderStateMixin {
+  final UserSessionService _sessionService = UserSessionService();
   final int _selectedIndex = 1; // Producción está en índice 1
   late TabController _tabController;
   int _selectedTabIndex = 0;
+  
+  EcoceProfileModel? _userProfile;
+  bool _isLoading = true;
+  
+  // Filtros
+  String _selectedPolimero = 'Todos';
+  String _selectedTiempo = 'Este Mes';
+  List<String> _selectedProcesos = [];
   
   // Datos de ejemplo
   final double _capacidadUtilizada = 85;
@@ -109,12 +123,36 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 2, 
+      vsync: this,
+      initialIndex: widget.initialTab ?? 0,
+    );
+    _selectedTabIndex = widget.initialTab ?? 0;
     _tabController.addListener(() {
       setState(() {
         _selectedTabIndex = _tabController.index;
       });
     });
+    _loadUserProfile();
+  }
+  
+  Future<void> _loadUserProfile() async {
+    try {
+      final profile = await _sessionService.getCurrentUserProfile();
+      if (mounted) {
+        setState(() {
+          _userProfile = profile;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -124,24 +162,12 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
   }
 
   void _onBottomNavTapped(int index) {
-    HapticFeedback.lightImpact();
-    
-    if (index == _selectedIndex) return;
-    
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, '/transformador_inicio');
-        break;
-      case 1:
-        // Ya estamos en producción
-        break;
-      case 2:
-        Navigator.pushReplacementNamed(context, '/transformador_ayuda');
-        break;
-      case 3:
-        Navigator.pushReplacementNamed(context, '/transformador_perfil');
-        break;
-    }
+    UserTypeHelper.handleNavigation(
+      context,
+      _userProfile?.ecoceTipoActor,
+      index,
+      1, // Current index (producción)
+    );
   }
 
   void _onAddPressed() {
@@ -410,7 +436,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                                         const SizedBox(width: 4),
                                         Text(
                                           lote['tipoPolimero'],
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.w600,
                                             color: Colors.deepPurple,
@@ -485,9 +511,25 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                     ],
                   ),
                 ),
-                // Botón de acción inferior con QR para completados
+                // Botón de acción inferior - documentación para tab 0
                 InkWell(
-                  onTap: () => _verDetallesLote(lote),
+                  onTap: () {
+                    if (_selectedTabIndex == 0) {
+                      // En pestaña de Documentación, ir a ingresar documentación
+                      Navigator.pushNamed(
+                        context,
+                        '/transformador_documentacion',
+                        arguments: {
+                          'loteId': lote['id'],
+                          'material': lote['producto'],
+                          'peso': lote['peso'],
+                        },
+                      );
+                    } else {
+                      // En completados, ver detalles
+                      _verDetallesLote(lote);
+                    }
+                  },
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(16),
                     bottomRight: Radius.circular(16),
@@ -496,7 +538,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                      color: (isCompletado ? Colors.green : BioWayColors.ecoceGreen).withValues(alpha: 0.1),
+                      color: (_selectedTabIndex == 0 ? BioWayColors.warning : Colors.green).withValues(alpha: 0.1),
                       borderRadius: const BorderRadius.only(
                         bottomLeft: Radius.circular(16),
                         bottomRight: Radius.circular(16),
@@ -506,17 +548,17 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          isCompletado ? Icons.qr_code : Icons.remove_red_eye,
-                          color: isCompletado ? Colors.green : BioWayColors.ecoceGreen,
+                          _selectedTabIndex == 0 ? Icons.description : Icons.qr_code,
+                          color: _selectedTabIndex == 0 ? BioWayColors.warning : Colors.green,
                           size: 18,
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          isCompletado ? 'Ver Código QR' : 'Ver Detalles',
+                          _selectedTabIndex == 0 ? 'Ingresar Documentación' : 'Ver Código QR',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: isCompletado ? Colors.green : BioWayColors.ecoceGreen,
+                            color: _selectedTabIndex == 0 ? BioWayColors.warning : Colors.green,
                           ),
                         ),
                       ],
@@ -600,144 +642,277 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
     }
   }
 
+  List<Map<String, dynamic>> get _lotesFiltrados {
+    List<Map<String, dynamic>> lotes = _selectedTabIndex == 0 ? _lotesEnProceso : _lotesCompletados;
+    
+    return lotes.where((lote) {
+      // Filtrar por polímero
+      if (_selectedPolimero != 'Todos' && lote['tipoPolimero'] != _selectedPolimero) {
+        return false;
+      }
+      
+      // Filtrar por tiempo
+      final fechaISO = DateTime.parse(lote['fechaISO']);
+      final now = DateTime.now();
+      switch (_selectedTiempo) {
+        case 'Esta Semana':
+          final weekStart = now.subtract(Duration(days: now.weekday - 1));
+          if (!fechaISO.isAfter(weekStart)) return false;
+          break;
+        case 'Este Mes':
+          if (fechaISO.month != now.month || fechaISO.year != now.year) return false;
+          break;
+        case 'Últimos tres meses':
+          final threeMonthsAgo = DateTime(now.year, now.month - 3, now.day);
+          if (!fechaISO.isAfter(threeMonthsAgo)) return false;
+          break;
+        case 'Este Año':
+          if (fechaISO.year != now.year) return false;
+          break;
+      }
+      
+      // Filtrar por procesos
+      if (_selectedProcesos.isNotEmpty) {
+        final procesosLote = List<String>.from(lote['procesosAplicados'] ?? []);
+        // Verificar que el lote tenga al menos uno de los procesos seleccionados
+        bool tieneProcesoSeleccionado = false;
+        for (String proceso in _selectedProcesos) {
+          if (procesosLote.contains(proceso)) {
+            tieneProcesoSeleccionado = true;
+            break;
+          }
+        }
+        if (!tieneProcesoSeleccionado) return false;
+      }
+      
+      return true;
+    }).toList();
+  }
+
+  Map<String, dynamic> _getEstadisticas() {
+    final lotesFiltrados = _lotesFiltrados;
+    
+    if (lotesFiltrados.isEmpty) {
+      return {
+        'total': 0,
+        'pesoTotal': 0.0,
+        'procesoMasComun': 'N/A',
+      };
+    }
+    
+    // Peso total
+    double pesoTotal = 0.0;
+    Map<String, int> conteoProcesos = {};
+    
+    for (var lote in lotesFiltrados) {
+      pesoTotal += lote['peso'] as double;
+      
+      // Contar procesos
+      List<String> procesos = List<String>.from(lote['procesosAplicados'] ?? []);
+      for (String proceso in procesos) {
+        conteoProcesos[proceso] = (conteoProcesos[proceso] ?? 0) + 1;
+      }
+    }
+    
+    // Proceso más común
+    String procesoMasComun = 'N/A';
+    if (conteoProcesos.isNotEmpty) {
+      var entrada = conteoProcesos.entries.reduce((a, b) => a.value > b.value ? a : b);
+      procesoMasComun = entrada.key;
+    }
+    
+    return {
+      'total': lotesFiltrados.length,
+      'pesoTotal': pesoTotal,
+      'procesoMasComun': procesoMasComun,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onHorizontalDragEnd: (details) {
-        // Detectar swipe hacia la derecha (volver a inicio)
-        if (details.primaryVelocity! > 100) {
-          Navigator.pushReplacementNamed(context, '/transformador_inicio');
-        }
-        // Detectar swipe hacia la izquierda (ir a ayuda)
-        else if (details.primaryVelocity! < -100) {
-          Navigator.pushReplacementNamed(context, '/transformador_ayuda');
-        }
-      },
+    return WillPopScope(
+      onWillPop: () async => false,
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F5F5),
         body: SafeArea(
-          child: CustomScrollView(
-            slivers: [
-              // Header
-              SliverToBoxAdapter(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        BioWayColors.ecoceGreen,
-                        BioWayColors.ecoceGreen.withValues(alpha: 0.8),
+        child: Column(
+          children: [
+            // Header estático
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    BioWayColors.ecoceGreen,
+                    BioWayColors.ecoceGreen.withValues(alpha: 0.8),
+                  ],
+                ),
+              ),
+              child: Stack(
+                children: [
+                  // Patrón de fondo
+                  Positioned(
+                    right: -50,
+                    top: -50,
+                    child: Container(
+                      width: 200,
+                      height: 200,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: -30,
+                    bottom: -30,
+                    child: Container(
+                      width: 150,
+                      height: 150,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.05),
+                      ),
+                    ),
+                  ),
+                  // Contenido del header
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Control de Producción',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Gestión de procesos y capacidad',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white.withValues(alpha: 0.9),
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  child: Stack(
-                    children: [
-                      // Patrón de fondo
-                      Positioned(
-                        right: -50,
-                        top: -50,
-                        child: Container(
-                          width: 200,
-                          height: 200,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: 0.1),
+                ],
+              ),
+            ),
+            
+            // Tabs
+            Container(
+              color: const Color(0xFFF5F5F5),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                elevation: 2,
+                child: TabBar(
+                  controller: _tabController,
+                  indicatorColor: _selectedTabIndex == 0 ? Colors.orange : BioWayColors.ecoceGreen,
+                  indicatorWeight: 3,
+                  labelColor: _selectedTabIndex == 0 ? Colors.orange : BioWayColors.ecoceGreen,
+                  unselectedLabelColor: Colors.grey,
+                  labelStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.normal,
+                  ),
+                  tabs: [
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.description_outlined,
+                            size: 18,
                           ),
-                        ),
+                          SizedBox(width: 8),
+                          Text('Documentación'),
+                        ],
                       ),
-                      Positioned(
-                        left: -30,
-                        bottom: -30,
-                        child: Container(
-                          width: 150,
-                          height: 150,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: 0.05),
+                    ),
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.check_circle_outline,
+                            size: 18,
                           ),
-                        ),
+                          SizedBox(width: 8),
+                          Text('Completados'),
+                        ],
                       ),
-                      // Contenido del header
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Control de Producción',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Gestión de procesos y capacidad',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white.withValues(alpha: 0.9),
-                              ),
-                            ),
-                          ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Contenido con TabBarView
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                physics: const BouncingScrollPhysics(),
+                children: [
+                  // Tab de Documentación
+                  SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      children: [
+                        _buildFilterSection(),
+                        _buildStatisticsCard(),
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: _lotesFiltrados.isEmpty
+                              ? _buildEmptyState()
+                              : Column(
+                                  children: [
+                                    ..._lotesFiltrados.map((lote) => _buildLoteCard(lote)),
+                                    const SizedBox(height: 100), // Espacio para el bottom nav
+                                  ],
+                                ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              // Card de Capacidad
-              SliverToBoxAdapter(
-                child: _buildCapacidadCard(),
-              ),
-              
-              // Tabs
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _SliverAppBarDelegate(
-                  TabBar(
-                    controller: _tabController,
-                    indicatorColor: BioWayColors.ecoceGreen,
-                    indicatorWeight: 3,
-                    labelColor: BioWayColors.ecoceGreen,
-                    unselectedLabelColor: Colors.grey,
-                    labelStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      ],
                     ),
-                    unselectedLabelStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.normal,
+                  ),
+                  // Tab de Completados
+                  SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      children: [
+                        _buildFilterSection(),
+                        _buildStatisticsCard(),
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: _lotesFiltrados.isEmpty
+                              ? _buildEmptyState()
+                              : Column(
+                                  children: [
+                                    ..._lotesFiltrados.map((lote) => _buildLoteCard(lote)),
+                                    const SizedBox(height: 100), // Espacio para el bottom nav
+                                  ],
+                                ),
+                        ),
+                      ],
                     ),
-                    tabs: const [
-                      Tab(text: 'En Proceso'),
-                      Tab(text: 'Completados'),
-                    ],
                   ),
-                ),
+                ],
               ),
-              
-              // Contenido de los tabs
-              SliverToBoxAdapter(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: _selectedTabIndex == 0
-                        ? _lotesEnProceso.map((lote) => _buildLoteCard(lote)).toList()
-                        : _lotesCompletados.map((lote) => _buildLoteCard(lote)).toList(),
-                  ),
-                ),
-              ),
-              
-              // Espacio para el bottom nav
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 100),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
         
         // Bottom Navigation Bar
         bottomNavigationBar: EcoceBottomNavigation(
@@ -761,36 +936,358 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
       ),
     );
   }
-}
 
-// Delegate para el TabBar pegajoso
-class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
-  _SliverAppBarDelegate(this._tabBar);
-
-  final TabBar _tabBar;
-
-  @override
-  double get minExtent => _tabBar.preferredSize.height + 16;
-  @override
-  double get maxExtent => _tabBar.preferredSize.height + 16;
-
-  @override
-  Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget _buildFilterSection() {
+    final bool isDocumentacion = _selectedTabIndex == 0;
+    final Color activeColor = isDocumentacion ? Colors.orange : BioWayColors.ecoceGreen;
+    
     return Container(
-      color: const Color(0xFFF5F5F5),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        elevation: 2,
-        child: _tabBar,
+      color: Colors.white,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Filtro de polímeros (chips horizontales scrollables)
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: ['Todos', 'PEBD', 'PP', 'Multilaminado'].map((polimero) {
+                final isSelected = _selectedPolimero == polimero;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(polimero),
+                    selected: isSelected,
+                    selectedColor: activeColor.withValues(alpha: 0.2),
+                    labelStyle: TextStyle(
+                      color: isSelected ? activeColor : Colors.grey[700],
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                    onSelected: (_) {
+                      setState(() {
+                        _selectedPolimero = polimero;
+                      });
+                    },
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Filtro de tiempo (fila completa)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: DropdownButton<String>(
+              value: _selectedTiempo,
+              isExpanded: true,
+              underline: const SizedBox(),
+              icon: Icon(Icons.arrow_drop_down, color: isDocumentacion ? activeColor : null),
+              items: ['Hoy', 'Esta Semana', 'Este Mes', 'Este Año']
+                  .map((tiempo) => DropdownMenuItem(
+                        value: tiempo,
+                        child: Text(tiempo),
+                      ))
+                  .toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedTiempo = value!;
+                });
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Filtro de procesos (fila completa)
+          InkWell(
+            onTap: _showProcesosFilterDialog,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: _selectedProcesos.isNotEmpty
+                    ? activeColor.withValues(alpha: 0.1)
+                    : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: _selectedProcesos.isNotEmpty
+                      ? activeColor
+                      : Colors.grey.shade300,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.filter_list,
+                    size: 20,
+                    color: _selectedProcesos.isNotEmpty
+                        ? activeColor
+                        : Colors.grey.shade700,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _selectedProcesos.isEmpty
+                        ? 'Filtrar por procesos'
+                        : '${_selectedProcesos.length} procesos seleccionados',
+                    style: TextStyle(
+                      color: _selectedProcesos.isNotEmpty
+                          ? activeColor
+                          : Colors.grey.shade700,
+                      fontWeight: _selectedProcesos.isNotEmpty
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: Colors.grey.shade600,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  @override
-  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
-    return false;
+  void _showProcesosFilterDialog() {
+    final bool isDocumentacion = _selectedTabIndex == 0;
+    final Color activeColor = isDocumentacion ? Colors.orange : BioWayColors.ecoceGreen;
+    
+    final procesosList = [
+      'Lavado',
+      'Secado',
+      'Trituración',
+      'Extrusión',
+      'Inyección',
+      'Soplado',
+      'Termoformado',
+      'Laminado',
+      'Rotomoldeo',
+      'Clasificación',
+      'Empaque'
+    ];
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Row(
+                children: [
+                  Icon(Icons.filter_list, color: activeColor),
+                  const SizedBox(width: 12),
+                  const Text('Filtrar por Proceso'),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: procesosList.map((proceso) {
+                    final isSelected = _selectedProcesos.contains(proceso);
+                    return CheckboxListTile(
+                      title: Text(proceso),
+                      value: isSelected,
+                      activeColor: activeColor,
+                      onChanged: (bool? value) {
+                        setDialogState(() {
+                          if (value == true) {
+                            _selectedProcesos.add(proceso);
+                          } else {
+                            _selectedProcesos.remove(proceso);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    setDialogState(() {
+                      _selectedProcesos.clear();
+                    });
+                  },
+                  child: Text(
+                    'Limpiar',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {});
+                    Navigator.of(context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: activeColor,
+                  ),
+                  child: const Text('Aplicar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildStatisticsCard() {
+    final estadisticas = _getEstadisticas();
+    final bool isDocumentacion = _selectedTabIndex == 0;
+    
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            isDocumentacion ? Colors.orange : BioWayColors.ecoceGreen,
+            isDocumentacion 
+                ? Colors.orange.withValues(alpha: 0.8)
+                : BioWayColors.ecoceGreen.withValues(alpha: 0.8),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: isDocumentacion 
+                ? Colors.orange.withValues(alpha: 0.3)
+                : BioWayColors.ecoceGreen.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.analytics_outlined, color: Colors.white, size: 24),
+              const SizedBox(width: 8),
+              Text(
+                'Estadísticas Filtradas',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildStatisticItem(
+                'Lotes',
+                estadisticas['total'].toString(),
+                Icons.inventory_2_outlined,
+              ),
+              _buildStatisticItem(
+                'Peso Total',
+                '${estadisticas['pesoTotal'].toStringAsFixed(1)} kg',
+                Icons.scale_outlined,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildStatisticItem(
+            'Proceso Más Común',
+            estadisticas['procesoMasComun'],
+            Icons.settings,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatisticItem(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: Colors.white70, size: 16),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white70,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      height: 300,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.filter_alt_off_outlined,
+              size: 80,
+              color: Colors.grey[300],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No hay lotes con los filtros seleccionados',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Intenta ajustar los filtros',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

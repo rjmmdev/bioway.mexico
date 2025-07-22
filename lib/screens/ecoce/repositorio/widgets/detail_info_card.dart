@@ -3,7 +3,7 @@ import '../../../../utils/colors.dart';
 
 class DetailInfoCard extends StatelessWidget {
   final String title;
-  final Map<String, String> info;
+  final Map<String, dynamic> info;
   final Color primaryColor;
   
   const DetailInfoCard({
@@ -75,7 +75,7 @@ class DetailInfoCard extends StatelessWidget {
                       Expanded(
                         flex: 3,
                         child: Text(
-                          entry.value,
+                          entry.value.toString(),
                           style: TextStyle(
                             fontSize: screenWidth * 0.032,
                             fontWeight: FontWeight.w600,

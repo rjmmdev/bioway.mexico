@@ -212,9 +212,11 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: SafeArea(
+    return WillPopScope(
+      onWillPop: () async => false,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        body: SafeArea(
         child: CustomScrollView(
           slivers: [
             // Header moderno con gradiente
@@ -623,6 +625,7 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
         tooltip: 'Nueva muestra',
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      ),
     );
   }
 }

@@ -176,9 +176,11 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: SafeArea(
+    return WillPopScope(
+      onWillPop: () async => false,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        body: SafeArea(
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
@@ -697,6 +699,7 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
             testKey: 'transporte_nav_perfil',
           ),
         ],
+      ),
       ),
     );
   }

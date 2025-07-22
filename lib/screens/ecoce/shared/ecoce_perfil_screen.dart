@@ -177,9 +177,11 @@ class _EcocePerfilScreenState extends State<EcocePerfilScreen> with SingleTicker
       onRetry: _loadUserData,
       errorMessage: 'Error al cargar perfil',
       primaryColor: primaryColor,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF5F5F5),
-        body: SafeArea(
+      child: WillPopScope(
+        onWillPop: () async => false,
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF5F5F5),
+          body: SafeArea(
           child: Column(
             children: [
               // Header
@@ -305,6 +307,7 @@ class _EcocePerfilScreenState extends State<EcocePerfilScreen> with SingleTicker
         floatingActionButtonLocation: fabConfig != null
           ? FloatingActionButtonLocation.centerDocked
           : null,
+        ),
       ),
     );
   }

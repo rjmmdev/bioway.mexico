@@ -624,7 +624,7 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
   void _onBottomNavTapped(int index) {
     switch (index) {
       case 0:
-        Navigator.pushNamedAndRemoveUntil(context, '/transporte_inicio', (route) => false);
+        Navigator.pushReplacementNamed(context, '/transporte_inicio');
         break;
       case 1:
         break; // Ya estamos aquí

@@ -10,6 +10,9 @@ class EcoceProfileService {
   final FirebaseManager _firebaseManager = FirebaseManager();
   final DocumentService _documentService = DocumentService();
   
+  // Cache temporal para ubicaciones de usuarios (userId -> path)
+  static final Map<String, String> _userPathCache = {};
+  
   FirebaseFirestore get _firestore {
     final app = _firebaseManager.currentApp;
     if (app == null) throw Exception('Firebase no inicializado para ECOCE');
@@ -764,74 +767,142 @@ class EcoceProfileService {
     required String deletedBy,
   }) async {
     try {
-      // 1. Obtener la ruta del perfil desde el índice
-      final indexDoc = await _profilesCollection.doc(userId).get();
-      if (!indexDoc.exists) {
-        throw Exception('Usuario no encontrado');
-      }
-      
-      final indexData = indexDoc.data() as Map<String, dynamic>;
-      final profilePath = indexData['path'] as String?;
-      
-      // 2. Obtener el perfil completo para acceder a los documentos
+      // 1. Buscar el perfil - primero en caché, luego en Firestore
       Map<String, dynamic>? profileData;
-      if (profilePath != null) {
-        final profileDoc = await _firestore.doc(profilePath).get();
-        if (profileDoc.exists) {
-          profileData = profileDoc.data() as Map<String, dynamic>;
+      DocumentSnapshot? profileDoc;
+      String? profilePath;
+      
+      // Verificar caché primero
+      if (_userPathCache.containsKey(userId)) {
+        profilePath = _userPathCache[userId];
+        final doc = await _firestore.doc(profilePath!).get();
+        if (doc.exists) {
+          profileDoc = doc;
+          profileData = doc.data() as Map<String, dynamic>;
+        } else {
+          // Si no existe, limpiar del caché
+          _userPathCache.remove(userId);
+          profilePath = null;
         }
       }
       
-      // 3. Eliminar archivos de Storage si existen
-      if (profileData != null) {
-        await _deleteUserStorageFiles(userId, profileData);
+      // Si no se encontró en caché, buscar en todas las rutas
+      if (profileData == null) {
+        // Lista de todas las rutas posibles de perfiles
+        final possiblePaths = [
+          'ecoce_profiles/origen/centro_acopio/$userId',
+          'ecoce_profiles/origen/planta_separacion/$userId',
+          'ecoce_profiles/reciclador/usuarios/$userId',
+          'ecoce_profiles/transformador/usuarios/$userId',
+          'ecoce_profiles/transporte/usuarios/$userId',
+          'ecoce_profiles/laboratorio/usuarios/$userId',
+          'ecoce_profiles/maestro/usuarios/$userId',
+        ];
+        
+        // Buscar en PARALELO en todas las rutas posibles
+        final futures = possiblePaths.map((path) => _firestore.doc(path).get());
+        final results = await Future.wait(futures);
+        
+        // Encontrar el documento que existe
+        for (int i = 0; i < results.length; i++) {
+          if (results[i].exists) {
+            profileDoc = results[i];
+            profileData = results[i].data() as Map<String, dynamic>;
+            profilePath = possiblePaths[i];
+            // Guardar en caché para futuras búsquedas
+            _userPathCache[userId] = profilePath;
+            break;
+          }
+        }
       }
       
-      // 4. Eliminar el documento de la subcolección
+      // Si no se encontró en las rutas directas, buscar en el índice antiguo
+      if (profileData == null) {
+        final indexDoc = await _profilesCollection.doc(userId).get();
+        if (indexDoc.exists) {
+          final indexData = indexDoc.data() as Map<String, dynamic>;
+          profilePath = indexData['path'] as String?;
+          
+          if (profilePath != null) {
+            final doc = await _firestore.doc(profilePath).get();
+            if (doc.exists) {
+              profileDoc = doc;
+              profileData = doc.data() as Map<String, dynamic>;
+            }
+          }
+        }
+      }
+      
+      if (profileData == null) {
+        throw Exception('Usuario no encontrado en ninguna colección');
+      }
+      
+      // 2. Preparar todas las operaciones de eliminación
+      final List<Future<void>> deletionTasks = [];
+      
+      // Eliminar archivos de Storage (puede ser lento)
+      deletionTasks.add(_deleteUserStorageFiles(userId, profileData));
+      
+      // Eliminar el documento de la subcolección
       if (profilePath != null) {
-        await _firestore.doc(profilePath).delete();
+        deletionTasks.add(_firestore.doc(profilePath).delete());
       }
       
-      // 5. Eliminar el índice
-      await _profilesCollection.doc(userId).delete();
+      // Eliminar el índice si existe
+      deletionTasks.add(
+        _profilesCollection.doc(userId).delete().catchError((e) {
+          // Si no existe el índice, no es un error crítico
+          print('Índice no encontrado para eliminar: $e');
+        })
+      );
       
-      // 6. Eliminar completamente la solicitud correspondiente en solicitudes_cuentas
-      // Buscar solicitudes aprobadas con este userId
-      final solicitudQuery = await _solicitudesCollection
-          .where('usuario_creado_id', isEqualTo: userId)
-          .where('estado', isEqualTo: 'aprobada')
-          .get();
+      // Buscar y eliminar solicitudes aprobadas
+      deletionTasks.add(
+        _solicitudesCollection
+            .where('usuario_creado_id', isEqualTo: userId)
+            .where('estado', isEqualTo: 'aprobada')
+            .get()
+            .then((query) async {
+              final batch = _firestore.batch();
+              for (final doc in query.docs) {
+                batch.delete(doc.reference);
+              }
+              if (query.docs.isNotEmpty) {
+                await batch.commit();
+              }
+            })
+      );
       
-      // Eliminar completamente las solicitudes
-      for (final doc in solicitudQuery.docs) {
-        await doc.reference.delete();
-      }
+      // Registrar en audit log
+      deletionTasks.add(
+        _firestore.collection('audit_logs').add({
+          'action': 'user_deleted',
+          'userId': userId,
+          'userFolio': profileData['ecoce_folio'] ?? 'SIN FOLIO',
+          'userName': profileData['ecoce_nombre'] ?? 'Sin nombre',
+          'deletedBy': deletedBy,
+          'deletedAt': FieldValue.serverTimestamp(),
+        })
+      );
       
-      // 7. Registrar la eliminación en un log de auditoría
-      await _firestore.collection('audit_logs').add({
-        'action': 'user_deleted',
-        'userId': userId,
-        'userFolio': indexData['folio'] ?? profileData?['ecoce_folio'] ?? 'SIN FOLIO',
-        'userName': indexData['nombre'] ?? profileData?['ecoce_nombre'] ?? 'Sin nombre',
-        'deletedBy': deletedBy,
-        'deletedAt': FieldValue.serverTimestamp(),
-      });
+      // Marcar para eliminación en Auth
+      deletionTasks.add(
+        _firestore.collection('users_pending_deletion').doc(userId).set({
+          'userId': userId,
+          'userEmail': profileData['ecoce_correo_contacto'] ?? 'unknown',
+          'requestedBy': deletedBy,
+          'requestedAt': FieldValue.serverTimestamp(),
+          'status': 'pending',
+          'userFolio': profileData['ecoce_folio'] ?? 'SIN FOLIO',
+          'userName': profileData['ecoce_nombre'] ?? 'Sin nombre',
+        })
+      );
       
-      // 8. Marcar el usuario para eliminación en Firebase Auth
-      // IMPORTANTE: La eliminación real del usuario de Firebase Auth requiere Firebase Admin SDK
-      // que solo puede ejecutarse en un entorno seguro del servidor (Cloud Functions)
-      // 
-      // Por ahora, creamos un documento en una colección especial para que una Cloud Function
-      // procese la eliminación del usuario de Authentication
-      await _firestore.collection('users_pending_deletion').doc(userId).set({
-        'userId': userId,
-        'userEmail': profileData?['ecoce_correo_contacto'] ?? indexData['email'] ?? 'unknown',
-        'requestedBy': deletedBy,
-        'requestedAt': FieldValue.serverTimestamp(),
-        'status': 'pending',
-        'userFolio': indexData['folio'] ?? profileData?['ecoce_folio'] ?? 'SIN FOLIO',
-        'userName': indexData['nombre'] ?? profileData?['ecoce_nombre'] ?? 'Sin nombre',
-      });
+      // 3. Ejecutar todas las operaciones en PARALELO
+      await Future.wait(deletionTasks);
+      
+      // 4. Limpiar el usuario del caché
+      _userPathCache.remove(userId);
       
       // El usuario no podrá acceder al sistema aunque exista en Auth porque:
       // 1. No tiene perfil en ecoce_profiles
@@ -1016,6 +1087,59 @@ class EcoceProfileService {
     }
   }
   
+  // Obtener TODOS los perfiles del sistema sin filtrar (para administración)
+  Future<List<EcoceProfileModel>> getAllProfiles() async {
+    try {
+      List<EcoceProfileModel> allProfiles = [];
+      
+      // Lista de todas las subcolecciónes posibles
+      final subcollections = [
+        'origen/centro_acopio',
+        'origen/planta_separacion',
+        'reciclador/usuarios',
+        'transformador/usuarios',
+        'transporte/usuarios',
+        'laboratorio/usuarios',
+        'maestro/usuarios',
+      ];
+      
+      // Buscar en cada subcolección sin filtrar por estado
+      for (final subcollection in subcollections) {
+        try {
+          final query = await _profilesCollection
+              .doc(subcollection.split('/')[0])
+              .collection(subcollection.split('/')[1])
+              .get();
+          
+          for (final doc in query.docs) {
+            try {
+              final profile = EcoceProfileModel.fromFirestore(doc);
+              allProfiles.add(profile);
+              // Guardar en caché la ubicación del usuario
+              _userPathCache[profile.id] = doc.reference.path;
+            } catch (e) {
+              // Continuar si hay error parseando un documento
+              continue;
+            }
+          }
+        } catch (e) {
+          // Continuar con la siguiente subcolección si hay error
+          continue;
+        }
+      }
+      
+      // Ordenar por fecha de registro (descendente - más recientes primero)
+      allProfiles.sort((a, b) {
+        return b.ecoceFechaReg.compareTo(a.ecoceFechaReg);
+      });
+      
+      return allProfiles;
+    } catch (e) {
+      // Log: Error al obtener todos los perfiles: $e
+      return [];
+    }
+  }
+  
   // Obtener TODOS los perfiles activos del sistema (busca directamente en subcarpetas)
   Future<List<EcoceProfileModel>> getAllActiveProfiles() async {
     try {
@@ -1045,6 +1169,8 @@ class EcoceProfileService {
             try {
               final profile = EcoceProfileModel.fromFirestore(doc);
               allProfiles.add(profile);
+              // Guardar en caché la ubicación del usuario
+              _userPathCache[profile.id] = doc.reference.path;
             } catch (e) {
               // Continuar si hay error parseando un documento
               continue;

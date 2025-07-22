@@ -126,10 +126,9 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
   }
 
   void _irAInicio() {
-    Navigator.pushAndRemoveUntil(
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const RecicladorInicio()),
-      (route) => false,
     );
   }
 

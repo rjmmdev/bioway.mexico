@@ -109,10 +109,9 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
   }
 
   void _irAInicio() {
-    Navigator.pushAndRemoveUntil(
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const OrigenInicioScreen()),
-      (route) => false,
     );
   }
 

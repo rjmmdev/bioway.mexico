@@ -141,17 +141,27 @@ class _TransporteResumenCargaScreenState extends State<TransporteResumenCargaScr
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
+    return WillPopScope(
+      onWillPop: () async => false,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        automaticallyImplyLeading: false,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: BioWayColors.darkGreen),
           onPressed: () {
-            HapticFeedback.lightImpact();
-            Navigator.pop(context);
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/transporte_inicio',
+              (route) => route.isFirst,
+            );
           },
+          icon: Icon(
+            Icons.home,
+            color: BioWayColors.petBlue,
+          ),
+          tooltip: 'Ir a inicio',
         ),
         title: const Text(
           'Resumen de Carga',
@@ -424,6 +434,7 @@ class _TransporteResumenCargaScreenState extends State<TransporteResumenCargaScr
             ),
           ),
         ),
+      ),
       ),
     );
   }

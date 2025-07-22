@@ -576,8 +576,12 @@ Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pes
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    final horizontalPadding = isSmallScreen ? 16.0 : 24.0;
+    
     return Container(
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.all(horizontalPadding),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -674,11 +678,11 @@ Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pes
             ),
           ),
           
-          const SizedBox(height: 32),
+          SizedBox(height: isSmallScreen ? 24 : 32),
           
           // Información del lote
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
             decoration: BoxDecoration(
               color: const Color(0xFFF8F9FA),
               borderRadius: BorderRadius.circular(16),
@@ -749,7 +753,7 @@ Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pes
             ),
           ),
           
-          const SizedBox(height: 32),
+          SizedBox(height: isSmallScreen ? 24 : 32),
           
           // Botones de acción
           Row(
@@ -757,11 +761,14 @@ Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pes
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: _isProcessing ? null : _descargarQR,
-                  icon: const Icon(Icons.download),
-                  label: const Text('Descargar QR'),
+                  icon: Icon(Icons.download, size: isSmallScreen ? 18 : 20),
+                  label: Text(
+                    isSmallScreen ? 'Descargar' : 'Descargar QR',
+                    style: TextStyle(fontSize: isSmallScreen ? 13 : 14),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: widget.colorPrincipal,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 12 : 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -769,14 +776,17 @@ Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pes
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: isSmallScreen ? 8 : 12),
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: _isProcessing ? null : _imprimirQR,
-                  icon: const Icon(Icons.print),
-                  label: const Text('Imprimir'),
+                  icon: Icon(Icons.print, size: isSmallScreen ? 18 : 20),
+                  label: Text(
+                    'Imprimir',
+                    style: TextStyle(fontSize: isSmallScreen ? 13 : 14),
+                  ),
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 12 : 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),

@@ -51,7 +51,7 @@ class TimelineWidget extends StatelessWidget {
                 if (!isLast)
                   Container(
                     width: 2,
-                    height: 80,
+                    height: event['details'] != null ? 120 : 100,
                     color: isCompleted 
                         ? (event['color'] as Color).withValues(alpha: 0.3)
                         : Colors.grey.withValues(alpha: 0.3),
@@ -116,6 +116,45 @@ class TimelineWidget extends StatelessWidget {
                             ),
                           ),
                         ],
+                      ),
+                    ],
+                    if (event['peso'] != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.scale_outlined,
+                            size: 14,
+                            color: Colors.grey[600],
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${event['peso']} kg',
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.028,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (event['details'] != null) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          event['details'],
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.026,
+                            color: Colors.grey[700],
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
                       ),
                     ],
                   ],

@@ -276,11 +276,17 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: BioWayColors.backgroundGrey,
-      appBar: AppBar(
+    return WillPopScope(
+      onWillPop: () async {
+        // Prevenir que el botón atrás cierre la sesión
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: BioWayColors.backgroundGrey,
+        appBar: AppBar(
         backgroundColor: BioWayColors.ecoceGreen,
         elevation: 0,
+        automaticallyImplyLeading: false,
         title: const Text(
           'Administración de Lotes',
           style: TextStyle(
@@ -325,6 +331,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
         onPressed: _navigateToNewLot,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      ),
     );
   }
 

@@ -841,14 +841,14 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                                         child: Row(
                                           children: [
                                             Icon(
-                                              Icons.warning_amber_rounded,
+                                              Icons.admin_panel_settings,
                                               color: BioWayColors.warning,
                                               size: 20,
                                             ),
                                             const SizedBox(width: 8),
                                             Expanded(
                                               child: Text(
-                                                'Acceso temporal - Estos botones serán removidos',
+                                                'Acceso exclusivo para administradores',
                                                 style: TextStyle(
                                                   fontSize: 12,
                                                   color: BioWayColors.warning,
@@ -862,7 +862,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                                       const SizedBox(height: 16),
                                       
                                       const Text(
-                                        'Acceso directo por tipo de usuario:',
+                                        'Acceso administrativo:',
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
@@ -871,7 +871,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                                       ),
                                       const SizedBox(height: 16),
                                       
-                                      // Grid de botones de tipos de usuario
+                                      // Botones de administrador
                                       _buildUserTypeButtonsGrid(),
                                     ],
                                   ),
@@ -1199,48 +1199,39 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
 
   Widget _buildUserTypeButtonsGrid() {
     final userTypes = [
-      'Acopiador',
-      'Planta de Separación',
-      'Reciclador',
-      'Transformador',
-      'Transportista',
-      'Laboratorio',
-      'Repositorio', // Nueva opción agregada
-      'Maestro ECOCE', // Usuario Maestro ECOCE
+      'Repositorio',
+      'Maestro ECOCE',
     ];
 
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 2.5,
+    return Column(
       children: userTypes.map((userType) {
         final color = _getUserTypeColor(userType);
         final icon = _getUserTypeIcon(userType);
         
-        return ElevatedButton.icon(
-          onPressed: () => _handleUserTypeLogin(userType, color),
-          icon: Icon(icon, size: 18),
-          label: Text(
-            userType,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+        return Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 12),
+          child: ElevatedButton.icon(
+            onPressed: () => _handleUserTypeLogin(userType, color),
+            icon: Icon(icon, size: 20),
+            label: Text(
+              userType,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: color,
-            foregroundColor: Colors.white,
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 8,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color,
+              foregroundColor: Colors.white,
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
           ),
         );

@@ -190,9 +190,11 @@ class _EcoceAyudaScreenState extends State<EcoceAyudaScreen> {
       onRetry: _loadUserData,
       errorMessage: 'Error al cargar datos',
       primaryColor: primaryColor,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF5F5F5),
-        body: SafeArea(
+      child: WillPopScope(
+        onWillPop: () async => false,
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF5F5F5),
+          body: SafeArea(
           child: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
@@ -352,6 +354,7 @@ class _EcoceAyudaScreenState extends State<EcoceAyudaScreen> {
         floatingActionButtonLocation: fabConfig != null
           ? FloatingActionButtonLocation.centerDocked
           : null,
+        ),
       ),
     );
   }

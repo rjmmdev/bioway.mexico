@@ -202,52 +202,13 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
         // Ya estamos en inicio
         break;
       case 1:
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const OrigenLotesScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
-        );
+        Navigator.pushReplacementNamed(context, '/origen_lotes');
         break;
       case 2:
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const EcoceAyudaScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
-        );
+        Navigator.pushReplacementNamed(context, '/origen_ayuda');
         break;
       case 3:
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const EcocePerfilScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
-        );
+        Navigator.pushReplacementNamed(context, '/origen_perfil');
         break;
     }
   }
@@ -265,9 +226,14 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
       );
     }
     
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: CustomScrollView(
+    return WillPopScope(
+      onWillPop: () async {
+        // Prevenir que el botón atrás cierre la sesión
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        body: CustomScrollView(
         slivers: [
           // Header moderno con gradiente que se extiende hasta arriba
           SliverToBoxAdapter(
@@ -631,6 +597,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
         tooltip: 'Nuevo Lote',
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      ),
     );
   }
 

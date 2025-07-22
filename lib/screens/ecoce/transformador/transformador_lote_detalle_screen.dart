@@ -84,16 +84,18 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
   }
 
   void _navegarAInicio() {
-    Navigator.pushAndRemoveUntil(
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) => const TransformadorInicioScreen(),
       ),
-      (route) => false,
     );
   }
 
   Widget _buildInfoRow(String label, String value, {IconData? icon}) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -102,17 +104,17 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
           if (icon != null) ...[
             Icon(
               icon,
-              size: 20,
+              size: isSmallScreen ? 18 : 20,
               color: _primaryColor,
             ),
             const SizedBox(width: 8),
           ],
           SizedBox(
-            width: 120,
+            width: isSmallScreen ? 100 : 120,
             child: Text(
               label,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: isSmallScreen ? 13 : 14,
                 fontWeight: FontWeight.w600,
                 color: Colors.grey[700],
               ),
@@ -121,10 +123,12 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: isSmallScreen ? 13 : 14,
                 color: Colors.black87,
               ),
+              softWrap: true,
+              overflow: TextOverflow.visible,
             ),
           ),
         ],
@@ -168,7 +172,7 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
               // Mensaje de éxito animado
@@ -336,7 +340,7 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
                 material: widget.productoFabricado, // Producto fabricado
                 peso: widget.peso,
                 presentacion: widget.productoFabricado, // Usar producto como presentación
-                origen: 'La Venta S.A. de C.V.', // Nombre del transformador
+                origen: 'Transformador ${widget.firebaseId}', // Origen del transformador
                 fechaCreacion: widget.fechaCreacion,
                 datosAdicionales: datosAdicionales,
                 titulo: 'Código QR del Lote Transformado',

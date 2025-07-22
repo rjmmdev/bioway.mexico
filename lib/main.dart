@@ -241,7 +241,12 @@ class BioWayApp extends StatelessWidget {
         
         // Rutas de Transformador
         '/transformador_inicio': (context) => const TransformadorInicioScreen(),
-        '/transformador_produccion': (context) => const TransformadorProduccionScreen(),
+        '/transformador_produccion': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          return TransformadorProduccionScreen(
+            initialTab: args?['initialTab'] as int?,
+          );
+        },
         '/transformador_ayuda': (context) => const EcoceAyudaScreen(),
         '/transformador_perfil': (context) => const EcocePerfilScreen(),
         '/transformador_recibir_lote': (context) => const TransformadorRecibirLoteScreen(),

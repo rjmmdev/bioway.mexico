@@ -166,64 +166,30 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
     
     switch (index) {
       case 0:
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const OrigenInicioScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
-        );
+        Navigator.pushReplacementNamed(context, '/origen_inicio');
         break;
       case 1:
         // Ya estamos en lotes
         break;
       case 2:
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const EcoceAyudaScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
-        );
+        Navigator.pushReplacementNamed(context, '/origen_ayuda');
         break;
       case 3:
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const EcocePerfilScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
-        );
+        Navigator.pushReplacementNamed(context, '/origen_perfil');
         break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: SafeArea(
+    return WillPopScope(
+      onWillPop: () async {
+        // Prevenir que el botón atrás cierre la sesión
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA),
+        body: SafeArea(
         bottom: false,
         child: Column(
           children: [
@@ -264,7 +230,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                         // Botón de filtros
                         Container(
                           decoration: BoxDecoration(
-                            color: _primaryColor.withOpacity(0.1),
+                            color: _primaryColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: IconButton(
@@ -446,6 +412,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
         tooltip: 'Nuevo Lote',
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      ),
     );
   }
 
@@ -648,7 +615,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: _primaryColor.withOpacity(0.05),
+                color: _primaryColor.withValues(alpha: 0.05),
                 shape: BoxShape.circle,
               ),
               child: Stack(
@@ -657,7 +624,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                   Icon(
                     Icons.inventory_2_outlined,
                     size: 60,
-                    color: _primaryColor.withOpacity(0.3),
+                    color: _primaryColor.withValues(alpha: 0.3),
                   ),
                   Positioned(
                     right: 25,
@@ -670,7 +637,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.orange.withOpacity(0.3),
+                            color: Colors.orange.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),

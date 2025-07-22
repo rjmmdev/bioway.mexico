@@ -211,6 +211,10 @@ class UserTypeHelper {
         if (tipoActor == 'L') {
           return '${basePath}_muestras';
         }
+        // Transformador tiene producción en índice 1
+        if (tipoActor == 'T') {
+          return '${basePath}_produccion';
+        }
         return '${basePath}_lotes';
       case 2:
         // Todos usan la misma pantalla de ayuda

@@ -240,9 +240,14 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: SafeArea(
+    return WillPopScope(
+      onWillPop: () async {
+        // Prevenir que el botón atrás cierre la sesión
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        body: SafeArea(
         child: CustomScrollView(
           slivers: [
             // Header moderno con gradiente
@@ -727,6 +732,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
         tooltip: 'Escanear Nuevo Lote',
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      ),
     );
   }
 }

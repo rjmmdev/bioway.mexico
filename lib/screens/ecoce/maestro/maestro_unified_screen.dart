@@ -73,8 +73,8 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
       final pendientes = await _profileService.getPendingSolicitudes();
       
       // Para la pestaña de administración, obtener TODOS los usuarios de ecoce_profiles
-      // no solo las solicitudes aprobadas
-      final allProfiles = await _profileService.getAllActiveProfiles();
+      // sin importar su estado de aprobación
+      final allProfiles = await _profileService.getAllProfiles();
       
       // Convertir perfiles a formato de solicitud para mantener compatibilidad con la UI
       final approvedUsers = allProfiles.map((profile) {
@@ -266,7 +266,16 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
         // Cerrar diálogo de carga
         if (mounted) DialogUtils.hideLoadingDialog(context);
         
+        // Actualizar la UI inmediatamente removiendo el usuario de la lista
+        setState(() {
+          _approvedSolicitudes.removeWhere((u) => 
+            (u['usuario_creado_id'] ?? u['solicitud_id']) == userId
+          );
+        });
+        
         _showSuccessMessage('Usuario eliminado exitosamente');
+        
+        // Recargar datos en segundo plano para asegurar sincronización
         _loadSolicitudes();
       } catch (e) {
         // Cerrar diálogo de carga si hay error

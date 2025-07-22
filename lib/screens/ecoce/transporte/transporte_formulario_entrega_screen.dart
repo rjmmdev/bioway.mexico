@@ -233,10 +233,9 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
         }
         
         // Volver a la pantalla de recoger
-        Navigator.pushNamedAndRemoveUntil(
+        Navigator.pushReplacementNamed(
           context,
           '/transporte_inicio',
-          (route) => false,
         );
       }
     } catch (e) {
@@ -256,7 +255,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
   void _onBottomNavTapped(int index) {
     switch (index) {
       case 0:
-        Navigator.pushNamedAndRemoveUntil(context, '/transporte_inicio', (route) => false);
+        Navigator.pushReplacementNamed(context, '/transporte_inicio');
         break;
       case 1:
         Navigator.pushReplacementNamed(context, '/transporte_entregar');

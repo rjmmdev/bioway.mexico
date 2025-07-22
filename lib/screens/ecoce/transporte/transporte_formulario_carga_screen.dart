@@ -152,10 +152,9 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
         }
         
         // Navegar a la pestaña de entregar
-        Navigator.pushNamedAndRemoveUntil(
+        Navigator.pushReplacementNamed(
           context,
           '/transporte_entregar',
-          (route) => false,
         );
       }
     } catch (e) {
@@ -175,7 +174,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
   void _onBottomNavTapped(int index) {
     switch (index) {
       case 0:
-        Navigator.pushNamedAndRemoveUntil(context, '/transporte_inicio', (route) => false);
+        Navigator.pushReplacementNamed(context, '/transporte_inicio');
         break;
       case 1:
         Navigator.pushReplacementNamed(context, '/transporte_entregar');

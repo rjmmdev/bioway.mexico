@@ -33,18 +33,24 @@ class _FiltersSheetState extends State<FiltersSheet> {
   ];
   
   final List<String> _ubicaciones = [
-    'Acopiador Norte',
-    'Acopiador Sur',
-    'Acopiador Este',
-    'Acopiador Oeste',
-    'Planta de Separación Norte',
-    'Planta de Separación Sur',
-    'Reciclador Este',
-    'Reciclador Oeste',
-    'Transformador Norte',
-    'Transformador Sur',
-    'En Tránsito',
-    'Laboratorio Central'
+    'Centro de Acopio EcoNorte',
+    'Centro de Acopio SurVerde',
+    'Centro de Acopio Industrial Norte',
+    'Planta de Separación MetroWaste',
+    'Planta de Separación EcoSort',
+    'ReciclaPlus',
+    'RecycleMax',
+    'MegaRecicla Industrial',
+    'PVC Recycling Experts',
+    'Transformador PlastiTech',
+    'PolyTransform Industries',
+    'Transformador SecondLife',
+    'Laboratorio QualityTest',
+    'TestLab Pro',
+    'En Tránsito - Transportes Verdes',
+    'En Tránsito - EcoLogística',
+    'En Tránsito - LogisTrans México',
+    'Completado - Múltiples destinos'
   ];
 
   @override
