@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../utils/colors.dart'; // ACTUALIZADA
 import '../../../widgets/common/gradient_background.dart'; // ACTUALIZADA
+import '../../../services/bioway/bioway_auth_service.dart';
+import '../../../services/firebase/auth_service.dart';
+import '../../../services/firebase/firebase_manager.dart';
 
 class BioWayRegisterScreen extends StatefulWidget {
   const BioWayRegisterScreen({super.key});
@@ -62,6 +65,10 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
     'Red de Reciclaje Ciudadano',
     'Otra',
   ];
+  
+  // Servicio de autenticación
+  final BioWayAuthService _bioWayAuthService = BioWayAuthService();
+  final AuthService _authService = AuthService();
 
   @override
   void initState() {
@@ -99,28 +106,139 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
   }
 
   Future<void> _register() async {
-    // Por ahora solo simula el registro
-    setState(() => _isLoading = true);
-
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (mounted) {
-      setState(() => _isLoading = false);
-
-      String userType = _selectedUserType == 'brindador' ? 'Brindador' : 'Recolector';
-
+    // Validar formularios según el paso actual
+    bool isValid = false;
+    
+    if (_currentPage == 1) {
+      if (_selectedUserType == 'brindador') {
+        isValid = _formKeyStep2.currentState?.validate() ?? false;
+      } else {
+        isValid = true; // Recolector no tiene validación en paso 2
+      }
+    } else if (_currentPage == 2) {
+      isValid = _formKeyStep3.currentState?.validate() ?? false;
+    }
+    
+    if (!isValid && _currentPage > 0) {
+      return;
+    }
+    
+    // Validar aceptación de términos
+    if (!_acceptedPrivacy) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Registro exitoso como $userType'),
-          backgroundColor: BioWayColors.success,
+          content: const Text('Debes aceptar los términos y condiciones'),
+          backgroundColor: BioWayColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
         ),
       );
+      return;
+    }
+    
+    // Validar contraseñas coinciden
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Las contraseñas no coinciden'),
+          backgroundColor: BioWayColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+      return;
+    }
+    
+    setState(() => _isLoading = true);
 
-      Navigator.pop(context);
+    try {
+      // Inicializar Firebase para BioWay
+      await _authService.initializeForPlatform(FirebasePlatform.bioway);
+      
+      if (_selectedUserType == 'brindador') {
+        // Registrar Brindador
+        await _bioWayAuthService.registrarBrindador(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          nombre: _fullNameController.text.trim(),
+          direccion: _addressController.text.trim(),
+          numeroExterior: _numExtController.text.trim(),
+          codigoPostal: _cpController.text.trim(),
+          estado: _stateController.text.trim(),
+          municipio: _cityController.text.trim(),
+          colonia: _colonyController.text.trim(),
+        );
+      } else {
+        // Registrar Recolector
+        await _bioWayAuthService.registrarRecolector(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          nombre: _fullNameController.text.trim(),
+          empresa: _selectedCompany,
+        );
+      }
+
+      if (mounted) {
+        setState(() => _isLoading = false);
+
+        String userType = _selectedUserType == 'brindador' ? 'Brindador' : 'Recolector';
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Text('¡Registro exitoso como $userType!'),
+              ],
+            ),
+            backgroundColor: BioWayColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+
+        // Volver a la pantalla de login
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        
+        String errorMessage = 'Error al registrar usuario';
+        if (e.toString().contains('email-already-in-use')) {
+          errorMessage = 'Este correo ya está registrado';
+        } else if (e.toString().contains('weak-password')) {
+          errorMessage = 'La contraseña es muy débil';
+        } else if (e.toString().contains('invalid-email')) {
+          errorMessage = 'Correo electrónico inválido';
+        } else if (e.toString().contains('network-request-failed')) {
+          errorMessage = 'Error de conexión. Verifica tu internet';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(child: Text(errorMessage)),
+              ],
+            ),
+            backgroundColor: BioWayColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
     }
   }
 

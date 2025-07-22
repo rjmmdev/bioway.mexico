@@ -4,9 +4,12 @@ import '../../../utils/colors.dart'; // ACTUALIZADA
 import '../../../widgets/common/gradient_background.dart'; // ACTUALIZADA
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
+import '../../../services/bioway/bioway_auth_service.dart';
 import '../../../widgets/login/animated_logo.dart'; // ACTUALIZADA
 import '../platform_selector_screen.dart'; // ACTUALIZADA
 import 'bioway_register_screen.dart'; // ACTUALIZADA
+import '../../bioway/brindador/brindador_main_screen.dart';
+import '../../bioway/recolector/recolector_main_screen.dart';
 
 class BioWayLoginScreen extends StatefulWidget {
   const BioWayLoginScreen({super.key});
@@ -36,6 +39,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
 
   // Instancia del servicio de autenticación
   final AuthService _authService = AuthService();
+  final BioWayAuthService _bioWayAuthService = BioWayAuthService();
 
   @override
   void initState() {
@@ -137,78 +141,56 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
         final email = _emailController.text.trim();
         final password = _passwordController.text;
 
-        try {
-          // Intentar login con Firebase
-          final userCredential = await _authService.signInWithEmailAndPassword(
-            email: email,
-            password: password,
+        // Intentar login con BioWay
+        final bioWayUser = await _bioWayAuthService.iniciarSesion(
+          email: email,
+          password: password,
+        );
+
+        if (bioWayUser != null && mounted) {
+          // Login exitoso
+          setState(() {
+            _isLoading = false;
+          });
+
+          // Mostrar mensaje de éxito
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Text('¡Bienvenido ${bioWayUser.nombre}!'),
+                ],
+              ),
+              backgroundColor: BioWayColors.success,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              duration: const Duration(seconds: 2),
+            ),
           );
 
-          if (userCredential.user != null && mounted) {
-            // Login exitoso con Firebase
-            setState(() {
-              _isLoading = false;
-            });
-
-            // Mostrar mensaje de éxito
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Row(
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.white),
-                    SizedBox(width: 12),
-                    Text('Login BioWay exitoso'),
-                  ],
-                ),
-                backgroundColor: BioWayColors.success,
-                behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.all(20),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                duration: const Duration(seconds: 2),
-              ),
-            );
-
-            // TODO: Navegar según el tipo de usuario desde Firestore
-            // Por ahora, mostramos un mensaje temporal
-            await Future.delayed(const Duration(seconds: 2));
-            if (mounted) {
-              Navigator.pop(context); // Volver al selector de plataforma
-            }
-          }
-        } catch (firebaseError) {
-          // Si Firebase falla, usar login temporal para desarrollo
-          debugPrint('Error Firebase: $firebaseError');
-          debugPrint('Usando login temporal para desarrollo');
-          
-          // Simular proceso de login (código mock)
-          await Future.delayed(const Duration(seconds: 1));
-
+          // Navegar según el tipo de usuario
+          await Future.delayed(const Duration(milliseconds: 500));
           if (mounted) {
-            setState(() {
-              _isLoading = false;
-            });
-
-            // Login temporal exitoso
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Row(
-                  children: [
-                    Icon(Icons.warning, color: Colors.white),
-                    SizedBox(width: 12),
-                    Text('Login temporal (sin Firebase)'),
-                  ],
+            if (bioWayUser.isBrindador) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const BrindadorMainScreen(),
                 ),
-                backgroundColor: BioWayColors.warning,
-                behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.all(20),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+              );
+            } else {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const RecolectorMainScreen(),
                 ),
-                duration: const Duration(seconds: 3),
-              ),
-            );
+              );
+            }
           }
         }
       } catch (e) {
@@ -217,6 +199,17 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
             _isLoading = false;
           });
 
+          String errorMessage = 'Error al iniciar sesión';
+          if (e.toString().contains('user-not-found')) {
+            errorMessage = 'No existe un usuario con este correo';
+          } else if (e.toString().contains('wrong-password')) {
+            errorMessage = 'Contraseña incorrecta';
+          } else if (e.toString().contains('invalid-email')) {
+            errorMessage = 'Correo electrónico inválido';
+          } else if (e.toString().contains('network-request-failed')) {
+            errorMessage = 'Error de conexión. Verifica tu internet';
+          }
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(
@@ -224,7 +217,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
                   const Icon(Icons.error, color: Colors.white),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(e.toString()),
+                    child: Text(errorMessage),
                   ),
                 ],
               ),
@@ -346,6 +339,14 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
 
                             // Botón registrarse
                             _buildRegisterButton(),
+                            const SizedBox(height: 24),
+
+                            // Divisor para accesos temporales
+                            _buildDivider(),
+                            const SizedBox(height: 24),
+
+                            // Accesos temporales (SOLO PARA DESARROLLO)
+                            _buildTemporaryAccessSection(),
                             const SizedBox(height: 20),
                           ],
                         ),
@@ -672,5 +673,158 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
         ),
       ),
     );
+  }
+
+  Widget _buildTemporaryAccessSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: BioWayColors.warning.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: BioWayColors.warning.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                color: BioWayColors.warning,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'ACCESOS TEMPORALES (Solo Desarrollo)',
+                  style: TextStyle(
+                    color: BioWayColors.warning,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildTempAccessButton(
+                  label: 'Brindador',
+                  icon: Icons.volunteer_activism,
+                  onTap: _navigateToBrindadorDashboard,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildTempAccessButton(
+                  label: 'Recolector',
+                  icon: Icons.local_shipping,
+                  onTap: _navigateToRecolectorDashboard,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTempAccessButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: BioWayColors.primaryGreen.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: BioWayColors.primaryGreen.withOpacity(0.3),
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                color: BioWayColors.primaryGreen,
+                size: 24,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: BioWayColors.primaryGreen,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToBrindadorDashboard() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Accediendo como Brindador (modo desarrollo)'),
+        backgroundColor: BioWayColors.info,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const BrindadorMainScreen(),
+          ),
+        );
+      }
+    });
+  }
+
+  void _navigateToRecolectorDashboard() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Accediendo como Recolector (modo desarrollo)'),
+        backgroundColor: BioWayColors.info,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const RecolectorMainScreen(),
+          ),
+        );
+      }
+    });
   }
 }
