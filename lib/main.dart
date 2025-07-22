@@ -16,8 +16,10 @@ import 'screens/ecoce/reciclador/reciclador_escaneo_qr.dart';
 import 'screens/ecoce/reciclador/reciclador_documentacion.dart';
 
 // Screens - Transporte
-import 'screens/ecoce/transporte/transporte_escaneo_qr.dart';
-import 'screens/ecoce/transporte/transporte_delivery_screen.dart';
+import 'screens/ecoce/transporte/transporte_inicio_screen.dart';
+import 'screens/ecoce/transporte/transporte_entregar_screen.dart';
+import 'screens/ecoce/transporte/transporte_ayuda_screen.dart';
+import 'screens/ecoce/transporte/transporte_perfil_screen.dart';
 
 // Screens - Shared
 import 'screens/ecoce/shared/ecoce_perfil_screen.dart';
@@ -232,10 +234,10 @@ class BioWayApp extends StatelessWidget {
         },
         
         // Rutas de Transporte
-        '/transporte_recoger': (context) => const TransporteEscaneoQR(),
-        '/transporte_entregar': (context) => const TransporteDeliveryScreen(),
-        '/transporte_ayuda': (context) => const EcoceAyudaScreen(),
-        '/transporte_perfil': (context) => const EcocePerfilScreen(),
+        '/transporte_inicio': (context) => const TransporteInicioScreen(),
+        '/transporte_entregar': (context) => const TransporteEntregarScreen(),
+        '/transporte_ayuda': (context) => const TransporteAyudaScreen(),
+        '/transporte_perfil': (context) => const TransportePerfilScreen(),
         
         // Rutas de Transformador
         '/transformador_inicio': (context) => const TransformadorInicioScreen(),

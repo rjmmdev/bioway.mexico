@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../utils/colors.dart';
 import '../../shared/utils/material_utils.dart';
+import '../../../../utils/format_utils.dart';
 
 class OrigenLoteCard extends StatelessWidget {
   final Map<String, dynamic> lote;
@@ -18,6 +20,8 @@ class OrigenLoteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final materialColor = MaterialUtils.getMaterialColor(lote['material'] ?? '');
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 360;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -38,171 +42,145 @@ class OrigenLoteCard extends StatelessWidget {
                 ),
               ],
             ),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      // Icono del material
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              materialColor.withOpacity(0.2),
-                              materialColor.withOpacity(0.1),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          MaterialUtils.getMaterialIcon(lote['material'] ?? ''),
-                          color: materialColor,
-                          size: 24,
-                        ),
+            child: Padding(
+              padding: EdgeInsets.all(isCompact ? 12 : 16),
+              child: Row(
+                children: [
+                  // Icono del material
+                  Container(
+                    width: isCompact ? 42 : 48,
+                    height: isCompact ? 42 : 48,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          materialColor.withOpacity(0.2),
+                          materialColor.withOpacity(0.1),
+                        ],
                       ),
-                      const SizedBox(width: 16),
-                      // Información del lote
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      MaterialUtils.getMaterialIcon(lote['material'] ?? ''),
+                      color: materialColor,
+                      size: isCompact ? 20 : 24,
+                    ),
+                  ),
+                  SizedBox(width: isCompact ? 12 : 16),
+                  // Información del lote
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Primera línea: Material y ID
+                        Row(
                           children: [
-                            Row(
-                              children: [
-                                Text(
-                                  'Lote #${lote['id'] ?? lote['firebaseId'] ?? ''}',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: BioWayColors.darkGreen,
-                                  ),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isCompact ? 6 : 8,
+                                vertical: isCompact ? 2 : 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: materialColor,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                lote['material'] ?? '',
+                                style: TextStyle(
+                                  fontSize: isCompact ? 10 : 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
                                 ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: materialColor.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: materialColor.withOpacity(0.3),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    lote['material'] ?? '',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: materialColor,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Fuente: ${lote['fuente'] ?? 'Sin especificar'}',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            // Chips de información
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 4,
-                              children: [
-                                _buildInfoChip(
-                                  Icons.scale,
-                                  '${lote['peso']} kg',
-                                  Colors.blue,
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                'Lote ${lote['id'] ?? lote['firebaseId'] ?? ''}',
+                                style: TextStyle(
+                                  fontSize: isCompact ? 10 : 11,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
                                 ),
-                                _buildInfoChip(
-                                  Icons.inventory_2,
-                                  lote['presentacion'] ?? '',
-                                  Colors.orange,
-                                ),
-                                if (lote['fecha'] != null)
-                                  _buildInfoChip(
-                                    Icons.calendar_today,
-                                    MaterialUtils.formatDate(lote['fecha']),
-                                    Colors.green,
-                                  ),
-                              ],
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ),
-                      ),
-                      if (showActions) ...[
-                        const SizedBox(width: 12),
-                        // Botón Ver QR
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                BioWayColors.primaryGreen,
-                                BioWayColors.primaryGreen.withOpacity(0.8),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: BioWayColors.primaryGreen.withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
+                        const SizedBox(height: 6),
+                        // Segunda línea: Fuente (sin prefijo "Fuente:")
+                        Text(
+                          lote['fuente'] ?? 'Sin especificar',
+                          style: TextStyle(
+                            fontSize: isCompact ? 13 : 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
                           ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () {
-                                HapticFeedback.lightImpact();
-                                onQRTap?.call();
-                              },
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.qr_code,
-                                      color: Colors.white,
-                                      size: 24,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    const Text(
-                                      'Ver QR',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                        const SizedBox(height: 4),
+                        // Tercera línea: Peso, Presentación y Fecha
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
+                            _buildCompactChip(
+                              Icons.scale_outlined,
+                              '${lote['peso']} kg',
+                              Colors.blue,
+                              isCompact,
+                            ),
+                            if (lote['presentacion'] != null)
+                              _buildPresentacionChip(
+                                lote['presentacion'],
+                                Colors.green,
+                                isCompact,
                               ),
+                            _buildCompactChip(
+                              Icons.calendar_today_outlined,
+                              lote['fecha'] != null 
+                                ? MaterialUtils.formatDate(lote['fecha'])
+                                : FormatUtils.formatDate(DateTime.now()),
+                              Colors.orange,
+                              isCompact,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Acciones
+                  if (showActions) ...[
+                    SizedBox(width: isCompact ? 8 : 12),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: BioWayColors.ecoceGreen,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            onQRTap?.call();
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: EdgeInsets.all(isCompact ? 8 : 10),
+                            child: Icon(
+                              Icons.qr_code,
+                              color: Colors.white,
+                              size: isCompact ? 18 : 20,
                             ),
                           ),
                         ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ),
@@ -210,25 +188,76 @@ class OrigenLoteCard extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoChip(IconData icon, String label, Color color) {
+  Widget _buildCompactChip(IconData icon, String text, Color color, bool isCompact) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: EdgeInsets.symmetric(
+        horizontal: isCompact ? 6 : 8, 
+        vertical: isCompact ? 3 : 4
+      ),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
+          Icon(
+            icon,
+            size: isCompact ? 11 : 12,
+            color: color,
+          ),
           const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: color,
-              fontWeight: FontWeight.w500,
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: isCompact ? 10 : 11,
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPresentacionChip(String presentacion, Color color, bool isCompact) {
+    final svgPath = presentacion == 'Pacas' 
+        ? 'assets/images/icons/pacas.svg' 
+        : 'assets/images/icons/sacos.svg';
+        
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: isCompact ? 6 : 8, 
+        vertical: isCompact ? 3 : 4
+      ),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SvgPicture.asset(
+            svgPath,
+            width: isCompact ? 11 : 12,
+            height: isCompact ? 11 : 12,
+            colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              presentacion,
+              style: TextStyle(
+                fontSize: isCompact ? 10 : 11,
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
         ],

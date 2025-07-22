@@ -97,4 +97,20 @@ class UserSessionService {
         return null;
     }
   }
+  
+  /// Obtener datos del usuario como mapa (para compatibilidad)
+  Map<String, dynamic>? getUserData() {
+    if (_currentUserProfile == null) return null;
+    
+    return {
+      'nombre': _currentUserProfile!.ecoceNombre,
+      'folio': _currentUserProfile!.ecoceFolio,
+      'email': _currentUserProfile!.ecoceCorreoContacto,
+      'tipo': _currentUserProfile!.tipoActorLabel,
+      'tipoActor': _currentUserProfile!.ecoceTipoActor,
+    };
+  }
+  
+  /// Propiedad userData para compatibilidad con código antiguo
+  Map<String, dynamic>? get userData => getUserData();
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:async';
+import 'dart:io';
 import '../../../utils/colors.dart';
 import 'origen_config.dart';
 import '../shared/widgets/signature_dialog.dart';
@@ -67,6 +68,9 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
   List<Offset?> _signaturePoints = [];
   bool _hasSignature = false;
   
+  // Variables para las imágenes
+  bool _hasImages = false;
+  
   // ScrollController para manejar el auto-scroll
   final ScrollController _scrollController = ScrollController();
   
@@ -121,6 +125,12 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
       },
       primaryColor: _primaryColor,
     );
+  }
+
+  void _onPhotosChanged(List<File> photos) {
+    setState(() {
+      _hasImages = photos.isNotEmpty;
+    });
   }
 
   // Sección de foto ahora manejada por PhotoEvidenceFormField del módulo shared
@@ -522,12 +532,13 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                     
                     const SizedBox(height: 20),
                     
-                    // Sección: Evidencia Fotográfica
+                    // Sección: Evidencia Fotográfica con múltiples fotos
                     PhotoEvidenceFormField(
                       title: 'Evidencia Fotográfica',
-                      maxPhotos: 1,
-                      minPhotos: 0,
-                      onPhotosChanged: (_) {},
+                      maxPhotos: 5,
+                      minPhotos: 1,
+                      isRequired: true,
+                      onPhotosChanged: _onPhotosChanged,
                       primaryColor: _primaryColor,
                     ),
                     

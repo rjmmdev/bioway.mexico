@@ -193,9 +193,9 @@ class UserTypeHelper {
     
     switch (index) {
       case 0:
-        // Transportista va directo a recoger, no tiene inicio
+        // Transportista usa inicio como su pantalla principal
         if (tipoActor == 'V') {
-          return '${basePath}_recoger';
+          return '${basePath}_inicio';
         }
         return '${basePath}_inicio';
       case 1:

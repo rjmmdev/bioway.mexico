@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
-import '../../../utils/format_utils.dart';
 import 'origen_config.dart';
 import 'origen_inicio_screen.dart';
-import '../shared/widgets/lote_card_unified.dart';
+import 'widgets/origen_lote_card.dart';
 import '../shared/widgets/qr_code_display_widget.dart';
 
 class OrigenLoteDetalleScreen extends StatefulWidget {
@@ -73,10 +72,6 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
   void dispose() {
     _animationController.dispose();
     super.dispose();
-  }
-
-  String get _fechaFormateada {
-    return FormatUtils.formatDate(widget.fechaCreacion ?? DateTime.now());
   }
 
   Future<void> _descargarCodigoQR() async {
@@ -240,17 +235,16 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
                       ),
                     ),
                     const SizedBox(height: 12),
-                    LoteCard(
+                    OrigenLoteCard(
                       lote: {
                         'firebaseId': widget.firebaseId,
                         'material': widget.material,
                         'peso': widget.peso,
                         'presentacion': widget.presentacion,
                         'fuente': widget.fuente,
-                        'fecha': _fechaFormateada,
+                        'fecha': widget.fechaCreacion ?? DateTime.now(),
                       },
                       showActions: false,
-                      onTap: null,
                     ),
                   ],
                 ),

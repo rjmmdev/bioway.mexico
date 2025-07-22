@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../utils/colors.dart';
 
 class DashboardStats extends StatelessWidget {
   final int totalLotes;

@@ -15,8 +15,8 @@ import '../shared/ecoce_perfil_screen.dart';
 import '../origen/origen_crear_lote_screen.dart';
 import '../reciclador/reciclador_inicio.dart';
 import '../reciclador/reciclador_administracion_lotes.dart';
-import '../transporte/transporte_lot_management_screen.dart';
-import '../transporte/transporte_delivery_screen.dart';
+// import '../transporte/transporte_lot_management_screen.dart';
+// import '../transporte/transporte_delivery_screen.dart';
 import '../shared/widgets/qr_scanner_widget.dart';
 
 class RepositorioLotesScreen extends StatefulWidget {
@@ -48,7 +48,7 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
   // Filtros
   String? _selectedMaterial;
   String? _selectedUbicacion;
-  bool _showFilters = false;
+  // final bool _showFilters = false;
 
   @override
   void initState() {
@@ -619,18 +619,20 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
   void _navigateTransporte(int index) {
     switch (index) {
       case 0:
-        NavigationUtils.navigateWithFade(
-          context,
-          const TransporteLotManagementScreen(),
-          replacement: true,
-        );
+        // NavigationUtils.navigateWithFade(
+        //   context,
+        //   const TransporteLotManagementScreen(),
+        //   replacement: true,
+        // );
+        Navigator.pushReplacementNamed(context, '/transporte_inicio');
         break;
       case 1:
-        NavigationUtils.navigateWithFade(
-          context,
-          const TransporteDeliveryScreen(),
-          replacement: true,
-        );
+        // NavigationUtils.navigateWithFade(
+        //   context,
+        //   const TransporteDeliveryScreen(),
+        //   replacement: true,
+        // );
+        Navigator.pushReplacementNamed(context, '/transporte_entregar');
         break;
       case 3:
         NavigationUtils.navigateWithFade(

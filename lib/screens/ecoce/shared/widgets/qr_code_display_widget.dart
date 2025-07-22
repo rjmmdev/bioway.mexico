@@ -656,7 +656,7 @@ Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pes
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  widget.tipoUsuario == 'reciclador' ? Icons.verified : Icons.fingerprint,
+                  Icons.fingerprint,
                   color: widget.colorPrincipal,
                   size: 20,
                 ),

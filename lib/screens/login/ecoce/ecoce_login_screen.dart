@@ -14,6 +14,7 @@ import '../../ecoce/maestro/maestro_unified_screen.dart';
 import '../../ecoce/repositorio/repositorio_lotes_screen.dart';
 import '../../ecoce/shared/pending_approval_screen.dart';
 import '../../ecoce/laboratorio/laboratorio_inicio.dart';
+import '../../ecoce/transporte/transporte_inicio_screen.dart';
 
 class ECOCELoginScreen extends StatefulWidget {
   const ECOCELoginScreen({super.key});
@@ -432,9 +433,8 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         targetScreen = const OrigenInicioScreen(); // TEMPORAL
         break;
       case 'transportista':
-        // Transportista va directo a recoger material
-        Navigator.pushReplacementNamed(context, '/transporte_recoger');
-        return;
+        targetScreen = const TransporteInicioScreen();
+        break;
       case 'laboratorio':
         targetScreen = const LaboratorioInicioScreen();
         break;
@@ -571,7 +571,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         Navigator.pushReplacementNamed(context, '/reciclador_inicio');
         break;
       case 'V': // Transportista
-        Navigator.pushReplacementNamed(context, '/transporte_recoger');
+        Navigator.pushReplacementNamed(context, '/transporte_inicio');
         break;
       case 'T': // Transformador
         Navigator.pushReplacementNamed(context, '/transformador_inicio');
