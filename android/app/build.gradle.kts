@@ -10,7 +10,7 @@ plugins {
 android {
     namespace = "com.biowaymexico.app"
     compileSdk = flutter.compileSdkVersion
-    // ndkVersion = "25.1.8937393"
+    // ndkVersion = "23.1.7779620"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
