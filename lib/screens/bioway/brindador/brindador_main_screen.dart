@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
-import '../shared/widgets/custom_bottom_navigation_bar.dart';
+import 'widgets/brindador_bottom_navigation_bar.dart';
 import 'brindador_dashboard_screen.dart';
-import 'brindador_perfil_screen.dart';
 import 'brindador_comercio_local_screen.dart';
-import 'bio_competencias_screen.dart';
+import 'brindador_perfil_competencias_screen.dart';
 
 class BrindadorMainScreen extends StatefulWidget {
   const BrindadorMainScreen({super.key});
@@ -54,12 +53,11 @@ class _BrindadorMainScreenState extends State<BrindadorMainScreen> {
         physics: const NeverScrollableScrollPhysics(), // Deshabilitamos el swipe manual
         children: const [
           BrindadorDashboardScreen(),
-          BioCompetenciasScreen(),
           BrindadorComercioLocalScreen(),
-          BrindadorPerfilScreen(),
+          BrindadorPerfilCompetenciasScreen(),
         ],
       ),
-      bottomNavigationBar: CustomBottomNavigationBar(
+      bottomNavigationBar: BrindadorBottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: _onNavItemTapped,
       ),
