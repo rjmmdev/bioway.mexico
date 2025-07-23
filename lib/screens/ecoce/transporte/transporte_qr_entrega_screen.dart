@@ -15,6 +15,8 @@ import 'package:gal/gal.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
 import '../../../services/user_session_service.dart';
+import '../../../services/lote_service.dart';
+import '../../../models/lotes/lote_transportista_model.dart';
 import 'transporte_formulario_entrega_screen.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 
@@ -32,20 +34,22 @@ class TransporteQREntregaScreen extends StatefulWidget {
 
 class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
   final UserSessionService _userSession = UserSessionService();
+  final LoteService _loteService = LoteService();
   final ScreenshotController _screenshotController = ScreenshotController();
-  late String _qrData;
+  String? _qrData;
+  String? _nuevoLoteId;
   late DateTime _expirationTime;
   Timer? _timer;
   int _remainingMinutes = 15;
   int _remainingSeconds = 0;
   bool _isExpired = false;
   bool _isProcessing = false;
+  bool _isCreatingLote = true;
   
   @override
   void initState() {
     super.initState();
-    _generateQRData();
-    _startTimer();
+    _createTransporteLote();
   }
   
   @override
@@ -54,34 +58,67 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
     super.dispose();
   }
   
-  void _generateQRData() {
-    // Calcular datos agregados
-    final pesoTotal = widget.lotesSeleccionados.fold(
-      0.0, 
-      (sum, lote) => sum + (lote['peso'] as double)
-    );
-    
-    // Obtener orígenes únicos
-    final origenes = widget.lotesSeleccionados
-        .map((lote) => lote['origen'] as String)
-        .toSet()
-        .toList();
-    
-    // Crear JSON para el QR
-    final qrJson = {
-      'lotes_salida': widget.lotesSeleccionados.map((lote) => lote['id']).toList(),
-      'peso_total': pesoTotal,
-      'origen': origenes,
-      'timestamp': DateTime.now().toIso8601String(),
-      'transportista': _userSession.getUserData()?['folio'] ?? 'V0000001',
-    };
-    
-    _qrData = jsonEncode(qrJson);
-    _expirationTime = DateTime.now().add(const Duration(minutes: 15));
+  Future<void> _createTransporteLote() async {
+    try {
+      // Calcular datos agregados
+      final pesoTotal = widget.lotesSeleccionados.fold(
+        0.0, 
+        (sum, lote) => sum + (lote['peso'] as double)
+      );
+      
+      // Obtener orígenes únicos
+      final origenes = widget.lotesSeleccionados
+          .map((lote) => lote['origen'] as String)
+          .toSet()
+          .toList();
+      
+      // Crear nuevo lote de transportista
+      final nuevoLote = LoteTransportistaModel(
+        lotesEntrada: widget.lotesSeleccionados.map((lote) => lote['id'] as String).toList(),
+        fechaRecepcion: DateTime.now(),
+        pesoRecibido: pesoTotal,
+        direccionOrigen: origenes.join(', '),
+        direccionDestino: 'Pendiente de entrega',
+        estado: 'en_transito',
+        eviFotoEntrada: [], // Lista vacía por ahora
+      );
+      
+      // Guardar en Firebase
+      final nuevoId = await _loteService.crearLoteTransportista(nuevoLote);
+      
+      if (mounted) {
+        setState(() {
+          _nuevoLoteId = nuevoId;
+          _qrData = nuevoId; // El QR solo contiene el ID del nuevo lote
+          _isCreatingLote = false;
+        });
+        
+        // Iniciar el timer solo después de crear el lote
+        _expirationTime = DateTime.now().add(const Duration(minutes: 15));
+        _startTimer();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isCreatingLote = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al crear lote: $e'),
+            backgroundColor: BioWayColors.error,
+          ),
+        );
+      }
+    }
   }
   
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      
       final now = DateTime.now();
       final difference = _expirationTime.difference(now);
       
@@ -103,12 +140,13 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
   
   void _regenerateQR() {
     setState(() {
-      _generateQRData();
+      _isCreatingLote = true;
       _remainingMinutes = 15;
       _remainingSeconds = 0;
       _isExpired = false;
     });
     _timer?.cancel();
+    _createTransporteLote();
     _startTimer();
   }
   
@@ -128,7 +166,8 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
       MaterialPageRoute(
         builder: (context) => TransporteFormularioEntregaScreen(
           lotes: widget.lotesSeleccionados,
-          qrData: _qrData,
+          qrData: _qrData!,
+          nuevoLoteId: _nuevoLoteId!,
         ),
       ),
     );
@@ -273,21 +312,27 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                                 width: 2,
                               ),
                             ),
-                            child: QrImageView(
-                              data: _qrData,
-                              version: QrVersions.auto,
-                              size: 184,
-                              backgroundColor: Colors.white,
-                              errorCorrectionLevel: QrErrorCorrectLevel.H,
-                              eyeStyle: QrEyeStyle(
-                                eyeShape: QrEyeShape.square,
-                                color: _isExpired ? Colors.grey : Colors.black,
-                              ),
-                              dataModuleStyle: QrDataModuleStyle(
-                                dataModuleShape: QrDataModuleShape.square,
-                                color: _isExpired ? Colors.grey : Colors.black,
-                              ),
-                            ),
+                            child: _isCreatingLote
+                                ? const Center(
+                                    child: CircularProgressIndicator(
+                                      color: BioWayColors.deepBlue,
+                                    ),
+                                  )
+                                : QrImageView(
+                                    data: _qrData ?? '',
+                                    version: QrVersions.auto,
+                                    size: 184,
+                                    backgroundColor: Colors.white,
+                                    errorCorrectionLevel: QrErrorCorrectLevel.H,
+                                    eyeStyle: QrEyeStyle(
+                                      eyeShape: QrEyeShape.square,
+                                      color: _isExpired ? Colors.grey : Colors.black,
+                                    ),
+                                    dataModuleStyle: QrDataModuleStyle(
+                                      dataModuleShape: QrDataModuleShape.square,
+                                      color: _isExpired ? Colors.grey : Colors.black,
+                                    ),
+                                  ),
                           ),
                         ),
                         
@@ -332,7 +377,9 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Envío: ${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
+                                _isCreatingLote 
+                                    ? 'Generando...' 
+                                    : _nuevoLoteId ?? 'Sin ID',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -547,20 +594,28 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                     height: 56,
                     child: ElevatedButton.icon(
                       key: Key(_isExpired ? 'btn_regenerate_qr' : 'btn_to_form_entrega'),
-                      onPressed: _isExpired ? _regenerateQR : _continueToForm,
+                      onPressed: _isCreatingLote 
+                          ? null 
+                          : (_isExpired ? _regenerateQR : _continueToForm),
                       icon: Icon(
-                        _isExpired ? Icons.refresh : Icons.arrow_forward,
+                        _isCreatingLote 
+                            ? Icons.hourglass_empty
+                            : (_isExpired ? Icons.refresh : Icons.arrow_forward),
                         size: 24,
                       ),
                       label: Text(
-                        _isExpired ? 'Generar nuevo código' : 'Continuar al Formulario',
+                        _isCreatingLote 
+                            ? 'Generando lote...'
+                            : (_isExpired ? 'Generar nuevo código' : 'Continuar al Formulario'),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _isExpired ? BioWayColors.warning : BioWayColors.primaryGreen,
+                        backgroundColor: _isCreatingLote 
+                            ? Colors.grey
+                            : (_isExpired ? BioWayColors.warning : BioWayColors.primaryGreen),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),

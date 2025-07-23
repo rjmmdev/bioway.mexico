@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:io';
+import 'dart:ui' as ui;
+import 'dart:typed_data';
+import 'package:path_provider/path_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
+import '../../../services/lote_service.dart';
+import '../../../services/user_session_service.dart';
+import '../../../services/firebase/firebase_storage_service.dart';
+import '../../../models/lotes/lote_reciclador_model.dart';
 import '../shared/widgets/weight_input_widget.dart';
 import '../shared/widgets/signature_dialog.dart';
+import '../shared/utils/dialog_utils.dart';
 
 /// Painter personalizado para dibujar la firma
 class SignaturePainter extends CustomPainter {
@@ -50,6 +60,9 @@ class RecicladorFormularioEntrada extends StatefulWidget {
 
 class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrada> {
   final _formKey = GlobalKey<FormState>();
+  final LoteService _loteService = LoteService();
+  final UserSessionService _userSession = UserSessionService();
+  final FirebaseStorageService _storageService = FirebaseStorageService();
   
   // Controladores
   final TextEditingController _pesoNetoController = TextEditingController();
@@ -58,6 +71,28 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
   // Variables para la firma
   List<Offset?> _signaturePoints = [];
   bool _hasSignature = false;
+  String? _signatureUrl;
+  
+  // Estados
+  bool _isLoading = false;
+  double _pesoTotalOriginal = 0.0;
+  
+  @override
+  void initState() {
+    super.initState();
+    _initializeForm();
+  }
+  
+  Future<void> _initializeForm() async {
+    // Cargar datos del usuario
+    final userData = _userSession.getUserData();
+    _operadorController.text = userData?['nombre'] ?? '';
+    
+    // Calcular peso total de los lotes
+    _pesoTotalOriginal = await _loteService.calcularPesoTotal(widget.lotIds);
+    // No inicializar el peso neto - dejar que el usuario lo ingrese
+    setState(() {}); // Actualizar la UI con el peso bruto calculado
+  }
 
   @override
   void dispose() {
@@ -81,15 +116,128 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
     );
   }
 
-  void _submitForm() {
+  void _submitForm() async {
     if (_formKey.currentState!.validate()) {
       if (!_hasSignature) {
         _showErrorSnackBar('Por favor, agregue su firma');
         return;
       }
 
-      // Aquí iría la lógica para guardar los datos
-      _showSuccessDialog();
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        // Subir firma a Storage
+        if (_signaturePoints.isNotEmpty) {
+          final signatureImage = await _captureSignature();
+          if (signatureImage != null) {
+            _signatureUrl = await _storageService.uploadImage(
+              signatureImage,
+              'lotes/reciclador/firmas_entrada',
+            );
+          }
+        }
+
+        // Obtener datos del usuario
+        final userProfile = await _userSession.getUserProfile();
+        if (userProfile == null) {
+          throw Exception('No se pudo obtener el perfil del usuario');
+        }
+
+        // Para cada lote transportista, actualizar su estado y crear lote de reciclador
+        for (String loteId in widget.lotIds) {
+          // Obtener información del lote
+          final loteInfo = await _loteService.getLotesInfo([loteId]);
+          if (loteInfo.isEmpty) continue;
+
+          // Crear el lote de reciclador
+          final loteReciclador = LoteRecicladorModel(
+            conjuntoLotes: [loteId], // Add to conjunto
+            loteEntrada: loteId,
+            pesoBruto: _pesoTotalOriginal, // Use the calculated weight
+            pesoNeto: double.parse(_pesoNetoController.text),
+            nombreOpeEntrada: _operadorController.text,
+            firmaEntrada: _signatureUrl,
+            estado: 'recibido',
+          );
+
+          await _loteService.crearLoteReciclador(loteReciclador);
+
+          // Si el lote venía de un transportista, marcarlo como entregado
+          if (loteInfo.first['tipo_lote'] == 'lotes_transportista') {
+            await _loteService.actualizarLoteTransportista(
+              loteId,
+              {
+                'estado': 'entregado',
+                'ecoce_transportista_fecha_entrega': Timestamp.fromDate(DateTime.now()),
+              },
+            );
+          }
+        }
+
+        if (mounted) {
+          _showSuccessDialog();
+        }
+      } catch (e) {
+        if (mounted) {
+          DialogUtils.showErrorDialog(
+            context: context,
+            title: 'Error',
+            message: 'No se pudo registrar la entrada: ${e.toString()}',
+          );
+        }
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+  
+  Future<File?> _captureSignature() async {
+    try {
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, 300, 200));
+      
+      // Fondo blanco
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, 300, 200),
+        Paint()..color = Colors.white,
+      );
+
+      // Dibujar la firma
+      final paint = Paint()
+        ..color = Colors.black
+        ..strokeWidth = 3.0
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke;
+
+      for (int i = 0; i < _signaturePoints.length - 1; i++) {
+        if (_signaturePoints[i] != null && _signaturePoints[i + 1] != null) {
+          canvas.drawLine(_signaturePoints[i]!, _signaturePoints[i + 1]!, paint);
+        }
+      }
+
+      final picture = recorder.endRecording();
+      final img = await picture.toImage(300, 200);
+      final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+      
+      if (byteData != null) {
+        final buffer = byteData.buffer.asUint8List();
+        
+        // Guardar temporalmente
+        final tempDir = await getTemporaryDirectory();
+        final file = File('${tempDir.path}/signature_${DateTime.now().millisecondsSinceEpoch}.png');
+        await file.writeAsBytes(buffer);
+        
+        return file;
+      }
+      
+      return null;
+    } catch (e) {
+      print('Error al capturar firma: $e');
+      return null;
     }
   }
 
@@ -145,8 +293,11 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
           actions: [
             TextButton(
               onPressed: () {
-                // Navegar de vuelta al inicio
-                Navigator.of(context).popUntil((route) => route.isFirst);
+                // Navegar de vuelta al inicio del reciclador
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  '/reciclador_inicio',
+                  (route) => false,
+                );
               },
               child: Text(
                 'Aceptar',
@@ -186,9 +337,11 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
           ),
         ),
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // Header verde
+          Column(
+            children: [
+              // Header verde
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -402,7 +555,7 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                                     ),
                                     const SizedBox(width: 12),
                                     Text(
-                                      '250.5 kg', // Hardcoded por ahora
+                                      '${_pesoTotalOriginal.toStringAsFixed(1)} kg',
                                       style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
@@ -446,7 +599,7 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    'Suma de ${widget.totalLotes} lote(s): 125.5 kg + 125.0 kg',
+                                    'Suma de ${widget.totalLotes} lote(s) escaneados',
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: BioWayColors.textGrey,
@@ -474,8 +627,20 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                               if (peso == null || peso <= 0) {
                                 return 'Ingresa un peso válido';
                               }
+                              if (peso > _pesoTotalOriginal) {
+                                return 'El peso neto no puede ser mayor al peso bruto (${_pesoTotalOriginal.toStringAsFixed(1)} kg)';
+                              }
                               return null;
                             },
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Ingrese el peso después de retirar impurezas y material no aprovechable',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: BioWayColors.textGrey.withValues(alpha: 0.7),
+                              fontStyle: FontStyle.italic,
+                            ),
                           ),
                         ],
                       ),
@@ -651,11 +816,35 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
                                           padding: const EdgeInsets.all(12),
                                           child: Center(
                                             child: _signaturePoints.isNotEmpty
-                                                ? CustomPaint(
-                                                    painter: SignaturePainter(
-                                                      points: _signaturePoints,
-                                                      color: BioWayColors.darkGreen,
-                                                      strokeWidth: 2.0,
+                                                ? AspectRatio(
+                                                    aspectRatio: 2.5, // Proporción ancho:alto (puedes ajustar este valor)
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.white,
+                                                        borderRadius: BorderRadius.circular(8),
+                                                        border: Border.all(
+                                                          color: Colors.grey[200]!,
+                                                          width: 1,
+                                                        ),
+                                                      ),
+                                                      child: ClipRRect(
+                                                        borderRadius: BorderRadius.circular(7),
+                                                        child: FittedBox(
+                                                          fit: BoxFit.contain,
+                                                          child: SizedBox(
+                                                            width: 300, // Tamaño del canvas original
+                                                            height: 120,
+                                                            child: CustomPaint(
+                                                              size: const Size(300, 120),
+                                                              painter: SignaturePainter(
+                                                                points: _signaturePoints,
+                                                                color: BioWayColors.darkGreen,
+                                                                strokeWidth: 2.0,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
                                                     ),
                                                   )
                                                 : const Text(
@@ -772,6 +961,18 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
               ),
             ),
           ),
+            ], // Close Column children
+          ), // Close Column
+          // Loading overlay
+          if (_isLoading)
+            Container(
+              color: Colors.black.withValues(alpha: 0.5),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: BioWayColors.ecoceGreen,
+                ),
+              ),
+            ),
         ],
       ),
     );

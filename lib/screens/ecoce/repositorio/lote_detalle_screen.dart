@@ -109,30 +109,36 @@ class _LoteDetalleScreenState extends State<LoteDetalleScreen>
 
   Map<String, dynamic> _getDetailedInfo() {
     final infoBasica = {
-      'ID del Lote': widget.lote['id'],
-      'Firebase ID': widget.lote['firebaseId'],
-      'Tipo de Material': widget.lote['material'],
-      'Peso Inicial': '${widget.lote['peso']} kg',
-      'Estado Actual': widget.lote['estado'],
-      'Fecha de Creación': MaterialUtils.formatDate(widget.lote['fechaCreacion']),
+      'ID del Lote': widget.lote['id']?.toString() ?? 'N/A',
+      'Firebase ID': widget.lote['firebaseId']?.toString() ?? 'N/A',
+      'Tipo de Material': widget.lote['material']?.toString() ?? 'Sin especificar',
+      'Peso Inicial': '${widget.lote['peso'] ?? 0} kg',
+      'Estado Actual': widget.lote['estado']?.toString() ?? 'activo',
+      'Fecha de Creación': widget.lote['fechaCreacion'] != null 
+          ? MaterialUtils.formatDate(widget.lote['fechaCreacion'] is DateTime 
+              ? widget.lote['fechaCreacion'] 
+              : DateTime.now())
+          : 'N/A',
     };
     
     // Si hay historial, agregar peso actual
     if (widget.lote['historialTrazabilidad'] != null && 
         (widget.lote['historialTrazabilidad'] as List).isNotEmpty) {
       final ultimoEvento = (widget.lote['historialTrazabilidad'] as List).last;
-      if (ultimoEvento['peso'] != null) {
+      if (ultimoEvento['peso'] != null && widget.lote['peso'] != null) {
         infoBasica['Peso Actual'] = '${ultimoEvento['peso']} kg';
-        final perdida = widget.lote['peso'] - ultimoEvento['peso'];
-        if (perdida > 0) {
-          infoBasica['Pérdida Total'] = '${perdida.toStringAsFixed(1)} kg (${((perdida / widget.lote['peso']) * 100).toStringAsFixed(1)}%)';
+        final pesoInicial = (widget.lote['peso'] as num).toDouble();
+        final pesoActual = (ultimoEvento['peso'] as num).toDouble();
+        final perdida = pesoInicial - pesoActual;
+        if (perdida > 0 && pesoInicial > 0) {
+          infoBasica['Pérdida Total'] = '${perdida.toStringAsFixed(1)} kg (${((perdida / pesoInicial) * 100).toStringAsFixed(1)}%)';
         }
       }
     }
     
     final origenDestino = {
-      'Centro de Origen': widget.lote['origen'],
-      'Ubicación Actual': widget.lote['ubicacionActual'],
+      'Centro de Origen': widget.lote['origen']?.toString() ?? 'Desconocido',
+      'Ubicación Actual': widget.lote['ubicacionActual']?.toString() ?? 'En proceso',
     };
     
     // Agregar información del último actor si existe
@@ -146,8 +152,21 @@ class _LoteDetalleScreenState extends State<LoteDetalleScreen>
     // Información de trazabilidad
     final trazabilidadInfo = {
       'Total de Etapas': '${widget.lote['historialTrazabilidad']?.length ?? 0}',
-      'Días en Proceso': '${DateTime.now().difference(widget.lote['fechaCreacion']).inDays}',
     };
+    
+    // Calcular días en proceso si hay fecha de creación válida
+    if (widget.lote['fechaCreacion'] != null) {
+      try {
+        final fechaCreacion = widget.lote['fechaCreacion'] is DateTime 
+            ? widget.lote['fechaCreacion'] 
+            : DateTime.now();
+        trazabilidadInfo['Días en Proceso'] = '${DateTime.now().difference(fechaCreacion).inDays}';
+      } catch (e) {
+        trazabilidadInfo['Días en Proceso'] = 'N/A';
+      }
+    } else {
+      trazabilidadInfo['Días en Proceso'] = 'N/A';
+    }
     
     // Contar tipos de actores involucrados
     if (widget.lote['historialTrazabilidad'] != null) {
@@ -349,8 +368,9 @@ class _LoteDetalleScreenState extends State<LoteDetalleScreen>
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final materialColor = MaterialUtils.getMaterialColor(widget.lote['material']);
-    final materialIcon = MaterialUtils.getMaterialIcon(widget.lote['material']);
+    final materialStr = widget.lote['material']?.toString() ?? 'Sin especificar';
+    final materialColor = MaterialUtils.getMaterialColor(materialStr);
+    final materialIcon = MaterialUtils.getMaterialIcon(materialStr);
     
     return Scaffold(
       backgroundColor: BioWayColors.backgroundGrey,
@@ -433,7 +453,7 @@ class _LoteDetalleScreenState extends State<LoteDetalleScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              widget.lote['id'],
+                              widget.lote['id']?.toString() ?? 'Sin ID',
                               style: TextStyle(
                                 fontSize: screenWidth * 0.06,
                                 fontWeight: FontWeight.bold,
@@ -453,7 +473,7 @@ class _LoteDetalleScreenState extends State<LoteDetalleScreen>
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
-                                    widget.lote['material'],
+                                    widget.lote['material']?.toString() ?? 'Sin especificar',
                                     style: TextStyle(
                                       fontSize: screenWidth * 0.03,
                                       color: Colors.white,
@@ -472,7 +492,7 @@ class _LoteDetalleScreenState extends State<LoteDetalleScreen>
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
-                                    '${widget.lote['peso']} kg',
+                                    '${widget.lote['peso'] ?? 0} kg',
                                     style: TextStyle(
                                       fontSize: screenWidth * 0.03,
                                       color: Colors.white,

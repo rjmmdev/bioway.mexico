@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/format_utils.dart';
+import '../../../services/lote_service.dart';
+import '../../../services/user_session_service.dart';
+import '../../../models/lotes/lote_laboratorio_model.dart';
 import '../shared/utils/material_utils.dart';
 import 'laboratorio_escaneo.dart';
 import 'laboratorio_gestion_muestras.dart';
+import 'laboratorio_formulario.dart';
 import 'widgets/laboratorio_muestra_card.dart';
 
 // Modelo temporal para representar una muestra
@@ -38,6 +43,11 @@ class LaboratorioRegistroMuestrasScreen extends StatefulWidget {
 class _LaboratorioRegistroMuestrasScreenState extends State<LaboratorioRegistroMuestrasScreen> {
   // Lista de muestras escaneadas
   List<ScannedMuestra> _scannedMuestras = [];
+  
+  // Servicios
+  final LoteService _loteService = LoteService();
+  final UserSessionService _userSession = UserSessionService();
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -48,31 +58,85 @@ class _LaboratorioRegistroMuestrasScreenState extends State<LaboratorioRegistroM
     }
   }
 
-  void _addMuestraFromId(String muestraId) {
-    // TODO: Aquí se consultaría la base de datos con el ID
-    // Por ahora simulamos datos
-    final newMuestra = ScannedMuestra(
-      id: muestraId,
-      material: _getMaterialForDemo(muestraId),
-      weight: _getWeightForDemo(),
-      format: 'Muestra',
-      dateScanned: DateTime.now(),
-    );
-
+  Future<void> _addMuestraFromId(String muestraId) async {
     setState(() {
-      _scannedMuestras.add(newMuestra);
+      _isLoading = true;
     });
-  }
+    
+    try {
+      // Buscar el lote en cualquier colección (puede venir de reciclador o transportista)
+      final loteInfo = await _loteService.getLotesInfo([muestraId]);
+      
+      if (loteInfo.isEmpty) {
+        _showError('No se encontró información del lote');
+        return;
+      }
+      
+      final info = loteInfo.first;
+      
+      // Extraer información relevante
+      String material = 'Sin especificar';
+      double peso = 0.0;
+      String origen = 'Sin origen';
+      
+      // Determinar el material según el tipo de lote
+      if (info['tipo_lote'] == 'lotes_reciclador' && info['data']['ecoce_reciclador_tipo_poli'] != null) {
+        // Si viene de reciclador, usar el tipo de polímero predominante
+        final tipoPoli = info['data']['ecoce_reciclador_tipo_poli'] as Map<String, dynamic>;
+        if (tipoPoli.isNotEmpty) {
+          material = tipoPoli.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+        }
+        peso = (info['data']['ecoce_reciclador_peso_final'] ?? 0.0).toDouble();
+        origen = info['data']['ecoce_reciclador_recibe_proveedor'] ?? 'Reciclador';
+      } else if (info['tipo_lote'] == 'lotes_transportista') {
+        // Si viene de transportista, buscar el tipo predominante de los lotes que transporta
+        final lotesTransportados = info['data']['ecoce_transportista_lotes'] as List<dynamic>? ?? [];
+        if (lotesTransportados.isNotEmpty) {
+          final tiposPoli = await _loteService.calcularTipoPolimeroPredominante(
+            lotesTransportados.map((e) => e.toString()).toList()
+          );
+          if (tiposPoli.isNotEmpty) {
+            material = tiposPoli.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+          }
+        }
+        peso = (info['data']['ecoce_transportista_peso_total'] ?? 0.0).toDouble();
+        origen = info['data']['ecoce_transportista_proveedor'] ?? 'Transportista';
+      }
+      
+      // Tomar solo una muestra pequeña del peso total (1-5 kg)
+      final pesoMuestra = peso > 5 ? 1 + (DateTime.now().millisecondsSinceEpoch % 40) / 10 : peso;
+      
+      final newMuestra = ScannedMuestra(
+        id: muestraId,
+        material: material,
+        weight: pesoMuestra,
+        format: 'Muestra',
+        dateScanned: DateTime.now(),
+      );
 
-  // Métodos temporales para simular datos
-  String _getMaterialForDemo(String id) {
-    final materials = ['PEBD', 'PP', 'Multilaminado'];
-    return materials[id.length % materials.length];
+      setState(() {
+        _scannedMuestras.add(newMuestra);
+      });
+    } catch (e) {
+      _showError('Error al obtener información del lote: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
-
-  double _getWeightForDemo() {
-    // Para muestras, pesos más pequeños (1-5 kg)
-    return 1 + (DateTime.now().millisecondsSinceEpoch % 40) / 10;
+  
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: BioWayColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
   }
 
   void _removeMuestra(int index) {
@@ -119,7 +183,7 @@ class _LaboratorioRegistroMuestrasScreenState extends State<LaboratorioRegistroM
     }
   }
 
-  void _continueWithMuestras() {
+  void _continueWithMuestras() async {
     if (_scannedMuestras.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -135,16 +199,55 @@ class _LaboratorioRegistroMuestrasScreenState extends State<LaboratorioRegistroM
     }
 
     HapticFeedback.mediumImpact();
+    
+    setState(() {
+      _isLoading = true;
+    });
 
-    // Navegar directamente a la Gestión de Muestras en la pestaña de Formulario
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const LaboratorioGestionMuestras(
-          initialTab: 0, // Pestaña de Formulario
-        ),
-      ),
-    );
+    try {
+      // Obtener datos del usuario actual
+      final userProfile = await _userSession.getUserProfile();
+      if (userProfile == null) {
+        throw Exception('No se pudo obtener el perfil del usuario');
+      }
+
+      // Crear lotes de laboratorio para cada muestra escaneada
+      for (final muestra in _scannedMuestras) {
+        final loteLaboratorio = LoteLaboratorioModel(
+          loteOrigen: muestra.id, // ID del lote escaneado
+          fechaAnalisis: DateTime.now(),
+          tipoMaterial: muestra.material,
+          pesoMuestra: muestra.weight,
+          proveedor: userProfile['ecoceNombre'] ?? 'Laboratorio',
+          estado: 'pendiente',
+        );
+
+        await _loteService.crearLoteLaboratorio(loteLaboratorio);
+      }
+
+      if (mounted) {
+        // Navegar al formulario con el ID de la primera muestra
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LaboratorioFormulario(
+              muestraId: _scannedMuestras.first.id,
+              peso: _scannedMuestras.first.weight,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        _showError('Error al registrar muestras: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
 
@@ -179,8 +282,10 @@ class _LaboratorioRegistroMuestrasScreenState extends State<LaboratorioRegistroM
           ),
         ),
       ),
-      body: Column(
+      body: Stack(
         children: [
+          Column(
+            children: [
           // Mensaje de confirmación
           Container(
             width: double.infinity,
@@ -414,6 +519,18 @@ class _LaboratorioRegistroMuestrasScreenState extends State<LaboratorioRegistroM
               ),
             ),
           ),
+        ],
+      ),
+          // Loading overlay
+          if (_isLoading)
+            Container(
+              color: Colors.black.withValues(alpha: 0.5),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFF9333EA), // Purple for laboratorio
+                ),
+              ),
+            ),
         ],
       ),
     );

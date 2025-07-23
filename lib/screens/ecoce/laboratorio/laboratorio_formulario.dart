@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
+import '../../../services/lote_service.dart';
+import '../../../services/user_session_service.dart';
 import 'laboratorio_documentacion.dart';
 import 'laboratorio_gestion_muestras.dart';
 
@@ -21,6 +24,10 @@ class LaboratorioFormulario extends StatefulWidget {
 class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
   final _formKey = GlobalKey<FormState>();
   
+  // Servicios
+  final LoteService _loteService = LoteService();
+  final UserSessionService _userSession = UserSessionService();
+  
   // Controladores para los campos
   final _humedadController = TextEditingController();
   final _pelletsController = TextEditingController();
@@ -40,6 +47,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
   bool _isTemperaturaUnica = true; // true = única, false = rango
   String _unidadTemperatura = 'C°'; // C°, K°, F°
   bool? _cumpleRequisitos; // null = no seleccionado, true = Sí, false = No
+  bool _isLoading = false;
   
   @override
   void dispose() {
@@ -59,7 +67,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
     super.dispose();
   }
 
-  void _handleFormSubmit() {
+  void _handleFormSubmit() async {
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -89,71 +97,137 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
     }
 
     HapticFeedback.mediumImpact();
+    
+    setState(() {
+      _isLoading = true;
+    });
 
-    // Mostrar diálogo de confirmación
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: Row(
-          children: [
-            Icon(
-              Icons.check_circle,
-              color: BioWayColors.success,
-              size: 28,
+    try {
+      // Preparar datos de temperatura
+      Map<String, dynamic> temperaturaData = {
+        'unidad': _unidadTemperatura,
+      };
+      
+      if (_isTemperaturaUnica) {
+        temperaturaData['tipo'] = 'unica';
+        temperaturaData['valor'] = double.parse(_temperaturaUnicaController.text);
+      } else {
+        temperaturaData['tipo'] = 'rango';
+        temperaturaData['minima'] = double.parse(_temperaturaRangoMinController.text);
+        temperaturaData['maxima'] = double.parse(_temperaturaRangoMaxController.text);
+      }
+
+      // Obtener datos del usuario
+      final userProfile = await _userSession.getUserProfile();
+      
+      // Actualizar el lote de laboratorio con los resultados del análisis
+      await _loteService.actualizarLoteLaboratorio(
+        widget.muestraId,
+        {
+          'ecoce_laboratorio_humedad': double.parse(_humedadController.text),
+          'ecoce_laboratorio_pellets_gramo': double.parse(_pelletsController.text),
+          'ecoce_laboratorio_tipo_polimero': _tipoPolimeroController.text.trim(),
+          'ecoce_laboratorio_temperatura_fusion': temperaturaData,
+          'ecoce_laboratorio_contenido_organico': double.parse(_contenidoOrganicoController.text),
+          'ecoce_laboratorio_contenido_inorganico': double.parse(_contenidoInorganicoController.text),
+          'ecoce_laboratorio_oit': _oitController.text.trim(),
+          'ecoce_laboratorio_mfi': _mfiController.text.trim(),
+          'ecoce_laboratorio_densidad': _densidadController.text.trim(),
+          'ecoce_laboratorio_norma': _normaController.text.trim(),
+          'ecoce_laboratorio_observaciones': _observacionesController.text.trim(),
+          'ecoce_laboratorio_cumple_requisitos': _cumpleRequisitos,
+          'ecoce_laboratorio_analista': userProfile?['ecoceNombre'] ?? 'Sin nombre',
+          'ecoce_laboratorio_fecha_analisis': Timestamp.fromDate(DateTime.now()),
+          'estado': 'documentacion',
+        },
+      );
+
+      if (mounted) {
+        // Mostrar diálogo de confirmación
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
-            const SizedBox(width: 12),
-            const Text('Análisis Registrado'),
-          ],
-        ),
-        content: const Text(
-          '¿Deseas proceder a cargar la documentación del análisis?',
-          style: TextStyle(fontSize: 16),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Navegar a gestión de muestras
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const LaboratorioGestionMuestras(
-                    initialTab: 1, // Tab de documentación
-                  ),
+            title: Row(
+              children: [
+                Icon(
+                  Icons.check_circle,
+                  color: BioWayColors.success,
+                  size: 28,
                 ),
-                (route) => route.isFirst,
-              );
-            },
-            child: const Text('Más tarde'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Navegar a documentación
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => LaboratorioDocumentacion(
-                    muestraId: widget.muestraId,
-                  ),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: BioWayColors.ecoceGreen,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                const SizedBox(width: 12),
+                const Text('Análisis Registrado'),
+              ],
+            ),
+            content: const Text(
+              '¿Deseas proceder a cargar la documentación del análisis?',
+              style: TextStyle(fontSize: 16),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  // Navegar a gestión de muestras
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LaboratorioGestionMuestras(
+                        initialTab: 1, // Tab de documentación
+                      ),
+                    ),
+                    (route) => route.isFirst,
+                  );
+                },
+                child: const Text('Más tarde'),
               ),
-            ),
-            child: const Text('Cargar Documentos'),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  // Navegar a documentación
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LaboratorioDocumentacion(
+                        muestraId: widget.muestraId,
+                      ),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: BioWayColors.ecoceGreen,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Cargar Documentos'),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al registrar análisis: ${e.toString()}'),
+            backgroundColor: BioWayColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   Widget _buildNumericField({
@@ -526,11 +600,13 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
           ),
         ),
       ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
+      body: Stack(
+        children: [
+          Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
               // Header con información de la muestra
               Container(
                 width: double.infinity,
@@ -941,6 +1017,18 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
             ],
           ),
         ),
+      ),
+          // Loading overlay
+          if (_isLoading)
+            Container(
+              color: Colors.black.withValues(alpha: 0.5),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFF9333EA), // Purple for laboratorio
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

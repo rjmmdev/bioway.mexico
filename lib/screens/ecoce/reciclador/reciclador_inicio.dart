@@ -4,7 +4,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
 import '../../../services/user_session_service.dart';
+import '../../../services/lote_service.dart';
 import '../../../models/ecoce/ecoce_profile_model.dart';
+import '../../../models/lotes/lote_reciclador_model.dart';
 import 'reciclador_formulario_salida.dart';
 import 'reciclador_documentacion.dart';
 import 'reciclador_lote_qr_screen.dart';
@@ -22,22 +24,28 @@ class RecicladorInicio extends StatefulWidget {
 
 class _RecicladorInicioState extends State<RecicladorInicio> {
   final UserSessionService _sessionService = UserSessionService();
+  final LoteService _loteService = LoteService();
   
   EcoceProfileModel? _userProfile;
-  bool _isLoading = true; // ignore: unused_field
+  bool _isLoading = true;
   
   // Índice para la navegación del bottom bar
   final int _selectedIndex = 0;
 
-  // Estadísticas (mock data por ahora)
-  final int _lotesRecibidos = 45;
-  final int _lotesCreados = 38;
-  final double _pesoProcesado = 1250.5; // en kg
+  // Estadísticas reales
+  int _lotesRecibidos = 0;
+  int _lotesCreados = 0;
+  double _pesoProcesado = 0.0; // en kg
+  
+  // Stream para lotes
+  Stream<List<LoteRecicladorModel>>? _lotesStream;
 
   @override
   void initState() {
     super.initState();
     _loadUserProfile();
+    _loadStatistics();
+    _setupLotesStream();
   }
 
   Future<void> _loadUserProfile() async {
@@ -46,6 +54,31 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
       if (mounted) {
         setState(() {
           _userProfile = profile;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+  
+  void _setupLotesStream() {
+    _lotesStream = _loteService.getLotesReciclador();
+  }
+  
+  Future<void> _loadStatistics() async {
+    try {
+      // Obtener todos los lotes del reciclador
+      final lotes = await _loteService.getLotesReciclador().first;
+      
+      if (mounted) {
+        setState(() {
+          _lotesRecibidos = lotes.where((l) => l.estado == 'recibido' || l.estado == 'procesando').length;
+          _lotesCreados = lotes.where((l) => l.estado == 'finalizado').length;
+          _pesoProcesado = lotes.fold(0.0, (sum, lote) => sum + (lote.pesoResultante ?? lote.pesoNeto ?? lote.pesoBruto ?? 0.0));
           _isLoading = false;
         });
       }
@@ -66,45 +99,18 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
     return _userProfile?.ecoceFolio ?? 'R0000000';
   }
 
-  // Lista de lotes con diferentes estados (datos de ejemplo)
-  final List<Map<String, dynamic>> _lotesRecientes = [
-    {
-      'id': 'L001',
-      'fecha': '14/07/2025',
-      'peso': 125.5,
-      'material': 'PEBD',
-      'origen': 'Acopiador Norte',
-      'presentacion': 'Pacas',
-      'estado': 'salida', // Requiere formulario de salida
-    },
-    {
-      'id': 'L002',
-      'fecha': '14/07/2025',
-      'peso': 89.3,
-      'material': 'PP',
-      'origen': 'Planta Separación Sur',
-      'presentacion': 'Sacos',
-      'estado': 'documentacion', // Requiere documentación
-    },
-    {
-      'id': 'L003',
-      'fecha': '13/07/2025',
-      'peso': 200.8,
-      'material': 'Multilaminado',
-      'origen': 'Acopiador Centro',
-      'presentacion': 'Pacas',
-      'estado': 'finalizado', // Completado
-    },
-    {
-      'id': 'L004',
-      'fecha': '13/07/2025',
-      'peso': 156.2,
-      'material': 'PEBD',
-      'origen': 'Planta Separación Este',
-      'presentacion': 'Sacos',
-      'estado': 'salida', // Requiere formulario de salida
-    },
-  ];
+  // Convertir modelo de lote a Map para el widget
+  Map<String, dynamic> _loteToMap(LoteRecicladorModel lote) {
+    return {
+      'id': lote.id,
+      'fecha': FormatUtils.formatDate(DateTime.now()), // We don't have fechaIngreso
+      'peso': lote.pesoNeto ?? lote.pesoBruto ?? 0.0,
+      'material': lote.tipoPoli?.entries.firstOrNull?.key ?? 'Mixto',
+      'origen': 'Reciclador', // We don't have recibeProveedor
+      'presentacion': 'Pacas', // Default presentation
+      'estado': lote.estado,
+    };
+  }
 
   void _navigateToNewLot() {
     HapticFeedback.lightImpact();
@@ -140,7 +146,9 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
   // Obtener texto del botón según el estado
   String _getActionButtonText(String estado) {
     switch (estado) {
-      case 'salida':
+      case 'recibido':
+        return 'Procesar Lote';
+      case 'procesando':
         return 'Formulario de Salida';
       case 'documentacion':
         return 'Ingresar Documentación';
@@ -154,7 +162,9 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
   // Obtener color del botón según el estado
   Color _getActionButtonColor(String estado) {
     switch (estado) {
-      case 'salida':
+      case 'recibido':
+        return BioWayColors.info; // Azul para procesar
+      case 'procesando':
         return BioWayColors.error; // Rojo para salida
       case 'documentacion':
         return BioWayColors.warning; // Naranja/amarillo para documentación
@@ -170,7 +180,20 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
     HapticFeedback.lightImpact();
     
     switch (lote['estado']) {
-      case 'salida':
+      case 'recibido':
+        // Actualizar el lote a procesando
+        _loteService.actualizarLoteReciclador(
+          lote['id'],
+          {'estado': 'procesando'},
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Lote marcado como en procesamiento'),
+            backgroundColor: BioWayColors.success,
+          ),
+        );
+        break;
+      case 'procesando':
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -199,12 +222,12 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
               loteId: lote['id'],
               material: lote['material'],
               pesoOriginal: lote['peso'].toDouble(),
-              pesoFinal: lote['peso'].toDouble(), // En producción vendría de la base de datos
+              pesoFinal: lote['peso'].toDouble(), // TODO: Obtener de la BD
               presentacion: lote['presentacion'],
               origen: lote['origen'],
-              fechaEntrada: DateTime.now().subtract(const Duration(days: 5)), // En producción vendría de la BD
+              fechaEntrada: DateTime.now().subtract(const Duration(days: 5)), // TODO: Obtener de la BD
               fechaSalida: DateTime.now(),
-              documentosCargados: ['Ficha Técnica', 'Reporte de Reciclaje'], // En producción vendría de la BD
+              documentosCargados: ['Ficha Técnica', 'Reporte de Reciclaje'], // TODO: Obtener de la BD
             ),
           ),
         );
@@ -676,30 +699,75 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
                       ),
                       const SizedBox(height: 16),
                       
-                      // Lista de lotes con nuevo diseño y botones según estado
-                      ..._lotesRecientes.map((lote) {
-                        // Para lotes finalizados, usar el estilo con botón QR lateral
-                        if (lote['estado'] == 'finalizado') {
-                          return RecicladorLoteCard(
-                            lote: lote,
-                            onTap: () => _handleLoteTap(lote),
-                            showActionButton: false,
-                            showActions: false,
-                            trailing: _buildQRButton(lote),
+                      // Lista de lotes con Stream de datos reales
+                      StreamBuilder<List<LoteRecicladorModel>>(
+                        stream: _lotesStream,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(40),
+                                child: CircularProgressIndicator(),
+                              ),
+                            );
+                          }
+                          
+                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                            return Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(40),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.inventory_2_outlined,
+                                      size: 60,
+                                      color: Colors.grey.shade300,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No hay lotes recientes',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.grey.shade500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+                          
+                          final lotes = snapshot.data!.take(5).toList(); // Mostrar solo 5 más recientes
+                          
+                          return Column(
+                            children: lotes.map((loteModel) {
+                              final lote = _loteToMap(loteModel);
+                              
+                              // Para lotes finalizados, usar el estilo con botón QR lateral
+                              if (lote['estado'] == 'finalizado') {
+                                return RecicladorLoteCard(
+                                  lote: lote,
+                                  onTap: () => _handleLoteTap(lote),
+                                  showActionButton: false,
+                                  showActions: false,
+                                  trailing: _buildQRButton(lote),
+                                );
+                              }
+                              
+                              // Para otros estados, mostrar botón debajo
+                              return RecicladorLoteCard(
+                                lote: lote,
+                                onTap: () => _handleLoteTap(lote),
+                                showActionButton: true,
+                                actionButtonText: _getActionButtonText(lote['estado']),
+                                actionButtonColor: _getActionButtonColor(lote['estado']),
+                                onActionPressed: () => _handleLoteTap(lote),
+                                showActions: true, // Mostrar flecha lateral
+                              );
+                            }).toList(),
                           );
-                        }
-                        
-                        // Para otros estados, mostrar botón debajo
-                        return RecicladorLoteCard(
-                          lote: lote,
-                          onTap: () => _handleLoteTap(lote),
-                          showActionButton: true,
-                          actionButtonText: _getActionButtonText(lote['estado']),
-                          actionButtonColor: _getActionButtonColor(lote['estado']),
-                          onActionPressed: () => _handleLoteTap(lote),
-                          showActions: true, // Mostrar flecha lateral
-                        );
-                      }),
+                        },
+                      ),
                       
                       const SizedBox(height: 100), // Espacio para el FAB
                     ],

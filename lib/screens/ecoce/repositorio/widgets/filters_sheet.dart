@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../utils/colors.dart';
+import '../../../../utils/format_utils.dart';
 
 class FiltersSheet extends StatefulWidget {
   final String? selectedMaterial;
-  final String? selectedUbicacion;
-  final Function(String?, String?) onApplyFilters;
+  final String? selectedTipoActor;
+  final DateTime? fechaInicio;
+  final DateTime? fechaFin;
+  final Function(Map<String, dynamic>) onApplyFilters;
   
   const FiltersSheet({
     super.key,
     this.selectedMaterial,
-    this.selectedUbicacion,
+    this.selectedTipoActor,
+    this.fechaInicio,
+    this.fechaFin,
     required this.onApplyFilters,
   });
 
@@ -19,45 +24,38 @@ class FiltersSheet extends StatefulWidget {
 }
 
 class _FiltersSheetState extends State<FiltersSheet> {
-  String? _tempSelectedMaterial;
-  String? _tempSelectedUbicacion;
+  String? _selectedMaterial;
+  String? _selectedTipoActor;
+  DateTime? _fechaInicio;
+  DateTime? _fechaFin;
   
-  final List<String> _materials = [
+  final List<String> _materiales = [
     'PET',
-    'HDPE',
+    'HDPE', 
     'LDPE',
     'PP',
     'PS',
     'PVC',
-    'Otros'
+    'Multilaminado',
+    'Mixto',
   ];
   
-  final List<String> _ubicaciones = [
-    'Centro de Acopio EcoNorte',
-    'Centro de Acopio SurVerde',
-    'Centro de Acopio Industrial Norte',
-    'Planta de Separación MetroWaste',
-    'Planta de Separación EcoSort',
-    'ReciclaPlus',
-    'RecycleMax',
-    'MegaRecicla Industrial',
-    'PVC Recycling Experts',
-    'Transformador PlastiTech',
-    'PolyTransform Industries',
-    'Transformador SecondLife',
-    'Laboratorio QualityTest',
-    'TestLab Pro',
-    'En Tránsito - Transportes Verdes',
-    'En Tránsito - EcoLogística',
-    'En Tránsito - LogisTrans México',
-    'Completado - Múltiples destinos'
+  final List<String> _tiposActor = [
+    'Acopiador',
+    'Planta de Separación',
+    'Transportista',
+    'Reciclador',
+    'Laboratorio',
+    'Transformador',
   ];
 
   @override
   void initState() {
     super.initState();
-    _tempSelectedMaterial = widget.selectedMaterial;
-    _tempSelectedUbicacion = widget.selectedUbicacion;
+    _selectedMaterial = widget.selectedMaterial;
+    _selectedTipoActor = widget.selectedTipoActor;
+    _fechaInicio = widget.fechaInicio;
+    _fechaFin = widget.fechaFin;
   }
 
   @override
@@ -104,8 +102,10 @@ class _FiltersSheetState extends State<FiltersSheet> {
                 TextButton(
                   onPressed: () {
                     setState(() {
-                      _tempSelectedMaterial = null;
-                      _tempSelectedUbicacion = null;
+                      _selectedMaterial = null;
+                      _selectedTipoActor = null;
+                      _fechaInicio = null;
+                      _fechaFin = null;
                     });
                   },
                   child: const Text('Limpiar'),
@@ -126,21 +126,21 @@ class _FiltersSheetState extends State<FiltersSheet> {
                   child: Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: _materials.map((material) {
-                      final isSelected = _tempSelectedMaterial == material;
+                    children: _materiales.map((material) {
+                      final isSelected = _selectedMaterial == material;
                       return FilterChip(
                         label: Text(material),
                         selected: isSelected,
                         onSelected: (selected) {
                           setState(() {
-                            _tempSelectedMaterial = selected ? material : null;
+                            _selectedMaterial = selected ? material : null;
                           });
                           HapticFeedback.lightImpact();
                         },
-                        selectedColor: BioWayColors.primaryGreen.withValues(alpha: 0.2),
-                        checkmarkColor: BioWayColors.primaryGreen,
+                        selectedColor: BioWayColors.ecoceGreen.withValues(alpha: 0.2),
+                        checkmarkColor: BioWayColors.ecoceGreen,
                         labelStyle: TextStyle(
-                          color: isSelected ? BioWayColors.primaryGreen : Colors.grey[700],
+                          color: isSelected ? BioWayColors.ecoceGreen : Colors.grey[700],
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       );
@@ -150,34 +150,107 @@ class _FiltersSheetState extends State<FiltersSheet> {
                 
                 SizedBox(height: screenWidth * 0.06),
                 
-                // Location Filter
+                // Actor Type Filter
                 _buildFilterSection(
-                  title: 'Ubicación Actual',
-                  icon: Icons.location_on,
-                  child: Column(
-                    children: _ubicaciones.map((ubicacion) {
-                      final isSelected = _tempSelectedUbicacion == ubicacion;
-                      return RadioListTile<String>(
-                        title: Text(
-                          ubicacion,
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.035,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          ),
-                        ),
-                        value: ubicacion,
-                        groupValue: _tempSelectedUbicacion,
-                        onChanged: (value) {
+                  title: 'Tipo de Actor',
+                  icon: Icons.person,
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _tiposActor.map((tipo) {
+                      final isSelected = _selectedTipoActor == tipo;
+                      return FilterChip(
+                        label: Text(tipo),
+                        selected: isSelected,
+                        onSelected: (selected) {
                           setState(() {
-                            _tempSelectedUbicacion = value;
+                            _selectedTipoActor = selected ? tipo : null;
                           });
                           HapticFeedback.lightImpact();
                         },
-                        activeColor: BioWayColors.primaryGreen,
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
+                        selectedColor: BioWayColors.ecoceGreen.withValues(alpha: 0.2),
+                        checkmarkColor: BioWayColors.ecoceGreen,
+                        labelStyle: TextStyle(
+                          color: isSelected ? BioWayColors.ecoceGreen : Colors.grey[700],
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
                       );
                     }).toList(),
+                  ),
+                ),
+                
+                SizedBox(height: screenWidth * 0.06),
+                
+                // Date Range Filter
+                _buildFilterSection(
+                  title: 'Rango de Fechas',
+                  icon: Icons.calendar_today,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildDateButton(
+                          label: 'Desde',
+                          date: _fechaInicio,
+                          onTap: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: _fechaInicio ?? DateTime.now(),
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime.now(),
+                              builder: (context, child) {
+                                return Theme(
+                                  data: Theme.of(context).copyWith(
+                                    colorScheme: ColorScheme.light(
+                                      primary: BioWayColors.ecoceGreen,
+                                      onPrimary: Colors.white,
+                                      onSurface: BioWayColors.darkGreen,
+                                    ),
+                                  ),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            if (date != null) {
+                              setState(() {
+                                _fechaInicio = date;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                      SizedBox(width: screenWidth * 0.03),
+                      Expanded(
+                        child: _buildDateButton(
+                          label: 'Hasta',
+                          date: _fechaFin,
+                          onTap: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: _fechaFin ?? DateTime.now(),
+                              firstDate: _fechaInicio ?? DateTime(2020),
+                              lastDate: DateTime.now(),
+                              builder: (context, child) {
+                                return Theme(
+                                  data: Theme.of(context).copyWith(
+                                    colorScheme: ColorScheme.light(
+                                      primary: BioWayColors.ecoceGreen,
+                                      onPrimary: Colors.white,
+                                      onSurface: BioWayColors.darkGreen,
+                                    ),
+                                  ),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            if (date != null) {
+                              setState(() {
+                                _fechaFin = date;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -229,14 +302,16 @@ class _FiltersSheetState extends State<FiltersSheet> {
                     child: ElevatedButton(
                       onPressed: () {
                         HapticFeedback.mediumImpact();
-                        widget.onApplyFilters(
-                          _tempSelectedMaterial,
-                          _tempSelectedUbicacion,
-                        );
+                        widget.onApplyFilters({
+                          'material': _selectedMaterial,
+                          'tipoActor': _selectedTipoActor,
+                          'fechaInicio': _fechaInicio,
+                          'fechaFin': _fechaFin,
+                        });
                         Navigator.pop(context);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: BioWayColors.primaryGreen,
+                        backgroundColor: BioWayColors.ecoceGreen,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -276,7 +351,7 @@ class _FiltersSheetState extends State<FiltersSheet> {
           children: [
             Icon(
               icon,
-              color: BioWayColors.primaryGreen,
+              color: BioWayColors.ecoceGreen,
               size: 20,
             ),
             SizedBox(width: screenWidth * 0.02),
@@ -293,6 +368,56 @@ class _FiltersSheetState extends State<FiltersSheet> {
         SizedBox(height: screenWidth * 0.03),
         child,
       ],
+    );
+  }
+
+  Widget _buildDateButton({
+    required String label,
+    required DateTime? date,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey[300]!),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.calendar_today,
+              size: 20,
+              color: date != null ? BioWayColors.ecoceGreen : Colors.grey[600],
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  Text(
+                    date != null ? FormatUtils.formatDate(date) : 'Seleccionar',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: date != null ? BioWayColors.darkGreen : Colors.grey[400],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

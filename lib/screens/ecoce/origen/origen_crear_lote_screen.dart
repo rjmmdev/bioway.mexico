@@ -3,6 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' as ui;
+import 'dart:typed_data';
+import 'package:screenshot/screenshot.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../utils/colors.dart';
 import 'origen_config.dart';
 import '../shared/widgets/signature_dialog.dart';
@@ -12,6 +16,11 @@ import '../shared/widgets/unified_container.dart';
 import '../shared/widgets/form_widgets.dart';
 import '../shared/utils/input_decorations.dart';
 import 'origen_lote_detalle_screen.dart';
+import '../../../models/lotes/lote_origen_model.dart';
+import '../../../services/lote_service.dart';
+import '../../../services/firebase/firebase_storage_service.dart';
+import '../../../services/user_session_service.dart';
+import '../shared/utils/dialog_utils.dart';
 
 class OrigenCrearLoteScreen extends StatefulWidget {
   const OrigenCrearLoteScreen({super.key});
@@ -21,6 +30,12 @@ class OrigenCrearLoteScreen extends StatefulWidget {
 }
 
 class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
+  final LoteService _loteService = LoteService();
+  final FirebaseStorageService _storageService = FirebaseStorageService();
+  final UserSessionService _userSession = UserSessionService();
+  final ScreenshotController _screenshotController = ScreenshotController();
+  bool _isLoading = false;
+  List<File> _photoFiles = [];
   // Constants
   static const List<String> _tiposPolimeros = [
     'PEBD',
@@ -67,9 +82,11 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
   // Variables para la firma
   List<Offset?> _signaturePoints = [];
   bool _hasSignature = false;
+  String? _signatureUrl;
   
   // Variables para las imágenes
   bool _hasImages = false;
+  List<String> _photoUrls = [];
   
   // ScrollController para manejar el auto-scroll
   final ScrollController _scrollController = ScrollController();
@@ -130,39 +147,209 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
   void _onPhotosChanged(List<File> photos) {
     setState(() {
       _hasImages = photos.isNotEmpty;
+      _photoFiles = photos;
     });
   }
 
   // Sección de foto ahora manejada por PhotoEvidenceFormField del módulo shared
 
-  void _generarLote() {
-    // Sin validaciones - Solo para diseño visual
-    
-    // Generar datos automáticos
-    final String firebaseId = 'FID_${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
-    final DateTime fechaCreacion = DateTime.now();
-    
-    // Determinar la presentación a mostrar
-    String presentacionFinal = _presentacionSeleccionada;
-    if (_presentacionSeleccionada == 'Otro' && _otraPresentacionController.text.isNotEmpty) {
-      presentacionFinal = _otraPresentacionController.text;
+  Future<void> _generarLote() async {
+    // Validar formulario
+    if (!_formKey.currentState!.validate()) {
+      return;
     }
-    
-    // Navegar a la pantalla de detalle con mensaje de éxito
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => OrigenLoteDetalleScreen(
-          firebaseId: firebaseId,
-          material: _tipoPolimeroSeleccionado ?? 'Poli',
-          peso: double.tryParse(_pesoController.text) ?? 100,
-          presentacion: presentacionFinal,
-          fuente: _fuenteMaterialSeleccionada ?? 'Fuente no especificada',
-          fechaCreacion: fechaCreacion,
-          mostrarMensajeExito: true,
+
+    // Validaciones adicionales
+    if (!_isPostConsumo && !_isPreConsumo) {
+      DialogUtils.showErrorDialog(
+        context: context,
+        title: 'Campo requerido',
+        message: 'Debes seleccionar al menos un tipo de origen (Post-consumo o Pre-consumo)',
+      );
+      return;
+    }
+
+    if (_fuenteMaterialSeleccionada == null) {
+      DialogUtils.showErrorDialog(
+        context: context,
+        title: 'Campo requerido',
+        message: 'Debes seleccionar la fuente del material',
+      );
+      return;
+    }
+
+    if (_tipoPolimeroSeleccionado == null) {
+      DialogUtils.showErrorDialog(
+        context: context,
+        title: 'Campo requerido',
+        message: 'Debes seleccionar el tipo de polímero',
+      );
+      return;
+    }
+
+    if (!_hasSignature) {
+      DialogUtils.showErrorDialog(
+        context: context,
+        title: 'Firma requerida',
+        message: 'Debes proporcionar la firma del operador',
+      );
+      return;
+    }
+
+    if (!_hasImages || _photoFiles.isEmpty) {
+      DialogUtils.showErrorDialog(
+        context: context,
+        title: 'Evidencia requerida',
+        message: 'Debes agregar al menos una foto de evidencia',
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Obtener datos del usuario actual
+      final userProfile = await _userSession.getUserProfile();
+      if (userProfile == null) {
+        throw Exception('No se pudo obtener el perfil del usuario');
+      }
+
+      // Determinar el origen
+      String origen = '';
+      if (_isPostConsumo && _isPreConsumo) {
+        origen = 'Post-consumo y Pre-consumo';
+      } else if (_isPostConsumo) {
+        origen = 'Post-consumo';
+      } else {
+        origen = 'Pre-consumo';
+      }
+
+      // Determinar la presentación final
+      String presentacionFinal = _presentacionSeleccionada;
+      if (_presentacionSeleccionada == 'Otro' && _otraPresentacionController.text.isNotEmpty) {
+        presentacionFinal = _otraPresentacionController.text;
+      }
+
+      // Subir firma a Storage
+      if (_signaturePoints.isNotEmpty) {
+        final signatureImage = await _captureSignature();
+        if (signatureImage != null) {
+          _signatureUrl = await _storageService.uploadImage(
+            signatureImage,
+            'lotes/origen/firmas',
+          );
+        }
+      }
+
+      // Subir fotos a Storage
+      _photoUrls = [];
+      for (int i = 0; i < _photoFiles.length; i++) {
+        final url = await _storageService.uploadImage(
+          _photoFiles[i],
+          'lotes/origen/evidencias',
+        );
+        if (url != null) {
+          _photoUrls.add(url);
+        }
+      }
+
+      // Crear el modelo del lote
+      final lote = LoteOrigenModel(
+        fechaNace: DateTime.now(),
+        direccion: userProfile['direccion'] ?? 'Sin dirección',
+        fuente: _fuenteMaterialSeleccionada!,
+        presentacion: presentacionFinal,
+        tipoPoli: _tipoPolimeroSeleccionado!,
+        origen: origen,
+        pesoNace: double.tryParse(_pesoController.text) ?? 0,
+        condiciones: _condicionesController.text.trim(),
+        nombreOpe: _operadorController.text.trim(),
+        firmaOpe: _signatureUrl,
+        comentarios: _comentariosController.text.trim().isEmpty ? null : _comentariosController.text.trim(),
+        eviFoto: _photoUrls,
+      );
+
+      // Crear el lote en Firestore
+      final loteId = await _loteService.crearLoteOrigen(lote);
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      // Navegar a la pantalla de detalle con el lote creado
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OrigenLoteDetalleScreen(
+            firebaseId: loteId,
+            material: lote.tipoPoli,
+            peso: lote.pesoNace,
+            presentacion: lote.presentacion,
+            fuente: lote.fuente,
+            fechaCreacion: lote.fechaNace,
+            mostrarMensajeExito: true,
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      DialogUtils.showErrorDialog(
+        context: context,
+        title: 'Error',
+        message: 'No se pudo crear el lote: ${e.toString()}',
+      );
+    }
+  }
+
+  Future<File?> _captureSignature() async {
+    try {
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, 300, 200));
+      
+      // Fondo blanco
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, 300, 200),
+        Paint()..color = Colors.white,
+      );
+
+      // Dibujar la firma
+      final paint = Paint()
+        ..color = Colors.black
+        ..strokeWidth = 3.0
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke;
+
+      for (int i = 0; i < _signaturePoints.length - 1; i++) {
+        if (_signaturePoints[i] != null && _signaturePoints[i + 1] != null) {
+          canvas.drawLine(_signaturePoints[i]!, _signaturePoints[i + 1]!, paint);
+        }
+      }
+
+      final picture = recorder.endRecording();
+      final img = await picture.toImage(300, 200);
+      final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+      
+      if (byteData != null) {
+        final buffer = byteData.buffer.asUint8List();
+        
+        // Guardar temporalmente
+        final tempDir = await getTemporaryDirectory();
+        final file = File('${tempDir.path}/signature_${DateTime.now().millisecondsSinceEpoch}.png');
+        await file.writeAsBytes(buffer);
+        
+        return file;
+      }
+      
+      return null;
+    } catch (e) {
+      print('Error al capturar firma: $e');
+      return null;
+    }
   }
 
   @override
@@ -518,7 +705,15 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                             hintText: 'Ingresa el nombre completo',
                             primaryColor: _primaryColor,
                           ),
-                          // Sin validación para diseño visual
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Ingresa el nombre del operador';
+                            }
+                            if (value.length < 3) {
+                              return 'El nombre debe tener al menos 3 caracteres';
+                            }
+                            return null;
+                          },
                         ),
                         
                         const SizedBox(height: 20),
@@ -573,7 +768,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: _generarLote,
+                        onPressed: _isLoading ? null : _generarLote,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _primaryColor,
                           foregroundColor: Colors.white,
@@ -582,13 +777,15 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                           ),
                           elevation: 3,
                         ),
-                        child: const Text(
-                          'Generar Lote y Código QR',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text(
+                                'Generar Lote y Código QR',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     ),
                     

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import '../../../utils/colors.dart';
+import '../../../services/lote_service.dart';
+import '../shared/utils/dialog_utils.dart';
 import '../shared/widgets/qr_scanner_widget.dart';
 import '../shared/widgets/lote_card_unified.dart';
 import 'transporte_formulario_carga_screen.dart';
@@ -20,6 +22,7 @@ class TransporteResumenCargaScreen extends StatefulWidget {
 
 class _TransporteResumenCargaScreenState extends State<TransporteResumenCargaScreen> {
   List<Map<String, dynamic>> _scannedLots = [];
+  final LoteService _loteService = LoteService();
   bool _showSuccessBanner = true;
   Timer? _bannerTimer;
 
@@ -68,13 +71,15 @@ class _TransporteResumenCargaScreenState extends State<TransporteResumenCargaScr
   }
 
   void _scanAnotherLot() async {
-    final result = await Navigator.push<String>(
+    final code = await Navigator.push<String>(
       context,
       MaterialPageRoute(
         builder: (context) => SharedQRScannerScreen(
           title: 'Escanear Otro Lote',
           subtitle: 'Apunta al código del lote',
-          onCodeScanned: (code) {},
+          onCodeScanned: (code) {
+            // No hacer nada aquí porque isAddingMore maneja el retorno
+          },
           primaryColor: const Color(0xFF3AA45B),
           scanPrompt: 'Apunta al código del lote',
           showManualInput: true,
@@ -83,20 +88,90 @@ class _TransporteResumenCargaScreenState extends State<TransporteResumenCargaScr
         ),
       ),
     );
+    
+    // Si se escaneó un código, procesarlo
+    if (code != null) {
+      _processScannedCode(code, fromScanner: true);
+    }
+  }
 
-    if (result != null && mounted) {
-      // Aquí procesaríamos el nuevo lote
-      // Por ahora simularemos datos
-      setState(() {
-        _scannedLots.add({
-          'id': result,
-          'material': 'PET',
-          'peso': 45.5,
-          'presentacion': 'Pacas',
-          'origen': 'Centro de Acopio Norte',
-          'centro_acopio': 'Centro de Acopio Norte',
+  void _processScannedCode(String qrData, {bool fromScanner = false}) async {
+    // Solo cerrar el scanner si no viene de _scanAnotherLot
+    if (!fromScanner) {
+      Navigator.pop(context); // Cerrar el scanner
+    }
+    
+    // Mostrar loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      // Buscar el lote en Firebase
+      final lotesInfo = await _loteService.getLotesInfo([qrData]);
+      
+      Navigator.pop(context); // Cerrar loading
+
+      if (lotesInfo.isEmpty) {
+        DialogUtils.showErrorDialog(
+          context: context,
+          title: 'Lote no encontrado',
+          message: 'El código QR escaneado no corresponde a un lote válido',
+        );
+        return;
+      }
+
+      final loteInfo = lotesInfo.first;
+      
+      // Verificar que no sea un lote ya escaneado
+      if (_scannedLots.any((lot) => lot['id'] == qrData)) {
+        DialogUtils.showErrorDialog(
+          context: context,
+          title: 'Lote duplicado',
+          message: 'Este lote ya ha sido escaneado',
+        );
+        return;
+      }
+      
+      // Convertir la información del lote al formato esperado
+      Map<String, dynamic> lot = {};
+      
+      if (loteInfo['tipo_lote'] == 'lotes_origen') {
+        lot = {
+          'id': loteInfo['id'],
+          'material': loteInfo['ecoce_origen_tipo_poli'] ?? 'Desconocido',
+          'peso': (loteInfo['ecoce_origen_peso_nace'] ?? 0).toDouble(),
+          'presentacion': loteInfo['ecoce_origen_presentacion'] ?? 'N/A',
+          'origen': loteInfo['ecoce_origen_fuente'] ?? 'Origen desconocido',
+          'centro_acopio': loteInfo['ecoce_origen_direccion'] ?? 'Sin dirección',
           'timestamp': DateTime.now().toIso8601String(),
-        });
+        };
+      } else if (loteInfo['tipo_lote'] == 'lotes_reciclador') {
+        lot = {
+          'id': loteInfo['id'],
+          'material': _getTipoPredominante(loteInfo['ecoce_reciclador_tipo_poli']),
+          'peso': (loteInfo['ecoce_reciclador_peso_resultante'] ?? 0).toDouble(),
+          'presentacion': 'Procesado',
+          'origen': 'Reciclador',
+          'centro_acopio': 'Planta de Reciclaje',
+          'timestamp': DateTime.now().toIso8601String(),
+        };
+      } else {
+        DialogUtils.showErrorDialog(
+          context: context,
+          title: 'Tipo de lote no válido',
+          message: 'Este código QR no corresponde a un lote que pueda ser transportado',
+        );
+        return;
+      }
+      
+      // Agregar el lote a la lista
+      setState(() {
+        _scannedLots.add(lot);
         _showSuccessBanner = true;
       });
 
@@ -109,7 +184,32 @@ class _TransporteResumenCargaScreenState extends State<TransporteResumenCargaScr
           });
         }
       });
+    } catch (e) {
+      Navigator.pop(context); // Cerrar loading
+      
+      DialogUtils.showErrorDialog(
+        context: context,
+        title: 'Error',
+        message: 'No se pudo obtener la información del lote: ${e.toString()}',
+      );
     }
+  }
+
+  String _getTipoPredominante(Map<String, dynamic>? tipoPoli) {
+    if (tipoPoli == null || tipoPoli.isEmpty) return 'N/A';
+    
+    String tipoPredominante = '';
+    double maxPorcentaje = 0;
+    
+    tipoPoli.forEach((tipo, porcentaje) {
+      final pct = (porcentaje as num).toDouble();
+      if (pct > maxPorcentaje) {
+        maxPorcentaje = pct;
+        tipoPredominante = tipo;
+      }
+    });
+    
+    return tipoPredominante.isEmpty ? 'N/A' : tipoPredominante;
   }
 
   void _continueToForm() {

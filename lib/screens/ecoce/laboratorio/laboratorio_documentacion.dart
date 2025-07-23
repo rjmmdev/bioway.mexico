@@ -1,23 +1,54 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
+import '../../../services/lote_service.dart';
+import '../../../services/firebase/firebase_storage_service.dart';
 import 'laboratorio_gestion_muestras.dart';
 import '../shared/widgets/document_upload_per_requirement_widget.dart';
 
 class LaboratorioDocumentacion extends StatelessWidget {
   final String muestraId;
   
-  const LaboratorioDocumentacion({
+  LaboratorioDocumentacion({
     super.key,
     required this.muestraId,
   });
+  
+  final LoteService _loteService = LoteService();
+  final FirebaseStorageService _storageService = FirebaseStorageService();
 
-  void _onDocumentsSubmitted(BuildContext context, Map<String, DocumentInfo> documents) {
-    // Mostrar diálogo de éxito
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
+  void _onDocumentsSubmitted(BuildContext context, Map<String, DocumentInfo> documents) async {
+    try {
+      // Subir documentos a Firebase Storage
+      List<String> documentUrls = [];
+      for (var doc in documents.values) {
+        if (doc.file != null) {
+          final url = await _storageService.uploadFile(
+            doc.file!,
+            'lotes/laboratorio/documentos',
+          );
+          if (url != null) {
+            documentUrls.add(url);
+          }
+        }
+      }
+      
+      // Actualizar el lote con los documentos
+      await _loteService.actualizarLoteLaboratorio(
+        muestraId,
+        {
+          'ecoce_laboratorio_documentos': documentUrls,
+          'ecoce_laboratorio_fecha_documentos': Timestamp.fromDate(DateTime.now()),
+          'estado': 'finalizado',
+        },
+      );
+      
+      // Mostrar diálogo de éxito
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext dialogContext) {
+          return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
@@ -76,6 +107,14 @@ class LaboratorioDocumentacion extends StatelessWidget {
         );
       },
     );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cargar documentos: ${e.toString()}'),
+          backgroundColor: BioWayColors.error,
+        ),
+      );
+    }
   }
 
   @override

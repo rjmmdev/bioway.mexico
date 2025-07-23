@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../utils/colors.dart';
 import '../../../services/user_session_service.dart';
+import '../../../services/lote_service.dart';
+import '../../../models/lotes/lote_transportista_model.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import 'transporte_qr_entrega_screen.dart';
 
@@ -13,6 +15,7 @@ class TransporteEntregarScreen extends StatefulWidget {
 
 class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
   final UserSessionService _userSession = UserSessionService();
+  final LoteService _loteService = LoteService();
   bool _isLoading = true;
   List<Map<String, dynamic>> _lotesEnTransito = [];
   Map<String, List<Map<String, dynamic>>> _lotesPorOrigen = {};
@@ -26,50 +29,52 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
   
   Future<void> _loadLotesEnTransito() async {
     try {
-      // final userData = _userSession.getUserData();
-      // final folio = userData?['folio'] ?? '';
+      setState(() {
+        _isLoading = true;
+      });
       
-      // TODO: Implementar GET /lotes?status=in-transit&transportista=folio
-      // Por ahora simularemos datos
-      await Future.delayed(const Duration(seconds: 1));
+      // Obtener lotes de transportista con estado 'en_transporte'
+      final lotesTransportista = await _loteService.getLotesTransportista(estado: 'en_transporte').first;
       
-      final lotesSimulados = [
-        {
-          'id': 'Firebase_ID_1x7h9k3',
-          'material': 'PET',
-          'peso': 45.5,
-          'origen': 'Centro de Acopio Norte',
-          'presentacion': 'Pacas',
-          'fecha_carga': DateTime.now().subtract(const Duration(hours: 2)),
-        },
-        {
-          'id': 'Firebase_ID_2y8j0l4',
-          'material': 'HDPE',
-          'peso': 32.3,
-          'origen': 'Centro de Acopio Norte',
-          'presentacion': 'Sacos',
-          'fecha_carga': DateTime.now().subtract(const Duration(hours: 2)),
-        },
-        {
-          'id': 'Firebase_ID_3z9k1m5',
-          'material': 'PP',
-          'peso': 28.7,
-          'origen': 'Planta de Separación Sur',
-          'presentacion': 'Pacas',
-          'fecha_carga': DateTime.now().subtract(const Duration(hours: 1)),
-        },
-      ];
+      List<Map<String, dynamic>> lotesFormateados = [];
+      
+      for (var loteTransportista in lotesTransportista) {
+        // Obtener información de los lotes originales
+        final lotesInfo = await _loteService.getLotesInfo(loteTransportista.lotesEntrada);
+        
+        // Determinar el material predominante
+        String materialPredominante = 'Mixto';
+        if (lotesInfo.isNotEmpty) {
+          final tipoPolimeros = await _loteService.calcularTipoPolimeroPredominante(loteTransportista.lotesEntrada);
+          if (tipoPolimeros.isNotEmpty) {
+            materialPredominante = tipoPolimeros.entries
+                .reduce((a, b) => a.value > b.value ? a : b)
+                .key;
+          }
+        }
+        
+        // Formatear el lote para la vista
+        lotesFormateados.add({
+          'id': loteTransportista.id,
+          'material': materialPredominante,
+          'peso': loteTransportista.pesoRecibido,
+          'origen': loteTransportista.direccionOrigen,
+          'presentacion': 'Pacas', // TODO: Obtener del lote original
+          'fecha_carga': loteTransportista.fechaRecepcion,
+          'lotes_originales': loteTransportista.lotesEntrada,
+        });
+      }
       
       // Agrupar por origen
       Map<String, List<Map<String, dynamic>>> grouped = {};
-      for (var lote in lotesSimulados) {
+      for (var lote in lotesFormateados) {
         final origen = lote['origen'] as String;
         grouped.putIfAbsent(origen, () => []);
         grouped[origen]!.add(lote);
       }
       
       setState(() {
-        _lotesEnTransito = lotesSimulados;
+        _lotesEnTransito = lotesFormateados;
         _lotesPorOrigen = grouped;
         _isLoading = false;
       });
