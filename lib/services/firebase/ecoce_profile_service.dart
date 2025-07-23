@@ -256,6 +256,7 @@ class EcoceProfileService {
     String? linkMaps,
     double? latitud,
     double? longitud,
+    List<String>? actividadesAutorizadas,
   }) async {
     try {
       // Inicializar Firebase para ECOCE si no está inicializado
@@ -302,6 +303,12 @@ class EcoceProfileService {
           tipoActor = 'O';
       }
       
+      // Debug: imprimir documentos recibidos
+      print('Documentos recibidos en createAccountRequest:');
+      documentos?.forEach((key, value) {
+        print('  $key: ${value != null ? 'URL presente' : 'null'}');
+      });
+      
       // Crear documento de solicitud
       final solicitudData = {
         'id': solicitudId,
@@ -337,6 +344,11 @@ class EcoceProfileService {
           'ecoce_comp_domicilio': documentos?['comp_domicilio'],
           'ecoce_banco_caratula': documentos?['banco_caratula'],
           'ecoce_ine': documentos?['ine'],
+          'ecoce_opinion_cumplimiento': documentos?['opinion_cumplimiento'],
+          'ecoce_ramir': documentos?['ramir'],
+          'ecoce_plan_manejo': documentos?['plan_manejo'],
+          'ecoce_licencia_ambiental': documentos?['licencia_ambiental'],
+          'ecoce_act_autorizadas': actividadesAutorizadas ?? [],
           'ecoce_dim_cap': dimensionesCapacidad,
           'ecoce_peso_cap': pesoCapacidad,
         },
@@ -346,6 +358,14 @@ class EcoceProfileService {
         'revisado_por': null,
         'comentarios_revision': null,
       };
+      
+      // Debug: verificar que los documentos estén en solicitudData
+      print('Documentos en solicitudData:');
+      final datosPerfilDebug = solicitudData['datos_perfil'] as Map<String, dynamic>;
+      ['ecoce_const_sit_fis', 'ecoce_comp_domicilio', 'ecoce_banco_caratula', 'ecoce_ine',
+       'ecoce_opinion_cumplimiento', 'ecoce_ramir', 'ecoce_plan_manejo', 'ecoce_licencia_ambiental'].forEach((field) {
+        print('  $field: ${datosPerfilDebug[field] != null ? 'URL presente' : 'null'}');
+      });
 
       // Guardar solicitud en Firestore
       await _solicitudesCollection.doc(solicitudId).set(solicitudData);
@@ -464,6 +484,13 @@ class EcoceProfileService {
       datosPerfil['createdAt'] = Timestamp.fromDate(DateTime.now());
       datosPerfil['updatedAt'] = Timestamp.fromDate(DateTime.now());
       
+      // Debug: verificar documentos antes de guardar
+      print('📋 Documentos en perfil aprobado:');
+      ['ecoce_const_sit_fis', 'ecoce_comp_domicilio', 'ecoce_banco_caratula', 'ecoce_ine',
+       'ecoce_opinion_cumplimiento', 'ecoce_ramir', 'ecoce_plan_manejo', 'ecoce_licencia_ambiental'].forEach((field) {
+        print('  $field: ${datosPerfil[field] != null ? 'URL presente' : 'null'}');
+      });
+      
       // Obtener la subcolección según el tipo
       final subcollection = _getProfileSubcollection(tipoActor, subtipo);
       
@@ -524,7 +551,11 @@ class EcoceProfileService {
         'ecoce_const_sit_fis',
         'ecoce_comp_domicilio', 
         'ecoce_banco_caratula',
-        'ecoce_ine'
+        'ecoce_ine',
+        'ecoce_opinion_cumplimiento',
+        'ecoce_ramir',
+        'ecoce_plan_manejo',
+        'ecoce_licencia_ambiental'
       ];
       
       for (final field in documentFields) {
@@ -925,6 +956,10 @@ class EcoceProfileService {
         'ecoce_comp_domicilio',
         'ecoce_banco_caratula',
         'ecoce_ine',
+        'ecoce_opinion_cumplimiento',
+        'ecoce_ramir',
+        'ecoce_plan_manejo',
+        'ecoce_licencia_ambiental',
       ];
       
       for (final field in documentFields) {
@@ -951,6 +986,86 @@ class EcoceProfileService {
     } catch (e) {
       // No lanzar excepción si falla la eliminación de archivos
       // Log: Error al eliminar archivos de Storage: $e
+    }
+  }
+  
+  // Procesar y eliminar usuarios pendientes de eliminación
+  Future<void> processPendingDeletions() async {
+    try {
+      // Obtener usuarios pendientes de eliminación
+      final pendingDeletions = await _firestore
+          .collection('users_pending_deletion')
+          .where('status', isEqualTo: 'pending')
+          .limit(10) // Procesar en lotes para evitar timeout
+          .get();
+      
+      if (pendingDeletions.docs.isEmpty) {
+        return;
+      }
+      
+      final batch = _firestore.batch();
+      
+      for (final doc in pendingDeletions.docs) {
+        final data = doc.data();
+        final userId = data['userId'] as String;
+        
+        try {
+          // Intentar eliminar el usuario de Firebase Auth
+          // NOTA: Esto requerirá el Admin SDK o una Cloud Function
+          // Por ahora, solo actualizamos el estado
+          
+          // Actualizar estado a procesando
+          batch.update(doc.reference, {
+            'status': 'processing',
+            'processedAt': FieldValue.serverTimestamp(),
+          });
+          
+          // TODO: Aquí es donde se llamaría a la Cloud Function para eliminar el usuario
+          // await _deleteUserFromAuth(userId);
+          
+          // Si la eliminación es exitosa, eliminar el registro
+          batch.delete(doc.reference);
+          
+        } catch (e) {
+          // Si falla, marcar como error
+          batch.update(doc.reference, {
+            'status': 'error',
+            'error': e.toString(),
+            'errorAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+      
+      await batch.commit();
+    } catch (e) {
+      print('Error procesando eliminaciones pendientes: $e');
+    }
+  }
+  
+  // Limpiar registros antiguos de users_pending_deletion
+  Future<void> cleanupPendingDeletions() async {
+    try {
+      // Eliminar registros con más de 30 días
+      final thirtyDaysAgo = DateTime.now().subtract(Duration(days: 30));
+      final oldRecords = await _firestore
+          .collection('users_pending_deletion')
+          .where('requestedAt', isLessThan: Timestamp.fromDate(thirtyDaysAgo))
+          .get();
+      
+      if (oldRecords.docs.isEmpty) {
+        return;
+      }
+      
+      // Eliminar en lotes
+      final batch = _firestore.batch();
+      for (final doc in oldRecords.docs) {
+        batch.delete(doc.reference);
+      }
+      
+      await batch.commit();
+      print('Eliminados ${oldRecords.docs.length} registros antiguos de users_pending_deletion');
+    } catch (e) {
+      print('Error limpiando registros antiguos: $e');
     }
   }
 
@@ -1084,6 +1199,44 @@ class EcoceProfileService {
           .toList();
     } catch (e) {
       return [];
+    }
+  }
+  
+  // Obtener datos completos del perfil directamente de Firebase
+  Future<Map<String, dynamic>> getProfileDataAsMap(String userId) async {
+    try {
+      // Lista de todas las subcolecciones posibles
+      final subcollections = [
+        'origen/centro_acopio',
+        'origen/planta_separacion',
+        'reciclador/usuarios',
+        'transformador/usuarios',
+        'transporte/usuarios',
+        'laboratorio/usuarios',
+        'maestro/usuarios',
+      ];
+      
+      // Buscar en cada subcolección hasta encontrar el usuario
+      for (final subcollection in subcollections) {
+        try {
+          final doc = await _profilesCollection
+              .doc(subcollection.split('/')[0])
+              .collection(subcollection.split('/')[1])
+              .doc(userId)
+              .get();
+          
+          if (doc.exists) {
+            return doc.data() as Map<String, dynamic>;
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+      
+      // Si no se encontró, devolver un mapa vacío
+      return {};
+    } catch (e) {
+      return {};
     }
   }
   

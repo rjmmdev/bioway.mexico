@@ -519,12 +519,6 @@ class _EcocePerfilScreenState extends State<EcocePerfilScreen> with SingleTicker
   Widget _buildDocumentsTab() {
     final documents = [
       {
-        'name': 'RFC',
-        'icon': Icons.account_balance,
-        'url': _userProfile?.ecoceConstSitFis,
-        'required': true,
-      },
-      {
         'name': 'Constancia de Situación Fiscal',
         'icon': Icons.description,
         'url': _userProfile?.ecoceConstSitFis,
@@ -537,9 +531,39 @@ class _EcocePerfilScreenState extends State<EcocePerfilScreen> with SingleTicker
         'required': true,
       },
       {
-        'name': 'Identificación Oficial',
+        'name': 'Carátula Bancaria',
+        'icon': Icons.account_balance,
+        'url': _userProfile?.ecoceBancoCaratula,
+        'required': true,
+      },
+      {
+        'name': 'Identificación Oficial (INE)',
         'icon': Icons.badge,
         'url': _userProfile?.ecoceIne,
+        'required': true,
+      },
+      {
+        'name': 'Opinión de Cumplimiento',
+        'icon': Icons.assignment_turned_in,
+        'url': _userProfile?.ecoceOpinionCumplimiento,
+        'required': true,
+      },
+      {
+        'name': 'RAMIR',
+        'icon': Icons.eco,
+        'url': _userProfile?.ecoceRamir,
+        'required': true,
+      },
+      {
+        'name': 'Plan de Manejo',
+        'icon': Icons.description_outlined,
+        'url': _userProfile?.ecocePlanManejo,
+        'required': true,
+      },
+      {
+        'name': 'Licencia Ambiental',
+        'icon': Icons.nature_people,
+        'url': _userProfile?.ecoceLicenciaAmbiental,
         'required': true,
       },
     ];

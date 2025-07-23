@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../utils/colors.dart';
+import '../utils/dialog_utils.dart';
 
 /// Diálogo para visualizar documentos
 class DocumentViewerDialog extends StatelessWidget {
@@ -19,6 +21,10 @@ class DocumentViewerDialog extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Container(
+        constraints: BoxConstraints(
+          maxWidth: 400,
+          minWidth: 280,
+        ),
         padding: EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -73,35 +79,74 @@ class DocumentViewerDialog extends StatelessWidget {
               ),
             ),
             SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('Cerrar'),
-                ),
-                SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    // TODO: Implementar apertura del documento
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Abriendo documento...'),
-                        backgroundColor: BioWayColors.ecoceGreen,
-                      ),
-                    );
-                  },
-                  icon: Icon(Icons.open_in_new),
-                  label: Text('Ver Documento'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: BioWayColors.ecoceGreen,
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: double.infinity),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Cerrar'),
                   ),
-                ),
-              ],
+                  SizedBox(width: 8),
+                  Flexible(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(context); // Close dialog first
+                        await _openDocument(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: BioWayColors.ecoceGreen,
+                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.open_in_new, size: 18),
+                          SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              'Ver Documento',
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _openDocument(BuildContext context) async {
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (context.mounted) {
+          DialogUtils.showErrorDialog(
+            context: context,
+            title: 'Error',
+            message: 'No se pudo abrir el documento',
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        DialogUtils.showErrorDialog(
+          context: context,
+          title: 'Error',
+          message: 'Error al abrir el documento: $e',
+        );
+      }
+    }
   }
 }

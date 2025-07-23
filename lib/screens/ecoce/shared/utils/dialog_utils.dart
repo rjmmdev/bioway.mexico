@@ -502,7 +502,7 @@ class DialogUtils {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(context).pop(null),
               child: Text(cancelText),
             ),
             ElevatedButton(

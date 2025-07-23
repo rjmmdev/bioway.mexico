@@ -1061,8 +1061,6 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
     final Color activeColor = isDocumentacion ? Colors.orange : BioWayColors.ecoceGreen;
     
     final procesosList = [
-      'Lavado',
-      'Secado',
       'Trituración',
       'Extrusión',
       'Inyección',

@@ -76,10 +76,23 @@ class EcoceProfileModel {
   final String? ecoceCompDomicilio; // URL/referencia Comprobante de Domicilio
   final String? ecoceBancoCaratula; // URL/referencia Carátula de Banco
   final String? ecoceIne; // URL/referencia Identificación oficial
+  final String? ecoceOpinionCumplimiento; // URL/referencia Opinión de Cumplimiento
+  final String? ecoceRamir; // URL/referencia RAMIR
+  final String? ecocePlanManejo; // URL/referencia Plan de Manejo
+  final String? ecoceLicenciaAmbiental; // URL/referencia Licencia Ambiental
   
   // Campos adicionales para Origen (Acopiador y Planta de Separación)
   final Map<String, double>? ecoceDimCap; // Dimensiones de prensado {largo, ancho}
   final double? ecocePesoCap; // Peso de prensado en kg (formato 5.3 hasta 99999.999)
+  
+  // Campos adicionales
+  final String? ecoceNumInt; // Número interior
+  final String? ecoceReferencias; // Referencias adicionales de ubicación
+  final List<String>? ecoceActAutorizadas; // Actividades autorizadas
+  final String? ecoceBancoNombre; // Nombre del banco
+  final String? ecoceBancoBeneficiario; // Beneficiario de la cuenta
+  final String? ecoceBancoNumCuenta; // Número de cuenta
+  final String? ecoceBancoClabe; // CLABE interbancaria
   
   // Metadata
   final DateTime createdAt;
@@ -119,8 +132,19 @@ class EcoceProfileModel {
     this.ecoceCompDomicilio,
     this.ecoceBancoCaratula,
     this.ecoceIne,
+    this.ecoceOpinionCumplimiento,
+    this.ecoceRamir,
+    this.ecocePlanManejo,
+    this.ecoceLicenciaAmbiental,
     this.ecoceDimCap,
     this.ecocePesoCap,
+    this.ecoceNumInt,
+    this.ecoceReferencias,
+    this.ecoceActAutorizadas,
+    this.ecoceBancoNombre,
+    this.ecoceBancoBeneficiario,
+    this.ecoceBancoNumCuenta,
+    this.ecoceBancoClabe,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -179,12 +203,25 @@ class EcoceProfileModel {
       ecoceCompDomicilio: data['ecoce_comp_domicilio'],
       ecoceBancoCaratula: data['ecoce_banco_caratula'],
       ecoceIne: data['ecoce_ine'],
+      ecoceOpinionCumplimiento: data['ecoce_opinion_cumplimiento'],
+      ecoceRamir: data['ecoce_ramir'],
+      ecocePlanManejo: data['ecoce_plan_manejo'],
+      ecoceLicenciaAmbiental: data['ecoce_licencia_ambiental'],
       ecoceDimCap: data['ecoce_dim_cap'] != null 
           ? (data['ecoce_dim_cap'] as Map<String, dynamic>).map(
               (key, value) => MapEntry(key, (value as num).toDouble())
             )
           : null,
       ecocePesoCap: data['ecoce_peso_cap']?.toDouble(),
+      ecoceNumInt: data['ecoce_num_int'],
+      ecoceReferencias: data['ecoce_referencias'],
+      ecoceActAutorizadas: data['ecoce_act_autorizadas'] != null
+          ? List<String>.from(data['ecoce_act_autorizadas'])
+          : null,
+      ecoceBancoNombre: data['ecoce_banco_nombre'],
+      ecoceBancoBeneficiario: data['ecoce_banco_beneficiario'],
+      ecoceBancoNumCuenta: data['ecoce_banco_num_cuenta'],
+      ecoceBancoClabe: data['ecoce_banco_clabe'],
       createdAt: _timestampToDateTime(data['createdAt']) ?? DateTime.now(),
       updatedAt: _timestampToDateTime(data['updatedAt']) ?? DateTime.now(),
     );
@@ -227,8 +264,19 @@ class EcoceProfileModel {
       'ecoce_comp_domicilio': ecoceCompDomicilio,
       'ecoce_banco_caratula': ecoceBancoCaratula,
       'ecoce_ine': ecoceIne,
+      'ecoce_opinion_cumplimiento': ecoceOpinionCumplimiento,
+      'ecoce_ramir': ecoceRamir,
+      'ecoce_plan_manejo': ecocePlanManejo,
+      'ecoce_licencia_ambiental': ecoceLicenciaAmbiental,
       'ecoce_dim_cap': ecoceDimCap,
       'ecoce_peso_cap': ecocePesoCap,
+      'ecoce_num_int': ecoceNumInt,
+      'ecoce_referencias': ecoceReferencias,
+      'ecoce_act_autorizadas': ecoceActAutorizadas,
+      'ecoce_banco_nombre': ecoceBancoNombre,
+      'ecoce_banco_beneficiario': ecoceBancoBeneficiario,
+      'ecoce_banco_num_cuenta': ecoceBancoNumCuenta,
+      'ecoce_banco_clabe': ecoceBancoClabe,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };

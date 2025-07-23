@@ -96,6 +96,27 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
             'ecoce_municipio': profile.ecoceMunicipio,
             'ecoce_estado': profile.ecoceEstado,
             'ecoce_cp': profile.ecoceCp,
+            'ecoce_nombre_contacto': profile.ecoceNombreContacto,
+            'ecoce_tel_empresa': profile.ecoceTelEmpresa,
+            'ecoce_ref_ubi': profile.ecoceRefUbi,
+            'ecoce_num_int': profile.ecoceNumInt,
+            'ecoce_referencias': profile.ecoceReferencias,
+            // Documentos
+            'ecoce_const_sit_fis': profile.ecoceConstSitFis,
+            'ecoce_comp_domicilio': profile.ecoceCompDomicilio,
+            'ecoce_banco_caratula': profile.ecoceBancoCaratula,
+            'ecoce_ine': profile.ecoceIne,
+            'ecoce_opinion_cumplimiento': profile.ecoceOpinionCumplimiento,
+            'ecoce_ramir': profile.ecoceRamir,
+            'ecoce_plan_manejo': profile.ecocePlanManejo,
+            'ecoce_licencia_ambiental': profile.ecoceLicenciaAmbiental,
+            // Información bancaria
+            'ecoce_banco_nombre': profile.ecoceBancoNombre,
+            'ecoce_banco_beneficiario': profile.ecoceBancoBeneficiario,
+            'ecoce_banco_num_cuenta': profile.ecoceBancoNumCuenta,
+            'ecoce_banco_clabe': profile.ecoceBancoClabe,
+            // Actividades autorizadas
+            'ecoce_act_autorizadas': profile.ecoceActAutorizadas ?? [],
           },
           'fecha_revision': profile.ecoceFechaAprobacion?.toIso8601String(),
           'fecha_solicitud': profile.ecoceFechaReg.toIso8601String(),
@@ -153,17 +174,27 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
   }
 
   Future<void> _approveSolicitud(Map<String, dynamic> solicitud) async {
+    if (!mounted) return;
+    
     final datosPerfil = solicitud['datos_perfil'] as Map<String, dynamic>;
-    final bool confirm = await DialogUtils.showConfirmDialog(
-      context: context,
-      title: 'Aprobar Cuenta',
-      message: '¿Estás seguro de aprobar la cuenta de ${datosPerfil['ecoce_nombre']}?',
-      confirmText: 'Aprobar',
-      cancelText: 'Cancelar',
-      confirmColor: Colors.green,
-    );
+    
+    bool? confirm;
+    try {
+      confirm = await DialogUtils.showConfirmDialog(
+        context: context,
+        title: 'Aprobar Cuenta',
+        message: '¿Estás seguro de aprobar la cuenta de ${datosPerfil['ecoce_nombre']}?',
+        confirmText: 'Aprobar',
+        cancelText: 'Cancelar',
+        confirmColor: Colors.green,
+      );
+    } catch (e) {
+      return;
+    }
 
-    if (confirm) {
+    if (!mounted) return;
+
+    if (confirm == true) {
       try {
         await _profileService.approveSolicitud(
           solicitudId: solicitud['solicitud_id'],
@@ -171,29 +202,92 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
           comments: 'Documentación verificada y aprobada',
         );
         
-        final subtipo = datosPerfil['ecoce_subtipo'];
-        final prefijo = _getPrefijoFolio(subtipo);
-        
-        _showSuccessMessage('Cuenta aprobada exitosamente\nSe asignará folio con prefijo: $prefijo');
-        _loadSolicitudes();
+        if (mounted) {
+          final subtipo = datosPerfil['ecoce_subtipo'];
+          final prefijo = _getPrefijoFolio(subtipo);
+          
+          _showSuccessMessage('Cuenta aprobada exitosamente\nSe asignará folio con prefijo: $prefijo');
+          _loadSolicitudes();
+        }
       } catch (e) {
-        _showErrorMessage('Error al aprobar la cuenta: ${e.toString()}');
+        if (mounted) {
+          _showErrorMessage('Error al aprobar la cuenta: ${e.toString()}');
+        }
       }
     }
   }
 
   Future<void> _rejectSolicitud(Map<String, dynamic> solicitud) async {
+    if (!mounted) return;
+    
     final datosPerfil = solicitud['datos_perfil'] as Map<String, dynamic>;
-    final String? reason = await DialogUtils.showInputDialog(
-      context: context,
-      title: 'Rechazar Cuenta',
-      message: 'Por favor, indica el motivo del rechazo para ${datosPerfil['ecoce_nombre']}:',
-      hintText: 'Motivo del rechazo',
-      confirmText: 'Rechazar',
-      cancelText: 'Cancelar',
-      maxLines: 3,
-    );
+    
+    // Usar un Completer para manejar el resultado del diálogo de forma más segura
+    String? reason;
+    try {
+      reason = await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext dialogContext) {
+          final TextEditingController controller = TextEditingController();
+          
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Text('Rechazar Cuenta'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Por favor, indica el motivo del rechazo para ${datosPerfil['ecoce_nombre']}:'),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: controller,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Motivo del rechazo',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  autofocus: true,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop(null);
+                },
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop(controller.text);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: BioWayColors.error,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Rechazar',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      // Si hay algún error con el diálogo, simplemente retornar
+      return;
+    }
 
+    if (!mounted) return;
+    
     if (reason != null && reason.isNotEmpty) {
       try {
         await _profileService.rejectSolicitud(
@@ -202,15 +296,44 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
           reason: reason,
         );
         
-        _showSuccessMessage('Solicitud rechazada y eliminada correctamente');
-        _loadSolicitudes();
+        if (mounted) {
+          _showSuccessMessage('Solicitud rechazada y eliminada correctamente');
+          _loadSolicitudes();
+        }
       } catch (e) {
-        _showErrorMessage('Error al rechazar la solicitud');
+        if (mounted) {
+          _showErrorMessage('Error al rechazar la solicitud');
+        }
       }
     }
   }
 
   void _viewSolicitudDetails(Map<String, dynamic> solicitud) async {
+    // Si es un usuario aprobado, cargar los datos completos desde Firebase
+    if (solicitud['estado'] == 'aprobada' && solicitud['usuario_creado_id'] != null) {
+      // Mostrar indicador de carga
+      DialogUtils.showLoadingDialog(
+        context: context,
+        message: 'Cargando información del usuario...',
+      );
+      
+      try {
+        // Obtener datos completos del perfil
+        final fullProfileData = await _profileService.getProfileDataAsMap(solicitud['usuario_creado_id']);
+        
+        if (fullProfileData.isNotEmpty) {
+          // Actualizar los datos del perfil con los datos completos
+          solicitud['datos_perfil'] = fullProfileData;
+        }
+      } catch (e) {
+        // En caso de error, continuar con los datos que ya tenemos
+        print('Error cargando datos completos: $e');
+      } finally {
+        // Cerrar diálogo de carga
+        if (mounted) DialogUtils.hideLoadingDialog(context);
+      }
+    }
+    
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -419,7 +542,19 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                         ),
                         Row(
                           children: [
-                            // Sin botón de opciones por ahora
+                            // Botón de utilidades
+                            IconButton(
+                              icon: const Icon(Icons.build, color: Colors.white),
+                              tooltip: 'Utilidades del Sistema',
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const MaestroUtilitiesScreen(),
+                                  ),
+                                );
+                              },
+                            ),
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -690,10 +825,18 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                             final solicitud = _filteredSolicitudes[index];
                             return MaestroSolicitudCard(
                               solicitud: solicitud,
-                              onTap: () => _viewSolicitudDetails(solicitud),
-                              onApprove: _selectedIndex == 0 ? () => _approveSolicitud(solicitud) : null,
-                              onReject: _selectedIndex == 0 ? () => _rejectSolicitud(solicitud) : null,
-                              onDelete: _selectedIndex == 1 ? () => _deleteUser(solicitud) : null,
+                              onTap: () {
+                                if (mounted) _viewSolicitudDetails(solicitud);
+                              },
+                              onApprove: _selectedIndex == 0 ? () {
+                                if (mounted) _approveSolicitud(solicitud);
+                              } : null,
+                              onReject: _selectedIndex == 0 ? () {
+                                if (mounted) _rejectSolicitud(solicitud);
+                              } : null,
+                              onDelete: _selectedIndex == 1 ? () {
+                                if (mounted) _deleteUser(solicitud);
+                              } : null,
                               showActions: true,
                               showAdminInfo: _selectedIndex == 1,
                             );

@@ -47,6 +47,26 @@ class _DocumentUploaderState extends State<DocumentUploader> {
       'title': 'INE/Identificación Oficial',
       'icon': Icons.badge,
     },
+    {
+      'key': 'opinion_cumplimiento',
+      'title': 'Opinión de Cumplimiento',
+      'icon': Icons.assignment_turned_in,
+    },
+    {
+      'key': 'ramir',
+      'title': 'Registro y Autorización para el Manejo Integral de Residuos',
+      'icon': Icons.eco,
+    },
+    {
+      'key': 'plan_manejo',
+      'title': 'Plan de Manejo',
+      'icon': Icons.article,
+    },
+    {
+      'key': 'licencia_ambiental',
+      'title': 'Licencia Ambiental',
+      'icon': Icons.nature_people,
+    },
   ];
 
   @override
@@ -77,7 +97,7 @@ class _DocumentUploaderState extends State<DocumentUploader> {
                     ),
                   ),
                   Text(
-                    'Los documentos son opcionales pero recomendados',
+                    'Todos los documentos son obligatorios',
                     style: TextStyle(fontSize: 12, color: BioWayColors.textGrey),
                   ),
                 ],

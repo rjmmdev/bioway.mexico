@@ -1855,6 +1855,8 @@ class FiscalDataStep extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback onPrevious;
   final bool isUploading;
+  final Set<String> selectedActivities;
+  final Function(String) onActivityToggle;
 
   const FiscalDataStep({
     super.key,
@@ -1864,6 +1866,8 @@ class FiscalDataStep extends StatefulWidget {
     required this.onNext,
     required this.onPrevious,
     this.isUploading = false,
+    required this.selectedActivities,
+    required this.onActivityToggle,
   });
   
   @override
@@ -1874,8 +1878,6 @@ class _FiscalDataStepState extends State<FiscalDataStep> {
   String? _errorMessage;
   
   bool _validateDocuments() {
-    // Según CLAUDE.md, los documentos son opcionales
-    // Solo mostrar advertencia si no hay documentos
     setState(() {
       _errorMessage = null;
     });
@@ -1886,20 +1888,49 @@ class _FiscalDataStepState extends State<FiscalDataStep> {
       if (file != null) documentsCount++;
     }
     
-    // Si no hay ningún documento, mostrar advertencia pero permitir continuar
-    if (documentsCount == 0) {
+    // Validar que todos los documentos estén subidos
+    if (documentsCount < 8) {
       setState(() {
-        _errorMessage = 'Nota: No has subido ningún documento. Puedes continuar sin ellos, pero el proceso de aprobación podría demorar más.';
+        _errorMessage = 'Debes subir todos los documentos fiscales requeridos (${documentsCount}/8 subidos)';
       });
+      return false;
     }
     
-    return true; // Siempre permitir continuar
+    // Validar que al menos una actividad esté seleccionada
+    if (widget.selectedActivities.isEmpty) {
+      setState(() {
+        _errorMessage = 'Debes seleccionar al menos una actividad autorizada';
+      });
+      return false;
+    }
+    
+    return true;
   }
   
   void _handleNext() {
     if (_validateDocuments()) {
       widget.onNext();
     }
+  }
+
+  Widget _buildActivityCheckbox(String key, String label) {
+    return CheckboxListTile(
+      value: widget.selectedActivities.contains(key),
+      onChanged: (value) {
+        widget.onActivityToggle(key);
+      },
+      title: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 14,
+          color: BioWayColors.darkGreen,
+        ),
+      ),
+      controlAffinity: ListTileControlAffinity.leading,
+      activeColor: BioWayColors.petBlue,
+      contentPadding: EdgeInsets.zero,
+      dense: true,
+    );
   }
 
   @override
@@ -1928,7 +1959,7 @@ class _FiscalDataStepState extends State<FiscalDataStep> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Documentos Fiscales (Opcionales)',
+                      'Documentos Fiscales (Obligatorios)',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -1937,7 +1968,7 @@ class _FiscalDataStepState extends State<FiscalDataStep> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Sube los documentos en formato PDF o Word (DOC/DOCX). Máximo 5MB por archivo.\nLos documentos son opcionales, pero subirlos agilizará el proceso de aprobación.',
+                      'Sube todos los documentos en formato PDF o Word (DOC/DOCX). Máximo 5MB por archivo.\nEs necesario subir todos los documentos para continuar con el registro.',
                       style: TextStyle(
                         fontSize: 12,
                         color: BioWayColors.textGrey,
@@ -1952,11 +1983,55 @@ class _FiscalDataStepState extends State<FiscalDataStep> {
         ),
         const SizedBox(height: 24),
 
+        // Sección de documentos fiscales
         DocumentUploader(
           selectedFiles: widget.selectedFiles,
           onFileSelected: widget.onFileSelected,
           platformFiles: widget.platformFiles,
           isUploading: widget.isUploading,
+        ),
+        const SizedBox(height: 24),
+
+        // Sección de Actividades Autorizadas
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: BioWayColors.lightGrey.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: BioWayColors.lightGrey, width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.checklist, color: BioWayColors.petBlue, size: 24),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Actividades Autorizadas',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: BioWayColors.darkGreen,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Selecciona al menos una actividad autorizada',
+                style: TextStyle(fontSize: 12, color: BioWayColors.textGrey),
+              ),
+              const SizedBox(height: 16),
+              // Lista de actividades
+              _buildActivityCheckbox('recoleccion', 'Recolección'),
+              _buildActivityCheckbox('transporte', 'Transporte'),
+              _buildActivityCheckbox('acopio', 'Acopio'),
+              _buildActivityCheckbox('almacenamiento', 'Almacenamiento'),
+              _buildActivityCheckbox('tratamiento', 'Tratamiento'),
+              _buildActivityCheckbox('reciclaje', 'Reciclaje'),
+            ],
+          ),
         ),
         
         if (_errorMessage != null) ...[

@@ -143,7 +143,7 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
                               if (isApproved && solicitud['fecha_revision'] != null) ...[
                                 SizedBox(height: 4),
                                 Text(
-                                  'Aprobada el ${_formatDate((solicitud['fecha_revision'] as Timestamp).toDate())}',
+                                  'Aprobada el ${_formatDate(_parseFechaRevision(solicitud['fecha_revision']))}',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: BioWayColors.textGrey,
@@ -210,6 +210,13 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
                   // Documentos
                   _buildDocumentsSection(context, datosPerfil),
                   
+                  // Actividades Autorizadas
+                  if (datosPerfil['ecoce_act_autorizadas'] != null && 
+                      (datosPerfil['ecoce_act_autorizadas'] as List).isNotEmpty) ...[
+                    SizedBox(height: 16),
+                    _buildActividadesSection(context, datosPerfil),
+                  ],
+                  
                   // Botones de acción (solo si está pendiente)
                   if (!isApproved && (onApprove != null || onReject != null)) ...[
                     SizedBox(height: 24),
@@ -263,11 +270,18 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
   }
   
   Widget _buildDocumentsSection(BuildContext context, Map<String, dynamic> datosPerfil) {
+    // Buscar documentos en datos_perfil o en el objeto solicitud principal
+    final solicitudDocs = solicitud['documentos'] as Map<String, dynamic>?;
+    
     final documents = <String, String?>{
-      'Situación Fiscal': datosPerfil['ecoce_const_sit_fis'],
-      'Comprobante de Domicilio': datosPerfil['ecoce_comp_domicilio'],
-      'Carátula Bancaria': datosPerfil['ecoce_banco_caratula'],
-      'INE': datosPerfil['ecoce_ine'],
+      'Situación Fiscal': datosPerfil['ecoce_const_sit_fis'] ?? solicitudDocs?['const_sit_fis'],
+      'Comprobante de Domicilio': datosPerfil['ecoce_comp_domicilio'] ?? solicitudDocs?['comp_domicilio'],
+      'Carátula Bancaria': datosPerfil['ecoce_banco_caratula'] ?? solicitudDocs?['banco_caratula'],
+      'INE': datosPerfil['ecoce_ine'] ?? solicitudDocs?['ine'],
+      'Opinión de Cumplimiento': datosPerfil['ecoce_opinion_cumplimiento'] ?? solicitudDocs?['opinion_cumplimiento'],
+      'RAMIR': datosPerfil['ecoce_ramir'] ?? solicitudDocs?['ramir'],
+      'Plan de Manejo': datosPerfil['ecoce_plan_manejo'] ?? solicitudDocs?['plan_manejo'],
+      'Licencia Ambiental': datosPerfil['ecoce_licencia_ambiental'] ?? solicitudDocs?['licencia_ambiental'],
     };
     
     final validDocuments = documents.entries
@@ -275,7 +289,38 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
         .toList();
     
     if (validDocuments.isEmpty) {
-      return Container();
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.folder_off,
+              size: 48,
+              color: Colors.grey[400],
+            ),
+            SizedBox(height: 8),
+            Text(
+              'No hay documentos disponibles',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      );
     }
     
     return Container(
@@ -385,6 +430,16 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
     return FormatUtils.formatDate(date);
   }
   
+  DateTime _parseFechaRevision(dynamic fecha) {
+    if (fecha is Timestamp) {
+      return fecha.toDate();
+    } else if (fecha is String) {
+      return DateTime.parse(fecha);
+    } else {
+      return DateTime.now();
+    }
+  }
+  
   IconData _getSubtipoIcon(String? subtipo) {
     switch (subtipo) {
       case 'A': return Icons.warehouse;
@@ -407,5 +462,99 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
       case 'L': return 'Laboratorio';
       default: return 'Usuario Origen';
     }
+  }
+  
+  Widget _buildActividadesSection(BuildContext context, Map<String, dynamic> datosPerfil) {
+    final actividades = datosPerfil['ecoce_act_autorizadas'] as List;
+    
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.check_circle_outline,
+                color: BioWayColors.ecoceGreen,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Actividades Autorizadas',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: BioWayColors.darkGreen,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: actividades.map((actividad) {
+              final actividadStr = actividad.toString();
+              return Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.done,
+                      size: 16,
+                      color: BioWayColors.ecoceGreen,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      _getActividadLabel(actividadStr),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: BioWayColors.darkGreen,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  String _getActividadLabel(String actividadId) {
+    final Map<String, String> actividadesMap = {
+      'acopio': 'Acopio',
+      'recoleccion': 'Recolección',
+      'tratamiento': 'Tratamiento',
+      'almacenamiento': 'Almacenamiento',
+      'transporte': 'Transporte',
+      'disposicion_final': 'Disposición Final',
+      'comercializacion': 'Comercialización',
+      'reciclaje': 'Reciclaje',
+    };
+    
+    return actividadesMap[actividadId] ?? actividadId;
   }
 }

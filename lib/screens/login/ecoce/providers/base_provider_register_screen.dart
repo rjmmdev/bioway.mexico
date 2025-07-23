@@ -56,13 +56,22 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
     'comp_domicilio': null,
     'banco_caratula': null,
     'ine': null,
+    'opinion_cumplimiento': null,
+    'ramir': null,
+    'plan_manejo': null,
+    'licencia_ambiental': null,
   };
   final Map<String, PlatformFile?> _platformFiles = {
     'const_sit_fis': null,
     'comp_domicilio': null,
     'banco_caratula': null,
     'ine': null,
+    'opinion_cumplimiento': null,
+    'ramir': null,
+    'plan_manejo': null,
+    'licencia_ambiental': null,
   };
+  final Set<String> _selectedActivities = {};
   bool _isUploadingDocuments = false;
   
   // Location data
@@ -166,6 +175,10 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
     });
     
     try {
+      // Asegurar que Firebase esté inicializado para ECOCE
+      print('🔥 Verificando inicialización de Firebase...');
+      await _authService.initializeForPlatform(FirebasePlatform.ecoce);
+      print('✅ Firebase inicializado correctamente');
       // Obtener tipo de usuario y subtipo
       String tipoUsuario = _getTipoUsuario();
       String subtipo = _getSubtipo();
@@ -195,7 +208,7 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
         longitud = _selectedLocation!.longitude;
       }
       
-      // Primero, crear la solicitud sin documentos para obtener el ID
+      // Primero subir documentos si hay alguno seleccionado
       setState(() {
         _isUploadingDocuments = true;
       });
@@ -206,7 +219,53 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
       // Pequeña pausa para asegurar que el diálogo se muestre
       await Future.delayed(Duration(milliseconds: 100));
       
-      // Crear solicitud de cuenta en Firebase (sin crear usuario en Auth)
+      // Mapa para almacenar las URLs de los documentos
+      final Map<String, String?> uploadedDocuments = {};
+      
+      // Solo subir documentos si hay alguno seleccionado
+      final hasDocuments = _platformFiles.values.any((file) => file != null);
+      
+      if (hasDocuments) {
+        print('\n🗂️ PROCESANDO DOCUMENTOS SELECCIONADOS...');
+        print('Total de documentos a subir: ${_platformFiles.values.where((f) => f != null).length}');
+        
+        // Generar un ID único para esta sesión de registro
+        final sessionId = 'REG_${DateTime.now().millisecondsSinceEpoch}';
+        
+        // Subir documentos uno por uno para mejor control de errores
+        for (final entry in _platformFiles.entries) {
+          if (entry.value != null) {
+            try {
+              print('\n📎 Subiendo: ${entry.key}');
+              final url = await _documentService.uploadDocument(
+                userId: sessionId,
+                documentType: entry.key,
+                file: entry.value!,
+                solicitudId: sessionId,
+              );
+              
+              if (url != null) {
+                uploadedDocuments[entry.key] = url;
+                print('✅ ${entry.key} subido correctamente');
+              } else {
+                print('⚠️ ${entry.key} no se pudo subir');
+              }
+            } catch (e) {
+              print('❌ Error al subir ${entry.key}: $e');
+              // Continuar con el siguiente documento
+            }
+          }
+        }
+      }
+      
+      debugPrint('=== RESUMEN DE SUBIDA DE DOCUMENTOS ===');
+      debugPrint('Total documentos subidos: ${uploadedDocuments.length}');
+      uploadedDocuments.forEach((key, value) {
+        debugPrint('  $key: ${value != null ? 'OK (URL presente)' : 'FALLO'}');
+      });
+      debugPrint('=====================================');
+      
+      // Crear solicitud de cuenta en Firebase con los documentos ya subidos
       final solicitudId = await _profileService.createAccountRequest(
         tipoUsuario: tipoUsuario,
         email: _controllers['email']!.text.trim(),
@@ -229,66 +288,12 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
         linkRedSocial: _controllers['linkRedSocial']!.text.trim().isEmpty ? null : _controllers['linkRedSocial']!.text.trim(),
         dimensionesCapacidad: dimensionesCapacidad,
         pesoCapacidad: pesoCapacidad,
-        documentos: {}, // Inicialmente vacío, se actualizará después
+        documentos: uploadedDocuments, // Pasar los documentos ya subidos
         linkMaps: linkMaps,
         latitud: latitud,
         longitud: longitud,
+        actividadesAutorizadas: _selectedActivities.toList(),
       );
-      
-      // Solo subir documentos si hay alguno seleccionado
-      final hasDocuments = _platformFiles.values.any((file) => file != null);
-      
-      if (hasDocuments) {
-        final uploadedDocs = <String, String?>{};
-        
-        // Crear lista de futures para subida paralela
-        final uploadFutures = <Future<MapEntry<String, String?>>>[];
-        
-        for (final entry in _platformFiles.entries) {
-          if (entry.value != null) {
-            final future = _documentService.uploadDocument(
-              userId: solicitudId,
-              documentType: entry.key,
-              file: entry.value!,
-              solicitudId: solicitudId,
-            ).then((url) {
-              return MapEntry(entry.key, url);
-            }).catchError((e) {
-              // Log error pero continuar con otros documentos
-              debugPrint('Error subiendo ${entry.key}: $e');
-              return MapEntry(entry.key, null);
-            });
-            
-            uploadFutures.add(future);
-          }
-        }
-        
-        // Ejecutar todas las subidas en paralelo con timeout
-        if (uploadFutures.isNotEmpty) {
-          try {
-            final results = await Future.wait(uploadFutures)
-                .timeout(Duration(seconds: 30), onTimeout: () {
-              debugPrint('Timeout al subir documentos');
-              return [];
-            });
-            
-            for (final result in results) {
-              if (result.key.isNotEmpty) {
-                uploadedDocs[result.key] = result.value;
-              }
-            }
-          } catch (e) {
-            debugPrint('Error durante la subida de documentos: $e');
-          }
-        }
-        
-        // Actualizar la solicitud con las URLs de los documentos
-        if (uploadedDocs.isNotEmpty) {
-          await _updateSolicitudDocuments(solicitudId, uploadedDocs);
-        }
-      } else {
-        debugPrint('No hay documentos para subir - continuando sin ellos');
-      }
       
       setState(() {
         _isLoading = false;
@@ -767,6 +772,8 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
           onNext: _nextStep,
           onPrevious: _navigateBack,
           isUploading: _isUploadingDocuments,
+          selectedActivities: _selectedActivities,
+          onActivityToggle: _toggleActivity,
         );
       case 5:
         return Column(
@@ -891,6 +898,16 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
     });
   }
 
+  void _toggleActivity(String activityId) {
+    setState(() {
+      if (_selectedActivities.contains(activityId)) {
+        _selectedActivities.remove(activityId);
+      } else {
+        _selectedActivities.add(activityId);
+      }
+    });
+  }
+
   void _handleFileSelected(String key, PlatformFile? file, String? url) {
     setState(() {
       if (file != null) {
@@ -901,28 +918,5 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
         _selectedFiles[key] = null;
       }
     });
-  }
-  
-  Future<void> _updateSolicitudDocuments(String solicitudId, Map<String, String?> documents) async {
-    try {
-      final updates = <String, dynamic>{};
-      
-      // Mapear las URLs a la estructura de datos de la solicitud
-      documents.forEach((key, url) {
-        if (url != null) {
-          updates['datos_perfil.ecoce_$key'] = url;
-        }
-      });
-      
-      // Actualizar directamente en Firestore
-      if (updates.isNotEmpty) {
-        await FirebaseFirestore.instance
-            .collection('solicitudes_cuentas')
-            .doc(solicitudId)
-            .update(updates);
-      }
-    } catch (e) {
-      // Log error - En producción usar un servicio de logging
-    }
   }
 }

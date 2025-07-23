@@ -40,6 +40,56 @@ class _MaestroUtilitiesScreenState extends State<MaestroUtilitiesScreen> {
     }
   }
 
+  Future<void> _cleanupPendingDeletions() async {
+    // Confirmar acción
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar Limpieza'),
+        content: const Text(
+          'Esta acción eliminará todos los registros de usuarios pendientes de eliminación '
+          'que tengan más de 30 días de antigüedad.\n\n'
+          '¿Estás seguro de continuar?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: BioWayColors.error,
+            ),
+            child: const Text('Limpiar Registros'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() {
+      _isLoading = true;
+      _lastResult = '';
+    });
+
+    try {
+      await _profileService.cleanupPendingDeletions();
+      setState(() {
+        _lastResult = 'Limpieza completada exitosamente. Los registros antiguos han sido eliminados.';
+      });
+    } catch (e) {
+      setState(() {
+        _lastResult = 'Error al ejecutar limpieza: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
   Future<void> _runCleanup() async {
     // Confirmar acción
     final confirm = await showDialog<bool>(
@@ -124,11 +174,13 @@ Limpieza completada:
                       children: [
                         Icon(Icons.analytics, color: BioWayColors.primaryGreen),
                         const SizedBox(width: 12),
-                        const Text(
-                          'Análisis de Estructura',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                        const Expanded(
+                          child: Text(
+                            'Análisis de Estructura',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
@@ -162,6 +214,63 @@ Limpieza completada:
             
             const SizedBox(height: 20),
             
+            // Sección de Limpieza de Usuarios Pendientes
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.person_remove, color: BioWayColors.error),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Limpiar Usuarios Pendientes de Eliminación',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Elimina los registros antiguos de la colección "users_pending_deletion" '
+                      'que tienen más de 30 días de antigüedad.',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _isLoading ? null : _cleanupPendingDeletions,
+                        icon: const Icon(Icons.cleaning_services),
+                        label: const Text('Limpiar Registros Antiguos'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: BioWayColors.error,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 20),
+            
             // Sección de Limpieza
             Card(
               elevation: 4,
@@ -177,11 +286,13 @@ Limpieza completada:
                       children: [
                         Icon(Icons.cleaning_services, color: BioWayColors.warning),
                         const SizedBox(width: 12),
-                        const Text(
-                          'Limpieza de Duplicados',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                        const Expanded(
+                          child: Text(
+                            'Limpieza de Duplicados',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
