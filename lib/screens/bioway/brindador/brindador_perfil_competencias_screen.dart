@@ -7,7 +7,6 @@ import '../../../models/bioway/material_reciclable.dart';
 import '../../../models/bio_competencia.dart';
 import '../../../widgets/bioway/bio_celebration_widget.dart';
 import '../../../widgets/bioway/bio_motivational_popup.dart';
-import 'brindador_residuos_grid_screen.dart';
 
 class BrindadorPerfilCompetenciasScreen extends StatefulWidget {
   const BrindadorPerfilCompetenciasScreen({super.key});
@@ -155,7 +154,6 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
             ),
         ],
       ),
-      floatingActionButton: _vistaActual != 'perfil' ? _buildReciclarFAB() : null,
     );
   }
 
@@ -1056,46 +1054,6 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildReciclarFAB() {
-    return Container(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          colors: [BioWayColors.primaryGreen, BioWayColors.limeGreen],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: BioWayColors.primaryGreen.withOpacity(0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: FloatingActionButton(
-        onPressed: () {
-          HapticFeedback.mediumImpact();
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => BrindadorResiduosGridScreen(
-                selectedCantMin: "0",
-              ),
-            ),
-          );
-        },
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        child: const Icon(
-          Icons.recycling_rounded,
-          color: Colors.white,
-          size: 28,
-        ),
       ),
     );
   }
