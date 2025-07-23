@@ -401,75 +401,59 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: BioWayColors.info.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: BioWayColors.info.withValues(alpha: 0.3),
+                    // Botón para abrir el diálogo de filtros
+                    GestureDetector(
+                      onTap: _showFilterDialog,
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: BioWayColors.primaryGreen.withValues(alpha: 0.3),
+                            width: 2,
+                          ),
                         ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.filter_alt,
-                            color: BioWayColors.info,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Filtrar por material:',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: BioWayColors.info,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.filter_alt,
+                              color: BioWayColors.primaryGreen,
+                              size: 24,
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Chips de filtros
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          // Filtro "Todos"
-                          _buildFilterChip(
-                            label: 'Todos',
-                            isSelected: selectedFilters.isEmpty,
-                            onTap: () {
-                              setState(() {
-                                selectedFilters.clear();
-                              });
-                              _loadMarkers();
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          // Filtros por material
-                          ...materiales.map((material) {
-                            final isSelected = selectedFilters.contains(material.id);
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: _buildFilterChip(
-                                label: material.nombre,
-                                color: material.color,
-                                isSelected: isSelected,
-                                onTap: () {
-                                  setState(() {
-                                    if (isSelected) {
-                                      selectedFilters.remove(material.id);
-                                    } else {
-                                      selectedFilters.add(material.id);
-                                    }
-                                  });
-                                  _loadMarkers();
-                                },
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    selectedFilters.isEmpty 
+                                        ? 'Mostrando todos los materiales'
+                                        : 'Mostrando: ${_getSelectedMaterialsText()}',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: BioWayColors.textDark,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Toca para cambiar filtros',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: BioWayColors.textGrey,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            );
-                          }).toList(),
-                        ],
+                            ),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              color: BioWayColors.primaryGreen,
+                              size: 20,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -507,7 +491,7 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  FloatingActionButton.large(
+                  FloatingActionButton(
                     onPressed: () async {
                       HapticFeedback.lightImpact();
                       // Centrar en ubicación actual
@@ -527,7 +511,7 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
                     child: const Icon(
                       Icons.my_location,
                       color: Colors.white,
-                      size: 32,
+                      size: 24,
                     ),
                   ),
                 ],
@@ -538,65 +522,241 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
       ),
     );
   }
-
-  Widget _buildFilterChip({
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-    Color? color,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap();
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected 
-              ? (color ?? BioWayColors.primaryGreen)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(25),
-          border: Border.all(
-            color: isSelected 
-                ? (color ?? BioWayColors.primaryGreen)
-                : Colors.grey.shade300,
-            width: 2,
-          ),
-          boxShadow: isSelected ? [
-            BoxShadow(
-              color: (color ?? BioWayColors.primaryGreen).withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ] : [],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (color != null && label != 'Todos')
-              Icon(
-                _getMaterialIcon(label.toLowerCase()),
-                color: isSelected ? Colors.white : color,
-                size: 18,
-              ),
-            if (color != null && label != 'Todos')
-              const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: isSelected 
-                    ? Colors.white
-                    : (color ?? BioWayColors.textGrey),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  
+  String _getSelectedMaterialsText() {
+    if (selectedFilters.isEmpty) return 'Todos';
+    
+    final selectedMaterials = materiales
+        .where((m) => selectedFilters.contains(m.id))
+        .map((m) => m.nombre)
+        .toList();
+    
+    if (selectedMaterials.length > 2) {
+      return '${selectedMaterials.take(2).join(', ')} y ${selectedMaterials.length - 2} más';
+    }
+    return selectedMaterials.join(', ');
   }
   
+  void _showFilterDialog() {
+    final tempFilters = Set<String>.from(selectedFilters);
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Column(
+                children: [
+                  Icon(
+                    Icons.filter_alt,
+                    color: BioWayColors.primaryGreen,
+                    size: 40,
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Filtrar Materiales',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Selecciona qué materiales quieres ver en el mapa',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.normal,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+              content: Container(
+                width: double.maxFinite,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Botón de seleccionar todos/ninguno
+                      GestureDetector(
+                        onTap: () {
+                          setDialogState(() {
+                            if (tempFilters.length == materiales.length) {
+                              tempFilters.clear();
+                            } else {
+                              tempFilters.clear();
+                              tempFilters.addAll(materiales.map((m) => m.id));
+                            }
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: tempFilters.length == materiales.length
+                                ? BioWayColors.primaryGreen.withValues(alpha: 0.1)
+                                : Colors.grey.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: tempFilters.length == materiales.length
+                                  ? BioWayColors.primaryGreen
+                                  : Colors.grey,
+                              width: 2,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                tempFilters.length == materiales.length
+                                    ? Icons.check_box
+                                    : Icons.check_box_outline_blank,
+                                color: tempFilters.length == materiales.length
+                                    ? BioWayColors.primaryGreen
+                                    : Colors.grey,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                tempFilters.length == materiales.length
+                                    ? 'Deseleccionar todos'
+                                    : 'Seleccionar todos',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: tempFilters.length == materiales.length
+                                      ? BioWayColors.primaryGreen
+                                      : Colors.grey[700],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 16),
+                      // Lista de materiales
+                      ...materiales.map((material) {
+                        final isSelected = tempFilters.contains(material.id);
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: GestureDetector(
+                            onTap: () {
+                              setDialogState(() {
+                                if (isSelected) {
+                                  tempFilters.remove(material.id);
+                                } else {
+                                  tempFilters.add(material.id);
+                                }
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? material.color.withValues(alpha: 0.1)
+                                    : Colors.grey.withValues(alpha: 0.05),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? material.color
+                                      : Colors.grey.withValues(alpha: 0.3),
+                                  width: 2,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    isSelected
+                                        ? Icons.check_circle
+                                        : Icons.circle_outlined,
+                                    color: isSelected
+                                        ? material.color
+                                        : Colors.grey,
+                                    size: 28,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Icon(
+                                    _getMaterialIcon(material.id),
+                                    color: isSelected
+                                        ? material.color
+                                        : Colors.grey,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      material.nombre,
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: isSelected
+                                            ? material.color
+                                            : Colors.grey[700],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                  },
+                  child: Text(
+                    'Cancelar',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      selectedFilters.clear();
+                      selectedFilters.addAll(tempFilters);
+                    });
+                    _loadMarkers();
+                    Navigator.of(dialogContext).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: BioWayColors.primaryGreen,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Aplicar filtros',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 }
