@@ -1,0 +1,53 @@
+// Reglas de seguridad para Firebase Storage - ECOCE
+// Copiar estas reglas en la consola de Firebase Storage
+
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Función para verificar si el usuario está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Función para verificar si es el dueño del documento
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Función para verificar tamaño máximo del archivo (5MB)
+    function isValidSize() {
+      return request.resource.size < 5 * 1024 * 1024;
+    }
+    
+    // Función para verificar tipos de archivo permitidos
+    function isValidFileType() {
+      return request.resource.contentType.matches('image/.*') ||
+             request.resource.contentType == 'application/pdf' ||
+             request.resource.contentType == 'application/msword' ||
+             request.resource.contentType == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    }
+    
+    // Reglas para documentos temporales durante el registro
+    match /ecoce/documentos/{sessionId}/{documentType}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isValidSize() && isValidFileType();
+    }
+    
+    // Reglas para documentos de usuarios finales
+    match /ecoce/usuarios/{userId}/documentos/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && isValidSize() && isValidFileType();
+    }
+    
+    // Reglas para solicitudes (acceso temporal)
+    match /solicitudes/{solicitudId}/documentos/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isValidSize() && isValidFileType();
+    }
+    
+    // Regla general: denegar todo lo demás
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
