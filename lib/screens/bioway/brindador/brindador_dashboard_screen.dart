@@ -225,37 +225,47 @@ class _BrindadorDashboardScreenState extends State<BrindadorDashboardScreen>
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
                     children: [
-                      Icon(
-                        Icons.schedule,
-                        color: Colors.white70,
-                        size: 16,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.schedule,
+                            color: Colors.white70,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            horario.horario,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        horario.horario,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      Icon(
-                        Icons.scale,
-                        color: Colors.white70,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Mín: ${horario.cantidadMinima}',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.scale,
+                            color: Colors.white70,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Mín: ${horario.cantidadMinima}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

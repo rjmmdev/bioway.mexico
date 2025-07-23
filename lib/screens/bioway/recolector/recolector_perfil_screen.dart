@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:io';
-import 'package:image_picker/image_picker.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/bioway_levels.dart';
 import '../../../models/bioway/bioway_user.dart';
@@ -16,8 +14,6 @@ class RecolectorPerfilScreen extends StatefulWidget {
 class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
   // Datos mock del usuario
   late BioWayUser mockUser;
-  File? _imageFile;
-  final ImagePicker _picker = ImagePicker();
   
   // Datos mock de recolecciones por material
   final Map<String, double> materialesRecolectados = {
@@ -77,11 +73,9 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
                   children: [
                     _buildStatsOverview(),
                     const SizedBox(height: 24),
-                    _buildDailyStats(),
+                    _buildTodayStats(),
                     const SizedBox(height: 24),
                     _buildImpactSection(),
-                    const SizedBox(height: 24),
-                    _buildVehicleSection(),
                     const SizedBox(height: 24),
                     _buildMaterialsBreakdown(),
                     const SizedBox(height: 24),
@@ -100,119 +94,48 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-      child: Row(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
         children: [
-          // Avatar
-          GestureDetector(
-            onTap: _pickImage,
-            child: Stack(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: BioWayColors.primaryGreen.withValues(alpha: 0.3),
-                      width: 2,
-                    ),
-                  ),
-                  child: CircleAvatar(
-                    radius: 35,
-                    backgroundColor: BioWayColors.primaryGreen.withValues(alpha: 0.1),
-                    backgroundImage: _imageFile != null
-                        ? FileImage(_imageFile!)
-                        : null,
-                    child: _imageFile == null
-                        ? Icon(
-                            Icons.person,
-                            size: 35,
-                            color: BioWayColors.primaryGreen,
-                          )
-                        : null,
-                  ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: BioWayColors.primaryGreen,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 2,
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt,
-                      color: Colors.white,
-                      size: 12,
-                    ),
-                  ),
-                ),
-              ],
+          Text(
+            mockUser.nombre,
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1A1A1A),
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  mockUser.nombre,
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A1A),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on,
-                      size: 16,
-                      color: Colors.grey[600],
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${mockUser.colonia}, ${mockUser.municipio}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  BioWayColors.primaryGreen,
-                  BioWayColors.primaryGreen.withValues(alpha: 0.8),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
+              color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(25),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   Icons.local_shipping,
-                  size: 16,
-                  color: Colors.white,
+                  size: 24,
+                  color: BioWayColors.primaryGreen,
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 Text(
-                  'Recolector',
-                  style: const TextStyle(
-                    fontSize: 12,
+                  'Recolector Certificado',
+                  style: TextStyle(
+                    fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: BioWayColors.primaryGreen,
                   ),
                 ),
               ],
@@ -306,7 +229,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
     );
   }
 
-  Widget _buildDailyStats() {
+  Widget _buildTodayStats() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -325,43 +248,48 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.today,
-                color: BioWayColors.primaryGreen,
-                size: 24,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.today,
+                  color: BioWayColors.primaryGreen,
+                  size: 24,
+                ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Text(
-                'Estadísticas del día',
+                'Actividad de Hoy',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: BioWayColors.textDark,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildDayStatItem(
-                icon: Icons.location_on,
-                value: '12',
-                label: 'Puntos visitados',
-                color: BioWayColors.primaryGreen,
+              Expanded(
+                child: _buildSimpleStatCard(
+                  icon: Icons.location_on,
+                  value: '12',
+                  label: 'Puntos\nvisitados',
+                  color: BioWayColors.primaryGreen,
+                ),
               ),
-              _buildDayStatItem(
-                icon: Icons.scale,
-                value: '250 kg',
-                label: 'Recolectado',
-                color: BioWayColors.info,
-              ),
-              _buildDayStatItem(
-                icon: Icons.timer,
-                value: '3h 45m',
-                label: 'Tiempo activo',
-                color: BioWayColors.warning,
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildSimpleStatCard(
+                  icon: Icons.scale,
+                  value: '250',
+                  label: 'Kilos\nrecolectados',
+                  color: BioWayColors.info,
+                ),
               ),
             ],
           ),
@@ -369,47 +297,53 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
       ),
     );
   }
-
-  Widget _buildDayStatItem({
+  
+  Widget _buildSimpleStatCard({
     required IconData icon,
     required String value,
     required String label,
     required Color color,
   }) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
             icon,
             color: color,
-            size: 24,
+            size: 36,
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: color,
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: BioWayColors.textGrey,
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: BioWayColors.textGrey,
+              height: 1.2,
+            ),
+            textAlign: TextAlign.center,
           ),
-          textAlign: TextAlign.center,
-        ),
-      ],
+        ],
+      ),
     );
   }
+
 
   Widget _buildImpactSection() {
     return Container(
@@ -518,119 +452,6 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
     );
   }
 
-  Widget _buildVehicleSection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.local_shipping,
-                color: BioWayColors.primaryGreen,
-                size: 24,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Mi Vehículo',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: BioWayColors.textDark,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: BioWayColors.primaryGreen.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: BioWayColors.primaryGreen.withValues(alpha: 0.2),
-              ),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Modelo:',
-                      style: TextStyle(
-                        color: BioWayColors.textGrey,
-                        fontSize: 14,
-                      ),
-                    ),
-                    Text(
-                      mockUser.vehiculo ?? 'No especificado',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Capacidad:',
-                      style: TextStyle(
-                        color: BioWayColors.textGrey,
-                        fontSize: 14,
-                      ),
-                    ),
-                    Text(
-                      '${mockUser.capacidadKg} kg',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Licencia:',
-                      style: TextStyle(
-                        color: BioWayColors.textGrey,
-                        fontSize: 14,
-                      ),
-                    ),
-                    Text(
-                      mockUser.licenciaConducir ?? 'No especificada',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildMaterialsBreakdown() {
     final total = materialesRecolectados.values.reduce((a, b) => a + b);
@@ -834,22 +655,6 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
   }
 
   // Métodos auxiliares
-  Future<void> _pickImage() async {
-    final XFile? pickedFile = await _picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 400,
-      maxHeight: 400,
-      imageQuality: 80,
-    );
-
-    if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
-      _showSnackBar('Foto de perfil actualizada');
-    }
-  }
-
   Color _getMaterialColor(String material) {
     switch (material.toLowerCase()) {
       case 'plastico':

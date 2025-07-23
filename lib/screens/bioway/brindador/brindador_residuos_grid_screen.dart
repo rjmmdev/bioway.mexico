@@ -321,6 +321,7 @@ class _BrindadorResiduosGridScreenState extends State<BrindadorResiduosGridScree
                           color: BioWayColors.warning,
                           fontWeight: FontWeight.w500,
                         ),
+                        softWrap: true,
                       ),
                     ),
                   ],
@@ -347,9 +348,12 @@ class _BrindadorResiduosGridScreenState extends State<BrindadorResiduosGridScree
                         size: 20,
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        '${material.nombre}: ${entry.value} kg mínimo',
-                        style: const TextStyle(fontSize: 14),
+                      Expanded(
+                        child: Text(
+                          '${material.nombre}: ${entry.value} kg mínimo',
+                          style: const TextStyle(fontSize: 14),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),

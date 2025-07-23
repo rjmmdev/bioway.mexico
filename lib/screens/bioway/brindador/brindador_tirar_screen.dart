@@ -376,9 +376,12 @@ class _BrindadorTirarScreenState extends State<BrindadorTirarScreen> {
                             size: 20,
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            '${entry.key}: ${entry.value} kg',
-                            style: const TextStyle(fontSize: 16),
+                          Expanded(
+                            child: Text(
+                              '${entry.key}: ${entry.value} kg',
+                              style: const TextStyle(fontSize: 16),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                       ),
@@ -431,14 +434,17 @@ class _BrindadorTirarScreenState extends State<BrindadorTirarScreen> {
                     icon: Icons.cleaning_services,
                     text: 'Asegúrate de que los materiales estén limpios y secos',
                   ),
+                  const SizedBox(height: 4),
                   _buildInstructionItem(
                     icon: Icons.shopping_bag,
                     text: 'Usa bolsas transparentes o reutilizables',
                   ),
+                  const SizedBox(height: 4),
                   _buildInstructionItem(
                     icon: Icons.location_on,
                     text: 'Colócalos en el área designada de tu edificio o calle',
                   ),
+                  const SizedBox(height: 4),
                   _buildInstructionItem(
                     icon: Icons.schedule,
                     text: 'Respeta los horarios de recolección establecidos',
@@ -485,12 +491,15 @@ class _BrindadorTirarScreenState extends State<BrindadorTirarScreen> {
                             color: BioWayColors.textGrey,
                           ),
                         ),
-                        Text(
-                          '20 BioCoins',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: BioWayColors.warning,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            '20 BioCoins',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: BioWayColors.warning,
+                            ),
                           ),
                         ),
                       ],

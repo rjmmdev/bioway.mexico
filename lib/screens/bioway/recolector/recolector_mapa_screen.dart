@@ -116,79 +116,210 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
       ),
       builder: (context) {
         return Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                punto['nombre'],
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
+              // Header con icono
               Row(
                 children: [
-                  Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.recycling,
+                      color: BioWayColors.primaryGreen,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
                   Expanded(
-                    child: Text(
-                      punto['direccion'],
-                      style: TextStyle(color: Colors.grey[600]),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          punto['nombre'],
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(Icons.location_on, size: 18, color: Colors.grey[600]),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                punto['direccion'],
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Text(
-                'Materiales disponibles:',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: BioWayColors.textDark,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: (punto['materiales'] as List).map((matId) {
-                  final material = materiales.firstWhere((m) => m.id == matId);
-                  return Chip(
-                    label: Text(material.nombre),
-                    backgroundColor: material.color.withOpacity(0.2),
-                    labelStyle: TextStyle(color: material.color),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
+              
+              // Cantidad disponible destacada
               Container(
-                padding: const EdgeInsets.all(12),
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: BioWayColors.success.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    colors: [
+                      BioWayColors.success,
+                      BioWayColors.success.withValues(alpha: 0.8),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: Row(
+                child: Column(
                   children: [
-                    Icon(Icons.scale, color: BioWayColors.success),
-                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.scale,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                    const SizedBox(height: 8),
                     Text(
-                      '${punto['cantidad']} kg disponibles para recolectar',
+                      '${punto['cantidad']} kg',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Disponibles para recolectar',
                       style: TextStyle(
-                        color: BioWayColors.success,
-                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 16,
                       ),
                     ),
                   ],
                 ),
               ),
+              const SizedBox(height: 20),
+              
+              Text(
+                'Materiales en este punto:',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: BioWayColors.textDark,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: (punto['materiales'] as List).map((matId) {
+                  final material = materiales.firstWhere((m) => m.id == matId);
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: material.color.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: material.color.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _getMaterialIcon(matId),
+                          color: material.color,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          material.nombre,
+                          style: TextStyle(
+                            color: material.color,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 24),
+              
+              // Botón de acción grande
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // Aquí iría la navegación o acción de recolección
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: BioWayColors.primaryGreen,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.directions_car,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Ir a Recolectar',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
             ],
           ),
         );
       },
     );
+  }
+  
+  IconData _getMaterialIcon(String material) {
+    switch (material) {
+      case 'plastico':
+        return Icons.local_drink;
+      case 'vidrio':
+        return Icons.wine_bar;
+      case 'papel':
+        return Icons.description;
+      case 'metal':
+        return Icons.hardware;
+      case 'organico':
+        return Icons.eco;
+      case 'electronico':
+        return Icons.devices;
+      default:
+        return Icons.recycling;
+    }
   }
   @override
   Widget build(BuildContext context) {
@@ -230,23 +361,75 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Puntos de recolección',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: BioWayColors.textDark,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Filtra por tipo de material',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: BioWayColors.textGrey,
-                      ),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.location_on,
+                            color: BioWayColors.primaryGreen,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Puntos de Recolección',
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: BioWayColors.textDark,
+                                ),
+                              ),
+                              Text(
+                                'Toca un punto verde para ver detalles',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: BioWayColors.textGrey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: BioWayColors.info.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: BioWayColors.info.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.filter_alt,
+                            color: BioWayColors.info,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Filtrar por material:',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: BioWayColors.info,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     // Chips de filtros
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -294,31 +477,60 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
               ),
             ),
             
-            // Botón de ubicación actual
+            // Botón de ubicación actual con etiqueta
             Positioned(
               bottom: 20,
               right: 20,
-              child: FloatingActionButton(
-                onPressed: () async {
-                  HapticFeedback.lightImpact();
-                  // Centrar en ubicación actual
-                  if (_mapController != null) {
-                    _mapController!.animateCamera(
-                      CameraUpdate.newLatLngZoom(
-                        const LatLng(
-                          GoogleMapsConfig.defaultLatitude,
-                          GoogleMapsConfig.defaultLongitude,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
                         ),
-                        GoogleMapsConfig.defaultZoom,
+                      ],
+                    ),
+                    child: Text(
+                      'Mi ubicación',
+                      style: TextStyle(
+                        color: BioWayColors.primaryGreen,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
                       ),
-                    );
-                  }
-                },
-                backgroundColor: Colors.white,
-                child: Icon(
-                  Icons.my_location,
-                  color: BioWayColors.primaryGreen,
-                ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  FloatingActionButton.large(
+                    onPressed: () async {
+                      HapticFeedback.lightImpact();
+                      // Centrar en ubicación actual
+                      if (_mapController != null) {
+                        _mapController!.animateCamera(
+                          CameraUpdate.newLatLngZoom(
+                            const LatLng(
+                              GoogleMapsConfig.defaultLatitude,
+                              GoogleMapsConfig.defaultLongitude,
+                            ),
+                            GoogleMapsConfig.defaultZoom,
+                          ),
+                        );
+                      }
+                    },
+                    backgroundColor: BioWayColors.primaryGreen,
+                    child: const Icon(
+                      Icons.my_location,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -340,30 +552,51 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected 
-              ? (color ?? BioWayColors.primaryGreen).withOpacity(0.2)
+              ? (color ?? BioWayColors.primaryGreen)
               : Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(25),
           border: Border.all(
             color: isSelected 
                 ? (color ?? BioWayColors.primaryGreen)
                 : Colors.grey.shade300,
-            width: isSelected ? 2 : 1,
+            width: 2,
           ),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: (color ?? BioWayColors.primaryGreen).withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ] : [],
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            color: isSelected 
-                ? (color ?? BioWayColors.primaryGreen)
-                : BioWayColors.textGrey,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (color != null && label != 'Todos')
+              Icon(
+                _getMaterialIcon(label.toLowerCase()),
+                color: isSelected ? Colors.white : color,
+                size: 18,
+              ),
+            if (color != null && label != 'Todos')
+              const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: isSelected 
+                    ? Colors.white
+                    : (color ?? BioWayColors.textGrey),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+  
 }
