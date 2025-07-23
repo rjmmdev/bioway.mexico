@@ -101,7 +101,9 @@ class _BrindadorResiduosGridScreenState extends State<BrindadorResiduosGridScree
                           selectedMaterials.remove(material.id);
                         } else {
                           // Por defecto asignar cantidad mínima
-                          selectedMaterials[material.id] = double.parse(widget.selectedCantMin);
+                          // Extraer solo el número de la cadena "1 kg mínimo"
+                          final cantidadStr = widget.selectedCantMin.split(' ').first;
+                          selectedMaterials[material.id] = double.tryParse(cantidadStr) ?? 1.0;
                         }
                       });
                     },
@@ -200,15 +202,7 @@ class _BrindadorResiduosGridScreenState extends State<BrindadorResiduosGridScree
                   onPressed: selectedMaterials.isNotEmpty
                       ? () {
                           HapticFeedback.mediumImpact();
-                          // Navegar a la pantalla de Tirar
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => BrindadorTirarScreen(
-                                selectedMaterials: selectedMaterials,
-                              ),
-                            ),
-                          );
+                          _showConfirmationDialog();
                         }
                       : null,
                   style: ElevatedButton.styleFrom(
@@ -256,5 +250,158 @@ class _BrindadorResiduosGridScreenState extends State<BrindadorResiduosGridScree
       default:
         return Icons.recycling;
     }
+  }
+
+  void _showConfirmationDialog() {
+    // Extraer solo el número de la cantidad mínima
+    final cantidadStr = widget.selectedCantMin.split(' ').first;
+    final cantidadMinima = double.tryParse(cantidadStr) ?? 1.0;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.info,
+                color: BioWayColors.info,
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Confirmación de cantidad',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Para brindar los materiales seleccionados, debes tener al menos ${cantidadMinima.toStringAsFixed(0)} kg de cada uno.',
+                style: const TextStyle(
+                  fontSize: 16,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: BioWayColors.warning.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: BioWayColors.warning.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      color: BioWayColors.warning,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Al continuar, confirmas que tienes la cantidad mínima requerida.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: BioWayColors.warning,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Materiales seleccionados:',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...selectedMaterials.entries.map((entry) {
+                final material = materiales.firstWhere((m) => m.id == entry.key);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle,
+                        color: material.color,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${material.nombre}: ${entry.value} kg mínimo',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Cancelar',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Navegar a la pantalla de Tirar
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BrindadorTirarScreen(
+                      selectedMaterials: selectedMaterials,
+                    ),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: BioWayColors.primaryGreen,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: const Text(
+                'Confirmar',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

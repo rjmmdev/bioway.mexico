@@ -22,27 +22,21 @@ class _BrindadorTirarScreenState extends State<BrindadorTirarScreen> {
   final List<TutorialStep> _tutorialSteps = [
     TutorialStep(
       title: '¡Excelente trabajo!',
-      description: 'Has separado tus residuos correctamente. Ahora vamos a registrarlos en el sistema.',
+      description: 'Has separado tus residuos correctamente. Vamos a registrarlos en el sistema.',
       icon: Icons.check_circle,
       color: BioWayColors.success,
     ),
     TutorialStep(
       title: 'Coloca tus residuos',
-      description: 'Deposita tus residuos separados en los contenedores designados o prepáralos para la recolección.',
+      description: 'Deposita tus materiales reciclables en el punto de recolección designado o en contenedores apropiados.',
       icon: Icons.inventory_2,
       color: BioWayColors.primaryGreen,
     ),
     TutorialStep(
-      title: 'Espera la recolección',
-      description: 'Un recolector certificado pasará a recoger tus residuos según el horario establecido.',
+      title: 'Recolección y recompensa',
+      description: 'Un recolector certificado pasará según el horario establecido. Recibirás 20 BioCoins como recompensa.',
       icon: Icons.local_shipping,
       color: BioWayColors.info,
-    ),
-    TutorialStep(
-      title: 'Gana BioCoins',
-      description: 'Recibirás 20 BioCoins como recompensa por tu contribución al medio ambiente.',
-      icon: Icons.monetization_on,
-      color: BioWayColors.warning,
     ),
   ];
 
@@ -343,7 +337,7 @@ class _BrindadorTirarScreenState extends State<BrindadorTirarScreen> {
             textAlign: TextAlign.center,
           ),
           
-          // Mostrar materiales seleccionados en la primera página
+          // Mostrar información adicional según la página
           if (_currentPage == 0) ...[
             const SizedBox(height: 40),
             Container(
@@ -394,6 +388,188 @@ class _BrindadorTirarScreenState extends State<BrindadorTirarScreen> {
               ),
             ),
           ],
+          
+          // Información adicional para el segundo paso (instrucciones de colocación)
+          if (_currentPage == 1) ...[
+            const SizedBox(height: 30),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha:0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: BioWayColors.primaryGreen,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Instrucciones importantes',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: BioWayColors.textDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _buildInstructionItem(
+                    icon: Icons.cleaning_services,
+                    text: 'Asegúrate de que los materiales estén limpios y secos',
+                  ),
+                  _buildInstructionItem(
+                    icon: Icons.shopping_bag,
+                    text: 'Usa bolsas transparentes o reutilizables',
+                  ),
+                  _buildInstructionItem(
+                    icon: Icons.location_on,
+                    text: 'Colócalos en el área designada de tu edificio o calle',
+                  ),
+                  _buildInstructionItem(
+                    icon: Icons.schedule,
+                    text: 'Respeta los horarios de recolección establecidos',
+                  ),
+                ],
+              ),
+            ),
+          ],
+          
+          // Información adicional para el tercer paso
+          if (_currentPage == 2) ...[
+            const SizedBox(height: 30),
+            // Tarjeta de recompensa
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    BioWayColors.warning.withValues(alpha: 0.1),
+                    BioWayColors.warning.withValues(alpha: 0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: BioWayColors.warning.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.monetization_on,
+                    color: BioWayColors.warning,
+                    size: 40,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Recompensa',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: BioWayColors.textGrey,
+                          ),
+                        ),
+                        Text(
+                          '20 BioCoins',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: BioWayColors.warning,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Información de recolección
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: BioWayColors.info.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: BioWayColors.info.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        color: BioWayColors.info,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Horario de recolección',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: BioWayColors.info,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Un recolector certificado pasará en el horario establecido para tu zona.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: BioWayColors.textGrey,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInstructionItem({required IconData icon, required String text}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            color: BioWayColors.primaryGreen,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 14,
+                color: BioWayColors.textGrey,
+                height: 1.4,
+              ),
+            ),
+          ),
         ],
       ),
     );

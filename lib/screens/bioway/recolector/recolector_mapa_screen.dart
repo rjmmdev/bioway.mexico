@@ -1,467 +1,323 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../utils/colors.dart';
-import '../../../models/bioway/residuo.dart';
+import '../../../models/bioway/material_reciclable.dart' as bioway_material;
+import '../../../config/google_maps_config.dart';
 
 class RecolectorMapaScreen extends StatefulWidget {
-  final List<Residuo> residuosDisponibles;
-  
-  const RecolectorMapaScreen({
-    super.key,
-    required this.residuosDisponibles,
-  });
+  const RecolectorMapaScreen({super.key});
 
   @override
   State<RecolectorMapaScreen> createState() => _RecolectorMapaScreenState();
 }
 
 class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
-  String? _selectedMaterial;
-  double _radioKm = 5.0;
+  final List<bioway_material.MaterialReciclable> materiales = bioway_material.MaterialReciclable.materiales;
+  final Set<String> selectedFilters = {};
+  
+  GoogleMapController? _mapController;
+  final Set<Marker> _markers = {};
+  
+  // Posición inicial (Ciudad de México)
+  final CameraPosition _initialPosition = const CameraPosition(
+    target: LatLng(GoogleMapsConfig.defaultLatitude, GoogleMapsConfig.defaultLongitude),
+    zoom: GoogleMapsConfig.defaultZoom,
+  );
   
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: BioWayColors.backgroundGrey,
-      appBar: AppBar(
-        title: const Text('Mapa de Residuos'),
-        backgroundColor: BioWayColors.primaryGreen,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterDialog,
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          // Placeholder del mapa
-          Container(
-            width: double.infinity,
-            height: double.infinity,
-            color: Colors.grey.shade200,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.map,
-                    size: 80,
-                    color: Colors.grey.shade400,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Mapa de Google Maps',
-                    style: TextStyle(
-                      fontSize: 20,
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Configuración pendiente',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey.shade500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          // Lista de residuos en la parte inferior
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 250,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha:0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Handle
-                  Container(
-                    margin: const EdgeInsets.only(top: 12),
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  // Título
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${widget.residuosDisponibles.length} residuos disponibles',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: BioWayColors.primaryGreen.withValues(alpha:0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            'Radio: ${_radioKm.toStringAsFixed(0)} km',
-                            style: TextStyle(
-                              color: BioWayColors.primaryGreen,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Lista horizontal de residuos
-                  Expanded(
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: widget.residuosDisponibles.length,
-                      itemBuilder: (context, index) {
-                        final residuo = widget.residuosDisponibles[index];
-                        return _buildResiduoMapCard(residuo);
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
-          ),
-          
-          // Botón de centrar ubicación
-          Positioned(
-            right: 16,
-            bottom: 280,
-            child: FloatingActionButton(
-              mini: true,
-              backgroundColor: Colors.white,
-              foregroundColor: BioWayColors.primaryGreen,
-              onPressed: _centerLocation,
-              child: const Icon(Icons.my_location),
-            ),
-          ),
-        ],
-      ),
-    );
+  void initState() {
+    super.initState();
+    _loadMarkers();
   }
   
-  Widget _buildResiduoMapCard(Residuo residuo) {
-    return Container(
-      width: 280,
-      margin: const EdgeInsets.only(right: 16, bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey.shade200,
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha:0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+  void _loadMarkers() {
+    // Puntos de recolección simulados
+    final List<Map<String, dynamic>> puntosRecoleccion = [
+      {
+        'id': '1',
+        'lat': 19.4326,
+        'lng': -99.1332,
+        'nombre': 'Centro de Acopio Norte',
+        'direccion': 'Av. Insurgentes Norte 123',
+        'materiales': ['plastico', 'papel', 'vidrio'],
+        'cantidad': 45.5,
+      },
+      {
+        'id': '2',
+        'lat': 19.4280,
+        'lng': -99.1380,
+        'nombre': 'Punto Verde Polanco',
+        'direccion': 'Horacio 234, Polanco',
+        'materiales': ['plastico', 'metal', 'electronico'],
+        'cantidad': 32.0,
+      },
+      {
+        'id': '3',
+        'lat': 19.4360,
+        'lng': -99.1290,
+        'nombre': 'Reciclaje Condesa',
+        'direccion': 'Amsterdam 567, Condesa',
+        'materiales': ['vidrio', 'papel', 'organico'],
+        'cantidad': 28.5,
+      },
+      {
+        'id': '4',
+        'lat': 19.4250,
+        'lng': -99.1350,
+        'nombre': 'EcoPunto Roma',
+        'direccion': 'Álvaro Obregón 890, Roma Norte',
+        'materiales': ['plastico', 'papel', 'metal'],
+        'cantidad': 52.0,
+      },
+      {
+        'id': '5',
+        'lat': 19.4390,
+        'lng': -99.1310,
+        'nombre': 'Centro Comunitario Juárez',
+        'direccion': 'Bucareli 345, Juárez',
+        'materiales': ['organico', 'papel', 'vidrio'],
+        'cantidad': 18.5,
+      },
+    ];
+    
+    setState(() {
+      _markers.clear();
+      
+      for (final punto in puntosRecoleccion) {
+        // Filtrar por materiales seleccionados
+        if (selectedFilters.isNotEmpty) {
+          final materialesPunto = List<String>.from(punto['materiales']);
+          final tieneMatSeleccionado = materialesPunto.any((mat) => selectedFilters.contains(mat));
+          if (!tieneMatSeleccionado) continue;
+        }
+        
+        _markers.add(
+          Marker(
+            markerId: MarkerId(punto['id']),
+            position: LatLng(punto['lat'], punto['lng']),
+            infoWindow: InfoWindow(
+              title: punto['nombre'],
+              snippet: '${punto['cantidad']} kg disponibles',
+              onTap: () => _showPuntoDetails(punto),
+            ),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
           ),
-        ],
-      ),
-      child: InkWell(
-        onTap: () => _showResiduoDetail(residuo),
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    residuo.brindadorNombre ?? 'Usuario',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: BioWayColors.primaryGreen.withValues(alpha:0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.directions,
-                      color: BioWayColors.primaryGreen,
-                      size: 20,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // Materiales
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: residuo.materiales.entries.map((entry) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getMaterialColor(entry.key).withValues(alpha:0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${entry.key}: ${entry.value} kg',
-                      style: TextStyle(
-                        color: _getMaterialColor(entry.key),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const Spacer(),
-              // Footer
-              Row(
-                children: [
-                  Icon(
-                    Icons.location_on,
-                    size: 14,
-                    color: Colors.grey.shade600,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      residuo.direccion,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.monetization_on,
-                        color: BioWayColors.primaryGreen,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${residuo.puntosEstimados} pts',
-                        style: TextStyle(
-                          color: BioWayColors.primaryGreen,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    '~1.2 km',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+        );
+      }
+    });
   }
   
-  Color _getMaterialColor(String material) {
-    switch (material.toLowerCase()) {
-      case 'plastico':
-        return const Color(0xFF4CAF50);
-      case 'vidrio':
-        return const Color(0xFF2196F3);
-      case 'papel':
-        return const Color(0xFF795548);
-      case 'metal':
-        return const Color(0xFF9E9E9E);
-      case 'organico':
-        return const Color(0xFF8BC34A);
-      case 'electronico':
-        return const Color(0xFF607D8B);
-      default:
-        return Colors.grey;
-    }
-  }
-  
-  void _showFilterDialog() {
+  void _showPuntoDetails(Map<String, dynamic> punto) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.5,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-        ),
-        child: Column(
-          children: [
-            // Handle
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            // Título
-            const Padding(
-              padding: EdgeInsets.all(20),
-              child: Text(
-                'Filtrar Residuos',
-                style: TextStyle(
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                punto['nombre'],
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-            const Divider(height: 1),
-            // Contenido
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      punto['direccion'],
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Materiales disponibles:',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: BioWayColors.textDark,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: (punto['materiales'] as List).map((matId) {
+                  final material = materiales.firstWhere((m) => m.id == matId);
+                  return Chip(
+                    label: Text(material.nombre),
+                    backgroundColor: material.color.withOpacity(0.2),
+                    labelStyle: TextStyle(color: material.color),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: BioWayColors.success.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
                   children: [
-                    // Filtro por material
-                    const Text(
-                      'Tipo de Material',
+                    Icon(Icons.scale, color: BioWayColors.success),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${punto['cantidad']} kg disponibles para recolectar',
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _buildMaterialChip('Todos', null),
-                        _buildMaterialChip('Plástico', 'plastico'),
-                        _buildMaterialChip('Vidrio', 'vidrio'),
-                        _buildMaterialChip('Papel', 'papel'),
-                        _buildMaterialChip('Metal', 'metal'),
-                        _buildMaterialChip('Orgánico', 'organico'),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    // Filtro por distancia
-                    const Text(
-                      'Distancia Máxima',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Slider(
-                            value: _radioKm,
-                            min: 1,
-                            max: 20,
-                            divisions: 19,
-                            activeColor: BioWayColors.primaryGreen,
-                            label: '${_radioKm.toStringAsFixed(0)} km',
-                            onChanged: (value) {
-                              setState(() {
-                                _radioKm = value;
-                              });
-                            },
-                          ),
-                        ),
-                        Text(
-                          '${_radioKm.toStringAsFixed(0)} km',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: BioWayColors.primaryGreen,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 32),
-                    // Botón aplicar
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          // TODO: Aplicar filtros
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: BioWayColors.primaryGreen,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Aplicar Filtros',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
+                        color: BioWayColors.success,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: BioWayColors.backgroundGrey,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            // Mapa de Google
+            GoogleMap(
+              initialCameraPosition: _initialPosition,
+              onMapCreated: (controller) {
+                _mapController = controller;
+              },
+              markers: _markers,
+              myLocationEnabled: true,
+              myLocationButtonEnabled: false,
+              zoomControlsEnabled: false,
+              mapToolbarEnabled: false,
+            ),
+            
+            // Header con filtros
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Puntos de recolección',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: BioWayColors.textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Filtra por tipo de material',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: BioWayColors.textGrey,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Chips de filtros
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          // Filtro "Todos"
+                          _buildFilterChip(
+                            label: 'Todos',
+                            isSelected: selectedFilters.isEmpty,
+                            onTap: () {
+                              setState(() {
+                                selectedFilters.clear();
+                              });
+                              _loadMarkers();
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          // Filtros por material
+                          ...materiales.map((material) {
+                            final isSelected = selectedFilters.contains(material.id);
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: _buildFilterChip(
+                                label: material.nombre,
+                                color: material.color,
+                                isSelected: isSelected,
+                                onTap: () {
+                                  setState(() {
+                                    if (isSelected) {
+                                      selectedFilters.remove(material.id);
+                                    } else {
+                                      selectedFilters.add(material.id);
+                                    }
+                                  });
+                                  _loadMarkers();
+                                },
+                              ),
+                            );
+                          }).toList(),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Botón de ubicación actual
+            Positioned(
+              bottom: 20,
+              right: 20,
+              child: FloatingActionButton(
+                onPressed: () async {
+                  HapticFeedback.lightImpact();
+                  // Centrar en ubicación actual
+                  if (_mapController != null) {
+                    _mapController!.animateCamera(
+                      CameraUpdate.newLatLngZoom(
+                        const LatLng(
+                          GoogleMapsConfig.defaultLatitude,
+                          GoogleMapsConfig.defaultLongitude,
+                        ),
+                        GoogleMapsConfig.defaultZoom,
+                      ),
+                    );
+                  }
+                },
+                backgroundColor: Colors.white,
+                child: Icon(
+                  Icons.my_location,
+                  color: BioWayColors.primaryGreen,
                 ),
               ),
             ),
@@ -470,57 +326,42 @@ class _RecolectorMapaScreenState extends State<RecolectorMapaScreen> {
       ),
     );
   }
-  
-  Widget _buildMaterialChip(String label, String? value) {
-    final isSelected = _selectedMaterial == value;
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    Color? color,
+  }) {
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _selectedMaterial = value;
-        });
+        HapticFeedback.lightImpact();
+        onTap();
       },
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected 
-              ? BioWayColors.primaryGreen 
-              : Colors.grey.shade200,
+              ? (color ?? BioWayColors.primaryGreen).withOpacity(0.2)
+              : Colors.white,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected 
+                ? (color ?? BioWayColors.primaryGreen)
+                : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
+          ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey.shade700,
-            fontWeight: FontWeight.w500,
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            color: isSelected 
+                ? (color ?? BioWayColors.primaryGreen)
+                : BioWayColors.textGrey,
           ),
-        ),
-      ),
-    );
-  }
-  
-  void _centerLocation() {
-    // TODO: Implementar centrado en ubicación actual
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Centrando en tu ubicación...'),
-        backgroundColor: BioWayColors.info,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-    );
-  }
-  
-  void _showResiduoDetail(Residuo residuo) {
-    // TODO: Mostrar detalle del residuo
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Mostrando detalles de ${residuo.id}'),
-        backgroundColor: BioWayColors.primaryGreen,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
         ),
       ),
     );
