@@ -4,7 +4,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
 import '../../../services/user_session_service.dart';
+import '../../../services/lote_service.dart';
 import '../../../models/ecoce/ecoce_profile_model.dart';
+import '../../../models/lotes/lote_transformador_model.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/unified_stat_card.dart';
 import '../shared/utils/material_utils.dart';
@@ -20,51 +22,19 @@ class TransformadorInicioScreen extends StatefulWidget {
 
 class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
   final UserSessionService _sessionService = UserSessionService();
+  final LoteService _loteService = LoteService();
   final int _selectedIndex = 0;
   
   EcoceProfileModel? _userProfile;
-  bool _isLoading = true; // ignore: unused_field
+  bool _isLoading = true;
   
-  // Estadísticas del transformador (datos de ejemplo)
-  final int _lotesRecibidos = 47;
-  final int _productosCreados = 28;
-  final double _materialProcesado = 4.5; // en toneladas
+  // Estadísticas del transformador
+  int _lotesRecibidos = 0;
+  int _productosCreados = 0;
+  double _materialProcesado = 0.0; // en toneladas
   
-  // Lista de lotes en proceso (datos de ejemplo mejorados)
-  final List<Map<String, dynamic>> _lotesEnProceso = [
-    {
-      'id': 'Firebase_ID_1x7h9k3',
-      'origen': 'RECICLADOR PLASTICOS DEL NORTE',
-      'material': 'PET',
-      'tipoPolimero': 'PP',
-      'fecha': '14/07/2025',
-      'fechaISO': '2025-07-14T10:30:00',
-      'peso': 120.0,
-      'estado': 'RECIBIDO',
-      'estadoColor': Colors.blue,
-      'producto': 'Envases PET',
-      'tiposAnalisis': ['Inyección', 'Extrusión'],
-      'composicion': 'PET reciclado 70%, PET virgen 30%, estabilizadores UV 0.5%',
-      'comentarios': 'Material de alta calidad, cumple con normas ISO 9001',
-      'procesosAplicados': ['Lavado', 'Secado', 'Extrusión'],
-    },
-    {
-      'id': 'Firebase_ID_2a9m5p1',
-      'origen': 'CENTRO DE ACOPIO SUSTENTABLE',
-      'material': 'LDPE',
-      'tipoPolimero': 'PEBD',
-      'fecha': '14/07/2025',
-      'fechaISO': '2025-07-14T08:15:00',
-      'peso': 85.5,
-      'estado': 'RECIBIDO',
-      'estadoColor': Colors.blue,
-      'producto': 'Láminas LDPE',
-      'tiposAnalisis': ['Soplado', 'Laminado', 'Termoformado'],
-      'composicion': 'LDPE reciclado 80%, aditivos antioxidantes 2%, pigmentos 1%',
-      'comentarios': 'Procesamiento especial requerido para cliente premium',
-      'procesosAplicados': ['Trituración', 'Lavado', 'Laminado'],
-    },
-  ];
+  // Stream para lotes
+  Stream<List<LoteTransformadorModel>>? _lotesStream;
 
   void _navigateToRecibirLotes() {
     HapticFeedback.lightImpact();
@@ -81,25 +51,18 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
     );
   }
 
-  void _actualizarDocumentacion(String loteId) {
+  void _actualizarDocumentacion(String loteId, LoteTransformadorModel lote) {
     HapticFeedback.lightImpact();
-    // Buscar el lote por su ID
-    final lote = _lotesEnProceso.firstWhere(
-      (l) => l['id'] == loteId,
-      orElse: () => <String, dynamic>{},
-    );
     
-    if (lote.isNotEmpty) {
-      Navigator.pushNamed(
-        context,
-        '/transformador_documentacion',
-        arguments: {
-          'loteId': lote['id'],
-          'material': lote['producto'],
-          'peso': lote['peso'],
-        },
-      );
-    }
+    Navigator.pushNamed(
+      context,
+      '/transformador_documentacion',
+      arguments: {
+        'loteId': loteId,
+        'material': lote.productoFabricado ?? 'Sin especificar',
+        'peso': lote.pesoIngreso ?? 0.0,
+      },
+    );
   }
 
   void _onBottomNavTapped(int index) {
@@ -116,26 +79,86 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
     Navigator.pushNamed(context, '/transformador_recibir_lote');
   }
 
-  void _navigateToLoteDetalle(Map<String, dynamic> lote) {
+  void _navigateToLoteDetalle(LoteTransformadorModel lote) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => TransformadorLoteDetalleScreen(
-          firebaseId: lote['id'],
-          peso: lote['peso'].toDouble(),
-          tiposAnalisis: lote['tiposAnalisis'] ?? ['Extrusión', 'Inyección'],
-          productoFabricado: lote['producto'] ?? 'Producto no especificado',
-          composicionMaterial: lote['composicion'] ?? 'Material reciclado procesado según estándares de calidad',
-          fechaCreacion: DateTime.parse(lote['fechaISO'] ?? DateTime.now().toIso8601String()),
-          procesosAplicados: lote['procesosAplicados'] ?? [],
-          comentarios: lote['comentarios'],
-          tipoPolimero: lote['tipoPolimero'],
+          firebaseId: lote.id!,
+          peso: lote.pesoIngreso ?? 0.0,
+          tiposAnalisis: lote.tiposAnalisis ?? ['Extrusión', 'Inyección'],
+          productoFabricado: lote.productoFabricado ?? 'Producto no especificado',
+          composicionMaterial: lote.composicionMaterial ?? 'Material reciclado procesado según estándares de calidad',
+          fechaCreacion: lote.fechaCreacion ?? DateTime.now(),
+          procesosAplicados: lote.procesosAplicados ?? [],
+          comentarios: lote.comentarios,
+          tipoPolimero: lote.tipoPolimero ?? 'Sin especificar',
         ),
       ),
     );
   }
 
-  Widget _buildLoteCard(Map<String, dynamic> lote) {
+  // Convertir modelo a Map para el widget
+  Map<String, dynamic> _loteToMap(LoteTransformadorModel lote) {
+    // Determinar el material predominante
+    String material = 'Sin especificar';
+    if (lote.tipoPolimero != null && lote.tipoPolimero!.isNotEmpty) {
+      material = lote.tipoPolimero!;
+    }
+    
+    return {
+      'id': lote.id,
+      'origen': lote.proveedor ?? 'Sin origen',
+      'material': material,
+      'tipoPolimero': lote.tipoPolimero,
+      'fecha': FormatUtils.formatDate(lote.fechaCreacion ?? DateTime.now()),
+      'peso': lote.pesoIngreso ?? 0.0,
+      'estado': _getEstadoDisplay(lote.estado ?? 'recibido'),
+      'estadoColor': _getEstadoColor(lote.estado ?? 'recibido'),
+      'producto': lote.productoFabricado,
+      'tiposAnalisis': lote.tiposAnalisis,
+      'composicion': lote.composicionMaterial,
+      'comentarios': lote.comentarios,
+      'procesosAplicados': lote.procesosAplicados,
+    };
+  }
+  
+  String _getEstadoDisplay(String estado) {
+    switch (estado) {
+      case 'recibido':
+        return 'RECIBIDO';
+      case 'procesando':
+        return 'PROCESANDO';
+      case 'documentacion':
+        return 'DOCUMENTACIÓN';
+      case 'finalizado':
+        return 'FINALIZADO';
+      default:
+        return estado.toUpperCase();
+    }
+  }
+  
+  Color _getEstadoColor(String estado) {
+    switch (estado) {
+      case 'recibido':
+        return Colors.blue;
+      case 'procesando':
+        return Colors.orange;
+      case 'documentacion':
+        return BioWayColors.warning;
+      case 'finalizado':
+        return BioWayColors.success;
+      default:
+        return Colors.grey;
+    }
+  }
+  
+  Widget _buildLoteCardFromModel(LoteTransformadorModel lote) {
+    final loteMap = _loteToMap(lote);
+    return _buildLoteCard(loteMap, lote);
+  }
+
+  Widget _buildLoteCard(Map<String, dynamic> lote, [LoteTransformadorModel? loteModel]) {
     final materialColor = MaterialUtils.getMaterialColor(lote['material'] ?? '');
     final screenWidth = MediaQuery.of(context).size.width;
     final isCompact = screenWidth < 360;
@@ -147,7 +170,9 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
         child: InkWell(
           onTap: () {
             HapticFeedback.lightImpact();
-            _navigateToLoteDetalle(lote);
+            if (loteModel != null) {
+              _navigateToLoteDetalle(loteModel);
+            }
           },
           borderRadius: BorderRadius.circular(16),
           child: Container(
@@ -308,7 +333,9 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                       child: InkWell(
                         onTap: () {
                           HapticFeedback.lightImpact();
-                          _actualizarDocumentacion(lote['id']);
+                          if (loteModel != null) {
+                            _actualizarDocumentacion(lote['id'], loteModel);
+                          }
                         },
                         borderRadius: BorderRadius.circular(8),
                         child: Container(
@@ -473,6 +500,30 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
   void initState() {
     super.initState();
     _loadUserProfile();
+    _setupLotesStream();
+    _loadStatistics();
+  }
+  
+  void _setupLotesStream() {
+    _lotesStream = _loteService.getLotesTransformador();
+  }
+  
+  Future<void> _loadStatistics() async {
+    try {
+      // Obtener todos los lotes del transformador
+      final lotes = await _loteService.getLotesTransformador().first;
+      
+      if (mounted) {
+        setState(() {
+          _lotesRecibidos = lotes.length;
+          _productosCreados = lotes.where((l) => l.estado == 'finalizado').length;
+          // Convertir de kg a toneladas
+          _materialProcesado = lotes.fold(0.0, (sum, lote) => sum + (lote.pesoIngreso ?? 0)) / 1000;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error cargando estadísticas: $e');
+    }
   }
 
   Future<void> _loadUserProfile() async {
@@ -860,8 +911,60 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                         ),
                         const SizedBox(height: 16),
                         
-                        // Lista de lotes
-                        ..._lotesEnProceso.map((lote) => _buildLoteCard(lote)),
+                        // Lista de lotes con StreamBuilder
+                        StreamBuilder<List<LoteTransformadorModel>>(
+                          stream: _lotesStream,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 40),
+                                  child: CircularProgressIndicator(
+                                    color: BioWayColors.ecoceGreen,
+                                  ),
+                                ),
+                              );
+                            }
+                            
+                            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                              return Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 40),
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.inbox_outlined,
+                                        size: 64,
+                                        color: Colors.grey[300],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'No hay lotes en proceso',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Escanea un código QR para comenzar',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey[400],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
+                            
+                            final lotes = snapshot.data!;
+                            return Column(
+                              children: lotes.map((lote) => _buildLoteCardFromModel(lote)).toList(),
+                            );
+                          },
+                        ),
                         
                         const SizedBox(height: 100), // Espacio para el bottom nav
                       ],

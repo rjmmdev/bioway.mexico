@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
+import '../../../models/lotes/lote_origen_model.dart';
+import '../../../services/lote_service.dart';
 import 'origen_inicio_screen.dart';
 import 'origen_lote_detalle_screen.dart';
 import 'origen_crear_lote_screen.dart';
@@ -22,6 +24,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
   final int _selectedIndex = 1; // Lotes está seleccionado
 
   Color get _primaryColor => OrigenUserConfig.current.color;
+  final LoteService _loteService = LoteService();
 
   // Filtros
   String _filtroMaterial = 'Todos';
@@ -31,82 +34,49 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
 
-  // Lista de lotes (datos de ejemplo)
-  final List<Map<String, dynamic>> _lotes = [
-    {
-      'id': 'FID_1x7h9k3',
-      'firebaseId': 'FID_1x7h9k3',
-      'material': 'PEBD',
-      'peso': 125.0,
-      'fecha': DateTime.now().subtract(const Duration(days: 1)),
-      'presentacion': 'Pacas',
-      'fuente': 'Programa Escolar Norte',
-      'estado': 'activo',
-    },
-    {
-      'id': 'FID_2y8j0l4',
-      'firebaseId': 'FID_2y8j0l4',
-      'material': 'PP',
-      'peso': 175.0,
-      'fecha': DateTime.now().subtract(const Duration(days: 2)),
-      'presentacion': 'Sacos',
-      'fuente': 'Programa Escolar Norte',
-      'estado': 'activo',
-    },
-    {
-      'id': 'FID_3z9k1m5',
-      'firebaseId': 'FID_3z9k1m5',
-      'material': 'Multilaminado',
-      'peso': 150.0,
-      'fecha': DateTime.now().subtract(const Duration(days: 2)),
-      'presentacion': 'Pacas',
-      'fuente': 'Programa Escolar Centro',
-      'estado': 'activo',
-    },
-    {
-      'id': 'FID_4a0b2n6',
-      'firebaseId': 'FID_4a0b2n6',
-      'material': 'PEBD',
-      'peso': 200.0,
-      'fecha': DateTime.now().subtract(const Duration(days: 3)),
-      'presentacion': 'Sacos',
-      'fuente': 'Recolección Municipal',
-      'estado': 'activo',
-    },
-    {
-      'id': 'FID_5c1d3p7',
-      'firebaseId': 'FID_5c1d3p7',
-      'material': 'PP',
-      'peso': 180.0,
-      'fecha': DateTime.now().subtract(const Duration(days: 3)),
-      'presentacion': 'Pacas',
-      'fuente': 'Centro Comunitario Sur',
-      'estado': 'activo',
-    },
-  ];
+  // Lista de lotes desde Firestore
+  List<LoteOrigenModel> _lotes = [];
+  bool _isLoading = true;
 
-  List<Map<String, dynamic>> get _lotesFiltrados {
+  List<LoteOrigenModel> get _lotesFiltrados {
     return _lotes.where((lote) {
       // Filtro por material
-      if (_filtroMaterial != 'Todos' && lote['material'] != _filtroMaterial) {
+      if (_filtroMaterial != 'Todos' && lote.tipoPoli != _filtroMaterial) {
         return false;
       }
       
       // Filtro por presentación
-      if (_filtroPresentacion != 'Todas' && lote['presentacion'] != _filtroPresentacion) {
+      if (_filtroPresentacion != 'Todas' && lote.presentacion != _filtroPresentacion) {
         return false;
       }
       
       // Filtro por búsqueda
       if (_searchController.text.isNotEmpty) {
         final searchLower = _searchController.text.toLowerCase();
-        return lote['firebaseId'].toLowerCase().contains(searchLower) ||
-               lote['fuente'].toLowerCase().contains(searchLower) ||
-               lote['material'].toLowerCase().contains(searchLower);
+        return (lote.id?.toLowerCase().contains(searchLower) ?? false) ||
+               lote.fuente.toLowerCase().contains(searchLower) ||
+               lote.tipoPoli.toLowerCase().contains(searchLower);
       }
       
       return true;
     }).toList();
+  }
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadLotes();
+  }
+  
+  void _loadLotes() {
+    _loteService.getLotesOrigen().listen((lotes) {
+      if (mounted) {
+        setState(() {
+          _lotes = lotes;
+          _isLoading = false;
+        });
+      }
+    });
   }
 
   @override
@@ -116,17 +86,17 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
     super.dispose();
   }
 
-  void _verCodigoQR(Map<String, dynamic> lote) {
+  void _verCodigoQR(LoteOrigenModel lote) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => OrigenLoteDetalleScreen(
-          firebaseId: lote['firebaseId'],
-          material: lote['material'],
-          peso: lote['peso'].toDouble(),
-          presentacion: lote['presentacion'],
-          fuente: lote['fuente'],
-          fechaCreacion: lote['fecha'] ?? DateTime.now(),
+          firebaseId: lote.id!,
+          material: lote.tipoPoli,
+          peso: lote.pesoNace,
+          presentacion: lote.presentacion,
+          fuente: lote.fuente,
+          fechaCreacion: lote.fechaNace,
           mostrarMensajeExito: false,
         ),
       ),
@@ -363,29 +333,42 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
             
             // Lista de lotes
             Expanded(
-              child: _lotesFiltrados.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-                      itemCount: _lotesFiltrados.length,
-                      itemBuilder: (context, index) {
-                        final lote = _lotesFiltrados[index];
-                        final isFirst = index == 0;
-                        final isLast = index == _lotesFiltrados.length - 1;
-                        
-                        return Padding(
-                          padding: EdgeInsets.only(
-                            top: isFirst ? 0 : 6,
-                            bottom: isLast ? 0 : 6,
-                          ),
-                          child: OrigenLoteCard(
-                            lote: lote,
-                            onQRTap: () => _verCodigoQR(lote),
-                            showActions: true,
-                          ),
-                        );
-                      },
-                    ),
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(),
+                    )
+                  : _lotesFiltrados.isEmpty
+                      ? _buildEmptyState()
+                      : ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                          itemCount: _lotesFiltrados.length,
+                          itemBuilder: (context, index) {
+                            final lote = _lotesFiltrados[index];
+                            final isFirst = index == 0;
+                            final isLast = index == _lotesFiltrados.length - 1;
+                            
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                top: isFirst ? 0 : 6,
+                                bottom: isLast ? 0 : 6,
+                              ),
+                              child: OrigenLoteCard(
+                                lote: {
+                                  'id': lote.id,
+                                  'firebaseId': lote.id,
+                                  'material': lote.tipoPoli,
+                                  'peso': lote.pesoNace,
+                                  'presentacion': lote.presentacion,
+                                  'fuente': lote.fuente,
+                                  'fecha': lote.fechaNace,
+                                  'estado': 'activo',
+                                },
+                                onQRTap: () => _verCodigoQR(lote),
+                                showActions: true,
+                              ),
+                            );
+                          },
+                        ),
             ),
           ],
         ),

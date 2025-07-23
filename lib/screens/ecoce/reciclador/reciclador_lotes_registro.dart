@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
+import '../../../services/lote_service.dart';
+import '../shared/utils/dialog_utils.dart';
 import 'qr_scanner_screen.dart';
 import 'reciclador_formulario_entrada.dart';
 import 'widgets/reciclador_lote_card.dart';
@@ -12,6 +14,7 @@ class ScannedLot {
   final double weight;
   final String format; // 'Pacas' o 'Sacos'
   final DateTime dateScanned;
+  final String? origin;
 
   ScannedLot({
     required this.id,
@@ -19,6 +22,7 @@ class ScannedLot {
     required this.weight,
     required this.format,
     required this.dateScanned,
+    this.origin,
   });
 }
 
@@ -37,6 +41,8 @@ class ScannedLotsScreen extends StatefulWidget {
 class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
   // Lista de lotes escaneados
   final List<ScannedLot> _scannedLots = [];
+  final LoteService _loteService = LoteService();
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -47,20 +53,113 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
     }
   }
 
-  void _addLotFromId(String lotId) {
-    // TODO: Aquí se consultaría la base de datos con el ID
-    // Por ahora simulamos datos
-    final newLot = ScannedLot(
-      id: lotId,
-      material: _getMaterialForDemo(lotId),
-      weight: _getWeightForDemo(),
-      format: _getFormatForDemo(),
-      dateScanned: DateTime.now(),
-    );
-
+  void _addLotFromId(String lotId) async {
     setState(() {
-      _scannedLots.add(newLot);
+      _isLoading = true;
     });
+    
+    try {
+      // Buscar el lote en Firebase
+      final lotesInfo = await _loteService.getLotesInfo([lotId]);
+      
+      if (lotesInfo.isEmpty) {
+        if (mounted) {
+          DialogUtils.showErrorDialog(
+            context: context,
+            title: 'Lote no encontrado',
+            message: 'El código escaneado "$lotId" no corresponde a un lote válido en el sistema',
+          );
+        }
+        return;
+      }
+
+      final loteInfo = lotesInfo.first;
+      
+      // Debug: imprimir información del lote para verificar estructura
+      print('=== DEBUG LOTE INFO ===');
+      print('Lote ID: $lotId');
+      print('Tipo de lote: ${loteInfo['tipo_lote']}');
+      print('Datos completos: $loteInfo');
+      print('======================');
+      
+      // Verificar que sea un lote de transportista (que puede ser recibido por el reciclador)
+      if (loteInfo['tipo_lote'] != 'lotes_transportista') {
+        if (mounted) {
+          DialogUtils.showErrorDialog(
+            context: context,
+            title: 'Tipo de lote no válido',
+            message: 'Solo se pueden recibir lotes que estén en tránsito',
+          );
+        }
+        return;
+      }
+      
+      // Extraer información del lote
+      String material = 'Desconocido';
+      double peso = 0.0;
+      String presentacion = 'Pacas'; // Por defecto
+      String origen = 'Sin especificar';
+      
+      // Obtener origen del lote
+      if (loteInfo['ecoce_transportista_direccion_origen'] != null) {
+        origen = loteInfo['ecoce_transportista_direccion_origen'];
+      }
+      
+      // El lote de transportista contiene información sobre el material predominante
+      if (loteInfo['ecoce_transportista_lotes_entrada'] != null && 
+          (loteInfo['ecoce_transportista_lotes_entrada'] as List).isNotEmpty) {
+        // Obtener el material predominante de los lotes transportados
+        final tiposPoli = await _loteService.calcularTipoPolimeroPredominante(
+          (loteInfo['ecoce_transportista_lotes_entrada'] as List).map((e) => e.toString()).toList()
+        );
+        if (tiposPoli.isNotEmpty) {
+          material = tiposPoli.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+        }
+        
+        // También intentar obtener la presentación de los lotes originales
+        try {
+          final lotesOriginales = await _loteService.getLotesInfo(
+            (loteInfo['ecoce_transportista_lotes_entrada'] as List).map((e) => e.toString()).toList()
+          );
+          if (lotesOriginales.isNotEmpty) {
+            // Usar la presentación del primer lote como referencia
+            final primerLote = lotesOriginales.first;
+            if (primerLote['ecoce_origen_presentacion'] != null) {
+              presentacion = primerLote['ecoce_origen_presentacion'];
+            }
+          }
+        } catch (e) {
+          print('Error obteniendo lotes originales: $e');
+        }
+      }
+      
+      peso = (loteInfo['ecoce_transportista_peso_recibido'] ?? 0).toDouble();
+      
+      final newLot = ScannedLot(
+        id: lotId,
+        material: material,
+        weight: peso,
+        format: presentacion,
+        dateScanned: DateTime.now(),
+        origin: origen,
+      );
+
+      setState(() {
+        _scannedLots.add(newLot);
+      });
+    } catch (e) {
+      if (mounted) {
+        DialogUtils.showErrorDialog(
+          context: context,
+          title: 'Error',
+          message: 'No se pudo obtener la información del lote: ${e.toString()}',
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   // Métodos temporales para simular datos
@@ -303,7 +402,9 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
 
           // Lista de lotes
           Expanded(
-            child: _scannedLots.isEmpty
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _scannedLots.isEmpty
                 ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -345,7 +446,7 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
                   'material': lot.material,
                   'peso': lot.weight,
                   'presentacion': lot.format,
-                  'origen': 'Entrada Pendiente',
+                  'origen': lot.origin ?? 'Sin especificar',
                   'fecha': _formatDate(lot.dateScanned),
                 };
                 

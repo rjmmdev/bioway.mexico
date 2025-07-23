@@ -5,9 +5,11 @@ import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
 import '../../../services/user_session_service.dart';
 import '../../../models/ecoce/ecoce_profile_model.dart';
+import '../../../services/lote_service.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/unified_stat_card.dart';
 import '../shared/utils/material_utils.dart';
+import '../shared/utils/dialog_utils.dart';
 import 'transporte_entregar_screen.dart';
 import '../shared/widgets/qr_scanner_widget.dart';
 import 'transporte_resumen_carga_screen.dart';
@@ -21,6 +23,7 @@ class TransporteInicioScreen extends StatefulWidget {
 
 class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
   final UserSessionService _sessionService = UserSessionService();
+  final LoteService _loteService = LoteService();
   
   EcoceProfileModel? _userProfile;
   
@@ -120,33 +123,102 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
   }
 
   void _handleScannerResult(String qrData) async {
-    // TEMPORAL: Para testing, aceptar cualquier ID
-    // En producción, esto debería buscar en Firebase
-    final materials = ['PET', 'HDPE', 'PP', 'LDPE', 'PVC'];
-    final random = DateTime.now().millisecondsSinceEpoch % materials.length;
-    
-    // Crear el objeto del lote con datos simulados
-    final lot = {
-      'id': qrData,
-      'material': materials[random],
-      'peso': 50.0 + (random * 10), // Peso aleatorio entre 50-90 kg
-      'presentacion': random % 2 == 0 ? 'Pacas' : 'Sacos',
-      'origen': 'Centro de Acopio ${random % 2 == 0 ? "Norte" : "Sur"}',
-      'centro_acopio': 'Centro de Acopio ${random % 2 == 0 ? "Norte" : "Sur"}',
-      'timestamp': DateTime.now().toIso8601String(),
-    };
+    // Mostrar loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
 
-    // Navegar a la pantalla de resumen con el lote
-    if (mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => TransporteResumenCargaScreen(
-            lotesIniciales: [lot],
+    try {
+      // Buscar el lote en Firebase
+      final lotesInfo = await _loteService.getLotesInfo([qrData]);
+      
+      Navigator.pop(context); // Cerrar loading
+
+      if (lotesInfo.isEmpty) {
+        DialogUtils.showErrorDialog(
+          context: context,
+          title: 'Lote no encontrado',
+          message: 'El código QR escaneado no corresponde a un lote válido',
+        );
+        return;
+      }
+
+      final loteInfo = lotesInfo.first;
+      
+      // Convertir la información del lote al formato esperado
+      Map<String, dynamic> lot = {};
+      
+      if (loteInfo['tipo_lote'] == 'lotes_origen') {
+        lot = {
+          'id': loteInfo['id'],
+          'material': loteInfo['ecoce_origen_tipo_poli'] ?? 'Desconocido',
+          'peso': (loteInfo['ecoce_origen_peso_nace'] ?? 0).toDouble(),
+          'presentacion': loteInfo['ecoce_origen_presentacion'] ?? 'N/A',
+          'origen': loteInfo['ecoce_origen_fuente'] ?? 'Origen desconocido',
+          'centro_acopio': loteInfo['ecoce_origen_direccion'] ?? 'Sin dirección',
+          'timestamp': DateTime.now().toIso8601String(),
+        };
+      } else if (loteInfo['tipo_lote'] == 'lotes_reciclador') {
+        // Si el lote viene de un reciclador
+        lot = {
+          'id': loteInfo['id'],
+          'material': _getTipoPredominante(loteInfo['ecoce_reciclador_tipo_poli']),
+          'peso': (loteInfo['ecoce_reciclador_peso_resultante'] ?? 0).toDouble(),
+          'presentacion': 'Procesado',
+          'origen': 'Reciclador',
+          'centro_acopio': 'Planta de Reciclaje',
+          'timestamp': DateTime.now().toIso8601String(),
+        };
+      } else {
+        DialogUtils.showErrorDialog(
+          context: context,
+          title: 'Tipo de lote no válido',
+          message: 'Este código QR no corresponde a un lote que pueda ser transportado',
+        );
+        return;
+      }
+
+      // Navegar a la pantalla de resumen con el lote
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TransporteResumenCargaScreen(
+              lotesIniciales: [lot],
+            ),
           ),
-        ),
+        );
+      }
+    } catch (e) {
+      Navigator.pop(context); // Cerrar loading
+      
+      DialogUtils.showErrorDialog(
+        context: context,
+        title: 'Error',
+        message: 'No se pudo obtener la información del lote: ${e.toString()}',
       );
     }
+  }
+
+  String _getTipoPredominante(Map<String, dynamic>? tipoPoli) {
+    if (tipoPoli == null || tipoPoli.isEmpty) return 'N/A';
+    
+    String tipoPredominante = '';
+    double maxPorcentaje = 0;
+    
+    tipoPoli.forEach((tipo, porcentaje) {
+      final pct = (porcentaje as num).toDouble();
+      if (pct > maxPorcentaje) {
+        maxPorcentaje = pct;
+        tipoPredominante = tipo;
+      }
+    });
+    
+    return tipoPredominante.isEmpty ? 'N/A' : tipoPredominante;
   }
 
   void _navigateToEntregar() {

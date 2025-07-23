@@ -5,6 +5,8 @@ import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
 import '../../../services/user_session_service.dart';
 import '../../../models/ecoce/ecoce_profile_model.dart';
+import '../../../models/lotes/lote_origen_model.dart';
+import '../../../services/lote_service.dart';
 import 'origen_crear_lote_screen.dart';
 import 'origen_lotes_screen.dart';
 import '../shared/ecoce_ayuda_screen.dart';
@@ -25,12 +27,18 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
   // Índice para la navegación del bottom bar
   final int _selectedIndex = 0;
   
-  // Servicio de sesión
+  // Servicios
   final UserSessionService _sessionService = UserSessionService();
+  final LoteService _loteService = LoteService();
   
   // Datos del usuario
   EcoceProfileModel? _userProfile;
   bool _isLoading = true;
+  
+  // Lotes reales desde Firestore
+  List<LoteOrigenModel> _lotesRecientes = [];
+  int _totalLotes = 0;
+  double _totalPeso = 0.0;
 
   String get _nombreCentro => _userProfile?.ecoceNombre ?? 'Cargando...';
   String get _folioCentro => _userProfile?.ecoceFolio ?? 'PENDIENTE';
@@ -44,47 +52,30 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
     return BioWayColors.ecoceGreen;
   }
 
-  final int _lotesCreados = 127;
-  final double _materialProcesado = 4.5; // en toneladas
-
-  // Lista de lotes recientes con IDs de Firebase
-  final List<Map<String, dynamic>> _lotesRecientes = [
-    {
-      'id': 'FID_1x7h9k3',
-      'firebaseId': 'FID_1x7h9k3',
-      'material': 'PEBD',
-      'peso': 150.0,
-      'presentacion': 'Pacas',
-      'fuente': 'Programa Escolar Norte',
-      'fecha': DateTime.now().subtract(const Duration(days: 1)),
-      'estado': 'activo',
-    },
-    {
-      'id': 'FID_2y8j0l4',
-      'firebaseId': 'FID_2y8j0l4',
-      'material': 'PP',
-      'peso': 200.5,
-      'presentacion': 'Sacos',
-      'fuente': 'Recolección Municipal',
-      'fecha': DateTime.now().subtract(const Duration(days: 2)),
-      'estado': 'activo',
-    },
-    {
-      'id': 'FID_3z9k1m5',
-      'firebaseId': 'FID_3z9k1m5',
-      'material': 'Multi',
-      'peso': 175.0,
-      'presentacion': 'Pacas',
-      'fuente': 'Centro Comunitario Sur',
-      'fecha': DateTime.now().subtract(const Duration(days: 2)),
-      'estado': 'activo',
-    },
-  ];
   
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _loadLotes();
+  }
+  
+  @override
+  void dispose() {
+    super.dispose();
+  }
+  
+  Future<void> _loadLotes() async {
+    // Escuchar cambios en los lotes de origen
+    _loteService.getLotesOrigen().listen((lotes) {
+      if (mounted) {
+        setState(() {
+          _lotesRecientes = lotes.take(3).toList(); // Solo los 3 más recientes
+          _totalLotes = lotes.length;
+          _totalPeso = lotes.fold(0.0, (sum, lote) => sum + lote.pesoNace);
+        });
+      }
+    });
   }
   
   Future<void> _loadUserData() async {
@@ -395,7 +386,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               Expanded(
                                 child: UnifiedStatCard.horizontal(
                                   title: 'Lotes creados',
-                                  value: _lotesCreados.toString(),
+                                  value: _totalLotes.toString(),
                                   icon: Icons.inventory_2,
                                   color: Colors.blue,
                                   height: 70,
@@ -406,7 +397,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               Expanded(
                                 child: UnifiedStatCard.horizontal(
                                   title: 'Material procesado',
-                                  value: '$_materialProcesado',
+                                  value: (_totalPeso / 1000).toStringAsFixed(1),
                                   unit: 'ton',
                                   icon: Icons.scale,
                                   color: Colors.green,
@@ -561,11 +552,60 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                         const SizedBox(height: 16),
                         
                         // Lista de lotes con nuevo diseño
-                        ..._lotesRecientes.map((lote) => OrigenLoteCard(
-                          lote: lote,
-                          onQRTap: () => _showQRCode(lote),
-                          showActions: true,
-                        )),
+                        if (_lotesRecientes.isEmpty)
+                          Container(
+                            padding: const EdgeInsets.all(32),
+                            child: Center(
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.inventory_2_outlined,
+                                    size: 64,
+                                    color: Colors.grey[400],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Aún no hay lotes creados',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey[600],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Presiona el botón + para crear tu primer lote',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[500],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else
+                          ..._lotesRecientes.map((lote) => OrigenLoteCard(
+                            lote: {
+                              'id': lote.id,
+                              'firebaseId': lote.id,
+                              'material': lote.tipoPoli,
+                              'peso': lote.pesoNace,
+                              'presentacion': lote.presentacion,
+                              'fuente': lote.fuente,
+                              'fecha': lote.fechaNace,
+                              'estado': 'activo',
+                            },
+                            onQRTap: () => _showQRCode({
+                              'firebaseId': lote.id!,
+                              'material': lote.tipoPoli,
+                              'peso': lote.pesoNace,
+                              'presentacion': lote.presentacion,
+                              'fuente': lote.fuente,
+                              'fecha': lote.fechaNace,
+                            }),
+                            showActions: true,
+                          )),
                         
                         const SizedBox(height: 100), // Espacio para el FAB
                       ],

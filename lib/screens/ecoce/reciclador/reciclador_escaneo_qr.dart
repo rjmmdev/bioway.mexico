@@ -14,15 +14,20 @@ class RecicladorEscaneoQR extends StatelessWidget {
   });
 
   void _handleCodeScanned(BuildContext context, String code) {
-    // Navegar a la pantalla de registro de lotes con el código escaneado
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ScannedLotsScreen(
-          initialScannedCode: code,
+    if (isAddingMore) {
+      // Si estamos agregando más lotes, devolver el código
+      Navigator.pop(context, code);
+    } else {
+      // Si es el primer lote, navegar a la pantalla de registro
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ScannedLotsScreen(
+            initialScannedCode: code,
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 
   @override

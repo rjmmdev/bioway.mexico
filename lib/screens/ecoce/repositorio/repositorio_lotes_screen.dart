@@ -18,6 +18,8 @@ import '../reciclador/reciclador_administracion_lotes.dart';
 // import '../transporte/transporte_lot_management_screen.dart';
 // import '../transporte/transporte_delivery_screen.dart';
 import '../shared/widgets/qr_scanner_widget.dart';
+import '../../../services/lote_service.dart';
+import '../../../utils/format_utils.dart';
 
 class RepositorioLotesScreen extends StatefulWidget {
   final Color primaryColor;
@@ -47,13 +49,18 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
   
   // Filtros
   String? _selectedMaterial;
-  String? _selectedUbicacion;
-  // final bool _showFilters = false;
+  String? _selectedTipoActor;
+  DateTime? _fechaInicio;
+  DateTime? _fechaFin;
+  
+  // Servicios
+  final LoteService _loteService = LoteService();
+  Stream<List<Map<String, dynamic>>>? _lotesStream;
 
   @override
   void initState() {
     super.initState();
-    _loadLotes();
+    _setupLotesStream();
     _calculateItemsPerPage();
   }
 
@@ -76,11 +83,33 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
     });
   }
 
-  void _loadLotes() {
-    // Simular carga de datos
-    Future.delayed(const Duration(seconds: 1), () {
+  void _setupLotesStream() {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    _lotesStream = _loteService.buscarLotesRepositorio(
+      searchQuery: _searchController.text.isEmpty ? null : _searchController.text,
+      tipoMaterial: _selectedMaterial,
+      tipoActor: _selectedTipoActor,
+      fechaInicio: _fechaInicio,
+      fechaFin: _fechaFin,
+    );
+    
+    _lotesStream!.listen((lotes) {
       setState(() {
-        _allLotes = _generateMockLotes();
+        _allLotes = lotes.map((lote) => {
+          'id': lote['id'],
+          'firebaseId': lote['id'],
+          'material': lote['material'] ?? 'Sin especificar',
+          'peso': lote['peso'] ?? 0.0,
+          'origen': lote['tipo_actor'] ?? 'Desconocido',
+          'fechaCreacion': lote['fecha_creacion'] ?? DateTime.now(),
+          'estado': lote['data']['estado'] ?? 'activo',
+          'ubicacionActual': lote['tipo_actor'] ?? 'En proceso',
+          'data': lote['data'],
+          'tipo_coleccion': lote['tipo_coleccion'] ?? lote['data']['tipo_coleccion'],
+        }).toList();
         _filteredLotes = List.from(_allLotes);
         _isLoading = false;
       });
@@ -88,395 +117,119 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
     });
   }
 
-  List<Map<String, dynamic>> _generateMockLotes() {
-    // Simulaciones de trazabilidad completa
-    final simulaciones = <Map<String, dynamic>>[];
+  void _handleSearch(String query) {
+    _setupLotesStream();
+  }
+
+  void _showQRScanner() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => QRScannerWidget(
+          title: 'Escanear Código QR',
+          subtitle: 'Escanea el código QR del lote para ver su trazabilidad',
+          onCodeScanned: (code) {
+            Navigator.pop(context); // Cerrar el scanner
+            _handleScanResult(code);
+          },
+          primaryColor: widget.primaryColor,
+        ),
+      ),
+    );
+  }
+
+  void _handleScanResult(String loteId) async {
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: CircularProgressIndicator(
+          color: widget.primaryColor,
+        ),
+      ),
+    );
     
-    // SIMULACIÓN 1: Lote completo desde Acopiador hasta Transformador
-    simulaciones.add({
-      'id': 'LOT-A0001-2025',
-      'firebaseId': 'FID_acopiador_001',
-      'material': 'PET',
-      'peso': 450.5,
-      'ubicacionActual': 'Transformador PlastiTech',
-      'fechaCreacion': DateTime.now().subtract(const Duration(days: 15)),
-      'estado': 'Completado',
-      'origen': 'Centro de Acopio EcoNorte',
-      'historialTrazabilidad': [
-        {
-          'etapa': 'Origen',
-          'actor': 'Centro de Acopio EcoNorte',
-          'tipo': 'Acopiador',
-          'fecha': DateTime.now().subtract(const Duration(days: 15)),
-          'accion': 'Creación de lote',
-          'peso': 450.5,
-          'detalles': 'Recolección de botellas PET transparentes'
-        },
-        {
-          'etapa': 'Transporte',
-          'actor': 'Transportes Verdes S.A.',
-          'tipo': 'Transportista',
-          'fecha': DateTime.now().subtract(const Duration(days: 14)),
-          'accion': 'Recolección y transporte',
-          'peso': 450.5,
-          'detalles': 'Ruta: EcoNorte → ReciclaPlus'
-        },
-        {
-          'etapa': 'Reciclaje',
-          'actor': 'ReciclaPlus',
-          'tipo': 'Reciclador',
-          'fecha': DateTime.now().subtract(const Duration(days: 12)),
-          'accion': 'Procesamiento de material',
-          'peso': 420.0,
-          'detalles': 'Trituración y lavado, pérdida del 6.7% por contaminantes'
-        },
-        {
-          'etapa': 'Transporte',
-          'actor': 'LogisTrans México',
-          'tipo': 'Transportista',
-          'fecha': DateTime.now().subtract(const Duration(days: 8)),
-          'accion': 'Transporte a transformador',
-          'peso': 420.0,
-          'detalles': 'Ruta: ReciclaPlus → PlastiTech'
-        },
-        {
-          'etapa': 'Transformación',
-          'actor': 'Transformador PlastiTech',
-          'tipo': 'Transformador',
-          'fecha': DateTime.now().subtract(const Duration(days: 5)),
-          'accion': 'Producción de pellets',
-          'peso': 400.0,
-          'detalles': 'Conversión a pellets de PET grado alimenticio'
-        },
-      ],
-    });
-
-    // SIMULACIÓN 2: Lote desde Planta de Separación hasta Laboratorio
-    simulaciones.add({
-      'id': 'LOT-P0002-2025',
-      'firebaseId': 'FID_planta_002',
-      'material': 'HDPE',
-      'peso': 320.0,
-      'ubicacionActual': 'Laboratorio QualityTest',
-      'fechaCreacion': DateTime.now().subtract(const Duration(days: 10)),
-      'estado': 'En Análisis',
-      'origen': 'Planta de Separación MetroWaste',
-      'historialTrazabilidad': [
-        {
-          'etapa': 'Origen',
-          'actor': 'Planta de Separación MetroWaste',
-          'tipo': 'Planta de Separación',
-          'fecha': DateTime.now().subtract(const Duration(days: 10)),
-          'accion': 'Separación y clasificación',
-          'peso': 320.0,
-          'detalles': 'HDPE natural de envases de leche'
-        },
-        {
-          'etapa': 'Transporte',
-          'actor': 'EcoLogística',
-          'tipo': 'Transportista',
-          'fecha': DateTime.now().subtract(const Duration(days: 9)),
-          'accion': 'Transporte directo',
-          'peso': 320.0,
-          'detalles': 'Ruta: MetroWaste → RecycleMax'
-        },
-        {
-          'etapa': 'Reciclaje',
-          'actor': 'RecycleMax',
-          'tipo': 'Reciclador',
-          'fecha': DateTime.now().subtract(const Duration(days: 7)),
-          'accion': 'Procesamiento inicial',
-          'peso': 310.0,
-          'detalles': 'Limpieza y preparación para análisis'
-        },
-        {
-          'etapa': 'Transporte',
-          'actor': 'TransLab Express',
-          'tipo': 'Transportista',
-          'fecha': DateTime.now().subtract(const Duration(days: 4)),
-          'accion': 'Transporte a laboratorio',
-          'peso': 310.0,
-          'detalles': 'Ruta: RecycleMax → QualityTest'
-        },
-        {
-          'etapa': 'Análisis',
-          'actor': 'Laboratorio QualityTest',
-          'tipo': 'Laboratorio',
-          'fecha': DateTime.now().subtract(const Duration(days: 2)),
-          'accion': 'Análisis de calidad',
-          'peso': 310.0,
-          'detalles': 'Pruebas de pureza y contaminantes en proceso'
-        },
-      ],
-    });
-
-    // SIMULACIÓN 3: Lote con ruta completa (Transformador + Laboratorio)
-    simulaciones.add({
-      'id': 'LOT-A0003-2025',
-      'firebaseId': 'FID_completo_003',
-      'material': 'PP',
-      'peso': 680.0,
-      'ubicacionActual': 'Completado - Múltiples destinos',
-      'fechaCreacion': DateTime.now().subtract(const Duration(days: 20)),
-      'estado': 'Completado',
-      'origen': 'Centro de Acopio SurVerde',
-      'historialTrazabilidad': [
-        {
-          'etapa': 'Origen',
-          'actor': 'Centro de Acopio SurVerde',
-          'tipo': 'Acopiador',
-          'fecha': DateTime.now().subtract(const Duration(days: 20)),
-          'accion': 'Recolección inicial',
-          'peso': 680.0,
-          'detalles': 'Tapas y envases de PP multicolor'
-        },
-        {
-          'etapa': 'Transporte',
-          'actor': 'Rutas Ecológicas',
-          'tipo': 'Transportista',
-          'fecha': DateTime.now().subtract(const Duration(days: 19)),
-          'accion': 'Primer transporte',
-          'peso': 680.0,
-          'detalles': 'Ruta: SurVerde → MegaRecicla'
-        },
-        {
-          'etapa': 'Reciclaje',
-          'actor': 'MegaRecicla Industrial',
-          'tipo': 'Reciclador',
-          'fecha': DateTime.now().subtract(const Duration(days: 17)),
-          'accion': 'Procesamiento y separación',
-          'peso': 650.0,
-          'detalles': 'Separación por colores, trituración y lavado'
-        },
-        {
-          'etapa': 'División',
-          'actor': 'MegaRecicla Industrial',
-          'tipo': 'Reciclador',
-          'fecha': DateTime.now().subtract(const Duration(days: 15)),
-          'accion': 'División del lote',
-          'peso': 650.0,
-          'detalles': 'Lote dividido: 500kg a Transformador, 150kg a Laboratorio'
-        },
-        {
-          'etapa': 'Transporte',
-          'actor': 'MultiTrans Logistics',
-          'tipo': 'Transportista',
-          'fecha': DateTime.now().subtract(const Duration(days: 14)),
-          'accion': 'Transporte múltiple',
-          'peso': 500.0,
-          'detalles': 'Ruta 1: MegaRecicla → PolyTransform'
-        },
-        {
-          'etapa': 'Transformación',
-          'actor': 'PolyTransform Industries',
-          'tipo': 'Transformador',
-          'fecha': DateTime.now().subtract(const Duration(days: 10)),
-          'accion': 'Producción de pellets',
-          'peso': 480.0,
-          'detalles': 'Pellets de PP para inyección automotriz'
-        },
-        {
-          'etapa': 'Transporte',
-          'actor': 'LabExpress',
-          'tipo': 'Transportista',
-          'fecha': DateTime.now().subtract(const Duration(days: 14)),
-          'accion': 'Transporte a laboratorio',
-          'peso': 150.0,
-          'detalles': 'Ruta 2: MegaRecicla → TestLab Pro'
-        },
-        {
-          'etapa': 'Análisis',
-          'actor': 'TestLab Pro',
-          'tipo': 'Laboratorio',
-          'fecha': DateTime.now().subtract(const Duration(days: 8)),
-          'accion': 'Análisis completo',
-          'peso': 150.0,
-          'detalles': 'Certificación de calidad completada'
-        },
-      ],
-    });
-
-    // SIMULACIÓN 4: Lote en tránsito
-    simulaciones.add({
-      'id': 'LOT-P0004-2025',
-      'firebaseId': 'FID_transito_004',
-      'material': 'LDPE',
-      'peso': 280.0,
-      'ubicacionActual': 'En Tránsito - Transportes Verdes',
-      'fechaCreacion': DateTime.now().subtract(const Duration(days: 5)),
-      'estado': 'En Proceso',
-      'origen': 'Planta de Separación EcoSort',
-      'historialTrazabilidad': [
-        {
-          'etapa': 'Origen',
-          'actor': 'Planta de Separación EcoSort',
-          'tipo': 'Planta de Separación',
-          'fecha': DateTime.now().subtract(const Duration(days: 5)),
-          'accion': 'Separación de LDPE',
-          'peso': 280.0,
-          'detalles': 'Film plástico transparente'
-        },
-        {
-          'etapa': 'Transporte',
-          'actor': 'Transportes Verdes S.A.',
-          'tipo': 'Transportista',
-          'fecha': DateTime.now().subtract(const Duration(days: 4)),
-          'accion': 'Recolección',
-          'peso': 280.0,
-          'detalles': 'En ruta hacia GreenRecycle'
-        },
-      ],
-    });
-
-    // SIMULACIÓN 5: Lote con múltiples transformaciones
-    simulaciones.add({
-      'id': 'LOT-A0005-2025',
-      'firebaseId': 'FID_multi_005',
-      'material': 'PVC',
-      'peso': 150.0,
-      'ubicacionActual': 'Transformador SecondLife',
-      'fechaCreacion': DateTime.now().subtract(const Duration(days: 25)),
-      'estado': 'Completado',
-      'origen': 'Centro de Acopio Industrial Norte',
-      'historialTrazabilidad': [
-        {
-          'etapa': 'Origen',
-          'actor': 'Centro de Acopio Industrial Norte',
-          'tipo': 'Acopiador',
-          'fecha': DateTime.now().subtract(const Duration(days: 25)),
-          'accion': 'Recolección industrial',
-          'peso': 150.0,
-          'detalles': 'Tubería y perfiles de PVC'
-        },
-        {
-          'etapa': 'Transporte',
-          'actor': 'CargaTech',
-          'tipo': 'Transportista',
-          'fecha': DateTime.now().subtract(const Duration(days: 24)),
-          'accion': 'Transporte especializado',
-          'peso': 150.0,
-          'detalles': 'Manejo especial por material PVC'
-        },
-        {
-          'etapa': 'Reciclaje',
-          'actor': 'PVC Recycling Experts',
-          'tipo': 'Reciclador',
-          'fecha': DateTime.now().subtract(const Duration(days: 22)),
-          'accion': 'Procesamiento especializado',
-          'peso': 140.0,
-          'detalles': 'Separación de aditivos y estabilizadores'
-        },
-        {
-          'etapa': 'Transporte',
-          'actor': 'SecureLogistics',
-          'tipo': 'Transportista',
-          'fecha': DateTime.now().subtract(const Duration(days: 18)),
-          'accion': 'Transporte seguro',
-          'peso': 140.0,
-          'detalles': 'Ruta: PVC Experts → SecondLife'
-        },
-        {
-          'etapa': 'Transformación',
-          'actor': 'Transformador SecondLife',
-          'tipo': 'Transformador',
-          'fecha': DateTime.now().subtract(const Duration(days: 15)),
-          'accion': 'Producción de nuevos perfiles',
-          'peso': 135.0,
-          'detalles': 'Perfiles de PVC para construcción'
-        },
-      ],
-    });
-
-    // Agregar más lotes variados para completar la lista
-    for (int i = 6; i <= 30; i++) {
-      final materials = ['PET', 'HDPE', 'LDPE', 'PP', 'PS', 'PVC', 'Otros'];
-      final estados = ['En Proceso', 'Completado', 'En Análisis', 'En Tránsito'];
-      final origenes = [
-        'Centro de Acopio EcoNorte',
-        'Planta de Separación MetroWaste',
-        'Centro de Acopio SurVerde',
-        'Planta de Separación EcoSort',
-        'Centro de Acopio Industrial Norte'
-      ];
+    try {
+      // Obtener el historial de trazabilidad
+      final historial = await _loteService.obtenerHistorialTrazabilidad(loteId);
       
-      simulaciones.add({
-        'id': 'LOT-${i.toString().padLeft(4, '0')}-2025',
-        'firebaseId': 'FID_auto_$i',
-        'material': materials[i % materials.length],
-        'peso': 100.0 + (i * 15.5 % 500),
-        'ubicacionActual': _getRandomUbicacion(i),
-        'fechaCreacion': DateTime.now().subtract(Duration(days: i)),
-        'estado': estados[i % estados.length],
-        'origen': origenes[i % origenes.length],
-        'historialTrazabilidad': _generateSimpleHistory(i),
-      });
+      // Close loading
+      Navigator.pop(context);
+      
+      if (historial.isNotEmpty) {
+        final loteData = historial.first;
+        
+        // Extraer material y otros datos de manera segura
+        String material = 'Sin especificar';
+        if (loteData['detalles'] != null && loteData['detalles'] is Map) {
+          final detalles = loteData['detalles'] as Map<String, dynamic>;
+          // Buscar material en diferentes campos según el tipo
+          material = detalles['material'] ?? 
+                    detalles['tipo_material'] ?? 
+                    detalles['tipo_polimero'] ?? 
+                    'Sin especificar';
+        }
+        
+        final lote = {
+          'id': loteId,
+          'firebaseId': loteId,
+          'material': material,
+          'peso': loteData['peso'] ?? 0.0,
+          'origen': loteData['actor'] ?? 'Desconocido',
+          'fechaCreacion': loteData['fecha'] ?? DateTime.now(),
+          'estado': 'activo',
+          'ubicacionActual': loteData['tipo'] ?? 'En proceso',
+          'historialTrazabilidad': historial,
+        };
+        
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LoteDetalleScreen(
+              lote: lote,
+              primaryColor: widget.primaryColor,
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lote $loteId no encontrado'),
+            backgroundColor: BioWayColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      // Close loading if still open
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al buscar el lote: $e'),
+          backgroundColor: BioWayColors.error,
+        ),
+      );
     }
-    
-    return simulaciones;
   }
-  
-  String _getRandomUbicacion(int index) {
-    final ubicaciones = [
-      'Transformador PlastiTech',
-      'Laboratorio QualityTest',
-      'ReciclaPlus',
-      'En Tránsito - Transportes Verdes',
-      'MegaRecicla Industrial',
-      'TestLab Pro',
-      'PolyTransform Industries'
-    ];
-    return ubicaciones[index % ubicaciones.length];
+
+  void _applyFilters(Map<String, dynamic> filters) {
+    setState(() {
+      _selectedMaterial = filters['material'];
+      _selectedTipoActor = filters['tipoActor'];
+      _fechaInicio = filters['fechaInicio'];
+      _fechaFin = filters['fechaFin'];
+    });
+    _setupLotesStream();
   }
-  
-  List<Map<String, dynamic>> _generateSimpleHistory(int index) {
-    // Generar un historial simple para lotes adicionales
-    final history = <Map<String, dynamic>>[];
-    final stages = index % 4 + 2; // Entre 2 y 5 etapas
-    
-    for (int i = 0; i < stages; i++) {
-      history.add({
-        'etapa': _getEtapaNombre(i),
-        'actor': 'Actor Simulado $index-$i',
-        'tipo': _getTipoActor(i),
-        'fecha': DateTime.now().subtract(Duration(days: index - i * 2)),
-        'accion': _getAccion(i),
-        'peso': 100.0 + (index * 15.5 % 500) - (i * 5),
-        'detalles': 'Proceso simulado etapa ${i + 1}'
-      });
-    }
-    
-    return history;
-  }
-  
-  String _getEtapaNombre(int index) {
-    final etapas = ['Origen', 'Transporte', 'Reciclaje', 'Transporte', 'Transformación', 'Análisis'];
-    return etapas[index % etapas.length];
-  }
-  
-  String _getTipoActor(int index) {
-    final tipos = ['Acopiador', 'Transportista', 'Reciclador', 'Transportista', 'Transformador', 'Laboratorio'];
-    return tipos[index % tipos.length];
-  }
-  
-  String _getAccion(int index) {
-    final acciones = ['Creación de lote', 'Transporte', 'Procesamiento', 'Transporte', 'Transformación', 'Análisis'];
-    return acciones[index % acciones.length];
-  }
+
 
   void _filterLotes(String query) {
-    setState(() {
-      _filteredLotes = _allLotes.where((lote) {
-        final matchesSearch = query.isEmpty || 
-            lote['id'].toString().toLowerCase().contains(query.toLowerCase());
-        final matchesMaterial = _selectedMaterial == null || 
-            lote['material'] == _selectedMaterial;
-        final matchesUbicacion = _selectedUbicacion == null || 
-            lote['ubicacionActual'] == _selectedUbicacion;
-            
-        return matchesSearch && matchesMaterial && matchesUbicacion;
-      }).toList();
-    });
-    _calculateItemsPerPage();
+    // Filtering is now done through the stream in _setupLotesStream
+    // This method is kept for compatibility but delegates to _handleSearch
+    _handleSearch(query);
   }
 
   void _showFiltersSheet() {
@@ -487,27 +240,57 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
       backgroundColor: Colors.transparent,
       builder: (context) => FiltersSheet(
         selectedMaterial: _selectedMaterial,
-        selectedUbicacion: _selectedUbicacion,
-        onApplyFilters: (material, ubicacion) {
-          setState(() {
-            _selectedMaterial = material;
-            _selectedUbicacion = ubicacion;
-          });
-          _filterLotes(_searchController.text);
-        },
+        selectedTipoActor: _selectedTipoActor,
+        fechaInicio: _fechaInicio,
+        fechaFin: _fechaFin,
+        onApplyFilters: _applyFilters,
       ),
     );
   }
 
-  void _navigateToDetail(Map<String, dynamic> lote) {
+  void _navigateToDetail(Map<String, dynamic> lote) async {
     HapticFeedback.lightImpact();
-    NavigationUtils.navigateWithFade(
-      context,
-      LoteDetalleScreen(
-        lote: lote,
-        primaryColor: widget.primaryColor,
+    
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: CircularProgressIndicator(
+          color: widget.primaryColor,
+        ),
       ),
     );
+    
+    try {
+      // Get complete traceability history
+      final historial = await _loteService.obtenerHistorialTrazabilidad(lote['firebaseId'] ?? lote['id']);
+      
+      // Add history to lot data
+      lote['historialTrazabilidad'] = historial;
+      
+      // Close loading
+      Navigator.pop(context);
+      
+      // Navigate to detail
+      NavigationUtils.navigateWithFade(
+        context,
+        LoteDetalleScreen(
+          lote: lote,
+          primaryColor: widget.primaryColor,
+        ),
+      );
+    } catch (e) {
+      // Close loading
+      Navigator.pop(context);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cargar historial: $e'),
+          backgroundColor: BioWayColors.error,
+        ),
+      );
+    }
   }
 
   Widget _buildSearchBar() {
@@ -583,7 +366,7 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
                   ),
                   tooltip: 'Filtros',
                 ),
-                if (_selectedMaterial != null || _selectedUbicacion != null)
+                if (_selectedMaterial != null || _selectedTipoActor != null || _fechaInicio != null || _fechaFin != null)
                   Positioned(
                     right: 8,
                     top: 8,
@@ -629,15 +412,17 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
                 color: Colors.grey[600],
               ),
             ),
-            if (_selectedMaterial != null || _selectedUbicacion != null) ...[
+            if (_selectedMaterial != null || _selectedTipoActor != null || _fechaInicio != null || _fechaFin != null) ...[
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () {
                   setState(() {
                     _selectedMaterial = null;
-                    _selectedUbicacion = null;
+                    _selectedTipoActor = null;
+                    _fechaInicio = null;
+                    _fechaFin = null;
                   });
-                  _filterLotes(_searchController.text);
+                  _setupLotesStream();
                 },
                 child: const Text('Limpiar filtros'),
               ),
@@ -748,7 +533,17 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  const SizedBox(width: 48), // Balance para centrar el título
+                  IconButton(
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      _showQRScanner();
+                    },
+                    icon: Icon(
+                      Icons.qr_code_scanner,
+                      color: widget.primaryColor,
+                    ),
+                    tooltip: 'Escanear QR',
+                  ),
                 ],
               ),
             ),

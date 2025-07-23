@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
+import '../../../services/lote_service.dart';
+import '../shared/utils/dialog_utils.dart';
 import '../shared/utils/material_utils.dart';
 import 'transformador_escaneo_screen.dart';
 import 'transformador_recibir_lote_screen.dart';
@@ -37,6 +39,8 @@ class TransformadorLotesRegistroScreen extends StatefulWidget {
 class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesRegistroScreen> {
   // Lista de lotes escaneados
   List<ScannedLot> _scannedLots = [];
+  final LoteService _loteService = LoteService();
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -47,20 +51,103 @@ class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesReg
     }
   }
 
-  void _addLotFromId(String lotId) {
-    // TODO: Aquí se consultaría la base de datos con el ID
-    // Por ahora simulamos datos
-    final newLot = ScannedLot(
-      id: lotId,
-      material: _getMaterialForDemo(lotId),
-      weight: _getWeightForDemo(),
-      origen: _getOrigenForDemo(),
-      dateScanned: DateTime.now(),
-    );
-
+  void _addLotFromId(String lotId) async {
     setState(() {
-      _scannedLots.add(newLot);
+      _isLoading = true;
     });
+    
+    try {
+      // Buscar el lote en Firebase
+      final lotesInfo = await _loteService.getLotesInfo([lotId]);
+      
+      if (lotesInfo.isEmpty) {
+        if (mounted) {
+          DialogUtils.showErrorDialog(
+            context: context,
+            title: 'Lote no encontrado',
+            message: 'El código QR escaneado no corresponde a un lote válido',
+          );
+        }
+        return;
+      }
+
+      final loteInfo = lotesInfo.first;
+      
+      // Transformador puede recibir lotes de laboratorio o de transporte
+      final tipoLoteValido = loteInfo['tipo_lote'] == 'lotes_laboratorio' || 
+                           loteInfo['tipo_lote'] == 'lotes_transportista';
+      
+      if (!tipoLoteValido) {
+        if (mounted) {
+          DialogUtils.showErrorDialog(
+            context: context,
+            title: 'Tipo de lote no válido',
+            message: 'Solo se pueden recibir lotes que hayan sido analizados por el laboratorio o estén en tránsito',
+          );
+        }
+        return;
+      }
+      
+      // Extraer información del lote
+      String material = 'Desconocido';
+      double peso = 0.0;
+      String origen = 'Desconocido';
+      
+      if (loteInfo['tipo_lote'] == 'lotes_laboratorio') {
+        material = loteInfo['ecoce_laboratorio_tipo_material'] ?? 'Sin especificar';
+        peso = (loteInfo['ecoce_laboratorio_peso_muestra'] ?? 0).toDouble();
+        origen = loteInfo['ecoce_laboratorio_proveedor'] ?? 'Laboratorio';
+        
+        // Si viene del laboratorio, buscar el peso del lote original
+        final loteOrigen = loteInfo['ecoce_laboratorio_lote_origen'];
+        if (loteOrigen != null) {
+          final loteOriginalInfo = await _loteService.getLotesInfo([loteOrigen]);
+          if (loteOriginalInfo.isNotEmpty) {
+            // Usar el peso del lote original si es de reciclador
+            if (loteOriginalInfo.first['tipo_lote'] == 'lotes_reciclador') {
+              peso = (loteOriginalInfo.first['ecoce_reciclador_peso_resultante'] ?? peso).toDouble();
+            }
+          }
+        }
+      } else if (loteInfo['tipo_lote'] == 'lotes_transportista') {
+        // Si viene de transportista, buscar el material predominante
+        final lotesTransportados = loteInfo['ecoce_transportista_lotes'] as List<dynamic>? ?? [];
+        if (lotesTransportados.isNotEmpty) {
+          final tiposPoli = await _loteService.calcularTipoPolimeroPredominante(
+            lotesTransportados.map((e) => e.toString()).toList()
+          );
+          if (tiposPoli.isNotEmpty) {
+            material = tiposPoli.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+          }
+        }
+        peso = (loteInfo['ecoce_transportista_peso_total'] ?? 0).toDouble();
+        origen = loteInfo['ecoce_transportista_proveedor'] ?? 'Transportista';
+      }
+      
+      final newLot = ScannedLot(
+        id: lotId,
+        material: material,
+        weight: peso,
+        origen: origen,
+        dateScanned: DateTime.now(),
+      );
+
+      setState(() {
+        _scannedLots.add(newLot);
+      });
+    } catch (e) {
+      if (mounted) {
+        DialogUtils.showErrorDialog(
+          context: context,
+          title: 'Error',
+          message: 'No se pudo obtener la información del lote: ${e.toString()}',
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   // Métodos temporales para simular datos

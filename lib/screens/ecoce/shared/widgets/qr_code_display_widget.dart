@@ -92,21 +92,9 @@ class _QRCodeDisplayWidgetState extends State<QRCodeDisplayWidget> {
   }
 
   String get _qrData {
-    final Map<String, dynamic> qrInfo = {
-      'loteId': widget.loteId,
-      'material': widget.material,
-      'peso': widget.peso,
-      'presentacion': widget.presentacion,
-      'origen': widget.origen,
-      'fechaCreacion': _fechaFormateada,
-      if (widget.pesoFinal != null) 'pesoFinal': widget.pesoFinal,
-      if (widget.fechaSalida != null) 'fechaSalida': _fechaSalidaFormateada,
-      if (widget.datosAdicionales != null) ...widget.datosAdicionales!,
-      if (widget.documentos != null && widget.documentos!.isNotEmpty) 'documentos': widget.documentos,
-      if (widget.tipoUsuario != null) 'procesadoPor': widget.tipoUsuario,
-    };
-    
-    return qrInfo.toString();
+    // El QR debe contener SOLO el ID del lote de Firebase
+    // para que el escaneo pueda buscar la información en Firestore
+    return widget.loteId;
   }
 
   Future<void> _descargarQR() async {

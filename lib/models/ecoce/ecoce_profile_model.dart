@@ -324,6 +324,13 @@ class EcoceProfileModel {
     }
   }
 
+  // Getters adicionales para compatibilidad
+  String get ecoceDireccion => '${ecoceCalle} ${ecoceNumExt}${ecoceNumInt != null ? " Int. $ecoceNumInt" : ""}, ${ecoceColonia ?? ""}, ${ecoceMunicipio ?? ""}, ${ecoceEstado ?? ""} CP ${ecoceCp}';
+  String? get ecoceTelefono => ecoceTelEmpresa;
+  String? get ecoceNombreComercial => ecoceNombre; // Usar el mismo nombre
+  String? get ecoceRazonSocial => ecoceNombre; // Usar el mismo nombre
+  String? get ecoceCiudad => ecoceMunicipio; // Usar municipio como ciudad
+
   // Obtener lista de materiales según el tipo de usuario
   static List<Map<String, String>> getMaterialesByTipo(String tipoActor, [String? subtipo]) {
     switch (tipoActor) {

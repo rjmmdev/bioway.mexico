@@ -113,4 +113,30 @@ class UserSessionService {
   
   /// Propiedad userData para compatibilidad con código antiguo
   Map<String, dynamic>? get userData => getUserData();
+
+  /// Obtener perfil completo del usuario para acceder a todos los campos
+  Future<Map<String, dynamic>?> getUserProfile() async {
+    final profile = await getCurrentUserProfile();
+    if (profile == null) return null;
+    
+    // Convertir el modelo a mapa completo con todos los campos
+    return {
+      'id': profile.id,
+      'nombre': profile.ecoceNombre,
+      'folio': profile.ecoceFolio,
+      'email': profile.ecoceCorreoContacto,
+      'tipo': profile.tipoActorLabel,
+      'tipoActor': profile.ecoceTipoActor,
+      'subtipo': profile.ecoceSubtipo,
+      'direccion': profile.ecoceDireccion,
+      'telefono': profile.ecoceTelefono,
+      'rfc': profile.ecoceRfc,
+      'nombreComercial': profile.ecoceNombreComercial,
+      'razonSocial': profile.ecoceRazonSocial,
+      'estado': profile.ecoceEstado,
+      'ciudad': profile.ecoceCiudad,
+      'cp': profile.ecoceCp,
+      // Agregar más campos según sea necesario
+    };
+  }
 }

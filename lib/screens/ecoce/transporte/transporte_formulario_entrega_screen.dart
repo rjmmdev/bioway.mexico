@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:path_provider/path_provider.dart';
 import '../../../utils/colors.dart';
 // import '../../../services/user_session_service.dart';
 import '../../../services/image_service.dart';
@@ -14,11 +16,13 @@ import '../shared/widgets/photo_evidence_widget.dart';
 class TransporteFormularioEntregaScreen extends StatefulWidget {
   final List<Map<String, dynamic>> lotes;
   final String qrData;
+  final String nuevoLoteId;
   
   const TransporteFormularioEntregaScreen({
     super.key,
     required this.lotes,
     required this.qrData,
+    required this.nuevoLoteId,
   });
 
   @override
@@ -40,6 +44,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
   bool _isSearchingUser = false;
   Map<String, dynamic>? _destinatarioInfo;
   File? _evidenciaFoto;
+  List<File> _photoFiles = [];
   List<Offset?> _firmaRecibe = [];
   
   @override
@@ -101,11 +106,22 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
         throw Exception('Datos del usuario no encontrados');
       }
       
+      // Determinar el tipo de usuario basado en el path
+      String tipoUsuario = 'Desconocido';
+      if (profilePath.contains('reciclador')) {
+        tipoUsuario = 'R';
+      } else if (profilePath.contains('laboratorio')) {
+        tipoUsuario = 'L';
+      } else if (profilePath.contains('transformador')) {
+        tipoUsuario = 'T';
+      }
+      
       setState(() {
         _destinatarioInfo = {
           'folio': folio,
-          'nombre': userDoc.data()?['nombre'] ?? 'Sin nombre',
-          'tipo': profileData['tipo_actor'] ?? 'Sin tipo',
+          'nombre': userDoc.data()?['nombre'] ?? userDoc.data()?['ecoce_nombre'] ?? 'Sin nombre',
+          'tipo': tipoUsuario,
+          'tipo_label': _getTipoLabel(tipoUsuario),
           'direccion': _buildDireccion(userDoc.data() ?? {}),
         };
       });
@@ -127,15 +143,28 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
   
   String _buildDireccion(Map<String, dynamic> data) {
     final parts = [
-      data['calle'],
-      data['num_ext'],
-      data['colonia'],
-      data['municipio'],
-      data['estado'],
-      data['cp'] != null ? 'C.P. ${data['cp']}' : null,
+      data['calle'] ?? data['ecoce_calle'],
+      data['num_ext'] ?? data['ecoce_num_ext'],
+      data['colonia'] ?? data['ecoce_colonia'],
+      data['municipio'] ?? data['ecoce_municipio'],
+      data['estado'] ?? data['ecoce_estado'],
+      (data['cp'] ?? data['ecoce_cp']) != null ? 'C.P. ${data['cp'] ?? data['ecoce_cp']}' : null,
     ].where((part) => part != null && part.toString().isNotEmpty).toList();
     
     return parts.isEmpty ? 'Sin dirección registrada' : parts.join(', ');
+  }
+  
+  String _getTipoLabel(String tipo) {
+    switch (tipo) {
+      case 'R':
+        return 'Reciclador';
+      case 'L':
+        return 'Laboratorio';
+      case 'T':
+        return 'Transformador';
+      default:
+        return 'Desconocido';
+    }
   }
   
   Future<void> _pickImage() async {
@@ -219,18 +248,26 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
     });
     
     try {
-      // TODO: Implementar POST /api/v1/transporte/salida
+      // TODO: Implementar actualización del lote con los datos de entrega
+      // Por ahora solo simularemos guardando el ID del lote entregado
       await Future.delayed(const Duration(seconds: 2)); // Simulación
       
+      // Aquí se debería actualizar el lote con:
+      // - destinatario: _destinatarioInfo!['folio']
+      // - fechaEntrega: DateTime.now()
+      // - pesoEntregado: double.parse(_pesoEntregadoController.text)
+      // - evidenciaFoto: (subir foto y guardar URL)
+      // - firmaRecepcion: (convertir firma a imagen y guardar URL)
+      // - comentarios: _comentariosController.text
+      // - estado: 'entregado'
+      
       if (mounted) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Entrega completada exitosamente'),
-              backgroundColor: BioWayColors.success,
-            ),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lote ${widget.nuevoLoteId} entregado exitosamente'),
+            backgroundColor: BioWayColors.success,
+          ),
+        );
         
         // Volver a la pantalla de recoger
         Navigator.pushReplacementNamed(
@@ -506,7 +543,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 _buildInfoRow('Nombre:', _destinatarioInfo!['nombre']),
-                                _buildInfoRow('Tipo:', _destinatarioInfo!['tipo']),
+                                _buildInfoRow('Tipo:', _destinatarioInfo!['tipo_label']),
                                 _buildInfoRow('Dirección:', _destinatarioInfo!['direccion']),
                               ],
                             ),
@@ -526,6 +563,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                     isRequired: true,
                     onPhotosChanged: (List<File> photos) {
                       setState(() {
+                        _photoFiles = photos;
                         _evidenciaFoto = photos.isNotEmpty ? photos.first : null;
                       });
                     },
@@ -911,5 +949,51 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
         ],
       ),
     );
+  }
+
+  Future<File?> _captureSignature() async {
+    try {
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, 300, 200));
+      
+      // Fondo blanco
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, 300, 200),
+        Paint()..color = Colors.white,
+      );
+
+      // Dibujar la firma
+      final paint = Paint()
+        ..color = Colors.black
+        ..strokeWidth = 3.0
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke;
+
+      for (int i = 0; i < _firmaRecibe.length - 1; i++) {
+        if (_firmaRecibe[i] != null && _firmaRecibe[i + 1] != null) {
+          canvas.drawLine(_firmaRecibe[i]!, _firmaRecibe[i + 1]!, paint);
+        }
+      }
+
+      final picture = recorder.endRecording();
+      final img = await picture.toImage(300, 200);
+      final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+      
+      if (byteData != null) {
+        final buffer = byteData.buffer.asUint8List();
+        
+        // Guardar temporalmente
+        final tempDir = await getTemporaryDirectory();
+        final file = File('${tempDir.path}/signature_${DateTime.now().millisecondsSinceEpoch}.png');
+        await file.writeAsBytes(buffer);
+        
+        return file;
+      }
+      
+      return null;
+    } catch (e) {
+      print('Error al capturar firma: $e');
+      return null;
+    }
   }
 }

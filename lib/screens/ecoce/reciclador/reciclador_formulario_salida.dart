@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
+import 'dart:ui' as ui;
+import 'dart:typed_data';
+import 'package:path_provider/path_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
+import '../../../services/lote_service.dart';
+import '../../../services/user_session_service.dart';
+import '../../../services/firebase/firebase_storage_service.dart';
+import '../../../models/lotes/lote_reciclador_model.dart';
+import '../shared/utils/dialog_utils.dart';
 import 'reciclador_documentacion.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
 import '../shared/widgets/weight_input_widget.dart';
@@ -23,6 +32,9 @@ class RecicladorFormularioSalida extends StatefulWidget {
 
 class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida> {
   final _formKey = GlobalKey<FormState>();
+  final LoteService _loteService = LoteService();
+  final UserSessionService _userSession = UserSessionService();
+  final FirebaseStorageService _storageService = FirebaseStorageService();
   
   // Controladores
   final TextEditingController _pesoResultanteController = TextEditingController();
@@ -31,7 +43,11 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
   
   // Variables para cálculos
   double _mermaCalculada = 0.0;
-  final double _pesoNetoAprovechable = 100.0; // En producción vendría del formulario de entrada
+  double _pesoNetoAprovechable = 0.0;
+  
+  // Estados
+  bool _isLoading = false;
+  LoteRecicladorModel? _loteReciclador;
   
   // Variables para procesos aplicados
   final Map<String, bool> _procesosAplicados = {
@@ -45,14 +61,47 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
   // Variables para la firma
   List<Offset?> _signaturePoints = [];
   bool _hasSignature = false;
+  String? _signatureUrl;
   
   // Variables para las imágenes
   bool _hasImages = false;
+  List<File> _photoFiles = [];
 
   @override
   void initState() {
     super.initState();
     _pesoResultanteController.addListener(_calcularMerma);
+    _loadLoteData();
+    _initializeForm();
+  }
+  
+  Future<void> _loadLoteData() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      // Obtener datos del lote de reciclador
+      final lotes = await _loteService.getLotesReciclador().first;
+      _loteReciclador = lotes.firstWhere((l) => l.id == widget.loteId);
+      
+      if (_loteReciclador != null) {
+        setState(() {
+          _pesoNetoAprovechable = _loteReciclador!.pesoNeto ?? _loteReciclador!.pesoBruto ?? 0.0;
+        });
+      }
+    } catch (e) {
+      print('Error al cargar lote: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+  
+  void _initializeForm() {
+    final userData = _userSession.getUserData();
+    _operadorController.text = userData?['nombre'] ?? '';
   }
 
   @override
@@ -89,11 +138,12 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
 
   void _onPhotosChanged(List<File> photos) {
     setState(() {
+      _photoFiles = photos;
       _hasImages = photos.isNotEmpty;
     });
   }
 
-  void _submitForm() {
+  void _submitForm() async {
     if (_formKey.currentState!.validate()) {
       // Validar que al menos un proceso esté seleccionado
       if (!_procesosAplicados.values.any((selected) => selected)) {
@@ -111,8 +161,73 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
         return;
       }
 
-      // Aquí iría la lógica para guardar los datos
-      _showSuccessAndNavigate();
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        // Subir firma a Storage
+        if (_signaturePoints.isNotEmpty) {
+          final signatureImage = await _captureSignature();
+          if (signatureImage != null) {
+            _signatureUrl = await _storageService.uploadImage(
+              signatureImage,
+              'lotes/reciclador/firmas_salida',
+            );
+          }
+        }
+
+        // Subir fotos a Storage
+        List<String> photoUrls = [];
+        for (int i = 0; i < _photoFiles.length; i++) {
+          final url = await _storageService.uploadImage(
+            _photoFiles[i],
+            'lotes/reciclador/evidencias_salida',
+          );
+          if (url != null) {
+            photoUrls.add(url);
+          }
+        }
+
+        // Calcular tipo de polímero predominante
+        Map<String, double> tipoPolimeros = {};
+        if (_loteReciclador?.conjuntoLotes != null && _loteReciclador!.conjuntoLotes.isNotEmpty) {
+          tipoPolimeros = await _loteService.calcularTipoPolimeroPredominante(_loteReciclador!.conjuntoLotes);
+        }
+
+        // Actualizar el lote de reciclador
+        await _loteService.actualizarLoteReciclador(
+          widget.loteId,
+          {
+            'ecoce_reciclador_procesos_aplicados': _procesosAplicados,
+            'ecoce_reciclador_peso_final': double.parse(_pesoResultanteController.text),
+            'ecoce_reciclador_merma': _mermaCalculada,
+            'ecoce_reciclador_tipo_poli': tipoPolimeros,
+            'ecoce_reciclador_sale_operador': _operadorController.text.trim(),
+            'ecoce_reciclador_firma_salida': _signatureUrl,
+            'ecoce_reciclador_evi_foto_salida': photoUrls,
+            'ecoce_reciclador_comentarios_salida': _comentariosController.text.trim(),
+            'ecoce_reciclador_fecha_salida': Timestamp.fromDate(DateTime.now()),
+            'estado': 'documentacion',
+          },
+        );
+
+        if (mounted) {
+          _showSuccessAndNavigate();
+        }
+      } catch (e) {
+        if (mounted) {
+          DialogUtils.showErrorDialog(
+            context: context,
+            title: 'Error',
+            message: 'No se pudo registrar la salida: ${e.toString()}',
+          );
+        }
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -230,9 +345,11 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
           ),
         ),
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // Header verde
+          Column(
+            children: [
+              // Header verde
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -874,9 +991,67 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
               ),
             ),
           ),
+            ], // Close Column children
+          ), // Close Column
+          // Loading overlay
+          if (_isLoading)
+            Container(
+              color: Colors.black.withValues(alpha: 0.5),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: BioWayColors.ecoceGreen,
+                ),
+              ),
+            ),
         ],
       ),
     );
+  }
+  
+  Future<File?> _captureSignature() async {
+    try {
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, 300, 200));
+      
+      // Fondo blanco
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, 300, 200),
+        Paint()..color = Colors.white,
+      );
+
+      // Dibujar la firma
+      final paint = Paint()
+        ..color = Colors.black
+        ..strokeWidth = 3.0
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke;
+
+      for (int i = 0; i < _signaturePoints.length - 1; i++) {
+        if (_signaturePoints[i] != null && _signaturePoints[i + 1] != null) {
+          canvas.drawLine(_signaturePoints[i]!, _signaturePoints[i + 1]!, paint);
+        }
+      }
+
+      final picture = recorder.endRecording();
+      final img = await picture.toImage(300, 200);
+      final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+      
+      if (byteData != null) {
+        final buffer = byteData.buffer.asUint8List();
+        
+        // Guardar temporalmente
+        final tempDir = await getTemporaryDirectory();
+        final file = File('${tempDir.path}/signature_${DateTime.now().millisecondsSinceEpoch}.png');
+        await file.writeAsBytes(buffer);
+        
+        return file;
+      }
+      
+      return null;
+    } catch (e) {
+      print('Error al capturar firma: $e');
+      return null;
+    }
   }
 }
 

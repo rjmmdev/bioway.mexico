@@ -2,14 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:ui' as ui;
+import 'dart:typed_data';
+import 'package:path_provider/path_provider.dart';
 import '../../../utils/colors.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/image_service.dart';
+import '../../../services/lote_service.dart';
+import '../../../services/firebase/firebase_storage_service.dart';
+import '../../../models/lotes/lote_transportista_model.dart';
 import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/form_widgets.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
 import '../shared/widgets/lote_card_unified.dart';
+import '../shared/utils/dialog_utils.dart';
 
 class TransporteFormularioCargaScreen extends StatefulWidget {
   final List<Map<String, dynamic>> lotes;
@@ -26,7 +33,8 @@ class TransporteFormularioCargaScreen extends StatefulWidget {
 class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCargaScreen> {
   final _formKey = GlobalKey<FormState>();
   final UserSessionService _userSession = UserSessionService();
-  // final ImageService _imageService = ImageService();
+  final LoteService _loteService = LoteService();
+  final FirebaseStorageService _storageService = FirebaseStorageService();
   
   // Controladores
   final TextEditingController _nombreController = TextEditingController();
@@ -38,7 +46,9 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
   bool _isLoading = false;
   bool _lotesExpanded = false;
   File? _evidenciaFoto;
+  List<File> _photoFiles = [];
   List<Offset?> _firma = [];
+  String? _signatureUrl;
   
   @override
   void initState() {
@@ -111,22 +121,20 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
       return;
     }
     
-    if (_evidenciaFoto == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor capture la evidencia fotográfica'),
-          backgroundColor: BioWayColors.error,
-        ),
+    if (_evidenciaFoto == null && _photoFiles.isEmpty) {
+      DialogUtils.showErrorDialog(
+        context: context,
+        title: 'Evidencia requerida',
+        message: 'Por favor capture al menos una evidencia fotográfica',
       );
       return;
     }
     
     if (_firma.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor capture la firma del responsable'),
-          backgroundColor: BioWayColors.error,
-        ),
+      DialogUtils.showErrorDialog(
+        context: context,
+        title: 'Firma requerida',
+        message: 'Por favor capture la firma del responsable',
       );
       return;
     }
@@ -136,38 +144,143 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
     });
     
     try {
-      // TODO: Implementar la llamada a la API
-      // POST /api/v1/transporte/entrada
-      
-      await Future.delayed(const Duration(seconds: 2)); // Simulación
-      
-      if (mounted) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Carga confirmada exitosamente'),
-              backgroundColor: BioWayColors.success,
-            ),
+      // Obtener datos del usuario actual
+      final userProfile = await _userSession.getUserProfile();
+      if (userProfile == null) {
+        throw Exception('No se pudo obtener el perfil del usuario');
+      }
+
+      // Calcular tipo de polímero predominante
+      final tipoPolimeros = await _loteService.calcularTipoPolimeroPredominante(
+        widget.lotes.map((l) => l['id'] as String).toList()
+      );
+      String tipoPredominante = 'Mixto';
+      if (tipoPolimeros.isNotEmpty) {
+        tipoPredominante = tipoPolimeros.entries
+            .reduce((a, b) => a.value > b.value ? a : b)
+            .key;
+      }
+
+      // Calcular peso total
+      final pesoTotal = await _loteService.calcularPesoTotal(
+        widget.lotes.map((l) => l['id'] as String).toList()
+      );
+
+      // Subir firma a Storage
+      if (_firma.isNotEmpty) {
+        final signatureImage = await _captureSignature();
+        if (signatureImage != null) {
+          _signatureUrl = await _storageService.uploadImage(
+            signatureImage,
+            'lotes/transportista/firmas',
           );
         }
-        
-        // Navegar a la pestaña de entregar
-        Navigator.pushReplacementNamed(
-          context,
-          '/transporte_entregar',
+      }
+
+      // Subir fotos a Storage
+      List<String> photoUrls = [];
+      if (_evidenciaFoto != null) {
+        _photoFiles = [_evidenciaFoto!];
+      }
+      
+      for (int i = 0; i < _photoFiles.length; i++) {
+        final url = await _storageService.uploadImage(
+          _photoFiles[i],
+          'lotes/transportista/evidencias',
+        );
+        if (url != null) {
+          photoUrls.add(url);
+        }
+      }
+
+      // Crear el modelo del lote de transportista
+      final loteTransportista = LoteTransportistaModel(
+        fechaRecepcion: DateTime.now(),
+        lotesEntrada: widget.lotes.map((l) => l['id'] as String).toList(),
+        tipoOrigen: tipoPredominante,
+        direccionOrigen: widget.lotes.first['centro_acopio'] ?? 'Sin dirección',
+        pesoRecibido: pesoTotal,
+        nombreOpe: _nombreController.text.trim(),
+        placas: _placasController.text.trim(),
+        firmaSalida: _signatureUrl,
+        comentariosEntrada: _comentariosController.text.trim(),
+        eviFotoEntrada: photoUrls,
+        estado: 'en_transporte',
+      );
+
+      // Crear el lote en Firestore
+      final loteId = await _loteService.crearLoteTransportista(loteTransportista);
+      
+      if (mounted) {
+        DialogUtils.showSuccessDialog(
+          context: context,
+          title: 'Éxito',
+          message: 'Carga confirmada exitosamente',
+          onPressed: () {
+            // Navegar a la pestaña de entregar
+            Navigator.pushReplacementNamed(
+              context,
+              '/transporte_entregar',
+            );
+          },
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al confirmar carga: $e'),
-          backgroundColor: BioWayColors.error,
-        ),
+      DialogUtils.showErrorDialog(
+        context: context,
+        title: 'Error',
+        message: 'No se pudo confirmar la carga: ${e.toString()}',
       );
     } finally {
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+
+  Future<File?> _captureSignature() async {
+    try {
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, 300, 200));
+      
+      // Fondo blanco
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, 300, 200),
+        Paint()..color = Colors.white,
+      );
+
+      // Dibujar la firma
+      final paint = Paint()
+        ..color = Colors.black
+        ..strokeWidth = 3.0
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke;
+
+      for (int i = 0; i < _firma.length - 1; i++) {
+        if (_firma[i] != null && _firma[i + 1] != null) {
+          canvas.drawLine(_firma[i]!, _firma[i + 1]!, paint);
+        }
+      }
+
+      final picture = recorder.endRecording();
+      final img = await picture.toImage(300, 200);
+      final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+      
+      if (byteData != null) {
+        final buffer = byteData.buffer.asUint8List();
+        
+        // Guardar temporalmente
+        final tempDir = await getTemporaryDirectory();
+        final file = File('${tempDir.path}/signature_${DateTime.now().millisecondsSinceEpoch}.png');
+        await file.writeAsBytes(buffer);
+        
+        return file;
+      }
+      
+      return null;
+    } catch (e) {
+      print('Error al capturar firma: $e');
+      return null;
     }
   }
   
