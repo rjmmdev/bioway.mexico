@@ -85,16 +85,24 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
     });
     
     try {
-      // Obtener datos del lote desde la estructura unificada
-      final loteDoc = await FirebaseFirestore.instance
-          .collection('lotes')
-          .doc(widget.loteId)
-          .collection('reciclador')
-          .doc('data')
-          .get();
+      // Obtener datos del lote usando el servicio unificado que tiene la configuración correcta
+      final loteUnificadoService = LoteUnificadoService();
+      final lote = await loteUnificadoService.obtenerLotePorId(widget.loteId);
       
-      if (loteDoc.exists) {
-        final data = loteDoc.data()!;
+      if (lote == null) {
+        print('Lote no encontrado');
+        setState(() {
+          _pesoNetoAprovechable = widget.pesoOriginal;
+          _isLoading = false;
+        });
+        return;
+      }
+      
+      // Obtener datos del proceso reciclador
+      final recicladorData = lote.procesosData['reciclador'];
+      
+      if (recicladorData != null && recicladorData.isNotEmpty) {
+        final data = recicladorData;
         setState(() {
           // Cargar peso neto aprovechable (del formulario de entrada)
           _pesoNetoAprovechable = (data['peso_neto'] ?? data['peso_entrada'] ?? widget.pesoOriginal).toDouble();
