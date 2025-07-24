@@ -198,14 +198,23 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
           }
         }
         
+        // Obtener el ID del usuario actual (reciclador)
+        final currentUserId = _authService.currentUser?.uid;
+        final currentUserData = _userSession.getUserData();
+        
+        print('=== DATOS DEL USUARIO RECICLADOR ===');
+        print('User ID: $currentUserId');
+        print('User Folio: ${currentUserData?['folio']}');
+        print('User Nombre: ${currentUserData?['nombre']}');
+        
         // Crear o actualizar el proceso reciclador con la información de recepción
         await _loteUnificadoService.crearOActualizarProceso(
           loteId: loteId,
           proceso: 'reciclador',
           datos: {
-            'usuario_id': _authService.currentUser?.uid,
-            'reciclador_id': _authService.currentUser?.uid, // Agregar explícitamente el reciclador_id
-            'usuario_folio': _userSession.getUserData()?['folio'] ?? '',
+            'usuario_id': currentUserId,
+            'reciclador_id': currentUserId, // Agregar explícitamente el reciclador_id
+            'usuario_folio': currentUserData?['folio'] ?? '',
             'fecha_recepcion': FieldValue.serverTimestamp(),
             'peso_entrada': lote['peso'],
             'peso_recibido': double.tryParse(_pesoRecibidoController.text) ?? lote['peso'],
@@ -230,8 +239,11 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
         await _loteUnificadoService.transferirLote(
           loteId: loteId,
           procesoDestino: 'reciclador',
-          usuarioDestinoFolio: _userSession.getUserData()?['folio'] ?? '',
-          datosIniciales: {}, // Los datos ya se crearon/actualizaron arriba
+          usuarioDestinoFolio: currentUserData?['folio'] ?? '',
+          datosIniciales: {
+            'usuario_id': currentUserId,
+            'reciclador_id': currentUserId,
+          }, // Asegurar que se use el ID correcto
         );
         
         // Depurar el estado del lote después de la transferencia

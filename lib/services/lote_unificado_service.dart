@@ -258,14 +258,21 @@ class LoteUnificadoService {
       print('Proceso Actual: $procesoActual');
       
       // 2. Crear o actualizar el proceso destino
+      // No sobrescribir usuario_id si ya viene en datosIniciales
+      final datosFinales = {
+        'usuario_folio': usuarioDestinoFolio,
+        ...datosIniciales,
+      };
+      
+      // Solo agregar usuario_id si no viene en datosIniciales
+      if (!datosIniciales.containsKey('usuario_id')) {
+        datosFinales['usuario_id'] = _currentUserId;
+      }
+      
       await crearOActualizarProceso(
         loteId: loteId,
         proceso: procesoDestino,
-        datos: {
-          'usuario_id': _currentUserId,
-          'usuario_folio': usuarioDestinoFolio,
-          ...datosIniciales,
-        },
+        datos: datosFinales,
       );
       
       // 3. Si es una transferencia completa, actualizar datos generales
