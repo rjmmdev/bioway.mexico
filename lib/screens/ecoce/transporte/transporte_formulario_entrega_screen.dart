@@ -53,11 +53,14 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
   File? _evidenciaFoto;
   List<File> _photoFiles = [];
   List<Offset?> _firmaRecibe = [];
+  List<Map<String, dynamic>> _suggestedUsers = [];
+  bool _showSuggestions = false;
   
   @override
   void initState() {
     super.initState();
     _initializeForm();
+    _idDestinoController.addListener(_onFolioChanged);
   }
   
   void _initializeForm() {
@@ -68,10 +71,93 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
   
   @override
   void dispose() {
+    _idDestinoController.removeListener(_onFolioChanged);
     _idDestinoController.dispose();
     _pesoEntregadoController.dispose();
     _comentariosController.dispose();
     super.dispose();
+  }
+  
+  void _onFolioChanged() async {
+    final query = _idDestinoController.text.trim().toUpperCase();
+    
+    // Si el campo está vacío o tiene menos de 2 caracteres, ocultar sugerencias
+    if (query.length < 2) {
+      setState(() {
+        _showSuggestions = false;
+        _suggestedUsers = [];
+      });
+      return;
+    }
+    
+    // Buscar usuarios que coincidan con el patrón
+    try {
+      final app = _firebaseManager.currentApp;
+      if (app == null) return;
+      
+      final firestore = FirebaseFirestore.instanceFor(app: app);
+      
+      // Buscar en el índice de perfiles
+      final querySnapshot = await firestore
+          .collection('ecoce_profiles')
+          .where(FieldPath.documentId, isGreaterThanOrEqualTo: query)
+          .where(FieldPath.documentId, isLessThan: query + '\uf8ff')
+          .limit(10)
+          .get();
+      
+      final suggestions = <Map<String, dynamic>>[];
+      
+      for (final doc in querySnapshot.docs) {
+        final profileData = doc.data();
+        final profilePath = profileData['path'] as String?;
+        
+        if (profilePath != null) {
+          // Obtener datos completos del usuario
+          final userDoc = await firestore.doc(profilePath).get();
+          
+          if (userDoc.exists) {
+            final userData = userDoc.data()!;
+            String tipoUsuario = 'Desconocido';
+            String tipoLabel = 'Desconocido';
+            
+            if (profilePath.contains('reciclador')) {
+              tipoUsuario = 'R';
+              tipoLabel = 'Reciclador';
+            } else if (profilePath.contains('laboratorio')) {
+              tipoUsuario = 'L';
+              tipoLabel = 'Laboratorio';
+            } else if (profilePath.contains('transformador')) {
+              tipoUsuario = 'T';
+              tipoLabel = 'Transformador';
+            }
+            
+            suggestions.add({
+              'folio': doc.id,
+              'nombre': userData['nombre'] ?? userData['ecoce_nombre'] ?? 'Sin nombre',
+              'tipo': tipoUsuario,
+              'tipo_label': tipoLabel,
+              'direccion': _buildDireccion(userData),
+            });
+          }
+        }
+      }
+      
+      setState(() {
+        _suggestedUsers = suggestions;
+        _showSuggestions = suggestions.isNotEmpty;
+      });
+    } catch (e) {
+      print('Error buscando usuarios: $e');
+    }
+  }
+  
+  void _selectUser(Map<String, dynamic> user) {
+    setState(() {
+      _idDestinoController.text = user['folio'];
+      _destinatarioInfo = user;
+      _showSuggestions = false;
+      _suggestedUsers = [];
+    });
   }
   
   Future<void> _buscarUsuario() async {
@@ -562,6 +648,114 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                           ],
                         ),
                         
+                        // Mostrar sugerencias de usuarios
+                        if (_showSuggestions && _suggestedUsers.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            constraints: const BoxConstraints(maxHeight: 200),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: const Color(0xFF1490EE).withValues(alpha: 0.3)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: ListView.separated(
+                              shrinkWrap: true,
+                              padding: EdgeInsets.zero,
+                              itemCount: _suggestedUsers.length,
+                              separatorBuilder: (context, index) => const Divider(height: 1),
+                              itemBuilder: (context, index) {
+                                final user = _suggestedUsers[index];
+                                return InkWell(
+                                  onTap: () => _selectUser(user),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    child: Row(
+                                      children: [
+                                        // Icono del tipo de usuario
+                                        Container(
+                                          width: 40,
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            color: _getColorForUserType(user['tipo']).withValues(alpha: 0.1),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              user['tipo'],
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: _getColorForUserType(user['tipo']),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        // Información del usuario
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Text(
+                                                    user['folio'],
+                                                    style: const TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: BioWayColors.darkGreen,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: _getColorForUserType(user['tipo']).withValues(alpha: 0.1),
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                    child: Text(
+                                                      user['tipo_label'],
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        color: _getColorForUserType(user['tipo']),
+                                                        fontWeight: FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                user['nombre'],
+                                                style: const TextStyle(
+                                                  fontSize: 13,
+                                                  color: BioWayColors.darkGreen,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const Icon(
+                                          Icons.arrow_forward_ios,
+                                          size: 16,
+                                          color: Colors.grey,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                        
                         if (_destinatarioInfo != null) ...[
                           const SizedBox(height: 16),
                           const ValidationMessage(
@@ -1034,6 +1228,19 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
     } catch (e) {
       print('Error al capturar firma: $e');
       return null;
+    }
+  }
+  
+  Color _getColorForUserType(String tipo) {
+    switch (tipo) {
+      case 'R':
+        return const Color(0xFF4CAF50); // Verde para Reciclador
+      case 'L':
+        return const Color(0xFF2196F3); // Azul para Laboratorio
+      case 'T':
+        return const Color(0xFF9C27B0); // Púrpura para Transformador
+      default:
+        return const Color(0xFF757575); // Gris para otros
     }
   }
 }
