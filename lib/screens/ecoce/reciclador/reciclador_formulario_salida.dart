@@ -10,6 +10,7 @@ import '../../../services/lote_service.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
+import '../../../services/firebase/firebase_manager.dart';
 import '../shared/utils/dialog_utils.dart';
 import 'reciclador_documentacion.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
@@ -85,7 +86,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
     });
     
     try {
-      // Obtener datos del lote usando el servicio unificado que tiene la configuración correcta
+      // Obtener datos del lote usando el servicio unificado
       final loteUnificadoService = LoteUnificadoService();
       final lote = await loteUnificadoService.obtenerLotePorId(widget.loteId);
       
@@ -98,11 +99,31 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
         return;
       }
       
-      // Obtener datos del proceso reciclador
-      final recicladorData = lote.procesosData['reciclador'];
+      // Los datos del reciclador están en el objeto reciclador del modelo
+      if (lote.reciclador != null) {
+        // Usar los datos del modelo para los campos básicos
+        setState(() {
+          _pesoNetoAprovechable = lote.reciclador!.pesoEntrada;
+        });
+      }
       
-      if (recicladorData != null && recicladorData.isNotEmpty) {
-        final data = recicladorData;
+      // Para los datos específicos del formulario de salida, necesitamos consultarlos directamente
+      // porque el modelo no incluye todos los campos
+      final firebaseManager = FirebaseManager();
+      final app = firebaseManager.currentApp;
+      final firestore = app != null 
+          ? FirebaseFirestore.instanceFor(app: app)
+          : FirebaseFirestore.instance;
+      
+      final recicladorDoc = await firestore
+          .collection('lotes')
+          .doc(widget.loteId)
+          .collection('reciclador')
+          .doc('data')
+          .get();
+      
+      if (recicladorDoc.exists) {
+        final data = recicladorDoc.data()!;
         setState(() {
           // Cargar peso neto aprovechable (del formulario de entrada)
           _pesoNetoAprovechable = (data['peso_neto'] ?? data['peso_entrada'] ?? widget.pesoOriginal).toDouble();
