@@ -360,15 +360,30 @@ class LoteService {
       }
       
       try {
-        final oldSnapshot = await query
-            .orderBy('fecha_creacion', descending: true)
-            .get();
+        // Temporalmente sin orderBy hasta que se cree el índice
+        final oldSnapshot = await query.get();
             
         for (var doc in oldSnapshot.docs) {
           lotes.add(LoteRecicladorModel.fromFirestore(doc));
         }
       } catch (e) {
         print('Error obteniendo lotes antiguos: $e');
+        // Si el error es por índice, intentar sin orderBy
+        if (e.toString().contains('index')) {
+          try {
+            final simpleSnapshot = await _firestore.collection(LOTES_RECICLADOR)
+                .where('userId', isEqualTo: userId)
+                .get();
+            for (var doc in simpleSnapshot.docs) {
+              // Evitar duplicados
+              if (!lotes.any((l) => l.id == doc.id)) {
+                lotes.add(LoteRecicladorModel.fromFirestore(doc));
+              }
+            }
+          } catch (e2) {
+            print('Error en consulta simple: $e2');
+          }
+        }
       }
       
       // Ordenar por fecha (los del sistema unificado no tienen fecha_creacion, 
