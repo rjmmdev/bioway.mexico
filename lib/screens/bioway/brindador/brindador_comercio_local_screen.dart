@@ -12,11 +12,13 @@ class BrindadorComercioLocalScreen extends StatefulWidget {
   State<BrindadorComercioLocalScreen> createState() => _BrindadorComercioLocalScreenState();
 }
 
-class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScreen> {
+class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScreen> 
+    with SingleTickerProviderStateMixin {
   // Controllers
   final TextEditingController _searchController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
   final FocusNode _searchFocusNode = FocusNode();
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
   
   // Datos mock
   late List<Comercio> _comercios;
@@ -28,6 +30,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
   String? _municipioSeleccionado;
   List<String> _estados = [];
   List<String> _municipios = [];
+  String _filtroCategoria = 'Todos';
   
   // Usuario mock
   final String _userId = 'user_123';
@@ -35,11 +38,24 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
   
   // Control de búsqueda
   bool _isSearching = false;
+  bool _showFilters = false;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    
+    _fadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
+    
+    _animationController.forward();
     
     // Listener para detectar cuando el campo de búsqueda tiene/pierde foco
     _searchFocusNode.addListener(() {
@@ -47,21 +63,6 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
         setState(() {
           _isSearching = _searchFocusNode.hasFocus;
         });
-        
-        // Si está buscando, resetear el scroll al principio
-        if (_searchFocusNode.hasFocus) {
-          // Esperar un momento para que la UI se actualice
-          Future.delayed(const Duration(milliseconds: 100), () {
-            if (mounted && _scrollController.hasClients) {
-              // Volver al inicio para mostrar la búsqueda en la parte superior
-              _scrollController.animateTo(
-                0,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-              );
-            }
-          });
-        }
       }
     });
   }
@@ -91,7 +92,11 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
         final matchesMunicipio = _municipioSeleccionado == null || 
             comercio.municipio == _municipioSeleccionado;
         
-        return matchesSearch && matchesEstado && matchesMunicipio;
+        // Filtro por categoría
+        final matchesCategoria = _filtroCategoria == 'Todos' || 
+            comercio.categoria == _filtroCategoria;
+        
+        return matchesSearch && matchesEstado && matchesMunicipio && matchesCategoria;
       }).toList();
     });
   }
@@ -99,652 +104,332 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
   @override
   void dispose() {
     _searchController.dispose();
-    _scrollController.dispose();
     _searchFocusNode.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Detectar si el teclado está visible
-    final keyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
-    
     return Scaffold(
-      backgroundColor: BioWayColors.backgroundGrey,
-      resizeToAvoidBottomInset: true,
-      body: CustomScrollView(
-        controller: _scrollController,
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        slivers: [
-          // App Bar personalizado (se colapsa cuando está buscando)
-          if (!_isSearching) 
-            _buildSliverAppBar()
-          else
-            SliverAppBar(
-              expandedHeight: kToolbarHeight,
-              pinned: true,
-              elevation: 0,
-              backgroundColor: Colors.transparent,
-              automaticallyImplyLeading: false,
-              flexibleSpace: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: BioWayColors.backgroundGradient,
-                  ),
-                ),
-                child: SafeArea(
-                  child: Center(
-                    child: Text(
-                      'Buscar Comercios',
-                      style: TextStyle(
-                        color: BioWayColors.darkGreen,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          
-          // Productos destacados (solo visible cuando NO está buscando)
-          if (!_isSearching)
-            SliverToBoxAdapter(
-              child: _buildFeaturedProducts(),
-            ),
-          
-          // Filtros (siempre visibles)
-          SliverToBoxAdapter(
-            child: _buildFilters(),
-          ),
-          
-          // Lista de comercios
-          SliverPadding(
-            padding: EdgeInsets.only(
-              left: MediaQuery.of(context).size.width * 0.05,
-              right: MediaQuery.of(context).size.width * 0.05,
-              bottom: MediaQuery.of(context).size.height * 0.02,
-            ),
-            sliver: _buildComerciosList(),
-          ),
-          
-          // Padding adicional cuando el teclado está abierto
-          SliverToBoxAdapter(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              height: MediaQuery.of(context).viewInsets.bottom,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSliverAppBar() {
-    return SliverAppBar(
-      expandedHeight: 140,
-      collapsedHeight: kToolbarHeight,
-      floating: false,
-      pinned: true,
-      elevation: 0,
-      backgroundColor: Colors.transparent,
-      automaticallyImplyLeading: false,
-      flexibleSpace: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: BioWayColors.backgroundGradient,
-          ),
-        ),
-        child: FlexibleSpaceBar(
-          titlePadding: EdgeInsets.zero,
-          expandedTitleScale: 1.0,
-          background: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.0),
-                  Colors.black.withValues(alpha: 0.1),
-                ],
-              ),
-            ),
-          ),
-          title: LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              // Calcular el progreso de la animación (0.0 = expandido, 1.0 = colapsado)
-              final double expandedHeight = 140;
-              final double collapsedHeight = kToolbarHeight + 20;
-              final double currentHeight = constraints.maxHeight;
-              final double animationProgress = ((expandedHeight - currentHeight) / (expandedHeight - collapsedHeight)).clamp(0.0, 1.0);
-              
-              // Valores interpolados para animaciones suaves
-              final double titleOpacity = (1.0 - animationProgress * 2).clamp(0.0, 1.0);
-              final double titleScale = 1.0 - (animationProgress * 0.3);
-              final double subtitleOpacity = (1.0 - animationProgress).clamp(0.0, 1.0);
-              final double topPadding = 16 * (1.0 - animationProgress);
-              final double bottomPadding = 8 * (1.0 - animationProgress * 0.8);
-              
-              return Container(
-                height: constraints.maxHeight,
-                width: double.infinity,
-                padding: EdgeInsets.only(
-                  left: MediaQuery.of(context).size.width * 0.05,
-                  right: MediaQuery.of(context).size.width * 0.05,
-                  bottom: bottomPadding,
-                  top: topPadding,
-                ),
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Nuevo header minimalista
+            _buildModernHeader(),
+            
+            // Contenido principal
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
                 child: Column(
-                  mainAxisAlignment: animationProgress > 0.5 ? MainAxisAlignment.end : MainAxisAlignment.center,
                   children: [
-                    // Título superior (se desvanece al colapsar)
-                    AnimatedOpacity(
-                      duration: const Duration(milliseconds: 150),
-                      opacity: titleOpacity,
-                      child: Transform.scale(
-                        scale: titleScale,
-                        alignment: Alignment.centerLeft,
-                        child: Container(
-                          height: titleOpacity > 0 ? null : 0,
-                          margin: EdgeInsets.only(bottom: titleOpacity > 0 ? 4 : 0),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.store,
-                                color: BioWayColors.darkGreen,
-                                size: 28,
-                              ),
-                              SizedBox(width: MediaQuery.of(context).size.width * 0.02),
-                              Text(
-                                'Comercio Local',
-                                style: TextStyle(
-                                  color: BioWayColors.darkGreen,
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.bold,
-                                  shadows: [
-                                    Shadow(
-                                      offset: const Offset(0, 1),
-                                      blurRadius: 2,
-                                      color: Colors.white.withValues(alpha: 0.5),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                    // Productos destacados
+                    if (!_isSearching && !_showFilters)
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: _buildFeaturedProducts(),
                       ),
-                    ),
                     
-                    // Sección inferior: Subtítulo y balance
-                    Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          // Contenedor flexible para título colapsado y subtítulo
-                          Expanded(
-                            child: animationProgress > 0.5
-                                ? AnimatedOpacity(
-                                    duration: const Duration(milliseconds: 150),
-                                    opacity: animationProgress,
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.store,
-                                          color: BioWayColors.darkGreen,
-                                          size: 20,
-                                        ),
-                                        SizedBox(width: MediaQuery.of(context).size.width * 0.02),
-                                        Flexible(
-                                          child: Text(
-                                            'Comercio Local',
-                                            style: TextStyle(
-                                              color: BioWayColors.darkGreen,
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                              shadows: [
-                                                Shadow(
-                                                  offset: const Offset(0, 1),
-                                                  blurRadius: 2,
-                                                  color: Colors.white.withValues(alpha: 0.5),
-                                                ),
-                                              ],
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 1,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                : AnimatedOpacity(
-                                    duration: const Duration(milliseconds: 150),
-                                    opacity: subtitleOpacity,
-                                    child: Text(
-                                      'Canjea tus BioCoins por descuentos exclusivos',
-                                      style: TextStyle(
-                                        color: BioWayColors.darkGreen.withValues(alpha: 0.8),
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                          ),
-                          
-                          // Balance card con animación fluida
-                          Transform.scale(
-                            scale: 1.0 - (animationProgress * 0.1),
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 16 - (animationProgress * 4),
-                                vertical: 10 - (animationProgress * 4),
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.95),
-                                borderRadius: BorderRadius.circular(20 - (animationProgress * 4)),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.1),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    padding: EdgeInsets.all(6 - (animationProgress * 2)),
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          BioWayColors.primaryGreen.withValues(alpha: 0.1),
-                                          BioWayColors.lightGreen.withValues(alpha: 0.1),
-                                        ],
-                                      ),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.account_balance_wallet,
-                                      color: BioWayColors.primaryGreen,
-                                      size: 20 - (animationProgress * 4),
-                                    ),
-                                  ),
-                                  SizedBox(width: 10 - (animationProgress * 4)),
-                                  Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      AnimatedOpacity(
-                                        duration: const Duration(milliseconds: 150),
-                                        opacity: subtitleOpacity,
-                                        child: Text(
-                                          'Tu balance',
-                                          style: TextStyle(
-                                            color: Colors.grey.shade600,
-                                            fontSize: 11,
-                                            height: 1,
-                                          ),
-                                        ),
-                                      ),
-                                      Row(
-                                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                                        textBaseline: TextBaseline.alphabetic,
-                                        children: [
-                                          Text(
-                                            '$_userBioCoins',
-                                            style: TextStyle(
-                                              color: BioWayColors.darkGreen,
-                                              fontSize: 20 - (animationProgress * 4),
-                                              fontWeight: FontWeight.bold,
-                                              height: 1,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'BioCoins',
-                                            style: TextStyle(
-                                              color: BioWayColors.primaryGreen,
-                                              fontSize: 13 - (animationProgress * 2),
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    // Filtros expandibles
+                    if (_showFilters)
+                      _buildExpandedFilters(),
+                    
+                    // Lista de comercios
+                    _buildComerciosList(),
                   ],
                 ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFeaturedProducts() {
-    final featuredProducts = _productos.where((p) => p.destacado).toList();
-    
-    return Container(
-      margin: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.01),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: MediaQuery.of(context).size.width * 0.05,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 4,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        BioWayColors.primaryGreen,
-                        BioWayColors.lightGreen,
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Ofertas Destacadas',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: BioWayColors.textDark,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: BioWayColors.error,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'HOT',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: MediaQuery.of(context).size.height * 0.015),
-          SizedBox(
-            height: 140,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(
-                horizontal: MediaQuery.of(context).size.width * 0.05,
               ),
-              itemCount: featuredProducts.length,
-              itemBuilder: (context, index) {
-                final producto = featuredProducts[index];
-                final comercio = _comercios.firstWhere(
-                  (c) => c.id == producto.comercioId,
-                );
-                return _buildFeaturedProductCard(producto, comercio);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFeaturedProductCard(ProductoDescuento producto, Comercio comercio) {
-    return GestureDetector(
-      onTap: () => _showProductDetail(producto, comercio),
-      child: Container(
-        width: 280,
-        margin: const EdgeInsets.only(right: 16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              BioWayColors.primaryGreen,
-              BioWayColors.mediumGreen,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: BioWayColors.primaryGreen.withValues(alpha: 0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      producto.icono,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          producto.nombre,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          comercio.nombre,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      '${producto.descuentoPorcentaje.toInt()}%',
-                      style: TextStyle(
-                        color: BioWayColors.primaryGreen,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.monetization_on,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${producto.bioCoinsCosto} BioCoins',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      'Ver más',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
 
-  Widget _buildFilters() {
+  Widget _buildModernHeader() {
     return Container(
-      margin: EdgeInsets.symmetric(
-        horizontal: MediaQuery.of(context).size.width * 0.05,
-        vertical: MediaQuery.of(context).size.height * 0.025,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Título y balance
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Comercio Local',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Descuentos exclusivos para ti',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+              // Balance card compacto
               Container(
-                width: 4,
-                height: 24,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
                       BioWayColors.primaryGreen,
-                      BioWayColors.lightGreen,
+                      BioWayColors.primaryGreen.withOpacity(0.8),
                     ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: BioWayColors.primaryGreen.withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Comercios Afiliados',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: BioWayColors.textDark,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.account_balance_wallet,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '$_userBioCoins',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            height: 1,
+                          ),
+                        ),
+                        const Text(
+                          'BioCoins',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 11,
+                            height: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          SizedBox(height: MediaQuery.of(context).size.height * 0.015),
-          // Barra de búsqueda
+          const SizedBox(height: 20),
+          
+          // Barra de búsqueda mejorada
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+              color: const Color(0xFFF5F5F5),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _isSearching 
+                    ? BioWayColors.primaryGreen 
+                    : Colors.transparent,
+                width: 2,
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    onChanged: (_) => _filterComercios(),
+                    decoration: InputDecoration(
+                      hintText: 'Buscar tiendas, restaurantes...',
+                      hintStyle: TextStyle(
+                        color: Colors.grey[500],
+                        fontSize: 15,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: _isSearching 
+                            ? BioWayColors.primaryGreen 
+                            : Colors.grey[400],
+                      ),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(
+                                Icons.clear,
+                                color: Colors.grey[400],
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                _filterComercios();
+                                _searchFocusNode.unfocus();
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                    ),
+                  ),
+                ),
+                // Botón de filtros
+                Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    color: _showFilters 
+                        ? BioWayColors.primaryGreen 
+                        : Colors.transparent,
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.tune,
+                      color: _showFilters 
+                          ? Colors.white 
+                          : Colors.grey[600],
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _showFilters = !_showFilters;
+                      });
+                    },
+                  ),
                 ),
               ],
             ),
-            child: TextField(
-              controller: _searchController,
-              focusNode: _searchFocusNode,
-              onChanged: (_) => _filterComercios(),
-              decoration: InputDecoration(
-                hintText: 'Buscar comercio por nombre...',
-                prefixIcon: Icon(
-                  Icons.search,
-                  color: BioWayColors.primaryGreen,
-                ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: Icon(
-                          Icons.clear,
-                          color: Colors.grey,
-                        ),
-                        onPressed: () {
-                          _searchController.clear();
-                          _filterComercios();
-                          _searchFocusNode.unfocus();
-                        },
-                      )
-                    : null,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-              ),
+          ),
+          
+          // Categorías rápidas
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 40,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _buildCategoryChip('Todos', Icons.apps),
+                _buildCategoryChip('Cafetería', Icons.coffee),
+                _buildCategoryChip('Restaurante', Icons.restaurant),
+                _buildCategoryChip('Supermercado', Icons.shopping_cart),
+                _buildCategoryChip('Deportes', Icons.sports),
+                _buildCategoryChip('Salud', Icons.medical_services),
+              ],
             ),
           ),
-          SizedBox(height: MediaQuery.of(context).size.height * 0.015),
-          // Filtros de ubicación
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryChip(String label, IconData icon) {
+    final isSelected = _filtroCategoria == label;
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _filtroCategoria = label;
+          _filterComercios();
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? BioWayColors.primaryGreen 
+              : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected 
+                ? BioWayColors.primaryGreen 
+                : Colors.grey[300]!,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected ? Colors.white : Colors.grey[600],
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey[700],
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpandedFilters() {
+    return Container(
+      margin: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Filtrar por ubicación',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1A1A1A),
+            ),
+          ),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: const Color(0xFFF5F5F5),
                     borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
@@ -763,7 +448,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                         ..._estados.map((estado) => DropdownMenuItem(
                           value: estado,
                           child: Text(estado),
-                        )).toList(),
+                        )),
                       ],
                       onChanged: (value) {
                         setState(() {
@@ -793,15 +478,8 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: const Color(0xFFF5F5F5),
                     borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
@@ -820,7 +498,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                         ..._municipios.map((municipio) => DropdownMenuItem(
                           value: municipio,
                           child: Text(municipio),
-                        )).toList(),
+                        )),
                       ],
                       onChanged: (value) {
                         setState(() {
@@ -839,39 +517,257 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
     );
   }
 
-  Widget _buildComerciosList() {
-    if (_comerciosFiltrados.isEmpty) {
-      return SliverToBoxAdapter(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.store_outlined,
-                size: 64,
-                color: Colors.grey.shade400,
+  Widget _buildFeaturedProducts() {
+    final featuredProducts = _productos.where((p) => p.destacado).toList();
+    
+    return Container(
+      padding: const EdgeInsets.only(top: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  '🔥 Ofertas del día',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    // Ver todas las ofertas
+                  },
+                  child: Text(
+                    'Ver todas',
+                    style: TextStyle(
+                      color: BioWayColors.primaryGreen,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 160,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: featuredProducts.length,
+              itemBuilder: (context, index) {
+                final producto = featuredProducts[index];
+                final comercio = _comercios.firstWhere(
+                  (c) => c.id == producto.comercioId,
+                );
+                return _buildFeaturedProductCard(producto, comercio);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeaturedProductCard(ProductoDescuento producto, Comercio comercio) {
+    return GestureDetector(
+      onTap: () => _showProductDetail(producto, comercio),
+      child: Container(
+        width: 300,
+        margin: const EdgeInsets.only(right: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Contenido principal
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: BioWayColors.primaryGreen.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          producto.icono,
+                          color: BioWayColors.primaryGreen,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              producto.nombre,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1A1A1A),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              comercio.nombre,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey[600],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${producto.bioCoinsCosto} BioCoins',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A1A1A),
+                            ),
+                          ),
+                          Text(
+                            'Ahorra ${producto.descuentoPorcentaje.toInt()}%',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: BioWayColors.success,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: BioWayColors.primaryGreen,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_forward,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-              Text(
-                'No se encontraron comercios',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade600,
+            ),
+            // Badge de descuento
+            Positioned(
+              top: 12,
+              right: 12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: BioWayColors.error,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '-${producto.descuentoPorcentaje.toInt()}%',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildComerciosList() {
+    if (_comerciosFiltrados.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          children: [
+            Icon(
+              Icons.store_outlined,
+              size: 80,
+              color: Colors.grey[300],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No se encontraron comercios',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Intenta con otros filtros',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
         ),
       );
     }
 
-    return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          final comercio = _comerciosFiltrados[index];
-          return _buildComercioCard(comercio);
-        },
-        childCount: _comerciosFiltrados.length,
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Comercios cerca de ti (${_comerciosFiltrados.length})',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1A1A1A),
+            ),
+          ),
+          const SizedBox(height: 16),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _comerciosFiltrados.length,
+            itemBuilder: (context, index) {
+              final comercio = _comerciosFiltrados[index];
+              return _buildComercioCard(comercio);
+            },
+          ),
+        ],
       ),
     );
   }
@@ -884,15 +780,15 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
     return GestureDetector(
       onTap: () => _showComercioProducts(comercio),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
@@ -900,19 +796,20 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
+              // Ícono con gradiente
               Container(
-                width: 60,
-                height: 60,
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      BioWayColors.primaryGreen.withValues(alpha: 0.1),
-                      BioWayColors.lightGreen.withValues(alpha: 0.1),
+                      BioWayColors.primaryGreen.withOpacity(0.1),
+                      BioWayColors.lightGreen.withOpacity(0.1),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
                   _getIconForCategory(comercio.categoria),
@@ -921,6 +818,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                 ),
               ),
               const SizedBox(width: 16),
+              // Información
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -928,26 +826,26 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                     Text(
                       comercio.nombre,
                       style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: BioWayColors.textDark,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1A1A1A),
                       ),
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
                         Icon(
-                          Icons.location_on,
+                          Icons.location_on_outlined,
                           size: 14,
-                          color: Colors.grey.shade600,
+                          color: Colors.grey[500],
                         ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             '${comercio.municipio}, ${comercio.estado}',
                             style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
+                              fontSize: 13,
+                              color: Colors.grey[600],
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -959,16 +857,16 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                     Row(
                       children: [
                         Icon(
-                          Icons.schedule,
+                          Icons.access_time,
                           size: 14,
-                          color: Colors.grey.shade600,
+                          color: Colors.grey[500],
                         ),
                         const SizedBox(width: 4),
                         Text(
                           comercio.horario,
                           style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
+                            fontSize: 13,
+                            color: Colors.grey[600],
                           ),
                         ),
                       ],
@@ -976,8 +874,8 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                   ],
                 ),
               ),
+              // Indicador de ofertas
               Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -985,13 +883,13 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      color: BioWayColors.primaryGreen,
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       '${productosComercio.length} ofertas',
-                      style: TextStyle(
-                        color: BioWayColors.primaryGreen,
+                      style: const TextStyle(
+                        color: Colors.white,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1001,7 +899,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                   Icon(
                     Icons.arrow_forward_ios,
                     size: 16,
-                    color: BioWayColors.primaryGreen,
+                    color: Colors.grey[400],
                   ),
                 ],
               ),
@@ -1022,12 +920,12 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
+        height: MediaQuery.of(context).size.height * 0.85,
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
+            topLeft: Radius.circular(28),
+            topRight: Radius.circular(28),
           ),
         ),
         child: Column(
@@ -1035,66 +933,73 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
             // Handle
             Container(
               margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
+              width: 48,
+              height: 5,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(3),
               ),
             ),
             // Header
             Container(
-              padding: const EdgeInsets.all(20),
-              child: Column(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              BioWayColors.primaryGreen.withValues(alpha: 0.1),
-                              BioWayColors.lightGreen.withValues(alpha: 0.1),
-                            ],
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          BioWayColors.primaryGreen.withOpacity(0.1),
+                          BioWayColors.lightGreen.withOpacity(0.1),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      _getIconForCategory(comercio.categoria),
+                      color: BioWayColors.primaryGreen,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          comercio.nombre,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1A1A1A),
                           ),
-                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(
-                          _getIconForCategory(comercio.categoria),
-                          color: BioWayColors.primaryGreen,
-                          size: 24,
+                        const SizedBox(height: 4),
+                        Text(
+                          '${comercio.direccion}, ${comercio.municipio}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              comercio.nombre,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              '${comercio.direccion}, ${comercio.municipio}',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-            const Divider(height: 1),
             // Lista de productos
             Expanded(
               child: ListView.builder(
@@ -1122,10 +1027,10 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.grey.shade50,
+          color: const Color(0xFFF8F9FA),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: Colors.grey.shade200,
+            color: Colors.grey[200]!,
             width: 1,
           ),
         ),
@@ -1134,7 +1039,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -1152,15 +1057,16 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                     producto.nombre,
                     style: const TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1A1A1A),
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     producto.descripcion,
                     style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
+                      fontSize: 13,
+                      color: Colors.grey[600],
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -1181,7 +1087,7 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '${producto.descuentoPorcentaje.toInt()}%',
+                    '-${producto.descuentoPorcentaje.toInt()}%',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -1222,12 +1128,12 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.6,
+        height: MediaQuery.of(context).size.height * 0.7,
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
+            topLeft: Radius.circular(28),
+            topRight: Radius.circular(28),
           ),
         ),
         child: Column(
@@ -1235,30 +1141,30 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
             // Handle
             Container(
               margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
+              width: 48,
+              height: 5,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(3),
               ),
             ),
             // Contenido
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Ícono y nombre del producto
                     Center(
                       child: Container(
-                        width: 80,
-                        height: 80,
+                        width: 100,
+                        height: 100,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              BioWayColors.primaryGreen.withValues(alpha: 0.1),
-                              BioWayColors.lightGreen.withValues(alpha: 0.1),
+                              BioWayColors.primaryGreen.withOpacity(0.1),
+                              BioWayColors.lightGreen.withOpacity(0.1),
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
@@ -1268,17 +1174,18 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                         child: Icon(
                           producto.icono,
                           color: BioWayColors.primaryGreen,
-                          size: 40,
+                          size: 48,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                     Center(
                       child: Text(
                         producto.nombre,
                         style: const TextStyle(
-                          fontSize: 24,
+                          fontSize: 26,
                           fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1A1A),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -1289,26 +1196,27 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                         comercio.nombre,
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.grey.shade600,
+                          color: Colors.grey[600],
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 28),
                     // Descripción
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(12),
+                        color: const Color(0xFFF8F9FA),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Descripción',
+                            'Acerca de esta oferta',
                             style: TextStyle(
                               fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1A1A1A),
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -1316,36 +1224,43 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                             producto.descripcion,
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey.shade700,
+                              color: Colors.grey[700],
                               height: 1.5,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
                     // Información del descuento
                     Row(
                       children: [
                         Expanded(
                           child: Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: BioWayColors.success.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
+                              gradient: LinearGradient(
+                                colors: [
+                                  BioWayColors.success.withOpacity(0.1),
+                                  BioWayColors.success.withOpacity(0.05),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             child: Column(
                               children: [
                                 Text(
                                   '${producto.descuentoPorcentaje.toInt()}%',
                                   style: TextStyle(
-                                    fontSize: 28,
+                                    fontSize: 32,
                                     fontWeight: FontWeight.bold,
                                     color: BioWayColors.success,
                                   ),
                                 ),
                                 const Text(
-                                  'Descuento',
+                                  'de descuento',
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: Colors.grey,
@@ -1358,26 +1273,27 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                         const SizedBox(width: 12),
                         Expanded(
                           child: Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
+                              gradient: LinearGradient(
+                                colors: [
+                                  BioWayColors.primaryGreen.withOpacity(0.1),
+                                  BioWayColors.primaryGreen.withOpacity(0.05),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             child: Column(
                               children: [
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Icon(
-                                      Icons.monetization_on,
-                                      color: BioWayColors.primaryGreen,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 4),
                                     Text(
                                       '${producto.bioCoinsCosto}',
                                       style: TextStyle(
-                                        fontSize: 28,
+                                        fontSize: 32,
                                         fontWeight: FontWeight.bold,
                                         color: BioWayColors.primaryGreen,
                                       ),
@@ -1400,20 +1316,25 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                     const SizedBox(height: 24),
                     // Balance actual
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: _userBioCoins >= producto.bioCoinsCosto
-                            ? BioWayColors.info.withValues(alpha: 0.1)
-                            : BioWayColors.error.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
+                            ? BioWayColors.info.withOpacity(0.1)
+                            : BioWayColors.error.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: _userBioCoins >= producto.bioCoinsCosto
+                              ? BioWayColors.info.withOpacity(0.3)
+                              : BioWayColors.error.withOpacity(0.3),
+                        ),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
                             _userBioCoins >= producto.bioCoinsCosto
-                                ? Icons.check_circle
-                                : Icons.error,
+                                ? Icons.check_circle_outline
+                                : Icons.error_outline,
                             color: _userBioCoins >= producto.bioCoinsCosto
                                 ? BioWayColors.info
                                 : BioWayColors.error,
@@ -1422,10 +1343,10 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                           const SizedBox(width: 8),
                           Text(
                             _userBioCoins >= producto.bioCoinsCosto
-                                ? 'Tienes $_userBioCoins BioCoins disponibles'
-                                : 'BioCoins insuficientes (necesitas ${producto.bioCoinsCosto - _userBioCoins} más)',
+                                ? 'Tienes suficientes BioCoins'
+                                : 'Te faltan ${producto.bioCoinsCosto - _userBioCoins} BioCoins',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 15,
                               color: _userBioCoins >= producto.bioCoinsCosto
                                   ? BioWayColors.info
                                   : BioWayColors.error,
@@ -1435,41 +1356,51 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    // Botón de canjear
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _userBioCoins >= producto.bioCoinsCosto
-                            ? () {
-                                HapticFeedback.mediumImpact();
-                                Navigator.pop(context);
-                                _showQRCode(producto, comercio);
-                              }
-                            : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: BioWayColors.primaryGreen,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 3,
-                        ),
-                        icon: const Icon(
-                          Icons.qr_code,
-                          color: Colors.white,
-                        ),
-                        label: const Text(
-                          'Canjear Puntos',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
+                  ],
+                ),
+              ),
+            ),
+            // Botón de canjear
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _userBioCoins >= producto.bioCoinsCosto
+                        ? () {
+                            HapticFeedback.mediumImpact();
+                            Navigator.pop(context);
+                            _showQRCode(producto, comercio);
+                          }
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: BioWayColors.primaryGreen,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Canjear descuento',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -1488,28 +1419,37 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
       barrierDismissible: false,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'Muestra este código al comercio',
+                'Tu código de descuento',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1A1A),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 8),
+              Text(
+                'Muéstralo en el comercio',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 24),
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  color: const Color(0xFFF8F9FA),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: BioWayColors.primaryGreen,
+                    color: BioWayColors.primaryGreen.withOpacity(0.2),
                     width: 2,
                   ),
                 ),
@@ -1517,61 +1457,73 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                   data: qrData,
                   version: QrVersions.auto,
                   size: 200,
-                  backgroundColor: Colors.white,
+                  backgroundColor: Colors.transparent,
                 ),
               ),
-              const SizedBox(height: 16),
-              Text(
-                producto.nombre,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                comercio.nombre,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 20),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: BioWayColors.primaryGreen.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                child: Column(
                   children: [
-                    Icon(
-                      Icons.monetization_on,
-                      color: BioWayColors.primaryGreen,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 4),
                     Text(
-                      '${producto.bioCoinsCosto} BioCoins',
-                      style: TextStyle(
-                        color: BioWayColors.primaryGreen,
+                      producto.nombre,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A1A1A),
                       ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      comercio.nombre,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.monetization_on,
+                          color: BioWayColors.primaryGreen,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${producto.bioCoinsCosto} BioCoins',
+                          style: TextStyle(
+                            color: BioWayColors.primaryGreen,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               Row(
                 children: [
                   Expanded(
                     child: TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancelar'),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: Text(
+                        'Cancelar',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 16,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1583,13 +1535,19 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: BioWayColors.primaryGreen,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
+                        elevation: 0,
                       ),
                       child: const Text(
-                        'Confirmar',
-                        style: TextStyle(color: Colors.white),
+                        'Ya lo usé',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
@@ -1611,7 +1569,11 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
             SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Código generado exitosamente. Muéstralo al comercio para canjear tu descuento.',
+                '¡Descuento canjeado exitosamente!',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ],
@@ -1619,9 +1581,10 @@ class _BrindadorComercioLocalScreenState extends State<BrindadorComercioLocalScr
         backgroundColor: BioWayColors.success,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
         ),
-        duration: const Duration(seconds: 4),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 3),
       ),
     );
   }

@@ -112,7 +112,7 @@ class MaterialReciclable {
       'nombre': nombre,
       'descripcion': descripcion,
       'iconoUrl': iconoUrl,
-      'color': color.toARGB32(),
+      'color': color.value,
       'puntosPerKg': puntosPerKg,
       'co2PorKg': co2PorKg,
       'ejemplos': ejemplos,

@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:io';
-import 'package:image_picker/image_picker.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/bioway_levels.dart';
 import '../../../models/bioway/bioway_user.dart';
@@ -17,8 +14,6 @@ class RecolectorPerfilScreen extends StatefulWidget {
 class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
   // Datos mock del usuario
   late BioWayUser mockUser;
-  File? _imageFile;
-  final ImagePicker _picker = ImagePicker();
   
   // Datos mock de recolecciones por material
   final Map<String, double> materialesRecolectados = {
@@ -52,7 +47,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
       municipio: 'Benito Juárez',
       colonia: 'Del Valle',
       totalResiduosRecolectados: 45,
-      totalKgReciclados: 120.5, // Suma de todos los materiales
+      totalKgReciclados: 120.5,
       totalCO2Evitado: 250.8,
       vehiculo: 'Camioneta Nissan NP300',
       capacidadKg: 500.0,
@@ -63,39 +58,33 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: BioWayColors.backgroundGrey,
-      appBar: AppBar(
-        title: const Text('Mi Perfil'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: BioWayColors.darkGreen,
-        actions: [
-          // Botón de cerrar sesión
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _handleLogout,
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: SafeArea(
         child: Column(
           children: [
-            // Header con información del usuario
             _buildHeader(),
-            
-            // Sección de estadísticas principales
-            _buildMainStats(),
-            
-            // Sección de información del vehículo
-            _buildVehicleSection(),
-            
-            // Grid de materiales recolectados
-            _buildMaterialsSection(),
-            
-            // Botón de eliminar cuenta
-            _buildDeleteAccountButton(),
-            
-            SizedBox(height: MediaQuery.of(context).size.height * 0.04),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  await Future.delayed(const Duration(seconds: 1));
+                },
+                child: ListView(
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    _buildStatsOverview(),
+                    const SizedBox(height: 24),
+                    _buildTodayStats(),
+                    const SizedBox(height: 24),
+                    _buildImpactSection(),
+                    const SizedBox(height: 24),
+                    _buildMaterialsBreakdown(),
+                    const SizedBox(height: 24),
+                    _buildAccountActions(),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -104,311 +93,558 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
 
   Widget _buildHeader() {
     return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            mockUser.nombre,
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1A1A1A),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+              color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(25),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.local_shipping,
+                  size: 24,
+                  color: BioWayColors.primaryGreen,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Recolector Certificado',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: BioWayColors.primaryGreen,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsOverview() {
+    return Container(
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: BioWayColors.backgroundGradient,
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+          colors: [
+            BioWayColors.primaryGreen,
+            BioWayColors.primaryGreen.withValues(alpha: 0.8),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: BioWayColors.primaryGreen.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStatItem(
+                icon: Icons.monetization_on,
+                value: '${mockUser.bioCoins}',
+                label: 'BioCoins',
+                iconColor: Colors.amber,
+              ),
+              Container(
+                height: 40,
+                width: 1,
+                color: Colors.white.withValues(alpha: 0.3),
+              ),
+              _buildStatItem(
+                icon: Icons.emoji_events,
+                value: mockUser.nivel,
+                label: 'Nivel',
+                iconColor: Colors.white,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem({
+    required IconData icon,
+    required String value,
+    required String label,
+    required Color iconColor,
+  }) {
+    return Column(
+      children: [
+        Icon(
+          icon,
+          size: 32,
+          color: iconColor,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.white.withValues(alpha: 0.8),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTodayStats() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.today,
+                  color: BioWayColors.primaryGreen,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Actividad de Hoy',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: BioWayColors.textDark,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: _buildSimpleStatCard(
+                  icon: Icons.location_on,
+                  value: '12',
+                  label: 'Puntos\nvisitados',
+                  color: BioWayColors.primaryGreen,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildSimpleStatCard(
+                  icon: Icons.scale,
+                  value: '250',
+                  label: 'Kilos\nrecolectados',
+                  color: BioWayColors.info,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildSimpleStatCard({
+    required IconData icon,
+    required String value,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
         children: [
-          // Foto de perfil con opción de cambiar
-          Stack(
-            children: [
-              GestureDetector(
-                onTap: _pickImage,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 4),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha:0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: _imageFile != null
-                        ? Image.file(
-                            _imageFile!,
-                            fit: BoxFit.cover,
-                          )
-                        : Container(
-                            padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
-                            child: SvgPicture.asset(
-                              'assets/logos/bioway_logo.svg',
-                              colorFilter: ColorFilter.mode(
-                                BioWayColors.primaryGreen,
-                                BlendMode.srcIn,
-                              ),
-                            ),
-                          ),
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: BioWayColors.primaryGreen,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                  child: const Icon(
-                    Icons.camera_alt,
-                    size: 20,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
+          Icon(
+            icon,
+            color: color,
+            size: 36,
           ),
-          SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-          
-          // Nombre del usuario
+          const SizedBox(height: 8),
           Text(
-            mockUser.nombre,
-            style: const TextStyle(
-              fontSize: 24,
+            value,
+            style: TextStyle(
+              fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: color,
             ),
           ),
-          SizedBox(height: MediaQuery.of(context).size.height * 0.01),
-          
-          // Dirección
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: BioWayColors.textGrey,
+              height: 1.2,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildImpactSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.location_on,
-                color: Colors.white70,
-                size: 16,
+              Icon(
+                Icons.eco,
+                color: BioWayColors.primaryGreen,
+                size: 24,
               ),
-              SizedBox(width: MediaQuery.of(context).size.width * 0.01),
+              const SizedBox(width: 8),
               Text(
-                '${mockUser.colonia}, ${mockUser.municipio}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.white70,
+                'Mi Impacto Total',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: BioWayColors.textDark,
                 ),
               ),
             ],
           ),
-          SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-          
-          // Nivel y BioCoins
+          const SizedBox(height: 20),
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // BioCoins
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha:0.2),
-                  borderRadius: BorderRadius.circular(20),
+              Expanded(
+                child: _buildImpactCard(
+                  icon: Icons.recycling,
+                  value: '${mockUser.totalKgReciclados} kg',
+                  label: 'Total recolectado',
+                  color: BioWayColors.primaryGreen,
                 ),
-                child: Row(
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildImpactCard(
+                  icon: Icons.cloud_off,
+                  value: '${mockUser.totalCO2Evitado} kg',
+                  label: 'CO₂ evitado',
+                  color: BioWayColors.info,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImpactCard({
+    required IconData icon,
+    required String value,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: color,
+            size: 32,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: BioWayColors.textGrey,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildMaterialsBreakdown() {
+    final total = materialesRecolectados.values.reduce((a, b) => a + b);
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.pie_chart,
+                color: BioWayColors.primaryGreen,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Materiales Recolectados',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: BioWayColors.textDark,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          ...materialesRecolectados.entries.map((entry) {
+            final percentage = (entry.value / total * 100).toStringAsFixed(1);
+            return _buildMaterialRow(
+              material: entry.key,
+              weight: entry.value,
+              percentage: percentage,
+              color: _getMaterialColor(entry.key),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMaterialRow({
+    required String material,
+    required double weight,
+    required String percentage,
+    required Color color,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              _getMaterialIcon(material),
+              color: color,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(
-                      Icons.monetization_on,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    SizedBox(width: MediaQuery.of(context).size.width * 0.015),
                     Text(
-                      '${mockUser.bioCoins}',
+                      _getMaterialName(material),
                       style: const TextStyle(
-                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      '$weight kg',
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        fontSize: 14,
                       ),
                     ),
                   ],
                 ),
-              ),
-              SizedBox(width: MediaQuery.of(context).size.width * 0.04),
-              // Nivel con botón de info
-              GestureDetector(
-                onTap: _showLevelInfo,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: BioWayLevels.getLevelColor(mockUser.nivel),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        BioWayLevels.getDisplayName(mockUser.nivel),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                const SizedBox(height: 4),
+                Stack(
+                  children: [
+                    Container(
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                    FractionallySizedBox(
+                      widthFactor: double.parse(percentage) / 100,
+                      child: Container(
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: color,
+                          borderRadius: BorderRadius.circular(3),
                         ),
                       ),
-                      SizedBox(width: MediaQuery.of(context).size.width * 0.015),
-                      const Icon(
-                        Icons.info_outline,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMainStats() {
-    return Padding(
-      padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Estadísticas',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  icon: Icons.local_shipping,
-                  title: 'Recolecciones\nRealizadas',
-                  value: '${mockUser.totalResiduosRecolectados}',
-                  color: BioWayColors.success,
-                ),
-              ),
-              SizedBox(width: MediaQuery.of(context).size.width * 0.03),
-              Expanded(
-                child: _buildStatCard(
-                  icon: Icons.eco,
-                  title: 'CO2\nEvitado',
-                  value: '${mockUser.totalCO2Evitado.toStringAsFixed(2)} kg',
-                  color: BioWayColors.primaryGreen,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVehicleSection() {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width * 0.05),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Información del Vehículo',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-          Container(
-            padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha:0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                _buildVehicleInfoRow(
-                  icon: Icons.directions_car,
-                  label: 'Vehículo',
-                  value: mockUser.vehiculo ?? 'No especificado',
-                  color: BioWayColors.primaryGreen,
-                ),
-                SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-                _buildVehicleInfoRow(
-                  icon: Icons.scale,
-                  label: 'Capacidad',
-                  value: '${mockUser.capacidadKg ?? 0} kg',
-                  color: BioWayColors.info,
-                ),
-                SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-                _buildVehicleInfoRow(
-                  icon: Icons.assignment,
-                  label: 'Licencia',
-                  value: mockUser.licenciaConducir ?? 'No especificada',
-                  color: BioWayColors.warning,
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 8),
+          Text(
+            '$percentage%',
+            style: TextStyle(
+              fontSize: 12,
+              color: BioWayColors.textGrey,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildVehicleInfoRow({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Row(
+  Widget _buildAccountActions() {
+    return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: color.withValues(alpha:0.1),
-            borderRadius: BorderRadius.circular(10),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          child: Icon(icon, color: color, size: 24),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
+              ListTile(
+                onTap: _handleLogout,
+                leading: Icon(
+                  Icons.logout,
+                  color: BioWayColors.error,
+                ),
+                title: Text(
+                  'Cerrar Sesión',
+                  style: TextStyle(
+                    color: BioWayColors.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                trailing: Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: BioWayColors.error,
                 ),
               ),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.0025),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+              const Divider(height: 1),
+              ListTile(
+                onTap: _showDeleteAccountDialog,
+                leading: const Icon(
+                  Icons.delete_forever,
+                  color: Colors.red,
+                ),
+                title: const Text(
+                  'Eliminar Cuenta',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                trailing: const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Colors.red,
                 ),
               ),
             ],
@@ -418,220 +654,7 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
     );
   }
 
-  Widget _buildMaterialsSection() {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width * 0.05),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Materiales Recolectados',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 1.5,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: materialesRecolectados.length,
-            itemBuilder: (context, index) {
-              final entry = materialesRecolectados.entries.elementAt(index);
-              return _buildMaterialCard(
-                materialName: entry.key,
-                cantidad: entry.value,
-                unidad: 'kg',
-                color: _getMaterialColor(entry.key),
-                icon: _getIconForMaterial(entry.key),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMaterialCard({
-    required String materialName,
-    required double cantidad,
-    required String unidad,
-    required Color color,
-    required IconData icon,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            color.withValues(alpha:0.8),
-            color,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha:0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Icono de fondo
-          Positioned(
-            right: -10,
-            bottom: -10,
-            child: Icon(
-              icon,
-              size: 60,
-              color: Colors.white.withValues(alpha:0.2),
-            ),
-          ),
-          // Contenido
-          Padding(
-            padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  materialName.toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      cantidad.toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(width: MediaQuery.of(context).size.width * 0.01),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(
-                        unidad,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDeleteAccountButton() {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width * 0.05),
-      child: OutlinedButton.icon(
-        onPressed: _showDeleteAccountDialog,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: BioWayColors.error,
-          side: BorderSide(color: BioWayColors.error),
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        icon: const Icon(Icons.delete_outline),
-        label: const Text('Eliminar Cuenta'),
-      ),
-    );
-  }
-
-  Widget _buildStatCard({
-    required IconData icon,
-    required String title,
-    required String value,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha:0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.03),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha:0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          SizedBox(height: MediaQuery.of(context).size.height * 0.015),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: MediaQuery.of(context).size.height * 0.005),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   // Métodos auxiliares
-  Future<void> _pickImage() async {
-    final XFile? pickedFile = await _picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 400,
-      maxHeight: 400,
-      imageQuality: 80,
-    );
-
-    if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
-      // TODO: Subir imagen a Firebase Storage
-      _showSnackBar('Foto de perfil actualizada');
-    }
-  }
-
-
   Color _getMaterialColor(String material) {
     switch (material.toLowerCase()) {
       case 'plastico':
@@ -651,8 +674,8 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
     }
   }
 
-  IconData _getIconForMaterial(String materialId) {
-    switch (materialId) {
+  IconData _getMaterialIcon(String material) {
+    switch (material.toLowerCase()) {
       case 'plastico':
         return Icons.local_drink;
       case 'vidrio':
@@ -666,183 +689,72 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
       case 'electronico':
         return Icons.devices;
       default:
-        return Icons.recycling;
+        return Icons.help;
     }
   }
 
-  void _showLevelInfo() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.75,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-        ),
-        child: Column(
-          children: [
-            // Handle
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            // Título con tu impacto actual
-            Padding(
-              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
-              child: Column(
-                children: [
-                  const Text(
-                    'Niveles BioWay',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.01),
-                  Text(
-                    BioWayLevels.getImpactInfo(mockUser.totalCO2Evitado),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                      height: 1.3,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            // Lista de niveles
-            Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
-                itemCount: BioWayLevels.levels.length,
-                itemBuilder: (context, index) {
-                  final level = BioWayLevels.levels[index];
-                  return _buildLevelItemCO2(level);
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  String _getMaterialName(String material) {
+    switch (material.toLowerCase()) {
+      case 'plastico':
+        return 'Plástico';
+      case 'vidrio':
+        return 'Vidrio';
+      case 'papel':
+        return 'Papel y Cartón';
+      case 'metal':
+        return 'Metal';
+      case 'organico':
+        return 'Orgánico';
+      case 'electronico':
+        return 'Electrónico';
+      default:
+        return material;
+    }
   }
 
-  Widget _buildLevelItemCO2(LevelInfo level) {
-    // Determinar si es el nivel actual basado en CO2
-    final currentLevelName = BioWayLevels.getLevelByCO2(mockUser.totalCO2Evitado);
-    final isCurrentLevel = currentLevelName == level.name;
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isCurrentLevel ? level.color.withValues(alpha:0.1) : Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isCurrentLevel ? level.color : Colors.grey.shade200,
-          width: isCurrentLevel ? 2 : 1,
+  void _showDeleteAccountDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
         ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      level.color,
-                      level.color.withValues(alpha:0.8),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  BioWayLevels.getLevelIcon(level.name),
-                  color: Colors.white,
-                  size: 28,
-                ),
-              ),
-              SizedBox(width: MediaQuery.of(context).size.width * 0.04),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      level.name,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: isCurrentLevel ? level.color : Colors.black87,
-                      ),
-                    ),
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.005),
-                    Text(
-                      level.maxCO2 != null 
-                          ? '${level.minCO2} - ${level.maxCO2} kg CO₂'
-                          : '${level.minCO2}+ kg CO₂',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (isCurrentLevel)
-                Icon(
-                  Icons.check_circle,
-                  color: level.color,
-                  size: 28,
-                ),
-            ],
-          ),
-          SizedBox(height: MediaQuery.of(context).size.height * 0.015),
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.03),
-            decoration: BoxDecoration(
-              color: isCurrentLevel 
-                  ? level.color.withValues(alpha:0.08)
-                  : Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(12),
+        title: Row(
+          children: [
+            Icon(
+              Icons.warning,
+              color: BioWayColors.error,
+              size: 28,
             ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.eco,
-                  size: 20,
-                  color: isCurrentLevel ? level.color : Colors.grey.shade600,
-                ),
-                SizedBox(width: MediaQuery.of(context).size.width * 0.02),
-                Expanded(
-                  child: Text(
-                    level.impactDescription,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isCurrentLevel ? level.color : Colors.grey.shade600,
-                      fontWeight: isCurrentLevel ? FontWeight.w500 : FontWeight.normal,
-                    ),
-                  ),
-                ),
-              ],
+            const SizedBox(width: 8),
+            const Text('Eliminar Cuenta'),
+          ],
+        ),
+        content: const Text(
+          '¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(color: BioWayColors.textGrey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _handleDeleteAccount();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: BioWayColors.error,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: Colors.white),
             ),
           ),
         ],
@@ -850,112 +762,12 @@ class _RecolectorPerfilScreenState extends State<RecolectorPerfilScreen> {
     );
   }
 
-  void _showDeleteAccountDialog() {
-    final TextEditingController confirmController = TextEditingController();
-    bool isButtonEnabled = false;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              title: Row(
-                children: [
-                  Icon(
-                    Icons.warning,
-                    color: BioWayColors.error,
-                    size: 28,
-                  ),
-                  SizedBox(width: MediaQuery.of(context).size.width * 0.03),
-                  const Text('Eliminar Cuenta'),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Esta acción es permanente y no se puede deshacer. Se eliminarán todos tus datos.',
-                    style: TextStyle(fontSize: 14),
-                  ),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.025),
-                  const Text(
-                    'Escribe "ELIMINAR" para confirmar:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.015),
-                  TextField(
-                    controller: confirmController,
-                    onChanged: (value) {
-                      setState(() {
-                        isButtonEnabled = value == 'ELIMINAR';
-                      });
-                    },
-                    decoration: InputDecoration(
-                      hintText: 'ELIMINAR',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: BioWayColors.error,
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(dialogContext).pop();
-                  },
-                  child: const Text('Cancelar'),
-                ),
-                ElevatedButton(
-                  onPressed: isButtonEnabled
-                      ? () {
-                          Navigator.of(dialogContext).pop();
-                          _deleteAccount();
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: BioWayColors.error,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Eliminar',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _deleteAccount() {
-    // TODO: Implementar eliminación real con Firebase
-    _showSnackBar('Cuenta eliminada exitosamente');
-    // Navegar al login
+  void _handleDeleteAccount() {
+    _showSnackBar('Cuenta eliminada');
     Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
   }
 
   void _handleLogout() {
-    // TODO: Implementar logout real con Firebase
     _showSnackBar('Sesión cerrada');
     Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
   }
