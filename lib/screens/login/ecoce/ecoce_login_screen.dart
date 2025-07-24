@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
@@ -11,10 +12,11 @@ import '../../ecoce/reciclador/reciclador_inicio.dart';
 // TEMPORAL: Importar pantallas de inicio
 import '../../ecoce/origen/origen_inicio_screen.dart';
 import '../../ecoce/maestro/maestro_unified_screen.dart';
-import '../../ecoce/repositorio/repositorio_lotes_screen.dart';
+import '../../ecoce/repositorio/repositorio_inicio_screen.dart';
 import '../../ecoce/shared/pending_approval_screen.dart';
 import '../../ecoce/laboratorio/laboratorio_inicio.dart';
 import '../../ecoce/transporte/transporte_inicio_screen.dart';
+import 'maestro_register_screen.dart';
 
 class ECOCELoginScreen extends StatefulWidget {
   const ECOCELoginScreen({super.key});
@@ -172,7 +174,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
     }
   }
 
-  Future<void> _handleLogin() async {
+  Future<void> _handleLogin({bool goToRepository = false}) async {
     // Ocultar teclado
     FocusScope.of(context).unfocus();
 
@@ -226,6 +228,12 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
 
           if (userCredential.user != null && mounted) {
             final userId = userCredential.user!.uid;
+            
+            // TEMPORAL: Auto-crear perfil maestro - DESHABILITADO
+            // Ahora se usa la pantalla de registro temporal
+            // if (userId == '0XOboM6ej6fR1iFXt6DwqnffqkW2' && email == 'maestro@ecoce.mx') {
+            //   await _autoCreateMaestroProfile(userId);
+            // }
             
             // Primero verificar si existe una solicitud
             final solicitud = await _profileService.checkAccountRequestStatus(email);
@@ -318,8 +326,15 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
               ),
             );
 
-            // Navegar según el tipo de usuario
-            _navigateToUserScreen(profile.ecoceTipoActor, profile);
+            // Navegar según el tipo de usuario o al repositorio
+            if (goToRepository) {
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                '/repositorio_inicio',
+                (route) => false,
+              );
+            } else {
+              _navigateToUserScreen(profile.ecoceTipoActor, profile);
+            }
           }
         } catch (firebaseError) {
           setState(() {
@@ -439,10 +454,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         targetScreen = const LaboratorioInicioScreen();
         break;
       case 'repositorio':
-        targetScreen = RepositorioLotesScreen(
-          primaryColor: BioWayColors.metalGrey,
-          tipoUsuario: 'repositorio',
-        );
+        targetScreen = const RepositorioInicioScreen();
         break;
       case 'maestro ecoce':
         targetScreen = const MaestroUnifiedScreen();
@@ -781,6 +793,10 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
 
                                   // Botón de inicio de sesión
                                   _buildLoginButton(),
+                                  const SizedBox(height: 12),
+                                  
+                                  // Botón de repositorio
+                                  _buildRepositoryButton(),
                                   const SizedBox(height: 20),
 
                                   // Divisor
@@ -873,6 +889,48 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                                       
                                       // Botones de administrador
                                       _buildUserTypeButtonsGrid(),
+                                      const SizedBox(height: 16),
+                                      
+                                      // Botón temporal para registro de maestro
+                                      Container(
+                                        width: double.infinity,
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                            color: BioWayColors.error.withOpacity(0.5),
+                                            width: 2,
+                                          ),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: TextButton.icon(
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => const MaestroRegisterScreen(),
+                                              ),
+                                            );
+                                          },
+                                          icon: Icon(
+                                            Icons.person_add,
+                                            color: BioWayColors.error,
+                                            size: 20,
+                                          ),
+                                          label: Text(
+                                            'Crear Cuenta Maestro (TEMPORAL)',
+                                            style: TextStyle(
+                                              color: BioWayColors.error,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                          style: TextButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(vertical: 12),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -990,7 +1048,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
           focusNode: _passwordFocusNode,
           obscureText: _obscurePassword,
           textInputAction: TextInputAction.done,
-          onFieldSubmitted: (_) => _handleLogin(),
+          onFieldSubmitted: (_) => _handleLogin(goToRepository: false),
           decoration: InputDecoration(
             hintText: '••••••••',
             hintStyle: TextStyle(
@@ -1063,7 +1121,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
       width: double.infinity,
       height: 52,
       child: ElevatedButton(
-        onPressed: _isLoading ? null : _handleLogin,
+        onPressed: _isLoading ? null : () => _handleLogin(),
         style: ElevatedButton.styleFrom(
           backgroundColor: BioWayColors.ecoceGreen,
           foregroundColor: Colors.white,
@@ -1135,6 +1193,33 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildRepositoryButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: ElevatedButton.icon(
+        onPressed: _isLoading ? null : () => _handleLogin(goToRepository: true),
+        icon: const Icon(Icons.inventory_2, size: 20),
+        label: const Text(
+          'Acceder al Repositorio',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: BioWayColors.primaryGreen,
+          foregroundColor: Colors.white,
+          elevation: _isLoading ? 0 : 3,
+          shadowColor: BioWayColors.primaryGreen.withValues(alpha: 0.4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
     );
   }
 

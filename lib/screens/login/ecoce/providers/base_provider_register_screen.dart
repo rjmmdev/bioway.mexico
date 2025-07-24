@@ -82,6 +82,7 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
   final EcoceProfileService _profileService = EcoceProfileService();
   final AuthService _authService = AuthService();
   final DocumentService _documentService = DocumentService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Animación
   late AnimationController _animationController;
@@ -208,64 +209,13 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
         longitud = _selectedLocation!.longitude;
       }
       
-      // Primero subir documentos si hay alguno seleccionado
-      setState(() {
-        _isUploadingDocuments = true;
-      });
-      
       // Mostrar diálogo de progreso
       _showProgressDialog();
       
       // Pequeña pausa para asegurar que el diálogo se muestre
       await Future.delayed(Duration(milliseconds: 100));
       
-      // Mapa para almacenar las URLs de los documentos
-      final Map<String, String?> uploadedDocuments = {};
-      
-      // Solo subir documentos si hay alguno seleccionado
-      final hasDocuments = _platformFiles.values.any((file) => file != null);
-      
-      if (hasDocuments) {
-        print('\n🗂️ PROCESANDO DOCUMENTOS SELECCIONADOS...');
-        print('Total de documentos a subir: ${_platformFiles.values.where((f) => f != null).length}');
-        
-        // Generar un ID único para esta sesión de registro
-        final sessionId = 'REG_${DateTime.now().millisecondsSinceEpoch}';
-        
-        // Subir documentos uno por uno para mejor control de errores
-        for (final entry in _platformFiles.entries) {
-          if (entry.value != null) {
-            try {
-              print('\n📎 Subiendo: ${entry.key}');
-              final url = await _documentService.uploadDocument(
-                userId: sessionId,
-                documentType: entry.key,
-                file: entry.value!,
-                solicitudId: sessionId,
-              );
-              
-              if (url != null) {
-                uploadedDocuments[entry.key] = url;
-                print('✅ ${entry.key} subido correctamente');
-              } else {
-                print('⚠️ ${entry.key} no se pudo subir');
-              }
-            } catch (e) {
-              print('❌ Error al subir ${entry.key}: $e');
-              // Continuar con el siguiente documento
-            }
-          }
-        }
-      }
-      
-      debugPrint('=== RESUMEN DE SUBIDA DE DOCUMENTOS ===');
-      debugPrint('Total documentos subidos: ${uploadedDocuments.length}');
-      uploadedDocuments.forEach((key, value) {
-        debugPrint('  $key: ${value != null ? 'OK (URL presente)' : 'FALLO'}');
-      });
-      debugPrint('=====================================');
-      
-      // Crear solicitud de cuenta en Firebase con los documentos ya subidos
+      // Crear solicitud de cuenta primero (sin documentos)
       final solicitudId = await _profileService.createAccountRequest(
         tipoUsuario: tipoUsuario,
         email: _controllers['email']!.text.trim(),
@@ -288,16 +238,62 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
         linkRedSocial: _controllers['linkRedSocial']!.text.trim().isEmpty ? null : _controllers['linkRedSocial']!.text.trim(),
         dimensionesCapacidad: dimensionesCapacidad,
         pesoCapacidad: pesoCapacidad,
-        documentos: uploadedDocuments, // Pasar los documentos ya subidos
+        documentos: {}, // Inicialmente sin documentos
         linkMaps: linkMaps,
         latitud: latitud,
         longitud: longitud,
         actividadesAutorizadas: _selectedActivities.toList(),
       );
       
+      // Ahora subir los documentos usando el ID de la solicitud
+      final Map<String, String?> uploadedDocuments = {};
+      final hasDocuments = _platformFiles.values.any((file) => file != null);
+      
+      if (hasDocuments) {
+        print('\n🗂️ SUBIENDO DOCUMENTOS PARA SOLICITUD: $solicitudId');
+        print('Total de documentos a subir: ${_platformFiles.values.where((f) => f != null).length}');
+        
+        // Subir cada documento
+        for (final entry in _platformFiles.entries) {
+          if (entry.value != null) {
+            final file = entry.value!;
+            print('📎 Subiendo ${entry.key}: ${file.name} (${file.size} bytes)...');
+            
+            try {
+              // Usar el servicio de documentos con la ruta de solicitudes
+              final url = await _documentService.uploadDocument(
+                userId: solicitudId, // Usar solicitudId como userId para organizar los archivos
+                documentType: entry.key,
+                file: file,
+                solicitudId: solicitudId,
+              );
+              
+              uploadedDocuments[entry.key] = url;
+              print('✅ ${entry.key} subido exitosamente');
+            } catch (e) {
+              print('❌ Error subiendo ${entry.key}: $e');
+              uploadedDocuments[entry.key] = null;
+            }
+          }
+        }
+        
+        // Actualizar la solicitud con las URLs de los documentos
+        if (uploadedDocuments.isNotEmpty) {
+          await _firestore.collection('solicitudes_cuentas').doc(solicitudId).update({
+            'documentos': uploadedDocuments,
+          });
+        }
+      }
+      
+      debugPrint('=== RESUMEN DE SUBIDA DE DOCUMENTOS ===');
+      debugPrint('Total documentos subidos: ${uploadedDocuments.length}');
+      uploadedDocuments.forEach((key, value) {
+        debugPrint('  $key: ${value != null ? 'OK (URL presente)' : 'FALLO'}');
+      });
+      debugPrint('=====================================');
+      
       setState(() {
         _isLoading = false;
-        _isUploadingDocuments = false;
       });
       
       // Cerrar diálogo de progreso
@@ -307,7 +303,6 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _isUploadingDocuments = false;
         _errorMessage = _getErrorMessage(e.toString());
       });
       
@@ -399,9 +394,7 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
                 ),
                 SizedBox(height: 8),
                 Text(
-                  _platformFiles.values.any((file) => file != null) 
-                    ? 'Creando solicitud y subiendo documentos'
-                    : 'Creando solicitud',
+                  'Creando solicitud de registro',
                   style: TextStyle(
                     fontSize: 14,
                     color: BioWayColors.textGrey,
@@ -572,14 +565,18 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
                   SizedBox(height: 12),
                   
                   // Información adicional
-                  Text(
-                    'Tu folio se asignará al aprobar tu cuenta',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: BioWayColors.textGrey,
-                      fontStyle: FontStyle.italic,
-                    ),
-                    textAlign: TextAlign.center,
+                  Column(
+                    children: [
+                      Text(
+                        'Tu folio se asignará al aprobar tu cuenta',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: BioWayColors.textGrey,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
                   SizedBox(height: 20),
                   

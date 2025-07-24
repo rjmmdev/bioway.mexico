@@ -542,6 +542,14 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                         ),
                         Row(
                           children: [
+                            // Botón de repositorio
+                            IconButton(
+                              icon: const Icon(Icons.inventory_2, color: Colors.white),
+                              tooltip: 'Repositorio de Lotes',
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/repositorio_inicio');
+                              },
+                            ),
                             // Botón de utilidades
                             IconButton(
                               icon: const Icon(Icons.build, color: Colors.white),

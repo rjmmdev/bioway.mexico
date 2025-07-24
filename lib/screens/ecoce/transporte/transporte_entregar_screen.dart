@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../utils/colors.dart';
 import '../../../services/user_session_service.dart';
-import '../../../services/lote_service.dart';
-import '../../../models/lotes/lote_transportista_model.dart';
+import '../../../services/carga_transporte_service.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import 'transporte_qr_entrega_screen.dart';
+import 'transporte_escanear_carga_screen.dart';
+import 'transporte_escanear_receptor_screen.dart';
+import 'transporte_entrega_pasos_screen.dart';
 
 class TransporteEntregarScreen extends StatefulWidget {
   const TransporteEntregarScreen({super.key});
@@ -15,10 +17,10 @@ class TransporteEntregarScreen extends StatefulWidget {
 
 class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
   final UserSessionService _userSession = UserSessionService();
-  final LoteService _loteService = LoteService();
+  final CargaTransporteService _cargaService = CargaTransporteService();
   bool _isLoading = true;
   List<Map<String, dynamic>> _lotesEnTransito = [];
-  Map<String, List<Map<String, dynamic>>> _lotesPorOrigen = {};
+  Map<String, List<Map<String, dynamic>>> _lotesPorCarga = {};
   final Set<String> _selectedLotes = {};
   
   @override
@@ -33,49 +35,35 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
         _isLoading = true;
       });
       
-      // Obtener lotes de transportista con estado 'en_transporte'
-      final lotesTransportista = await _loteService.getLotesTransportista(estado: 'en_transporte').first;
+      // Obtener lotes individuales en transporte desde las cargas
+      final lotesInfo = await _cargaService.getLotesEnTransporte();
       
       List<Map<String, dynamic>> lotesFormateados = [];
-      
-      for (var loteTransportista in lotesTransportista) {
-        // Obtener información de los lotes originales
-        final lotesInfo = await _loteService.getLotesInfo(loteTransportista.lotesEntrada);
-        
-        // Determinar el material predominante
-        String materialPredominante = 'Mixto';
-        if (lotesInfo.isNotEmpty) {
-          final tipoPolimeros = await _loteService.calcularTipoPolimeroPredominante(loteTransportista.lotesEntrada);
-          if (tipoPolimeros.isNotEmpty) {
-            materialPredominante = tipoPolimeros.entries
-                .reduce((a, b) => a.value > b.value ? a : b)
-                .key;
-          }
-        }
-        
-        // Formatear el lote para la vista
-        lotesFormateados.add({
-          'id': loteTransportista.id,
-          'material': materialPredominante,
-          'peso': loteTransportista.pesoRecibido,
-          'origen': loteTransportista.direccionOrigen,
-          'presentacion': 'Pacas', // TODO: Obtener del lote original
-          'fecha_carga': loteTransportista.fechaRecepcion,
-          'lotes_originales': loteTransportista.lotesEntrada,
-        });
-      }
-      
-      // Agrupar por origen
       Map<String, List<Map<String, dynamic>>> grouped = {};
-      for (var lote in lotesFormateados) {
-        final origen = lote['origen'] as String;
-        grouped.putIfAbsent(origen, () => []);
-        grouped[origen]!.add(lote);
+      
+      for (var lote in lotesInfo) {
+        // Formatear el lote para la vista
+        final loteFormateado = {
+          'id': lote['lote_id'],
+          'carga_id': lote['carga_id'],
+          'material': lote['material'],
+          'peso': lote['peso'],
+          'origen_nombre': lote['origen_nombre'],
+          'origen_folio': lote['origen_folio'],
+          'fecha_recogida': lote['fecha_recogida'],
+        };
+        
+        lotesFormateados.add(loteFormateado);
+        
+        // Agrupar por carga (para mostrar qué lotes viajan juntos)
+        final cargaId = lote['carga_id'] as String;
+        grouped.putIfAbsent(cargaId, () => []);
+        grouped[cargaId]!.add(loteFormateado);
       }
       
       setState(() {
         _lotesEnTransito = lotesFormateados;
-        _lotesPorOrigen = grouped;
+        _lotesPorCarga = grouped;
         _isLoading = false;
       });
     } catch (e) {
@@ -104,9 +92,9 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
     });
   }
   
-  void _selectAllFromGroup(String origen) {
+  void _selectAllFromGroup(String cargaId) {
     setState(() {
-      final lotesDelGrupo = _lotesPorOrigen[origen] ?? [];
+      final lotesDelGrupo = _lotesPorCarga[cargaId] ?? [];
       final idsDelGrupo = lotesDelGrupo.map((lote) => lote['id'] as String).toSet();
       
       // Si todos están seleccionados, deseleccionar todos
@@ -133,12 +121,14 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
     // Obtener los lotes seleccionados
     final lotesSeleccionados = _lotesEnTransito
         .where((lote) => _selectedLotes.contains(lote['id']))
+        .map((lote) => lote['id'] as String)
         .toList();
     
+    // Navegar al flujo por pasos
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => TransporteQREntregaScreen(
+        builder: (context) => TransporteEntregaPasosScreen(
           lotesSeleccionados: lotesSeleccionados,
         ),
       ),
@@ -148,7 +138,12 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
   void _onBottomNavTapped(int index) {
     switch (index) {
       case 0:
-        Navigator.pushReplacementNamed(context, '/transporte_inicio');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const TransporteEscanearCargaScreen(),
+          ),
+        );
         break;
       case 1:
         break; // Ya estamos aquí
@@ -286,12 +281,12 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: _lotesPorOrigen.length,
+                        itemCount: _lotesPorCarga.length,
                         itemBuilder: (context, index) {
-                          final origen = _lotesPorOrigen.keys.elementAt(index);
-                          final lotes = _lotesPorOrigen[origen]!;
+                          final cargaId = _lotesPorCarga.keys.elementAt(index);
+                          final lotes = _lotesPorCarga[cargaId]!;
                           
-                          return _buildOrigenGroup(origen, lotes);
+                          return _buildCargaGroup(cargaId, lotes);
                         },
                       ),
           ),
@@ -414,8 +409,12 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
     );
   }
   
-  Widget _buildOrigenGroup(String origen, List<Map<String, dynamic>> lotes) {
+  Widget _buildCargaGroup(String cargaId, List<Map<String, dynamic>> lotes) {
     final allSelected = lotes.every((lote) => _selectedLotes.contains(lote['id']));
+    
+    // Obtener información del primer lote para mostrar el origen
+    final primerLote = lotes.first;
+    final origenInfo = '${primerLote['origen_nombre']} (${primerLote['origen_folio']})';
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -427,17 +426,30 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
           child: Row(
             children: [
               Expanded(
-                child: Text(
-                  origen,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: BioWayColors.darkGreen,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Carga: ${cargaId.substring(0, 8)}...',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: BioWayColors.darkGreen,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Origen: $origenInfo',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               TextButton(
-                onPressed: () => _selectAllFromGroup(origen),
+                onPressed: () => _selectAllFromGroup(cargaId),
                 child: Text(
                   allSelected ? 'Deseleccionar Todos' : 'Seleccionar Todos',
                   style: TextStyle(
@@ -445,7 +457,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                key: Key('btn_select_group_$origen'),
+                key: Key('btn_select_group_$cargaId'),
               ),
             ],
           ),
@@ -536,10 +548,8 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
                     Row(
                       children: [
                         _buildLoteData('Material', lote['material']),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 24),
                         _buildLoteData('Peso', '${lote['peso']} kg'),
-                        const SizedBox(width: 16),
-                        _buildLoteData('Formato', lote['presentacion']),
                       ],
                     ),
                   ],

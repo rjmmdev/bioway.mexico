@@ -307,6 +307,7 @@ class EcoceProfileService {
     double? latitud,
     double? longitud,
     List<String>? actividadesAutorizadas,
+    Map<String, Map<String, dynamic>>? documentosInfo,
   }) async {
     try {
       // Inicializar Firebase para ECOCE si no está inicializado
@@ -402,6 +403,7 @@ class EcoceProfileService {
           'ecoce_dim_cap': dimensionesCapacidad,
           'ecoce_peso_cap': pesoCapacidad,
         },
+        'documentos_pendientes': documentosInfo ?? {}, // Información de documentos pendientes
         'estado': 'pendiente',
         'fecha_solicitud': FieldValue.serverTimestamp(),
         'fecha_revision': null,
@@ -660,10 +662,79 @@ class EcoceProfileService {
     }
   }
 
-  // Obtener perfil por ID (busca directamente en las subcarpetas)
+  // Obtener perfil por ID (busca primero en índice, luego en subcarpetas)
   Future<EcoceProfileModel?> getProfile(String userId) async {
     try {
-      // Lista de todas las subcolecciónes posibles
+      // Primero verificar si es un usuario maestro
+      final maestroDoc = await _firestore
+          .collection('maestros')
+          .doc(userId)
+          .get();
+          
+      if (maestroDoc.exists) {
+        final maestroData = maestroDoc.data()!;
+        // Crear perfil maestro con estructura simplificada
+        return EcoceProfileModel(
+          id: userId,
+          ecoceTipoActor: 'M',
+          ecoceNombre: maestroData['nombre'] ?? 'Administrador ECOCE',
+          ecoceCorreoContacto: maestroData['email'] ?? '',
+          ecoceFolio: 'M0000001',
+          ecoceRfc: 'XAXX010101000',
+          ecoceNombreContacto: maestroData['nombre'] ?? 'Administrador',
+          ecoceTelContacto: '5551234567',
+          ecoceTelEmpresa: '5551234567',
+          ecoceCalle: 'Sistema ECOCE',
+          ecoceNumExt: 'N/A',
+          ecoceCp: '00000',
+          ecoceEstado: 'CDMX',
+          ecoceMunicipio: 'Sistema',
+          ecoceColonia: 'Sistema',
+          ecoceListaMateriales: [],
+          ecoceEstatusAprobacion: 1,
+          ecoceFechaReg: maestroData['created_at']?.toDate() ?? DateTime.now(),
+          createdAt: maestroData['created_at']?.toDate() ?? DateTime.now(),
+          updatedAt: maestroData['updated_at']?.toDate() ?? DateTime.now(),
+        );
+      }
+      
+      // Luego buscar en el documento índice
+      final indexDoc = await _profilesCollection.doc(userId).get();
+      
+      if (indexDoc.exists) {
+        final data = indexDoc.data() as Map<String, dynamic>;
+        
+        // Si el tipo es maestro y tiene los campos mínimos, crear un perfil temporal
+        if (data['tipo_actor'] == 'maestro' || data['ecoce_tipo_actor'] == 'M') {
+          // Crear un modelo con datos mínimos para maestro
+          return EcoceProfileModel(
+            id: userId,
+            ecoceTipoActor: 'M',
+            ecoceNombre: data['ecoce_nombre'] ?? 'Administrador ECOCE',
+            ecoceCorreoContacto: data['email'] ?? data['ecoce_correo_contacto'] ?? '',
+            ecoceFolio: data['ecoce_folio'] ?? 'M0000001',
+            ecoceRfc: data['ecoce_rfc'] ?? 'XAXX010101000',
+            ecoceNombreContacto: data['ecoce_nombre_contacto'] ?? 'Admin',
+            ecoceTelContacto: data['ecoce_tel_contacto'] ?? '5551234567',
+            ecoceTelEmpresa: data['ecoce_tel_empresa'] ?? '5551234567',
+            ecoceCalle: data['ecoce_calle'] ?? 'Av. Principal',
+            ecoceNumExt: data['ecoce_num_ext'] ?? '123',
+            ecoceCp: data['ecoce_cp'] ?? '06000',
+            ecoceEstado: data['ecoce_estado'] ?? 'CDMX',
+            ecoceMunicipio: data['ecoce_municipio'] ?? 'Cuauhtémoc',
+            ecoceColonia: data['ecoce_colonia'] ?? 'Centro',
+            ecoceReferencias: data['ecoce_referencias'] ?? '',
+            ecoceListaMateriales: List<String>.from(data['ecoce_materiales'] ?? []),
+            ecoceTransporte: data['ecoce_transporte'] ?? false,
+            ecoceEstatusAprobacion: 1, // Siempre aprobado para maestro
+            ecoceFechaReg: (data['fecha_creacion'] ?? data['created_at'])?.toDate() ?? DateTime.now(),
+            createdAt: (data['created_at'] ?? data['fecha_creacion'])?.toDate() ?? DateTime.now(),
+            updatedAt: (data['updated_at'] ?? data['fecha_creacion'])?.toDate() ?? DateTime.now(),
+          );
+        }
+      }
+      
+      // Si no es maestro o no se encontró en el índice, buscar en subcarpetas
       final subcollections = [
         'origen/centro_acopio',
         'origen/planta_separacion',
@@ -692,7 +763,7 @@ class EcoceProfileService {
         }
       }
       
-      // Si no se encontró en ninguna subcolección, el usuario no existe
+      // Si no se encontró en ninguna parte, el usuario no existe
       return null;
     } catch (e) {
       return null;
@@ -1177,6 +1248,11 @@ class EcoceProfileService {
         'total': 0,
       };
     }
+  }
+  
+  // Alias method for getProfile to match the expected name
+  Future<EcoceProfileModel?> getProfileByUserId(String userId) async {
+    return getProfile(userId);
   }
 
   // Verificar si un usuario está aprobado

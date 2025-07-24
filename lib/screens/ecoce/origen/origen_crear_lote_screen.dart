@@ -16,11 +16,13 @@ import '../shared/widgets/unified_container.dart';
 import '../shared/widgets/form_widgets.dart';
 import '../shared/utils/input_decorations.dart';
 import 'origen_lote_detalle_screen.dart';
-import '../../../models/lotes/lote_origen_model.dart';
-import '../../../services/lote_service.dart';
+import 'origen_confirmar_lote_screen.dart';
+import '../../../models/lotes/lote_unificado_model.dart';
+import '../../../services/lote_unificado_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/firebase/auth_service.dart';
+import '../../../services/firebase/ecoce_profile_service.dart';
 import '../shared/utils/dialog_utils.dart';
 
 class OrigenCrearLoteScreen extends StatefulWidget {
@@ -31,10 +33,11 @@ class OrigenCrearLoteScreen extends StatefulWidget {
 }
 
 class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
-  final LoteService _loteService = LoteService();
+  final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
   final FirebaseStorageService _storageService = FirebaseStorageService();
   final UserSessionService _userSession = UserSessionService();
   final AuthService _authService = AuthService();
+  final EcoceProfileService _profileService = EcoceProfileService();
   final ScreenshotController _screenshotController = ScreenshotController();
   bool _isLoading = false;
   List<File> _photoFiles = [];
@@ -207,112 +210,31 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // Obtener datos del usuario actual
-      final userProfile = await _userSession.getUserProfile();
-      if (userProfile == null) {
-        throw Exception('No se pudo obtener el perfil del usuario');
-      }
-
-      // Determinar el origen
-      String origen = '';
-      if (_isPostConsumo && _isPreConsumo) {
-        origen = 'Post-consumo y Pre-consumo';
-      } else if (_isPostConsumo) {
-        origen = 'Post-consumo';
-      } else {
-        origen = 'Pre-consumo';
-      }
-
-      // Determinar la presentación final
-      String presentacionFinal = _presentacionSeleccionada;
-      if (_presentacionSeleccionada == 'Otro' && _otraPresentacionController.text.isNotEmpty) {
-        presentacionFinal = _otraPresentacionController.text;
-      }
-
-      // Subir firma a Storage
-      if (_signaturePoints.isNotEmpty) {
-        final signatureImage = await _captureSignature();
-        if (signatureImage != null) {
-          _signatureUrl = await _storageService.uploadImage(
-            signatureImage,
-            'lotes/origen/firmas',
-          );
-        }
-      }
-
-      // Subir fotos a Storage
-      _photoUrls = [];
-      for (int i = 0; i < _photoFiles.length; i++) {
-        final url = await _storageService.uploadImage(
-          _photoFiles[i],
-          'lotes/origen/evidencias',
-        );
-        if (url != null) {
-          _photoUrls.add(url);
-        }
-      }
-
-      // Crear el modelo del lote
-      // Obtener el userId actual del AuthService
-      final currentUser = _authService.currentUser;
-      if (currentUser == null) {
-        throw Exception('Usuario no autenticado');
-      }
-      
-      final lote = LoteOrigenModel(
-        userId: currentUser.uid,
-        fechaNace: DateTime.now(),
-        direccion: userProfile['direccion'] ?? 'Sin dirección',
-        fuente: _fuenteMaterialSeleccionada!,
-        presentacion: presentacionFinal,
-        tipoPoli: _tipoPolimeroSeleccionado!,
-        origen: origen,
-        pesoNace: double.tryParse(_pesoController.text) ?? 0,
-        condiciones: _condicionesController.text.trim(),
-        nombreOpe: _operadorController.text.trim(),
-        firmaOpe: _signatureUrl,
-        comentarios: _comentariosController.text.trim().isEmpty ? null : _comentariosController.text.trim(),
-        eviFoto: _photoUrls,
-      );
-
-      // Crear el lote en Firestore
-      final loteId = await _loteService.crearLoteOrigen(lote);
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      // Navegar a la pantalla de detalle con el lote creado
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => OrigenLoteDetalleScreen(
-            firebaseId: loteId,
-            material: lote.tipoPoli,
-            peso: lote.pesoNace,
-            presentacion: lote.presentacion,
-            fuente: lote.fuente,
-            fechaCreacion: lote.fechaNace,
-            mostrarMensajeExito: true,
-          ),
-        ),
-      );
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-
-      DialogUtils.showErrorDialog(
-        context: context,
-        title: 'Error',
-        message: 'No se pudo crear el lote: ${e.toString()}',
-      );
+    // Determinar la presentación final
+    String presentacionFinal = _presentacionSeleccionada;
+    if (_presentacionSeleccionada == 'Otro' && _otraPresentacionController.text.isNotEmpty) {
+      presentacionFinal = _otraPresentacionController.text;
     }
+
+    // Navegar a la pantalla de confirmación
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OrigenConfirmarLoteScreen(
+          tipoPolimero: _tipoPolimeroSeleccionado!,
+          presentacion: presentacionFinal,
+          fuente: _fuenteMaterialSeleccionada!,
+          isPostConsumo: _isPostConsumo,
+          isPreConsumo: _isPreConsumo,
+          peso: double.tryParse(_pesoController.text) ?? 0,
+          condiciones: _condicionesController.text.trim(),
+          nombreOperador: _operadorController.text.trim(),
+          comentarios: _comentariosController.text.trim().isEmpty ? null : _comentariosController.text.trim(),
+          signaturePoints: List.from(_signaturePoints),
+          photoFiles: List.from(_photoFiles),
+        ),
+      ),
+    );
   }
 
   Future<File?> _captureSignature() async {
@@ -789,7 +711,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                         child: _isLoading
                             ? const CircularProgressIndicator(color: Colors.white)
                             : const Text(
-                                'Generar Lote y Código QR',
+                                'Continuar',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,

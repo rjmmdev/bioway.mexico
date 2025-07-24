@@ -10,6 +10,7 @@ import '../../../services/user_session_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/lote_service.dart';
+import '../../../services/lote_unificado_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
 import '../../../services/image_service.dart';
 import '../shared/widgets/signature_dialog.dart';
@@ -21,12 +22,14 @@ class TransporteFormularioEntregaScreen extends StatefulWidget {
   final List<Map<String, dynamic>> lotes;
   final String qrData;
   final String nuevoLoteId;
+  final Map<String, dynamic>? datosReceptor;
   
   const TransporteFormularioEntregaScreen({
     super.key,
     required this.lotes,
     required this.qrData,
     required this.nuevoLoteId,
+    this.datosReceptor,
   });
 
   @override
@@ -39,6 +42,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
   final FirebaseManager _firebaseManager = FirebaseManager();
   final AuthService _authService = AuthService();
   final LoteService _loteService = LoteService();
+  final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
   final FirebaseStorageService _storageService = FirebaseStorageService();
   
   // Controladores
@@ -67,6 +71,33 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
     // Calcular peso total
     double pesoTotal = widget.lotes.fold(0.0, (total, lote) => total + (lote['peso'] as double));
     _pesoEntregadoController.text = pesoTotal.toStringAsFixed(1);
+    
+    // Si ya tenemos datos del receptor desde el QR, usarlos
+    if (widget.datosReceptor != null) {
+      _idDestinoController.text = widget.datosReceptor!['folio'] ?? '';
+      
+      // Formatear los datos del receptor para mostrarlos correctamente
+      _destinatarioInfo = {
+        ...widget.datosReceptor!,
+        'tipo_label': _getTipoLabel(widget.datosReceptor!['tipo'] ?? ''),
+      };
+      
+      // No necesitamos buscar porque ya tenemos la información
+      _showSuggestions = false;
+    }
+  }
+  
+  String _getTipoLabel(String tipo) {
+    switch (tipo.toLowerCase()) {
+      case 'reciclador':
+        return 'Reciclador';
+      case 'laboratorio':
+        return 'Laboratorio';
+      case 'transformador':
+        return 'Transformador';
+      default:
+        return tipo;
+    }
   }
   
   @override
@@ -254,19 +285,6 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
     return parts.isEmpty ? 'Sin dirección registrada' : parts.join(', ');
   }
   
-  String _getTipoLabel(String tipo) {
-    switch (tipo) {
-      case 'R':
-        return 'Reciclador';
-      case 'L':
-        return 'Laboratorio';
-      case 'T':
-        return 'Transformador';
-      default:
-        return 'Desconocido';
-    }
-  }
-  
   Future<void> _pickImage() async {
     try {
       final ImagePicker picker = ImagePicker();
@@ -372,25 +390,60 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
         }
       }
       
-      // Actualizar el lote de transportista con los datos de entrega
-      await _loteService.actualizarLoteTransportista(
-        widget.nuevoLoteId,
-        {
-          'ecoce_transportista_direccion_destino': _destinatarioInfo!['direccion'],
-          'ecoce_transportista_destinatario': _destinatarioInfo!['folio'],
-          'ecoce_transportista_fecha_entrega': Timestamp.fromDate(DateTime.now()),
-          'ecoce_transportista_peso_entregado': double.parse(_pesoEntregadoController.text),
-          'ecoce_transportista_firma_recibe': firmaUrl,
-          'ecoce_transportista_evi_foto_entrega': photoUrls,
-          'ecoce_transportista_comentarios_entrega': _comentariosController.text.trim(),
-          'estado': 'entregado',
-        },
-      );
+      // Obtener datos del usuario actual
+      final userProfile = await _userSession.getUserProfile();
+      if (userProfile == null) {
+        throw Exception('No se pudo obtener el perfil del usuario');
+      }
+      
+      // Actualizar cada lote individualmente en el sistema unificado
+      for (final lote in widget.lotes) {
+        final loteId = lote['id'] as String;
+        
+        // Primero actualizar los datos del transporte con la información de entrega
+        await _loteUnificadoService.actualizarProcesoTransporte(
+          loteId: loteId,
+          datos: {
+            'fecha_salida': FieldValue.serverTimestamp(),
+            'destino_entrega': _destinatarioInfo!['folio'],
+            'peso_entregado': double.tryParse(_pesoEntregadoController.text) ?? lote['peso'],
+            'merma': (lote['peso'] as double) - (double.tryParse(_pesoEntregadoController.text) ?? lote['peso']),
+            'firma_entrega': firmaUrl,
+            'evidencias_foto_entrega': photoUrls,
+            'comentarios_entrega': _comentariosController.text.trim(),
+          },
+        );
+        
+        // Luego transferir automáticamente al siguiente proceso (reciclador)
+        final tipoDestinatario = _destinatarioInfo!['tipo_actor'];
+        String procesoDestino = 'reciclador'; // Por defecto
+        
+        if (tipoDestinatario == 'R') {
+          procesoDestino = 'reciclador';
+        } else if (tipoDestinatario == 'T') {
+          procesoDestino = 'transformador';
+        }
+        
+        // Transferir el lote al proceso destino
+        await _loteUnificadoService.transferirLote(
+          loteId: loteId,
+          procesoDestino: procesoDestino,
+          usuarioDestinoFolio: _destinatarioInfo!['folio'],
+          datosIniciales: {
+            'usuario_id': _destinatarioInfo!['id'],
+            'usuario_folio': _destinatarioInfo!['folio'],
+            'fecha_entrada': FieldValue.serverTimestamp(),
+            'peso_entrada': double.tryParse(_pesoEntregadoController.text) ?? lote['peso'],
+            'transportista_folio': userProfile['folio'],
+            'comentarios_recepcion': '', // El receptor llenará esto cuando complete su formulario
+          },
+        );
+      }
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lote ${widget.nuevoLoteId} entregado exitosamente'),
+          const SnackBar(
+            content: Text('Lotes entregados exitosamente al destinatario'),
             backgroundColor: BioWayColors.success,
           ),
         );
@@ -415,37 +468,123 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
     }
   }
   
-  void _onBottomNavTapped(int index) {
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, '/transporte_inicio');
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(context, '/transporte_entregar');
-        break;
-      case 2:
-        Navigator.pushNamed(context, '/transporte_ayuda');
-        break;
-      case 3:
-        Navigator.pushNamed(context, '/transporte_perfil');
-        break;
+  void _onBottomNavTapped(int index) async {
+    HapticFeedback.lightImpact();
+    
+    // Mostrar alerta antes de salir
+    final shouldLeave = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('¿Abandonar proceso?'),
+        content: const Text(
+          'Si sales ahora, se cancelará el proceso de entrega y deberás comenzar desde cero.\n\n¿Estás seguro de que deseas salir?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: BioWayColors.error,
+            ),
+            child: const Text('Salir'),
+          ),
+        ],
+      ),
+    );
+    
+    if (shouldLeave == true) {
+      switch (index) {
+        case 0:
+          Navigator.pushReplacementNamed(context, '/transporte_inicio');
+          break;
+        case 1:
+          Navigator.pushReplacementNamed(context, '/transporte_entregar');
+          break;
+        case 2:
+          Navigator.pushNamed(context, '/transporte_ayuda');
+          break;
+        case 3:
+          Navigator.pushNamed(context, '/transporte_perfil');
+          break;
+      }
     }
   }
   
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1490EE),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () {
-            HapticFeedback.lightImpact();
-            Navigator.pop(context);
-          },
-        ),
+    return WillPopScope(
+      onWillPop: () async {
+        // Mostrar la misma alerta al presionar el botón de retroceso
+        final shouldLeave = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: const Text('¿Abandonar proceso?'),
+            content: const Text(
+              'Si sales ahora, se cancelará el proceso de entrega y deberás comenzar desde cero.\n\n¿Estás seguro de que deseas salir?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: BioWayColors.error,
+                ),
+                child: const Text('Salir'),
+              ),
+            ],
+          ),
+        );
+        
+        return shouldLeave ?? false;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF1490EE),
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+            onPressed: () async {
+              HapticFeedback.lightImpact();
+              
+              // Mostrar alerta antes de salir
+              final shouldLeave = await showDialog<bool>(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => AlertDialog(
+                  title: const Text('¿Abandonar proceso?'),
+                  content: const Text(
+                    'Si sales ahora, se cancelará el proceso de entrega y deberás comenzar desde cero.\n\n¿Estás seguro de que deseas salir?',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text('Cancelar'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: BioWayColors.error,
+                      ),
+                      child: const Text('Salir'),
+                    ),
+                  ],
+                ),
+              );
+              
+              if (shouldLeave == true && mounted) {
+                Navigator.pop(context);
+              }
+            },
+          ),
         title: const Text(
           'Formulario de Entrega',
           style: TextStyle(
@@ -592,61 +731,105 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                           ],
                         ),
                         const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: StandardTextField(
-                                controller: _idDestinoController,
-                                label: 'Folio del Destinatario',
-                                hint: 'Ej: R0000001',
-                                icon: Icons.badge,
-                                required: true,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9]')),
-                                  TextInputFormatter.withFunction((oldValue, newValue) => 
-                                    TextEditingValue(
-                                      text: newValue.text.toUpperCase(),
-                                      selection: newValue.selection,
+                        // Si ya tenemos datos del receptor, mostrar campo de solo lectura
+                        if (widget.datosReceptor != null) ...
+                          [
+                            StandardTextField(
+                              controller: _idDestinoController,
+                              label: 'Folio del Destinatario',
+                              hint: widget.datosReceptor!['folio'] ?? '',
+                              icon: Icons.badge,
+                              required: true,
+                              readOnly: true, // Campo de solo lectura
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: BioWayColors.info.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: BioWayColors.info.withOpacity(0.3)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.info_outline,
+                                    size: 16,
+                                    color: BioWayColors.info,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Destinatario identificado mediante código QR',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: BioWayColors.info,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Container(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF1490EE),
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF1490EE).withValues(alpha: 0.3),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: IconButton(
-                                key: const Key('btn_buscar_usuario'),
-                                onPressed: _isSearchingUser ? null : _buscarUsuario,
-                                icon: _isSearchingUser 
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
+                          ]
+                        else ...
+                          // Si no tenemos datos, mostrar campo de búsqueda normal
+                          [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: StandardTextField(
+                                    controller: _idDestinoController,
+                                    label: 'Folio del Destinatario',
+                                    hint: 'Ej: R0000001',
+                                    icon: Icons.badge,
+                                    required: true,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9]')),
+                                      TextInputFormatter.withFunction((oldValue, newValue) => 
+                                        TextEditingValue(
+                                          text: newValue.text.toUpperCase(),
+                                          selection: newValue.selection,
                                         ),
-                                      )
-                                    : const Icon(Icons.search, color: Colors.white),
-                                padding: const EdgeInsets.all(12),
-                                constraints: const BoxConstraints(
-                                  minWidth: 48,
-                                  minHeight: 48,
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(width: 12),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1490EE),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF1490EE).withValues(alpha: 0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: IconButton(
+                                    key: const Key('btn_buscar_usuario'),
+                                    onPressed: _isSearchingUser ? null : _buscarUsuario,
+                                    icon: _isSearchingUser 
+                                        ? const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : const Icon(Icons.search, color: Colors.white),
+                                    padding: const EdgeInsets.all(12),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 48,
+                                      minHeight: 48,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
-                        ),
                         
                         // Mostrar sugerencias de usuarios
                         if (_showSuggestions && _suggestedUsers.isNotEmpty) ...[
@@ -1045,6 +1228,36 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                     ),
                   ),
                   
+                  const SizedBox(height: 32),
+                  
+                  // Botón completar entrega
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _submitForm,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1490EE),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          elevation: 2,
+                        ),
+                        child: const Text(
+                          'Completar Entrega',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        key: const Key('btn_completar_entrega'),
+                      ),
+                    ),
+                  ),
+                  
                   const SizedBox(height: 100),
                 ],
               ),
@@ -1061,47 +1274,6 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
             ),
         ],
       ),
-      
-      // Botón completar fijo
-      bottomSheet: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _submitForm,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1490EE),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                elevation: 2,
-              ),
-              child: const Text(
-                'Completar Entrega',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              key: const Key('btn_completar_entrega'),
-            ),
-          ),
-        ),
-      ),
-      
       bottomNavigationBar: EcoceBottomNavigation(
         selectedIndex: 1,
         onItemTapped: _onBottomNavTapped,
@@ -1129,6 +1301,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
           ),
         ],
         fabConfig: null,
+      ),
       ),
     );
   }

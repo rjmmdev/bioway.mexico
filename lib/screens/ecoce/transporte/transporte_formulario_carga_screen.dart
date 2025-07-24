@@ -6,13 +6,13 @@ import 'dart:ui' as ui;
 import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/image_service.dart';
-import '../../../services/lote_service.dart';
+import '../../../services/carga_transporte_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
 import '../../../services/firebase/auth_service.dart';
-import '../../../models/lotes/lote_transportista_model.dart';
 import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/form_widgets.dart';
@@ -22,10 +22,12 @@ import '../shared/utils/dialog_utils.dart';
 
 class TransporteFormularioCargaScreen extends StatefulWidget {
   final List<Map<String, dynamic>> lotes;
+  final Map<String, dynamic> datosOrigen;
   
   const TransporteFormularioCargaScreen({
     super.key,
     required this.lotes,
+    required this.datosOrigen,
   });
 
   @override
@@ -35,7 +37,7 @@ class TransporteFormularioCargaScreen extends StatefulWidget {
 class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCargaScreen> {
   final _formKey = GlobalKey<FormState>();
   final UserSessionService _userSession = UserSessionService();
-  final LoteService _loteService = LoteService();
+  final CargaTransporteService _cargaService = CargaTransporteService();
   final FirebaseStorageService _storageService = FirebaseStorageService();
   final AuthService _authService = AuthService();
   
@@ -153,22 +155,6 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
         throw Exception('No se pudo obtener el perfil del usuario');
       }
 
-      // Calcular tipo de polímero predominante
-      final tipoPolimeros = await _loteService.calcularTipoPolimeroPredominante(
-        widget.lotes.map((l) => l['id'] as String).toList()
-      );
-      String tipoPredominante = 'Mixto';
-      if (tipoPolimeros.isNotEmpty) {
-        tipoPredominante = tipoPolimeros.entries
-            .reduce((a, b) => a.value > b.value ? a : b)
-            .key;
-      }
-
-      // Calcular peso total
-      final pesoTotal = await _loteService.calcularPesoTotal(
-        widget.lotes.map((l) => l['id'] as String).toList()
-      );
-
       // Subir firma a Storage
       if (_firma.isNotEmpty) {
         final signatureImage = await _captureSignature();
@@ -196,36 +182,27 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
         }
       }
 
-      // Obtener el userId del transportista actual
-      final currentUser = _authService.currentUser;
-      if (currentUser == null) {
-        throw Exception('Usuario no autenticado');
-      }
-      
-      // Crear el modelo del lote de transportista
-      final loteTransportista = LoteTransportistaModel(
-        userId: currentUser.uid,
-        fechaRecepcion: DateTime.now(),
-        lotesEntrada: widget.lotes.map((l) => l['id'] as String).toList(),
-        tipoOrigen: tipoPredominante,
-        direccionOrigen: widget.lotes.first['centro_acopio'] ?? 'Sin dirección',
-        pesoRecibido: pesoTotal,
-        nombreOpe: _nombreController.text.trim(),
-        placas: _placasController.text.trim(),
-        firmaSalida: _signatureUrl,
-        comentariosEntrada: _comentariosController.text.trim(),
-        eviFotoEntrada: photoUrls,
-        estado: 'en_transporte',
+      // Crear la carga usando el servicio de carga
+      final cargaId = await _cargaService.crearCarga(
+        lotesIds: widget.lotes.map((l) => l['id'] as String).toList(),
+        transportistaFolio: userProfile['folio'] ?? 'V0000001',
+        origenUsuarioId: widget.datosOrigen['id'],
+        origenUsuarioFolio: widget.datosOrigen['folio'],
+        origenUsuarioNombre: widget.datosOrigen['nombre'],
+        origenUsuarioTipo: widget.datosOrigen['tipo'],
+        vehiculoPlacas: _placasController.text.trim(),
+        nombreConductor: _nombreController.text.trim(),
+        pesoTotalRecogido: double.parse(_pesoController.text),
+        firmaRecogida: _signatureUrl,
+        evidenciasFotoRecogida: photoUrls,
+        comentariosRecogida: _comentariosController.text.trim(),
       );
-
-      // Crear el lote en Firestore
-      final loteId = await _loteService.crearLoteTransportista(loteTransportista);
       
       if (mounted) {
         DialogUtils.showSuccessDialog(
           context: context,
           title: 'Éxito',
-          message: 'Carga confirmada exitosamente',
+          message: 'Carga creada exitosamente con ${widget.lotes.length} lote${widget.lotes.length > 1 ? 's' : ''}.',
           onPressed: () {
             // Navegar a la pestaña de entregar
             Navigator.pushReplacementNamed(
@@ -345,6 +322,11 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Información del origen
+                  _buildOrigenInfo(),
+                  
+                  const SizedBox(height: 16),
+                  
                   // Acordeón de lotes
                   _buildLotesAccordion(),
                   
@@ -976,6 +958,69 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
         const SizedBox(height: 16),
         ...children,
       ],
+    );
+  }
+  
+  Widget _buildOrigenInfo() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: BioWayColors.primaryGreen.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: BioWayColors.primaryGreen.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.location_on,
+                color: BioWayColors.primaryGreen,
+                size: 24,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Recogiendo de:',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: BioWayColors.darkGreen,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            widget.datosOrigen['nombre'],
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: BioWayColors.darkGreen,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Folio: ${widget.datosOrigen['folio']}',
+            style: TextStyle(
+              fontSize: 14,
+              color: BioWayColors.textGrey,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            widget.datosOrigen['direccion'],
+            style: TextStyle(
+              fontSize: 14,
+              color: BioWayColors.textGrey,
+            ),
+          ),
+        ],
+      ),
     );
   }
   

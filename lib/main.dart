@@ -10,9 +10,10 @@ import 'screens/ecoce/origen/origen_crear_lote_screen.dart';
 
 // Screens - Reciclador
 import 'screens/ecoce/reciclador/reciclador_inicio.dart';
-import 'screens/ecoce/reciclador/reciclador_administracion_lotes.dart';
+import 'screens/ecoce/reciclador/reciclador_administracion_lotes_v2.dart';
 import 'screens/ecoce/reciclador/reciclador_escaneo_qr.dart';
 import 'screens/ecoce/reciclador/reciclador_documentacion.dart';
+import 'screens/ecoce/reciclador/reciclador_formulario_recepcion.dart';
 
 // Screens - Transporte
 import 'screens/ecoce/transporte/transporte_inicio_screen.dart';
@@ -29,13 +30,19 @@ import 'screens/ecoce/transformador/transformador_inicio_screen.dart';
 import 'screens/ecoce/transformador/transformador_produccion_screen.dart';
 import 'screens/ecoce/transformador/transformador_recibir_lote_screen.dart';
 import 'screens/ecoce/transformador/transformador_documentacion_screen.dart';
+import 'screens/ecoce/transformador/transformador_formulario_recepcion.dart';
 
 // Screens - Laboratorio
 import 'screens/ecoce/laboratorio/laboratorio_inicio.dart';
 import 'screens/ecoce/laboratorio/laboratorio_gestion_muestras.dart';
+import 'screens/ecoce/laboratorio/laboratorio_formulario_recepcion.dart';
 
 // Screens - Maestro
 import 'screens/ecoce/maestro/maestro_unified_screen.dart';
+
+// Screens - Repositorio
+import 'screens/ecoce/repositorio/repositorio_inicio_screen.dart';
+import 'screens/ecoce/repositorio/repositorio_debug_screen.dart';
 
 void main() async {
   // Asegurar que los widgets estén inicializados
@@ -225,7 +232,7 @@ class BioWayApp extends StatelessWidget {
         '/reciclador_inicio': (context) => const RecicladorInicio(),
         '/reciclador_lotes': (context) {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-          return RecicladorAdministracionLotes(
+          return RecicladorAdministracionLotesV2(
             initialTab: args?['initialTab'] ?? 0,
           );
         },
@@ -235,6 +242,13 @@ class BioWayApp extends StatelessWidget {
         '/reciclador_documentacion': (context) {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
           return RecicladorDocumentacion(lotId: args?['lotId'] ?? 'UNKNOWN');
+        },
+        '/reciclador_formulario_recepcion': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          return RecicladorFormularioRecepcion(
+            lotes: args?['lotes'] ?? [],
+            datosEntrega: args?['datosEntrega'] ?? {},
+          );
         },
         
         // Rutas de Transporte
@@ -254,6 +268,13 @@ class BioWayApp extends StatelessWidget {
         '/transformador_ayuda': (context) => const EcoceAyudaScreen(),
         '/transformador_perfil': (context) => const EcocePerfilScreen(),
         '/transformador_recibir_lote': (context) => const TransformadorRecibirLoteScreen(),
+        '/transformador_formulario_recepcion': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          return TransformadorFormularioRecepcion(
+            lotes: args?['lotes'] ?? [],
+            datosEntrega: args?['datosEntrega'] ?? {},
+          );
+        },
         '/transformador_documentacion': (context) => const TransformadorDocumentacionScreen(),
         
         // Rutas de Planta de Separación
@@ -266,6 +287,13 @@ class BioWayApp extends StatelessWidget {
           return const LaboratorioInicioScreen();
         },
         '/laboratorio_muestras': (context) => const LaboratorioGestionMuestras(),
+        '/laboratorio_formulario_recepcion': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          return LaboratorioFormularioRecepcion(
+            lotes: args?['lotes'] ?? [],
+            datosEntrega: args?['datosEntrega'] ?? {},
+          );
+        },
         '/laboratorio_perfil': (context) => const EcocePerfilScreen(),
         '/laboratorio_ayuda': (context) => const EcoceAyudaScreen(),
         
@@ -274,6 +302,13 @@ class BioWayApp extends StatelessWidget {
           // Importar la pantalla dinámicamente para evitar problemas de importación circular
           return const MaestroUnifiedScreen();
         },
+        
+        // Rutas de Repositorio
+        '/repositorio_inicio': (context) => const RepositorioInicioScreen(),
+        '/repositorio_debug': (context) => const RepositorioDebugScreen(),
+        '/repositorio_reportes': (context) => const EcoceAyudaScreen(), // TODO: Create reports screen
+        '/repositorio_ayuda': (context) => const EcoceAyudaScreen(),
+        '/repositorio_perfil': (context) => const EcocePerfilScreen(),
       },
     );
   }

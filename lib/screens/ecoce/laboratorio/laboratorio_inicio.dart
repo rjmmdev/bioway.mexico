@@ -20,6 +20,7 @@ import '../shared/widgets/ecoce_bottom_navigation.dart';
 import 'widgets/laboratorio_muestra_card.dart';
 import '../shared/widgets/unified_stat_card.dart';
 import '../shared/utils/navigation_utils.dart';
+import '../shared/screens/usuario_qr_screen.dart';
 
 class LaboratorioInicioScreen extends StatefulWidget {
   const LaboratorioInicioScreen({super.key});
@@ -118,6 +119,18 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
     NavigationUtils.navigateWithSlide(
       context,
       const LaboratorioGestionMuestras(),
+    );
+  }
+  
+  void _navigateToMyQR() {
+    HapticFeedback.lightImpact();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const UsuarioQRScreen(
+          userType: 'laboratorio',
+        ),
+      ),
     );
   }
 
@@ -511,6 +524,88 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                   Icon(
                                     Icons.arrow_forward_ios,
                                     color: Colors.white.withValues(alpha: 0.8),
+                                    size: 18,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Segundo botón - Mi QR de Identificación
+                      Container(
+                        width: double.infinity,
+                        height: 70,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              BioWayColors.petBlue,
+                              BioWayColors.petBlue.withValues(alpha:0.8),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: BioWayColors.petBlue.withValues(alpha:0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(16),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: _navigateToMyQR,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha:0.2),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.qr_code_2,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Mi QR de Identificación',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Mostrar QR para recibir materiales',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.white.withValues(alpha:0.9),
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.arrow_forward_ios,
+                                    color: Colors.white.withValues(alpha:0.8),
                                     size: 18,
                                   ),
                                 ],

@@ -29,6 +29,9 @@ class LoteService {
   static const String LOTES_RECICLADOR = 'lotes_reciclador';
   static const String LOTES_LABORATORIO = 'lotes_laboratorio';
   static const String LOTES_TRANSFORMADOR = 'lotes_transformador';
+  
+  // Nueva colección unificada
+  static const String LOTES = 'lotes';
 
   // === ORIGEN ===
   Future<String> crearLoteOrigen(LoteOrigenModel lote) async {
@@ -44,21 +47,147 @@ class LoteService {
     final userId = _currentUserId;
     if (userId == null) return Stream.value([]);
     
+    // Buscar en la nueva estructura unificada - simplificado para evitar índices complejos
     return _firestore
-        .collection(LOTES_ORIGEN)
-        .where('userId', isEqualTo: userId)
-        .orderBy('ecoce_origen_fecha_nace', descending: true)
+        .collectionGroup('datos_generales')
+        .where('creado_por', isEqualTo: userId)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => LoteOrigenModel.fromFirestore(doc))
-            .toList());
+        .asyncMap((snapshot) async {
+          List<LoteOrigenModel> lotes = [];
+          
+          for (var doc in snapshot.docs) {
+            final data = doc.data();
+            
+            // Filtrar solo lotes en proceso origen
+            if (data['proceso_actual'] != 'origen') continue;
+            
+            // Extraer el ID del lote del path del documento
+            final pathParts = doc.reference.path.split('/');
+            if (pathParts.length >= 2) {
+              final loteId = pathParts[pathParts.length - 3]; // lotes/[ID]/datos_generales/info
+              
+              try {
+                // Obtener los datos completos del proceso origen
+                final origenDoc = await _firestore
+                    .collection(LOTES)
+                    .doc(loteId)
+                    .collection('origen')
+                    .doc('data')
+                    .get();
+                    
+                if (origenDoc.exists) {
+                  final origenData = origenDoc.data()!;
+                  
+                  // Crear un LoteOrigenModel con todos los datos
+                  lotes.add(LoteOrigenModel(
+                    id: loteId,
+                    userId: userId,
+                    fechaNace: data['fecha_creacion'] != null 
+                        ? (data['fecha_creacion'] as Timestamp).toDate() 
+                        : DateTime.now(),
+                    direccion: origenData['direccion'] ?? 'Sin dirección',
+                    fuente: origenData['fuente'] ?? '',
+                    presentacion: origenData['presentacion'] ?? '',
+                    tipoPoli: origenData['tipo_poli'] ?? '',
+                    origen: origenData['origen'] ?? 'Post-consumo',
+                    pesoNace: (origenData['peso_nace'] as num?)?.toDouble() ?? 0.0,
+                    condiciones: origenData['condiciones'] ?? '',
+                    nombreOpe: origenData['nombre_operador'] ?? '',
+                    firmaOpe: origenData['firma_operador'],
+                    comentarios: origenData['comentarios'],
+                    eviFoto: List<String>.from(origenData['evidencias_foto'] ?? []),
+                  ));
+                }
+              } catch (e) {
+                // Si falla obtener los datos de origen, usar datos generales
+                lotes.add(LoteOrigenModel(
+                  id: loteId,
+                  userId: userId,
+                  fechaNace: data['fecha_creacion'] != null 
+                      ? (data['fecha_creacion'] as Timestamp).toDate() 
+                      : DateTime.now(),
+                  direccion: 'Sin dirección',
+                  fuente: data['material_fuente'] ?? '',
+                  presentacion: data['material_presentacion'] ?? '',
+                  tipoPoli: data['material_tipo'] ?? '',
+                  origen: 'Post-consumo',
+                  pesoNace: (data['peso'] as num?)?.toDouble() ?? 0.0,
+                  condiciones: '',
+                  nombreOpe: data['origen_nombre'] ?? '',
+                  eviFoto: [],
+                ));
+              }
+            }
+          }
+          
+          // Ordenar manualmente por fecha
+          lotes.sort((a, b) => b.fechaNace.compareTo(a.fechaNace));
+          
+          return lotes;
+        });
   }
 
   Future<LoteOrigenModel?> getLoteOrigenById(String id) async {
     try {
-      final doc = await _firestore.collection(LOTES_ORIGEN).doc(id).get();
-      if (doc.exists) {
-        return LoteOrigenModel.fromFirestore(doc);
+      // Buscar en la nueva estructura unificada
+      final datosDoc = await _firestore
+          .collection(LOTES)
+          .doc(id)
+          .collection('datos_generales')
+          .doc('info')
+          .get();
+          
+      if (datosDoc.exists) {
+        final data = datosDoc.data()!;
+        
+        // Obtener también los datos específicos del proceso origen
+        final origenDoc = await _firestore
+            .collection(LOTES)
+            .doc(id)
+            .collection('origen')
+            .doc('data')
+            .get();
+            
+        if (origenDoc.exists) {
+          final origenData = origenDoc.data()!;
+          
+          return LoteOrigenModel(
+            id: id,
+            userId: data['creado_por'] ?? _currentUserId ?? '',
+            fechaNace: data['fecha_creacion'] != null 
+                ? (data['fecha_creacion'] as Timestamp).toDate() 
+                : DateTime.now(),
+            direccion: origenData['direccion'] ?? 'Sin dirección',
+            fuente: origenData['fuente'] ?? '',
+            presentacion: origenData['presentacion'] ?? '',
+            tipoPoli: origenData['tipo_poli'] ?? '',
+            origen: origenData['origen'] ?? 'Post-consumo',
+            pesoNace: (origenData['peso_nace'] as num?)?.toDouble() ?? 0.0,
+            condiciones: origenData['condiciones'] ?? '',
+            nombreOpe: origenData['nombre_operador'] ?? '',
+            firmaOpe: origenData['firma_operador'],
+            comentarios: origenData['comentarios'],
+            eviFoto: List<String>.from(origenData['evidencias_foto'] ?? []),
+          );
+        } else {
+          // Si no hay datos de origen, usar solo datos generales
+          return LoteOrigenModel(
+            id: id,
+            userId: data['creado_por'] ?? _currentUserId ?? '',
+            fechaNace: data['fecha_creacion'] != null 
+                ? (data['fecha_creacion'] as Timestamp).toDate() 
+                : DateTime.now(),
+            direccion: 'Sin dirección',
+            fuente: data['material_fuente'] ?? '',
+            presentacion: data['material_presentacion'] ?? '',
+            tipoPoli: data['material_tipo'] ?? '',
+            origen: 'Post-consumo',
+            pesoNace: (data['peso'] as num?)?.toDouble() ?? 0.0,
+            condiciones: '',
+            nombreOpe: data['origen_nombre'] ?? '',
+            eviFoto: [],
+          );
+        }
       }
       return null;
     } catch (e) {

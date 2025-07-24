@@ -450,6 +450,125 @@ NEVER hardcode colors. Always use `BioWayColors` constants:
 - PDFs limited to 5MB
 - Use `ImageService.optimizeImageForDatabase()` for consistency
 
+## Sistema de Lotes y Trazabilidad
+
+### Arquitectura Unificada de Lotes
+
+El sistema utiliza una estructura de lotes unificada con ID único e inmutable que permite la trazabilidad completa del material reciclable a través de toda la cadena de suministro.
+
+#### Estructura de Base de Datos
+```
+lotes/
+└── {loteId}/                          # ID único generado automáticamente
+    ├── datos_generales/
+    │   └── info                       # Documento con información general del lote
+    │       ├── id                     # ID del lote
+    │       ├── fecha_creacion         # Timestamp de creación
+    │       ├── creado_por             # UID del usuario origen
+    │       ├── proceso_actual         # "origen" | "transporte" | "reciclador" | etc.
+    │       ├── historial_procesos     # ["origen", "transporte", "reciclador"]
+    │       ├── qr_code               # Código QR único: "LOTE-{tipo}-{id}"
+    │       ├── material_tipo         # Tipo de polímero
+    │       ├── material_presentacion # Forma del material
+    │       ├── material_fuente       # Origen del material
+    │       └── peso                  # Peso actual del lote
+    │
+    ├── origen/                       # Datos del proceso origen
+    │   └── data
+    │       ├── usuario_id
+    │       ├── fecha_entrada
+    │       ├── peso_nace            # Peso inicial
+    │       ├── firma_operador       # URL de la firma
+    │       ├── evidencias_foto      # Array de URLs de fotos
+    │       └── ... (todos los campos del formulario)
+    │
+    ├── transporte/                   # Datos del proceso transporte
+    │   └── data
+    │       ├── usuario_id
+    │       ├── fecha_recepcion
+    │       ├── vehiculo_placas
+    │       ├── firma_conductor
+    │       └── ... (campos del transportista)
+    │
+    └── reciclador/                   # Datos del proceso reciclador
+        └── data
+            ├── usuario_id
+            ├── peso_entrada
+            ├── peso_salida
+            ├── merma
+            └── ... (campos del reciclador)
+```
+
+### Flujo de Transferencia de Lotes
+
+1. **Creación (Usuario Origen)**
+   - Crea el lote con ID único
+   - Genera código QR automáticamente
+   - Estado inicial: `proceso_actual = "origen"`
+   - Guarda toda la información del formulario en `/origen/data`
+
+2. **Transferencia Automática por QR**
+   - **NO hay botones de transferir** - la transferencia es automática
+   - El siguiente usuario escanea el QR
+   - Al completar su formulario de recepción:
+     - Se actualiza `proceso_actual` al nuevo proceso
+     - Se agrega el proceso a `historial_procesos`
+     - Se crea la subcarpeta del nuevo proceso con todos los datos
+   - **Garantiza interacción física** entre usuarios
+
+3. **Trazabilidad Completa**
+   - Cada proceso guarda TODOS sus datos
+   - La información es **inmutable** - nunca se modifica
+   - El repositorio puede ver toda la historia del lote
+   - Incluye: usuarios, fechas, pesos, firmas, fotos, etc.
+
+### Servicios Principales
+
+#### LoteUnificadoService
+```dart
+// Crear lote desde origen
+crearLoteDesdeOrigen({
+  tipoMaterial, pesoInicial, fuente, presentacion,
+  firmaOperador, evidenciasFoto, ...
+}) → String (loteId)
+
+// Transferir lote entre procesos
+transferirLote({
+  loteId, procesoDestino, datosIniciales
+}) → void
+```
+
+#### LoteService (actualizado)
+```dart
+// Obtener lotes del usuario origen actual
+getLotesOrigen() → Stream<List<LoteOrigenModel>>
+
+// Busca en la nueva estructura usando collectionGroup
+// Filtra por creado_por y proceso_actual = "origen"
+```
+
+### Puntos Clave de Implementación
+
+1. **IDs Únicos**: Usar Firestore auto-generated IDs
+2. **QR Codes**: Formato `LOTE-{tipo}-{id}` 
+3. **Inmutabilidad**: Los datos nunca se modifican, solo se agregan
+4. **Atomicidad**: Usar batch operations para consistencia
+5. **Permisos**: Cualquier usuario autenticado puede crear/leer lotes
+
+### Consultas Comunes
+
+```dart
+// Lotes en proceso origen del usuario actual
+collectionGroup('datos_generales')
+  .where('creado_por', '==', userId)
+  .where('proceso_actual', '==', 'origen')
+
+// Historial completo de un lote
+lotes/{loteId}/origen/data
+lotes/{loteId}/transporte/data
+lotes/{loteId}/reciclador/data
+```
+
 ## Known Issues & Limitations
 
 ### BioWay Platform
@@ -470,3 +589,6 @@ NEVER hardcode colors. Always use `BioWayColors` constants:
 4. Recycler form weight calculations (gross = sum, net = user input)
 5. Signature widget positioning with proportional scaling
 6. Navigation after form completion (avoid logout)
+7. Unified lot structure with complete traceability
+8. Automatic lot transfer via QR scanning
+9. Master users in separate collection (`maestros`)

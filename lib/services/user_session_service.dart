@@ -128,7 +128,7 @@ class UserSessionService {
       'tipo': profile.tipoActorLabel,
       'tipoActor': profile.ecoceTipoActor,
       'subtipo': profile.ecoceSubtipo,
-      'direccion': profile.ecoceDireccion,
+      'direccion': '${profile.ecoceCalle} ${profile.ecoceNumExt}${profile.ecoceNumInt != null ? ' Int. ${profile.ecoceNumInt}' : ''}, ${profile.ecoceColonia ?? ''}, ${profile.ecoceMunicipio ?? ''}, ${profile.ecoceEstado ?? ''}, CP ${profile.ecoceCp}'.trim(),
       'telefono': profile.ecoceTelefono,
       'rfc': profile.ecoceRfc,
       'nombreComercial': profile.ecoceNombreComercial,

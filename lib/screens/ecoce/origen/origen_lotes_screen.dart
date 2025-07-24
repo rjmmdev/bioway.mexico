@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import '../../../models/lotes/lote_origen_model.dart';
+import '../../../models/lotes/lote_unificado_model.dart';
 import '../../../services/lote_service.dart';
+import '../../../services/lote_unificado_service.dart';
 import 'origen_inicio_screen.dart';
 import 'origen_lote_detalle_screen.dart';
 import 'origen_crear_lote_screen.dart';
 import '../shared/ecoce_ayuda_screen.dart';
 import '../shared/ecoce_perfil_screen.dart';
 import 'widgets/origen_lote_card.dart';
+import 'widgets/origen_lote_unificado_card.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import 'origen_config.dart';
 
@@ -25,6 +28,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
 
   Color get _primaryColor => OrigenUserConfig.current.color;
   final LoteService _loteService = LoteService();
+  final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
 
   // Filtros
   String _filtroMaterial = 'Todos';
@@ -35,27 +39,36 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
   final FocusNode _searchFocus = FocusNode();
 
   // Lista de lotes desde Firestore
-  List<LoteOrigenModel> _lotes = [];
+  List<LoteUnificadoModel> _lotes = [];
   bool _isLoading = true;
 
-  List<LoteOrigenModel> get _lotesFiltrados {
+  List<LoteUnificadoModel> get _lotesFiltrados {
     return _lotes.where((lote) {
+      // Solo mostrar lotes que están actualmente en origen
+      if (lote.datosGenerales.procesoActual != 'origen') {
+        return false;
+      }
+      
+      // Obtener datos de origen
+      final datosOrigen = lote.origen;
+      if (datosOrigen == null) return false;
+      
       // Filtro por material
-      if (_filtroMaterial != 'Todos' && lote.tipoPoli != _filtroMaterial) {
+      if (_filtroMaterial != 'Todos' && datosOrigen.tipoPoli != _filtroMaterial) {
         return false;
       }
       
       // Filtro por presentación
-      if (_filtroPresentacion != 'Todas' && lote.presentacion != _filtroPresentacion) {
+      if (_filtroPresentacion != 'Todas' && datosOrigen.presentacion != _filtroPresentacion) {
         return false;
       }
       
       // Filtro por búsqueda
       if (_searchController.text.isNotEmpty) {
         final searchLower = _searchController.text.toLowerCase();
-        return (lote.id?.toLowerCase().contains(searchLower) ?? false) ||
-               lote.fuente.toLowerCase().contains(searchLower) ||
-               lote.tipoPoli.toLowerCase().contains(searchLower);
+        return lote.id.toLowerCase().contains(searchLower) ||
+               datosOrigen.fuente.toLowerCase().contains(searchLower) ||
+               datosOrigen.tipoPoli.toLowerCase().contains(searchLower);
       }
       
       return true;
@@ -69,7 +82,8 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
   }
   
   void _loadLotes() {
-    _loteService.getLotesOrigen().listen((lotes) {
+    // Obtener lotes creados por el usuario actual que están en origen
+    _loteUnificadoService.obtenerMisLotesCreados().listen((lotes) {
       if (mounted) {
         setState(() {
           _lotes = lotes;
@@ -86,17 +100,18 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
     super.dispose();
   }
 
-  void _verCodigoQR(LoteOrigenModel lote) {
+  void _verCodigoQR(LoteUnificadoModel lote) {
+    final datosOrigen = lote.origen!;
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => OrigenLoteDetalleScreen(
-          firebaseId: lote.id!,
-          material: lote.tipoPoli,
-          peso: lote.pesoNace,
-          presentacion: lote.presentacion,
-          fuente: lote.fuente,
-          fechaCreacion: lote.fechaNace,
+          firebaseId: lote.id,
+          material: datosOrigen.tipoPoli,
+          peso: datosOrigen.pesoNace,
+          presentacion: datosOrigen.presentacion,
+          fuente: datosOrigen.fuente,
+          fechaCreacion: datosOrigen.fechaEntrada,
           mostrarMensajeExito: false,
         ),
       ),
@@ -352,19 +367,10 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                                 top: isFirst ? 0 : 6,
                                 bottom: isLast ? 0 : 6,
                               ),
-                              child: OrigenLoteCard(
-                                lote: {
-                                  'id': lote.id,
-                                  'firebaseId': lote.id,
-                                  'material': lote.tipoPoli,
-                                  'peso': lote.pesoNace,
-                                  'presentacion': lote.presentacion,
-                                  'fuente': lote.fuente,
-                                  'fecha': lote.fechaNace,
-                                  'estado': 'activo',
-                                },
-                                onQRTap: () => _verCodigoQR(lote),
-                                showActions: true,
+                              child: OrigenLoteUnificadoCard(
+                                lote: lote,
+                                onTap: () => _verCodigoQR(lote),
+                                primaryColor: _primaryColor,
                               ),
                             );
                           },

@@ -14,6 +14,7 @@ import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/unified_stat_card.dart';
 import '../shared/widgets/quick_action_button.dart';
 import 'widgets/reciclador_lote_card.dart';
+import '../shared/screens/receptor_recepcion_pasos_screen.dart';
 
 class RecicladorInicio extends StatefulWidget {
   const RecicladorInicio({super.key});
@@ -134,7 +135,15 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
 
   void _navigateToNewLot() async {
     HapticFeedback.lightImpact();
-    await Navigator.pushNamed(context, '/reciclador_escaneo');
+    // Navegar al flujo por pasos de recepción
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ReceptorRecepcionPasosScreen(
+          userType: 'reciclador',
+        ),
+      ),
+    );
     // Refresh statistics when returning from scanning
     _loadUserProfile();
     _loadStatistics();
@@ -144,6 +153,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
     HapticFeedback.lightImpact();
     Navigator.pushNamed(context, '/reciclador_lotes');
   }
+  
 
   void _onBottomNavTapped(int index) {
     HapticFeedback.lightImpact();
@@ -552,7 +562,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(
-                                      Icons.qr_code_scanner,
+                                      Icons.local_shipping,
                                       color: Colors.white,
                                       size: 24,
                                     ),
@@ -564,7 +574,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         const Text(
-                                          'Escanear Nuevo Lote',
+                                          'Recibir Lote',
                                           style: TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.bold,
@@ -572,7 +582,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                                           ),
                                         ),
                                         Text(
-                                          'Recibir material para procesamiento',
+                                          'Recibir material del transportista',
                                           style: TextStyle(
                                             fontSize: 13,
                                             color: Colors.white.withValues(alpha:0.9),
@@ -787,7 +797,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                         },
                       ),
                       
-                      const SizedBox(height: 100), // Espacio para el FAB
+                      const SizedBox(height: 20), // Espacio inferior
                     ],
                   ),
                 ),
@@ -797,27 +807,14 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
         ),
       ),
       
-      // Bottom Navigation Bar con FAB
+      // Bottom Navigation Bar sin FAB
       bottomNavigationBar: EcoceBottomNavigation(
         selectedIndex: _selectedIndex,
         onItemTapped: _onBottomNavTapped,
         items: EcoceNavigationConfigs.recicladorItems,
         primaryColor: BioWayColors.ecoceGreen,
-        fabConfig: FabConfig(
-          onPressed: _navigateToNewLot,
-          icon: Icons.add,
-          tooltip: 'Escanear Lote',
-        ),
+        // Sin fabConfig para eliminar el espacio del FAB
       ),
-      
-      // Floating Action Button
-      floatingActionButton: EcoceFloatingActionButton(
-        onPressed: _navigateToNewLot,
-        icon: Icons.add,
-        backgroundColor: BioWayColors.ecoceGreen,
-        tooltip: 'Escanear Nuevo Lote',
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
   }

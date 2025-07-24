@@ -74,11 +74,7 @@ class UserTypeHelper {
           tooltip: 'Nuevo Lote',
         );
       case 'R':
-        return FabConfig(
-          icon: Icons.add,
-          onPressed: () => Navigator.pushNamed(context, '/reciclador_escaneo'),
-          tooltip: 'Escanear Lote',
-        );
+        return null; // Reciclador no tiene FAB
       case 'V':
         return null; // Transportista no tiene FAB
       case 'T':

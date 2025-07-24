@@ -4,7 +4,6 @@ import '../../../utils/colors.dart';
 import 'reciclador_formulario_salida.dart';
 import 'reciclador_documentacion.dart';
 import 'reciclador_lote_qr_screen.dart';
-import 'widgets/reciclador_bottom_navigation.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import 'widgets/reciclador_lote_card.dart';
 import '../../../services/lote_service.dart';
@@ -55,11 +54,20 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
     _loadLotes();
   }
   
-  void _loadLotes() {
+  void _loadLotes() async {
+    // Pequeño delay para evitar problemas de renderizado
+    await Future.delayed(const Duration(milliseconds: 100));
+    
     _loteService.getLotesReciclador().listen((lotes) {
       if (mounted) {
         setState(() {
           _todosLotes = lotes;
+          _isLoading = false;
+        });
+      }
+    }, onError: (error) {
+      if (mounted) {
+        setState(() {
           _isLoading = false;
         });
       }
@@ -285,18 +293,12 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
           _buildTabContent(),
         ],
       ),
-      bottomNavigationBar: _isLoading ? null : RecicladorBottomNavigation(
+      bottomNavigationBar: EcoceBottomNavigation(
         selectedIndex: _selectedIndex,
         onItemTapped: _onBottomNavTapped,
-        onFabPressed: _navigateToNewLot,
+        items: EcoceNavigationConfigs.recicladorItems,
+        primaryColor: BioWayColors.ecoceGreen,
       ),
-      floatingActionButton: _isLoading ? null : EcoceFloatingActionButton(
-        onPressed: _navigateToNewLot,
-        icon: Icons.add,
-        backgroundColor: BioWayColors.ecoceGreen,
-        tooltip: 'Escanear Nuevo Lote',
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
   }
@@ -304,7 +306,12 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
   Widget _buildTabContent() {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: BioWayColors.ecoceGreen),
+        child: Padding(
+          padding: EdgeInsets.all(40),
+          child: CircularProgressIndicator(
+            color: BioWayColors.ecoceGreen,
+          ),
+        ),
       );
     }
     

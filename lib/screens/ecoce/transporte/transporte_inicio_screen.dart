@@ -6,13 +6,13 @@ import '../../../utils/format_utils.dart';
 import '../../../services/user_session_service.dart';
 import '../../../models/ecoce/ecoce_profile_model.dart';
 import '../../../services/lote_service.dart';
+import '../../../services/carga_transporte_service.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/unified_stat_card.dart';
 import '../shared/utils/material_utils.dart';
 import '../shared/utils/dialog_utils.dart';
 import 'transporte_entregar_screen.dart';
-import '../shared/widgets/qr_scanner_widget.dart';
-import 'transporte_resumen_carga_screen.dart';
+import 'transporte_escanear_carga_screen.dart';
 
 class TransporteInicioScreen extends StatefulWidget {
   const TransporteInicioScreen({super.key});
@@ -24,6 +24,7 @@ class TransporteInicioScreen extends StatefulWidget {
 class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
   final UserSessionService _sessionService = UserSessionService();
   final LoteService _loteService = LoteService();
+  final CargaTransporteService _cargaService = CargaTransporteService();
   
   EcoceProfileModel? _userProfile;
   
@@ -68,55 +69,22 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
     });
 
     try {
-      // Obtener TODOS los lotes con estado 'en_transporte' (igual que en entregar_screen)
-      // NO filtrar por userId - todos los transportistas pueden ver todos los lotes disponibles
-      final lotesTransportista = await _loteService.getLotesTransportista(
-        estado: 'en_transporte',
-      ).first;
+      // Obtener lotes individuales en transporte desde las cargas
+      final lotesInfo = await _cargaService.getLotesEnTransporte();
       
       List<Map<String, dynamic>> lotesFormateados = [];
       
-      for (var loteTransportista in lotesTransportista) {
-        // Solo procesar si hay lotes de entrada
-        if (loteTransportista.lotesEntrada.isEmpty) continue;
-        
-        // Obtener información de los lotes originales
-        String materialPredominante = 'Mixto';
-        String presentacionPredominante = 'Pacas';
-        
-        try {
-          final lotesInfo = await _loteService.getLotesInfo(loteTransportista.lotesEntrada);
-          
-          if (lotesInfo.isNotEmpty) {
-            // Calcular tipo de polímero predominante
-            final tipoPolimeros = await _loteService.calcularTipoPolimeroPredominante(loteTransportista.lotesEntrada);
-            if (tipoPolimeros.isNotEmpty) {
-              materialPredominante = tipoPolimeros.entries
-                  .reduce((a, b) => a.value > b.value ? a : b)
-                  .key;
-            }
-            
-            // Obtener presentación del primer lote como referencia
-            if (lotesInfo.first['tipo_lote'] == 'lotes_origen' && 
-                lotesInfo.first['ecoce_origen_presentacion'] != null) {
-              presentacionPredominante = lotesInfo.first['ecoce_origen_presentacion'];
-            }
-          }
-        } catch (e) {
-          print('Error obteniendo info de lotes: $e');
-        }
-        
+      for (var lote in lotesInfo) {
         // Formatear el lote para la vista
         lotesFormateados.add({
-          'id': loteTransportista.id,
-          'firebaseId': loteTransportista.id,
-          'material': materialPredominante,
-          'peso': loteTransportista.pesoRecibido ?? 0.0,
-          'presentacion': presentacionPredominante,
-          'origen': loteTransportista.direccionOrigen ?? 'Origen desconocido',
-          'fecha_recogida': loteTransportista.fechaRecepcion ?? DateTime.now(),
+          'id': lote['lote_id'],
+          'firebaseId': lote['lote_id'],
+          'material': lote['material'],
+          'peso': lote['peso'],
+          'origen': '${lote['origen_nombre']} (${lote['origen_folio']})',
+          'fecha_recogida': lote['fecha_recogida'],
           'estado': 'en_transito',
-          'lotes_originales': loteTransportista.lotesEntrada,
+          'carga_id': lote['carga_id'],
         });
       }
 
@@ -191,116 +159,9 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => SharedQRScannerScreen(
-          title: 'Escanear Código QR',
-          subtitle: 'Apunta al código del lote',
-          onCodeScanned: _handleScannerResult,
-          primaryColor: BioWayColors.primaryGreen,
-          scanPrompt: 'Apunta al código del lote',
-          showManualInput: true,
-          manualInputHint: 'Ej: Firebase_ID_1x7h9k3',
-        ),
+        builder: (context) => const TransporteEscanearCargaScreen(),
       ),
     );
-  }
-
-  void _handleScannerResult(String qrData) async {
-    // Mostrar loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-
-    try {
-      // Buscar el lote en Firebase
-      final lotesInfo = await _loteService.getLotesInfo([qrData]);
-      
-      Navigator.pop(context); // Cerrar loading
-
-      if (lotesInfo.isEmpty) {
-        DialogUtils.showErrorDialog(
-          context: context,
-          title: 'Lote no encontrado',
-          message: 'El código QR escaneado no corresponde a un lote válido',
-        );
-        return;
-      }
-
-      final loteInfo = lotesInfo.first;
-      
-      // Convertir la información del lote al formato esperado
-      Map<String, dynamic> lot = {};
-      
-      if (loteInfo['tipo_lote'] == 'lotes_origen') {
-        lot = {
-          'id': loteInfo['id'],
-          'material': loteInfo['ecoce_origen_tipo_poli'] ?? 'Desconocido',
-          'peso': (loteInfo['ecoce_origen_peso_nace'] ?? 0).toDouble(),
-          'presentacion': loteInfo['ecoce_origen_presentacion'] ?? 'N/A',
-          'origen': loteInfo['ecoce_origen_fuente'] ?? 'Origen desconocido',
-          'centro_acopio': loteInfo['ecoce_origen_direccion'] ?? 'Sin dirección',
-          'timestamp': DateTime.now().toIso8601String(),
-        };
-      } else if (loteInfo['tipo_lote'] == 'lotes_reciclador') {
-        // Si el lote viene de un reciclador
-        lot = {
-          'id': loteInfo['id'],
-          'material': _getTipoPredominante(loteInfo['ecoce_reciclador_tipo_poli']),
-          'peso': (loteInfo['ecoce_reciclador_peso_resultante'] ?? 0).toDouble(),
-          'presentacion': 'Procesado',
-          'origen': 'Reciclador',
-          'centro_acopio': 'Planta de Reciclaje',
-          'timestamp': DateTime.now().toIso8601String(),
-        };
-      } else {
-        DialogUtils.showErrorDialog(
-          context: context,
-          title: 'Tipo de lote no válido',
-          message: 'Este código QR no corresponde a un lote que pueda ser transportado',
-        );
-        return;
-      }
-
-      // Navegar a la pantalla de resumen con el lote
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TransporteResumenCargaScreen(
-              lotesIniciales: [lot],
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      Navigator.pop(context); // Cerrar loading
-      
-      DialogUtils.showErrorDialog(
-        context: context,
-        title: 'Error',
-        message: 'No se pudo obtener la información del lote: ${e.toString()}',
-      );
-    }
-  }
-
-  String _getTipoPredominante(Map<String, dynamic>? tipoPoli) {
-    if (tipoPoli == null || tipoPoli.isEmpty) return 'N/A';
-    
-    String tipoPredominante = '';
-    double maxPorcentaje = 0;
-    
-    tipoPoli.forEach((tipo, porcentaje) {
-      final pct = (porcentaje as num).toDouble();
-      if (pct > maxPorcentaje) {
-        maxPorcentaje = pct;
-        tipoPredominante = tipo;
-      }
-    });
-    
-    return tipoPredominante.isEmpty ? 'N/A' : tipoPredominante;
   }
 
   void _navigateToEntregar() {
@@ -993,12 +854,6 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                               Colors.blue,
                               isCompact,
                             ),
-                            if (lote['presentacion'] != null)
-                              _buildPresentacionChip(
-                                lote['presentacion'],
-                                Colors.green,
-                                isCompact,
-                              ),
                             _buildCompactChip(
                               Icons.schedule,
                               _getTimeElapsed(lote['fecha_recogida']),
@@ -1088,46 +943,6 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
     );
   }
 
-  Widget _buildPresentacionChip(String presentacion, Color color, bool isCompact) {
-    final svgPath = presentacion == 'Pacas' 
-        ? 'assets/images/icons/pacas.svg' 
-        : 'assets/images/icons/sacos.svg';
-        
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: isCompact ? 6 : 8, 
-        vertical: isCompact ? 3 : 4
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha:0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SvgPicture.asset(
-            svgPath,
-            width: isCompact ? 11 : 12,
-            height: isCompact ? 11 : 12,
-            colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-          ),
-          const SizedBox(width: 4),
-          Flexible(
-            child: Text(
-              presentacion,
-              style: TextStyle(
-                fontSize: isCompact ? 10 : 11,
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildStatusChip(String status, Color color, bool isCompact) {
     return Container(

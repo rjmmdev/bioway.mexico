@@ -16,18 +16,20 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
 import '../../../services/user_session_service.dart';
-import '../../../services/lote_service.dart';
+import '../../../services/carga_transporte_service.dart';
 import '../../../services/firebase/auth_service.dart';
-import '../../../models/lotes/lote_transportista_model.dart';
 import 'transporte_formulario_entrega_screen.dart';
+import 'transporte_escanear_carga_screen.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 
 class TransporteQREntregaScreen extends StatefulWidget {
   final List<Map<String, dynamic>> lotesSeleccionados;
+  final Map<String, dynamic>? datosReceptor;
   
   const TransporteQREntregaScreen({
     super.key,
     required this.lotesSeleccionados,
+    this.datosReceptor,
   });
 
   @override
@@ -36,23 +38,23 @@ class TransporteQREntregaScreen extends StatefulWidget {
 
 class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
   final UserSessionService _userSession = UserSessionService();
-  final LoteService _loteService = LoteService();
+  final CargaTransporteService _cargaService = CargaTransporteService();
   final AuthService _authService = AuthService();
   final ScreenshotController _screenshotController = ScreenshotController();
   String? _qrData;
-  String? _nuevoLoteId;
+  String? _entregaId;
   late DateTime _expirationTime;
   Timer? _timer;
   int _remainingMinutes = 15;
   int _remainingSeconds = 0;
   bool _isExpired = false;
   bool _isProcessing = false;
-  bool _isCreatingLote = true;
+  bool _isCreatingEntrega = true;
   
   @override
   void initState() {
     super.initState();
-    _createTransporteLote();
+    _createEntrega();
   }
   
   @override
@@ -61,60 +63,66 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
     super.dispose();
   }
   
-  Future<void> _createTransporteLote() async {
+  Future<void> _createEntrega() async {
     try {
+      print('Iniciando creación de entrega...');
+      print('Lotes seleccionados: ${widget.lotesSeleccionados}');
+      print('Datos receptor: ${widget.datosReceptor}');
+      
       // Calcular datos agregados
       final pesoTotal = widget.lotesSeleccionados.fold(
         0.0, 
         (sum, lote) => sum + (lote['peso'] as double)
       );
+      print('Peso total calculado: $pesoTotal');
       
-      // Obtener orígenes únicos
-      final origenes = widget.lotesSeleccionados
-          .map((lote) => lote['origen'] as String)
-          .toSet()
-          .toList();
-      
-      // Obtener el userId del transportista actual
-      final currentUser = _authService.currentUser;
-      if (currentUser == null) {
-        throw Exception('Usuario no autenticado');
+      // Obtener información del usuario actual
+      final userProfile = await _userSession.getUserProfile();
+      if (userProfile == null) {
+        throw Exception('No se pudo obtener el perfil del usuario');
       }
+      print('Perfil usuario transportista: ${userProfile['folio']}');
       
-      // Crear nuevo lote de transportista
-      final nuevoLote = LoteTransportistaModel(
-        userId: currentUser.uid,
-        lotesEntrada: widget.lotesSeleccionados.map((lote) => lote['id'] as String).toList(),
-        fechaRecepcion: DateTime.now(),
-        pesoRecibido: pesoTotal,
-        direccionOrigen: origenes.join(', '),
-        direccionDestino: 'Pendiente de entrega',
-        estado: 'en_transito',
-        eviFotoEntrada: [], // Lista vacía por ahora
+      // Obtener la carga ID del primer lote (todos deben pertenecer a la misma carga)
+      final cargaId = widget.lotesSeleccionados.first['carga_id'] as String;
+      print('Carga ID: $cargaId');
+      
+      // Crear la entrega con los datos del receptor
+      print('Llamando a crearEntrega...');
+      final qrEntrega = await _cargaService.crearEntrega(
+        lotesIds: widget.lotesSeleccionados.map((lote) => lote['id'] as String).toList(),
+        cargaId: cargaId,
+        transportistaFolio: userProfile['folio'] ?? 'V0000001',
+        destinatarioId: widget.datosReceptor?['id'] ?? 'pendiente',
+        destinatarioFolio: widget.datosReceptor?['folio'] ?? 'pendiente',
+        destinatarioNombre: widget.datosReceptor?['nombre'] ?? 'Pendiente de recepción',
+        destinatarioTipo: widget.datosReceptor?['tipo'] ?? 'pendiente',
+        pesoTotalEntregado: pesoTotal,
       );
-      
-      // Guardar en Firebase
-      final nuevoId = await _loteService.crearLoteTransportista(nuevoLote);
+      print('QR Entrega recibido del servicio: $qrEntrega');
       
       if (mounted) {
+        print('QR Entrega generado: $qrEntrega');
         setState(() {
-          _nuevoLoteId = nuevoId;
-          _qrData = nuevoId; // El QR solo contiene el ID del nuevo lote
-          _isCreatingLote = false;
+          _entregaId = qrEntrega.split('-').last; // Extraer ID del QR
+          _qrData = qrEntrega; // El QR completo para escanear
+          _isCreatingEntrega = false;
         });
+        print('_qrData establecido: $_qrData');
+        print('_entregaId establecido: $_entregaId');
         
-        // Iniciar el timer solo después de crear el lote
+        // Iniciar el timer solo después de crear la entrega
         _expirationTime = DateTime.now().add(const Duration(minutes: 15));
         _startTimer();
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _isCreatingLote = false;
+          _isCreatingEntrega = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al crear lote: $e'),
+            content: Text('Error al crear entrega: $e'),
             backgroundColor: BioWayColors.error,
           ),
         );
@@ -150,14 +158,15 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
   
   void _regenerateQR() {
     setState(() {
-      _isCreatingLote = true;
+      _isCreatingEntrega = true;
+      _qrData = null;
+      _entregaId = null;
       _remainingMinutes = 15;
       _remainingSeconds = 0;
       _isExpired = false;
     });
     _timer?.cancel();
-    _createTransporteLote();
-    _startTimer();
+    _createEntrega();
   }
   
   void _continueToForm() {
@@ -177,7 +186,8 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
         builder: (context) => TransporteFormularioEntregaScreen(
           lotes: widget.lotesSeleccionados,
           qrData: _qrData!,
-          nuevoLoteId: _nuevoLoteId!,
+          nuevoLoteId: _entregaId!,
+          datosReceptor: widget.datosReceptor,
         ),
       ),
     );
@@ -188,10 +198,11 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
     (sum, lote) => sum + (lote['peso'] as double)
   );
   
-  List<String> get _origenes => widget.lotesSeleccionados
-      .map((lote) => lote['origen'] as String)
-      .toSet()
-      .toList();
+  String get _origenInfo {
+    // Obtener información del origen del primer lote (todos deben ser del mismo origen en una carga)
+    final primerLote = widget.lotesSeleccionados.first;
+    return '${primerLote['origen_nombre']} (${primerLote['origen_folio']})';
+  }
   
   @override
   Widget build(BuildContext context) {
@@ -322,27 +333,51 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                                 width: 2,
                               ),
                             ),
-                            child: _isCreatingLote
+                            child: _isCreatingEntrega
                                 ? const Center(
                                     child: CircularProgressIndicator(
                                       color: BioWayColors.deepBlue,
                                     ),
                                   )
-                                : QrImageView(
-                                    data: _qrData ?? '',
-                                    version: QrVersions.auto,
-                                    size: 184,
-                                    backgroundColor: Colors.white,
-                                    errorCorrectionLevel: QrErrorCorrectLevel.H,
-                                    eyeStyle: QrEyeStyle(
-                                      eyeShape: QrEyeShape.square,
-                                      color: _isExpired ? Colors.grey : Colors.black,
-                                    ),
-                                    dataModuleStyle: QrDataModuleStyle(
-                                      dataModuleShape: QrDataModuleShape.square,
-                                      color: _isExpired ? Colors.grey : Colors.black,
-                                    ),
-                                  ),
+                                : _qrData == null || _qrData!.isEmpty
+                                    ? Container(
+                                        width: 184,
+                                        height: 184,
+                                        alignment: Alignment.center,
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.qr_code_2,
+                                              size: 80,
+                                              color: Colors.grey[400],
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              'Generando QR...',
+                                              style: TextStyle(
+                                                color: Colors.grey[600],
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    : QrImageView(
+                                        data: _qrData!,
+                                        version: QrVersions.auto,
+                                        size: 184,
+                                        backgroundColor: Colors.white,
+                                        errorCorrectionLevel: QrErrorCorrectLevel.H,
+                                        eyeStyle: QrEyeStyle(
+                                          eyeShape: QrEyeShape.square,
+                                          color: _isExpired ? Colors.grey : Colors.black,
+                                        ),
+                                        dataModuleStyle: QrDataModuleStyle(
+                                          dataModuleShape: QrDataModuleShape.square,
+                                          color: _isExpired ? Colors.grey : Colors.black,
+                                        ),
+                                      ),
                           ),
                         ),
                         
@@ -387,9 +422,9 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                _isCreatingLote 
+                                _isCreatingEntrega 
                                     ? 'Generando...' 
-                                    : _nuevoLoteId ?? 'Sin ID',
+                                    : _entregaId ?? 'Sin ID',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -431,8 +466,8 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                         const SizedBox(height: 16),
                         _buildInfoRow(
                           icon: Icons.location_on,
-                          label: 'Origen(es)',
-                          value: _origenes.join(', '),
+                          label: 'Origen',
+                          value: _origenInfo,
                           color: Colors.purple,
                         ),
                         const SizedBox(height: 16),
@@ -442,6 +477,15 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                           value: _userSession.getUserData()?['folio'] ?? 'V0000001',
                           color: Colors.green,
                         ),
+                        if (widget.datosReceptor != null) ...[
+                          const SizedBox(height: 16),
+                          _buildInfoRow(
+                            icon: _getReceptorIcon(),
+                            label: 'Receptor',
+                            value: '${widget.datosReceptor!['nombre']} (${widget.datosReceptor!['folio']})',
+                            color: _getReceptorColor(),
+                          ),
+                        ],
                         const SizedBox(height: 16),
                         _buildInfoRow(
                           icon: Icons.access_time,
@@ -604,18 +648,18 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                     height: 56,
                     child: ElevatedButton.icon(
                       key: Key(_isExpired ? 'btn_regenerate_qr' : 'btn_to_form_entrega'),
-                      onPressed: _isCreatingLote 
+                      onPressed: _isCreatingEntrega 
                           ? null 
                           : (_isExpired ? _regenerateQR : _continueToForm),
                       icon: Icon(
-                        _isCreatingLote 
+                        _isCreatingEntrega 
                             ? Icons.hourglass_empty
                             : (_isExpired ? Icons.refresh : Icons.arrow_forward),
                         size: 24,
                       ),
                       label: Text(
-                        _isCreatingLote 
-                            ? 'Generando lote...'
+                        _isCreatingEntrega 
+                            ? 'Generando entrega...'
                             : (_isExpired ? 'Generar nuevo código' : 'Continuar al Formulario'),
                         style: const TextStyle(
                           fontSize: 16,
@@ -623,7 +667,7 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _isCreatingLote 
+                        backgroundColor: _isCreatingEntrega 
                             ? Colors.grey
                             : (_isExpired ? BioWayColors.warning : BioWayColors.primaryGreen),
                         foregroundColor: Colors.white,
@@ -689,7 +733,12 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
   void _onBottomNavTapped(int index) {
     switch (index) {
       case 0:
-        Navigator.pushReplacementNamed(context, '/transporte_inicio');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const TransporteEscanearCargaScreen(),
+          ),
+        );
         break;
       case 1:
         break; // Ya estamos aquí
@@ -786,7 +835,7 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
 Código QR de Entrega
 Total de lotes: ${widget.lotesSeleccionados.length}
 Peso total: ${_pesoTotal.toStringAsFixed(1)} kg
-Origen(es): ${_origenes.join(', ')}
+Origen: $_origenInfo
 Transportista: ${_userSession.getUserData()?['folio'] ?? 'V0000001'}
       ''';
       
@@ -844,7 +893,7 @@ Transportista: ${_userSession.getUserData()?['folio'] ?? 'V0000001'}
                   pw.SizedBox(height: 20),
                   pw.Text('Total de lotes: ${widget.lotesSeleccionados.length}'),
                   pw.Text('Peso total: ${_pesoTotal.toStringAsFixed(1)} kg'),
-                  pw.Text('Origen(es): ${_origenes.join(', ')}'),
+                  pw.Text('Origen: $_origenInfo'),
                   pw.Text('Transportista: ${_userSession.getUserData()?['folio'] ?? 'V0000001'}'),
                   pw.Text('Fecha: ${FormatUtils.formatDateTime(DateTime.now())}'),
                 ],
@@ -902,6 +951,32 @@ Transportista: ${_userSession.getUserData()?['folio'] ?? 'V0000001'}
     }
   }
 
+  IconData _getReceptorIcon() {
+    switch (widget.datosReceptor?['tipo']) {
+      case 'reciclador':
+        return Icons.recycling;
+      case 'laboratorio':
+        return Icons.science;
+      case 'transformador':
+        return Icons.precision_manufacturing;
+      default:
+        return Icons.person;
+    }
+  }
+  
+  Color _getReceptorColor() {
+    switch (widget.datosReceptor?['tipo']) {
+      case 'reciclador':
+        return BioWayColors.primaryGreen;
+      case 'laboratorio':
+        return BioWayColors.petBlue;
+      case 'transformador':
+        return BioWayColors.ppPurple;
+      default:
+        return Colors.grey;
+    }
+  }
+  
   Widget _buildInfoRow({
     required IconData icon,
     required String label,
