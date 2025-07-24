@@ -3,16 +3,11 @@ import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import '../../../services/lote_service.dart';
 import '../../../models/lotes/lote_laboratorio_model.dart';
-import 'laboratorio_inicio.dart';
 import 'laboratorio_escaneo.dart';
 import 'laboratorio_formulario.dart';
 import 'laboratorio_documentacion.dart';
-import '../shared/ecoce_ayuda_screen.dart';
-import '../shared/ecoce_perfil_screen.dart';
-import '../shared/utils/material_utils.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import 'widgets/laboratorio_muestra_card.dart';
-import '../shared/utils/navigation_utils.dart';
 
 class LaboratorioGestionMuestras extends StatefulWidget {
   final int initialTab;
@@ -188,10 +183,10 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
         // Ya estamos en muestras
         break;
       case 2:
-        Navigator.pushReplacementNamed(context, '/ecoce_ayuda');
+        Navigator.pushNamed(context, '/laboratorio_ayuda');
         break;
       case 3:
-        Navigator.pushReplacementNamed(context, '/ecoce_perfil');
+        Navigator.pushNamed(context, '/laboratorio_perfil');
         break;
     }
   }
@@ -214,61 +209,157 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
         return false;
       },
       child: Scaffold(
-        backgroundColor: BioWayColors.backgroundGrey,
-        appBar: AppBar(
-        backgroundColor: const Color(0xFF9333EA), // Morado para laboratorio
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: const Text(
-          'Gestión de Muestras',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+        backgroundColor: const Color(0xFFF5F5F5),
+        body: SafeArea(
+          child: CustomScrollView(
+            slivers: [
+              // Header moderno con gradiente (igual que la pantalla de inicio)
+              SliverToBoxAdapter(
+                child: Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFF9333EA), // Purple para laboratorio
+                        const Color(0xFF9333EA).withValues(alpha: 0.8),
+                      ],
+                    ),
+                  ),
+                  child: Stack(
+                    children: [
+                      // Patrón de fondo
+                      Positioned(
+                        right: -50,
+                        top: -50,
+                        child: Container(
+                          width: 200,
+                          height: 200,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.1),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: -30,
+                        bottom: -30,
+                        child: Container(
+                          width: 150,
+                          height: 150,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.05),
+                          ),
+                        ),
+                      ),
+                      // Contenido
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Título
+                            const Text(
+                              'Gestión de Muestras',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            // Tabs
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: TabBar(
+                                controller: _tabController,
+                                indicatorColor: Colors.white,
+                                indicatorWeight: 3,
+                                labelColor: Colors.white,
+                                unselectedLabelColor: Colors.white60,
+                                indicator: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                ),
+                                tabs: const [
+                                  Tab(text: 'Análisis'),
+                                  Tab(text: 'Documentación'),
+                                  Tab(text: 'Finalizadas'),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Contenido principal
+              SliverFillRemaining(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(30),
+                      topRight: Radius.circular(30),
+                    ),
+                  ),
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildTabContent(),
+                      _buildTabContent(),
+                      _buildTabContent(),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Container(
-            color: Colors.white.withValues(alpha: 0.1),
-            child: TabBar(
-              controller: _tabController,
-              indicatorColor: Colors.white,
-              indicatorWeight: 3,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white60,
-              tabs: const [
-                Tab(text: 'Análisis'),
-                Tab(text: 'Documentación'),
-                Tab(text: 'Finalizadas'),
-              ],
-            ),
-          ),
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildTabContent(),
-          _buildTabContent(),
-          _buildTabContent(),
-        ],
-      ),
-      bottomNavigationBar: _isLoading ? null : EcoceBottomNavigation(
+      bottomNavigationBar: EcoceBottomNavigation(
         selectedIndex: _selectedIndex,
         onItemTapped: _onBottomNavTapped,
-        items: EcoceNavigationConfigs.laboratorioItems,
         primaryColor: const Color(0xFF9333EA),
-      ),
-      floatingActionButton: _isLoading ? null : FloatingActionButton(
-        onPressed: _navigateToNewMuestra,
-        backgroundColor: const Color(0xFF9333EA),
-        elevation: 8,
-        child: const Icon(
-          Icons.add,
-          size: 28,
-          color: Colors.white,
+        items: const [
+          NavigationItem(
+            icon: Icons.home,
+            label: 'Inicio',
+            testKey: 'laboratorio_nav_inicio',
+          ),
+          NavigationItem(
+            icon: Icons.science,
+            label: 'Muestras',
+            testKey: 'laboratorio_nav_muestras',
+          ),
+          NavigationItem(
+            icon: Icons.help_outline,
+            label: 'Ayuda',
+            testKey: 'laboratorio_nav_ayuda',
+          ),
+          NavigationItem(
+            icon: Icons.person,
+            label: 'Perfil',
+            testKey: 'laboratorio_nav_perfil',
+          ),
+        ],
+        fabConfig: FabConfig(
+          icon: Icons.add,
+          onPressed: _navigateToNewMuestra,
+          tooltip: 'Nueva muestra',
         ),
+      ),
+      floatingActionButton: EcoceFloatingActionButton(
+        onPressed: _navigateToNewMuestra,
+        icon: Icons.add,
+        backgroundColor: const Color(0xFF9333EA),
+        tooltip: 'Nueva muestra',
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
@@ -353,45 +444,115 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
           ),
         ),
         
-        // Tarjeta de estadísticas
+        // Tarjeta de estadísticas con diseño moderno
         Container(
           margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                tabColor,
-                tabColor.withValues(alpha: 0.8),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: tabColor.withValues(alpha: 0.3),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildStatItem(
-                icon: Icons.science,
-                value: _muestrasFiltradas.length.toString(),
-                label: 'Muestras',
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: tabColor.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.science, color: tabColor, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _muestrasFiltradas.length.toString(),
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            Text(
+                              'Muestras',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              _buildStatItem(
-                icon: Icons.scale,
-                value: '${_muestrasFiltradas.fold(0.0, (sum, muestra) => sum + (muestra.pesoMuestra ?? 0.0)).toStringAsFixed(1)} kg',
-                label: 'Peso Total',
-              ),
-              _buildStatItem(
-                icon: Icons.category,
-                value: _getMaterialMasPredominante(),
-                label: 'Predominante',
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.scale, color: Colors.orange, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${_muestrasFiltradas.fold(0.0, (sum, muestra) => sum + (muestra.pesoMuestra ?? 0.0)).toStringAsFixed(1)} kg',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            Text(
+                              'Peso Total',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),

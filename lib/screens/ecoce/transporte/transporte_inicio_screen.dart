@@ -28,55 +28,21 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
   EcoceProfileModel? _userProfile;
   
   // Estadísticas del transportista
-  final int _viajesRealizados = 23;
-  final int _lotesTransportados = 156;
-  final double _kilometrosRecorridos = 2450.8;
-  final int _entregas = 89;
+  int _viajesRealizados = 0;
+  int _lotesTransportados = 0;  // Ahora mostrará el número de lotes en tránsito
+  double _kilometrosRecorridos = 0.0;
+  int _entregas = 0;
 
-  // Lotes en tránsito (datos de ejemplo)
-  final List<Map<String, dynamic>> _lotesEnTransito = [
-    {
-      'id': 'LOTE-PET-001',
-      'material': 'PET',
-      'peso': 78.5,
-      'presentacion': 'Pacas',
-      'origen': 'Centro de Acopio Norte',
-      'fecha_recogida': DateTime.now().subtract(const Duration(hours: 2)),
-      'estado': 'en_transito',
-    },
-    {
-      'id': 'LOTE-HDPE-045',
-      'material': 'HDPE',
-      'peso': 92.3,
-      'presentacion': 'Sacos',
-      'origen': 'Planta de Separación Este',
-      'fecha_recogida': DateTime.now().subtract(const Duration(hours: 4)),
-      'estado': 'en_transito',
-    },
-    {
-      'id': 'LOTE-PP-112',
-      'material': 'PP',
-      'peso': 65.7,
-      'presentacion': 'Pacas',
-      'origen': 'Centro de Acopio Oeste',
-      'fecha_recogida': DateTime.now().subtract(const Duration(hours: 6)),
-      'estado': 'en_transito',
-    },
-    {
-      'id': 'LOTE-PET-089',
-      'material': 'PET',
-      'peso': 102.4,
-      'presentacion': 'Pacas',
-      'origen': 'Centro de Acopio Sur',
-      'fecha_recogida': DateTime.now().subtract(const Duration(hours: 8)),
-      'estado': 'en_transito',
-    },
-  ];
+  // Lotes en tránsito (se cargarán de Firebase)
+  List<Map<String, dynamic>> _lotesEnTransito = [];
+  bool _isLoadingLotes = true;
 
   @override
   void initState() {
     super.initState();
     _loadUserProfile();
+    _loadLotesEnTransito();
+    _loadEstadisticas();
   }
 
   Future<void> _loadUserProfile() async {
@@ -85,15 +51,131 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
       if (mounted) {
         setState(() {
           _userProfile = profile;
-          // _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          // _isLoading = false;
+        setState(() {});
+      }
+    }
+  }
+
+  Future<void> _loadLotesEnTransito() async {
+    if (!mounted) return;
+    
+    setState(() {
+      _isLoadingLotes = true;
+    });
+
+    try {
+      // Obtener TODOS los lotes con estado 'en_transporte' (igual que en entregar_screen)
+      // NO filtrar por userId - todos los transportistas pueden ver todos los lotes disponibles
+      final lotesTransportista = await _loteService.getLotesTransportista(
+        estado: 'en_transporte',
+      ).first;
+      
+      List<Map<String, dynamic>> lotesFormateados = [];
+      
+      for (var loteTransportista in lotesTransportista) {
+        // Solo procesar si hay lotes de entrada
+        if (loteTransportista.lotesEntrada.isEmpty) continue;
+        
+        // Obtener información de los lotes originales
+        String materialPredominante = 'Mixto';
+        String presentacionPredominante = 'Pacas';
+        
+        try {
+          final lotesInfo = await _loteService.getLotesInfo(loteTransportista.lotesEntrada);
+          
+          if (lotesInfo.isNotEmpty) {
+            // Calcular tipo de polímero predominante
+            final tipoPolimeros = await _loteService.calcularTipoPolimeroPredominante(loteTransportista.lotesEntrada);
+            if (tipoPolimeros.isNotEmpty) {
+              materialPredominante = tipoPolimeros.entries
+                  .reduce((a, b) => a.value > b.value ? a : b)
+                  .key;
+            }
+            
+            // Obtener presentación del primer lote como referencia
+            if (lotesInfo.first['tipo_lote'] == 'lotes_origen' && 
+                lotesInfo.first['ecoce_origen_presentacion'] != null) {
+              presentacionPredominante = lotesInfo.first['ecoce_origen_presentacion'];
+            }
+          }
+        } catch (e) {
+          print('Error obteniendo info de lotes: $e');
+        }
+        
+        // Formatear el lote para la vista
+        lotesFormateados.add({
+          'id': loteTransportista.id,
+          'firebaseId': loteTransportista.id,
+          'material': materialPredominante,
+          'peso': loteTransportista.pesoRecibido ?? 0.0,
+          'presentacion': presentacionPredominante,
+          'origen': loteTransportista.direccionOrigen ?? 'Origen desconocido',
+          'fecha_recogida': loteTransportista.fechaRecepcion ?? DateTime.now(),
+          'estado': 'en_transito',
+          'lotes_originales': loteTransportista.lotesEntrada,
         });
       }
+
+      if (mounted) {
+        setState(() {
+          _lotesEnTransito = lotesFormateados;
+          _isLoadingLotes = false;
+          // Actualizar la estadística de lotes transportados con el conteo actual
+          _lotesTransportados = lotesFormateados.length;
+        });
+      }
+    } catch (e) {
+      print('Error cargando lotes en tránsito: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingLotes = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadEstadisticas() async {
+    try {
+      // Obtener el userId del transportista actual
+      final userData = _sessionService.getUserData();
+      final userId = userData?['uid'] ?? '';
+      
+      if (userId.isEmpty) {
+        return;
+      }
+      
+      // Obtener todos los lotes del transportista actual
+      final todosLotesStream = _loteService.getLotesTransportistaByUserId(
+        userId: userId,
+      );
+      final todosLotes = await todosLotesStream.first;
+
+      int viajes = 0;
+      int entregas = 0;
+      
+      for (final lote in todosLotes) {
+        viajes++;
+        
+        // Contar entregas completadas
+        if (lote.estado == 'entregado') {
+          entregas++;
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _viajesRealizados = viajes;
+          _entregas = entregas;
+          // _lotesTransportados se actualiza en _loadLotesEnTransito()
+          // _kilometrosRecorridos se mantiene en 0 por ahora
+        });
+      }
+    } catch (e) {
+      print('Error cargando estadísticas: $e');
     }
   }
 
@@ -423,11 +505,11 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              // Estadística de Lotes Transportados
+                              // Estadística de Lotes en Tránsito (disponibles para entregar)
                               Expanded(
                                 child: UnifiedStatCard.horizontal(
-                                  title: 'Lotes transportados',
-                                  value: _lotesTransportados.toString(),
+                                  title: 'Lotes en tránsito',
+                                  value: _lotesEnTransito.length.toString(),
                                   icon: Icons.inventory_2,
                                   color: BioWayColors.ppPurple,
                                   height: 70,
@@ -692,7 +774,23 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                       ),
                       const SizedBox(height: 16),
                       
-                      if (_lotesEnTransito.isEmpty) 
+                      if (_isLoadingLotes)
+                        Container(
+                          padding: const EdgeInsets.all(32),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.grey.withValues(alpha: 0.2),
+                            ),
+                          ),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: BioWayColors.deepBlue,
+                            ),
+                          ),
+                        )
+                      else if (_lotesEnTransito.isEmpty) 
                         Container(
                           padding: const EdgeInsets.all(32),
                           decoration: BoxDecoration(

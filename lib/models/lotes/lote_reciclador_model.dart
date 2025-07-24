@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoteRecicladorModel {
   final String? id; // Firebase ID
+  final String userId; // ID del usuario propietario del lote
   
   // Entrada
   final List<String> conjuntoLotes; // Lotes escaneados
@@ -30,6 +31,7 @@ class LoteRecicladorModel {
 
   LoteRecicladorModel({
     this.id,
+    required this.userId,
     required this.conjuntoLotes,
     this.loteEntrada,
     this.tipoPoli,
@@ -51,6 +53,7 @@ class LoteRecicladorModel {
 
   Map<String, dynamic> toMap() {
     return {
+      'userId': userId,
       // Entrada
       'ecoce_reciclador_conjunto_lotes': conjuntoLotes,
       'ecoce_reciclador_lote_entrada': loteEntrada,
@@ -82,6 +85,7 @@ class LoteRecicladorModel {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return LoteRecicladorModel(
       id: doc.id,
+      userId: data['userId'] ?? '',
       // Entrada
       conjuntoLotes: List<String>.from(data['ecoce_reciclador_conjunto_lotes'] ?? []),
       loteEntrada: data['ecoce_reciclador_lote_entrada'],
@@ -116,6 +120,7 @@ class LoteRecicladorModel {
 
   LoteRecicladorModel copyWith({
     String? id,
+    String? userId,
     List<String>? conjuntoLotes,
     String? loteEntrada,
     Map<String, double>? tipoPoli,
@@ -136,6 +141,7 @@ class LoteRecicladorModel {
   }) {
     return LoteRecicladorModel(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       conjuntoLotes: conjuntoLotes ?? this.conjuntoLotes,
       loteEntrada: loteEntrada ?? this.loteEntrada,
       tipoPoli: tipoPoli ?? this.tipoPoli,

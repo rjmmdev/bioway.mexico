@@ -51,6 +51,23 @@ class _RecicladorDocumentacionState extends State<RecicladorDocumentacion> {
     }
   }
 
+  Widget _buildDocumentUploadContent() {
+    // Usar el widget sin su propio AppBar/Scaffold
+    return DocumentUploadPerRequirementWidget(
+      title: 'Documentación Técnica',
+      subtitle: 'Carga un documento por cada requisito',
+      lotId: widget.lotId,
+      requiredDocuments: const {
+        'ficha_tecnica': 'Ficha Técnica del Pellet',
+        'reporte_reciclaje': 'Reporte de Resultados de Reciclaje',
+      },
+      onDocumentsSubmitted: _onDocumentsSubmitted,
+      primaryColor: BioWayColors.ecoceGreen,
+      userType: 'reciclador',
+      showAppBar: false, // Desactivar el AppBar interno
+    );
+  }
+
   void _onDocumentsSubmitted(Map<String, DocumentInfo> documents) async {
     try {
       // Subir documentos a Firebase Storage
@@ -187,17 +204,58 @@ class _RecicladorDocumentacionState extends State<RecicladorDocumentacion> {
       );
     }
     
-    return DocumentUploadPerRequirementWidget(
-      title: 'Documentación Técnica',
-      subtitle: 'Carga un documento por cada requisito',
-      lotId: widget.lotId,
-      requiredDocuments: const {
-        'ficha_tecnica': 'Ficha Técnica del Pellet',
-        'reporte_reciclaje': 'Reporte de Resultados de Reciclaje',
+    return WillPopScope(
+      onWillPop: () async {
+        // Actualizar estado del lote a 'enviado' cuando se pospone la documentación
+        await _loteService.actualizarLoteReciclador(
+          widget.lotId,
+          {'estado': 'enviado'},
+        );
+        
+        // Navegar a la pantalla de administración de lotes en la pestaña de documentación
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/reciclador_lotes',
+          (route) => route.isFirst,
+          arguments: {'initialTab': 1}, // Pestaña de documentación
+        );
+        return false;
       },
-      onDocumentsSubmitted: _onDocumentsSubmitted,
-      primaryColor: BioWayColors.ecoceGreen,
-      userType: 'reciclador',
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        appBar: AppBar(
+          backgroundColor: BioWayColors.ecoceGreen,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+            onPressed: () async {
+              // Actualizar estado del lote a 'enviado' cuando se pospone la documentación
+              await _loteService.actualizarLoteReciclador(
+                widget.lotId,
+                {'estado': 'enviado'},
+              );
+              
+              // Navegar a la pantalla de administración de lotes en la pestaña de documentación
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/reciclador_lotes',
+                (route) => route.isFirst,
+                arguments: {'initialTab': 1}, // Pestaña de documentación
+              );
+            },
+          ),
+          title: const Text(
+            'Documentación Técnica',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          centerTitle: true,
+        ),
+        body: _buildDocumentUploadContent(),
+      ),
     );
   }
 }

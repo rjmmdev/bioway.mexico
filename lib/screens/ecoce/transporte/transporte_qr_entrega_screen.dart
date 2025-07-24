@@ -12,10 +12,12 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:gal/gal.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/lote_service.dart';
+import '../../../services/firebase/auth_service.dart';
 import '../../../models/lotes/lote_transportista_model.dart';
 import 'transporte_formulario_entrega_screen.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
@@ -35,6 +37,7 @@ class TransporteQREntregaScreen extends StatefulWidget {
 class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
   final UserSessionService _userSession = UserSessionService();
   final LoteService _loteService = LoteService();
+  final AuthService _authService = AuthService();
   final ScreenshotController _screenshotController = ScreenshotController();
   String? _qrData;
   String? _nuevoLoteId;
@@ -72,8 +75,15 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
           .toSet()
           .toList();
       
+      // Obtener el userId del transportista actual
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        throw Exception('Usuario no autenticado');
+      }
+      
       // Crear nuevo lote de transportista
       final nuevoLote = LoteTransportistaModel(
+        userId: currentUser.uid,
         lotesEntrada: widget.lotesSeleccionados.map((lote) => lote['id'] as String).toList(),
         fechaRecepcion: DateTime.now(),
         pesoRecibido: pesoTotal,

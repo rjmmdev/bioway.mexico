@@ -18,6 +18,7 @@ class DocumentUploadPerRequirementWidget extends StatefulWidget {
   final String loadingText;
   final bool showOptionalBadge;
   final List<String>? optionalRequirements; // IDs de requisitos opcionales
+  final bool showAppBar; // Nuevo parámetro para controlar si se muestra el AppBar
 
   const DocumentUploadPerRequirementWidget({
     super.key,
@@ -32,6 +33,7 @@ class DocumentUploadPerRequirementWidget extends StatefulWidget {
     this.loadingText = 'Procesando documentos...',
     this.showOptionalBadge = true,
     this.optionalRequirements,
+    this.showAppBar = true, // Por defecto sí muestra el AppBar
   });
 
   @override
@@ -187,31 +189,10 @@ class _DocumentUploadPerRequirementWidgetState extends State<DocumentUploadPerRe
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: BioWayColors.backgroundGrey,
-      appBar: AppBar(
-        backgroundColor: widget.primaryColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () {
-            HapticFeedback.lightImpact();
-            Navigator.pop(context);
-          },
-        ),
-        title: Text(
-          widget.title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-      ),
-      body: Column(
-        children: [
-          // Header
-          Container(
+    final content = Column(
+      children: [
+        // Header
+        Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
@@ -283,7 +264,36 @@ class _DocumentUploadPerRequirementWidgetState extends State<DocumentUploadPerRe
             ),
           ),
         ],
+    );
+    
+    // Si showAppBar es false, solo devolver el contenido
+    if (!widget.showAppBar) {
+      return content;
+    }
+    
+    // Si showAppBar es true, envolver en Scaffold con AppBar
+    return Scaffold(
+      backgroundColor: BioWayColors.backgroundGrey,
+      appBar: AppBar(
+        backgroundColor: widget.primaryColor,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            Navigator.pop(context);
+          },
+        ),
+        title: Text(
+          widget.title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
       ),
+      body: content,
     );
   }
 

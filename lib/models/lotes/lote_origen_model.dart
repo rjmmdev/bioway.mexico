@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoteOrigenModel {
   final String? id; // Firebase ID (generado automáticamente)
+  final String userId; // ID del usuario propietario del lote
   final DateTime fechaNace; // Fecha de creación
   final String direccion; // Dirección del origen
   final String fuente; // Fuente del material
@@ -17,6 +18,7 @@ class LoteOrigenModel {
 
   LoteOrigenModel({
     this.id,
+    required this.userId,
     required this.fechaNace,
     required this.direccion,
     required this.fuente,
@@ -34,6 +36,7 @@ class LoteOrigenModel {
   // Convertir a Map para Firebase
   Map<String, dynamic> toMap() {
     return {
+      'userId': userId,
       'ecoce_origen_lote': id,
       'ecoce_origen_fecha_nace': Timestamp.fromDate(fechaNace),
       'ecoce_origen_direccion': direccion,
@@ -55,6 +58,7 @@ class LoteOrigenModel {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return LoteOrigenModel(
       id: doc.id,
+      userId: data['userId'] ?? '',
       fechaNace: (data['ecoce_origen_fecha_nace'] as Timestamp).toDate(),
       direccion: data['ecoce_origen_direccion'] ?? '',
       fuente: data['ecoce_origen_fuente'] ?? '',
@@ -73,6 +77,7 @@ class LoteOrigenModel {
   // Crear copia con modificaciones
   LoteOrigenModel copyWith({
     String? id,
+    String? userId,
     DateTime? fechaNace,
     String? direccion,
     String? fuente,
@@ -88,6 +93,7 @@ class LoteOrigenModel {
   }) {
     return LoteOrigenModel(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       fechaNace: fechaNace ?? this.fechaNace,
       direccion: direccion ?? this.direccion,
       fuente: fuente ?? this.fuente,

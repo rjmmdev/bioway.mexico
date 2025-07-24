@@ -159,10 +159,10 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
         // Ya estamos en producción
         break;
       case 2:
-        Navigator.pushReplacementNamed(context, '/ecoce_ayuda');
+        Navigator.pushNamed(context, '/transformador_ayuda');
         break;
       case 3:
-        Navigator.pushReplacementNamed(context, '/ecoce_perfil');
+        Navigator.pushNamed(context, '/transformador_perfil');
         break;
     }
   }
@@ -175,109 +175,184 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
         return false;
       },
       child: Scaffold(
-        backgroundColor: BioWayColors.backgroundGrey,
-        appBar: AppBar(
-          backgroundColor: BioWayColors.ecoceGreen,
-          elevation: 0,
-          automaticallyImplyLeading: false,
-          title: const Text(
-            'Producción',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.refresh, color: Colors.white),
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                _loadLotes();
-              },
-            ),
-          ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(88),
-            child: Column(
-              children: [
-                // Indicadores en tiempo real
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
+        backgroundColor: const Color(0xFFF5F5F5),
+        body: SafeArea(
+          child: CustomScrollView(
+            slivers: [
+              // Header moderno con gradiente (igual que la pantalla de inicio)
+              SliverToBoxAdapter(
+                child: Container(
+                  height: 280,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        BioWayColors.ecoceGreen,
+                        BioWayColors.ecoceGreen.withValues(alpha: 0.8),
+                      ],
+                    ),
+                  ),
+                  child: Stack(
                     children: [
-                      Expanded(
-                        child: _buildStatusCard(
-                          icon: Icons.speed,
-                          label: 'Capacidad Utilizada',
-                          value: '${_capacidadUtilizada.toStringAsFixed(1)}%',
-                          color: _capacidadUtilizada > 80 ? BioWayColors.error : BioWayColors.success,
+                      // Patrón de fondo
+                      Positioned(
+                        right: -50,
+                        top: -50,
+                        child: Container(
+                          width: 200,
+                          height: 200,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.1),
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatusCard(
-                          icon: Icons.factory,
-                          label: 'Material Procesado (24h)',
-                          value: '${_materialProcesado.toStringAsFixed(2)} Ton',
-                          color: BioWayColors.info,
+                      Positioned(
+                        left: -30,
+                        bottom: -30,
+                        child: Container(
+                          width: 150,
+                          height: 150,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.05),
+                          ),
+                        ),
+                      ),
+                      // Contenido
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Título y botón de actualizar
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Producción',
+                                  style: TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.refresh,
+                                    color: Colors.white,
+                                  ),
+                                  onPressed: () {
+                                    HapticFeedback.lightImpact();
+                                    _loadLotes();
+                                  },
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            // Indicadores en tiempo real
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildStatusCard(
+                                    icon: Icons.speed,
+                                    label: 'Capacidad Utilizada',
+                                    value: '${_capacidadUtilizada.toStringAsFixed(1)}%',
+                                    color: _capacidadUtilizada > 80 ? BioWayColors.error : BioWayColors.success,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildStatusCard(
+                                    icon: Icons.factory,
+                                    label: 'Material Procesado (24h)',
+                                    value: '${_materialProcesado.toStringAsFixed(2)} Ton',
+                                    color: BioWayColors.info,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            // Tabs
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: TabBar(
+                                controller: _tabController,
+                                indicatorColor: Colors.white,
+                                indicatorWeight: 3,
+                                labelColor: Colors.white,
+                                unselectedLabelColor: Colors.white60,
+                                indicator: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                ),
+                                tabs: [
+                                  Tab(
+                                    text: 'En Proceso (${_todosLotes.where((l) => l.estado == 'procesando').length})',
+                                  ),
+                                  Tab(
+                                    text: 'Completados (${_todosLotes.where((l) => l.estado == 'completado').length})',
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-                // Tabs
-                Container(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  child: TabBar(
-                    controller: _tabController,
-                    indicatorColor: Colors.white,
-                    indicatorWeight: 3,
-                    labelColor: Colors.white,
-                    unselectedLabelColor: Colors.white60,
-                    tabs: [
-                      Tab(
-                        text: 'En Proceso (${_todosLotes.where((l) => l.estado == 'procesando').length})',
-                      ),
-                      Tab(
-                        text: 'Completados (${_todosLotes.where((l) => l.estado == 'completado').length})',
-                      ),
-                    ],
+              ),
+              // Contenido principal
+              SliverFillRemaining(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(30),
+                      topRight: Radius.circular(30),
+                    ),
                   ),
+                  child: _isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(color: BioWayColors.ecoceGreen),
+                        )
+                      : TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _buildProcesoContent(),
+                            _buildCompletadosContent(),
+                          ],
+                        ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-        body: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: BioWayColors.ecoceGreen),
-              )
-            : TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildProcesoContent(),
-                  _buildCompletadosContent(),
-                ],
-              ),
         bottomNavigationBar: EcoceBottomNavigation(
           selectedIndex: _selectedIndex,
           onItemTapped: _onBottomNavTapped,
-          items: EcoceNavigationConfigs.transformadorItems,
           primaryColor: BioWayColors.ecoceGreen,
+          items: EcoceNavigationConfigs.transformadorItems,
+          fabConfig: FabConfig(
+            icon: Icons.add,
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.pushNamed(context, '/transformador_recibir_lote');
+            },
+          ),
         ),
-        floatingActionButton: FloatingActionButton(
+        floatingActionButton: EcoceFloatingActionButton(
           onPressed: () {
             HapticFeedback.lightImpact();
-            Navigator.pushNamed(context, '/transformador_escaneo');
+            Navigator.pushNamed(context, '/transformador_recibir_lote');
           },
+          icon: Icons.add,
           backgroundColor: BioWayColors.ecoceGreen,
-          elevation: 8,
-          child: const Icon(
-            Icons.add,
-            size: 28,
-            color: Colors.white,
-          ),
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
@@ -291,32 +366,50 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.white, size: 20),
-          const SizedBox(width: 8),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: Colors.white70,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   value,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Colors.black87,
                   ),
                 ),
               ],

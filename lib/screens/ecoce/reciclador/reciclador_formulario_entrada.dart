@@ -9,6 +9,7 @@ import '../../../utils/colors.dart';
 import '../../../services/lote_service.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
+import '../../../services/firebase/auth_service.dart';
 import '../../../models/lotes/lote_reciclador_model.dart';
 import '../shared/widgets/weight_input_widget.dart';
 import '../shared/widgets/signature_dialog.dart';
@@ -63,6 +64,7 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
   final LoteService _loteService = LoteService();
   final UserSessionService _userSession = UserSessionService();
   final FirebaseStorageService _storageService = FirebaseStorageService();
+  final AuthService _authService = AuthService();
   
   // Controladores
   final TextEditingController _pesoNetoController = TextEditingController();
@@ -144,6 +146,12 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
         if (userProfile == null) {
           throw Exception('No se pudo obtener el perfil del usuario');
         }
+        
+        // Actualizar contador de lotes totales recibidos
+        final currentTotal = (userProfile['ecoce_lotes_totales_recibidos'] ?? 0) as int;
+        await _userSession.updateCurrentUserProfile({
+          'ecoce_lotes_totales_recibidos': currentTotal + widget.totalLotes,
+        });
 
         // Para cada lote transportista, actualizar su estado y crear lote de reciclador
         for (String loteId in widget.lotIds) {
@@ -152,14 +160,20 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
           if (loteInfo.isEmpty) continue;
 
           // Crear el lote de reciclador
+          final currentUser = _authService.currentUser;
+          if (currentUser == null) {
+            throw Exception('Usuario no autenticado');
+          }
+          
           final loteReciclador = LoteRecicladorModel(
+            userId: currentUser.uid,
             conjuntoLotes: [loteId], // Add to conjunto
             loteEntrada: loteId,
             pesoBruto: _pesoTotalOriginal, // Use the calculated weight
             pesoNeto: double.parse(_pesoNetoController.text),
             nombreOpeEntrada: _operadorController.text,
             firmaEntrada: _signatureUrl,
-            estado: 'recibido',
+            estado: 'salida', // Ir directamente a la pestaña de salida
           );
 
           await _loteService.crearLoteReciclador(loteReciclador);

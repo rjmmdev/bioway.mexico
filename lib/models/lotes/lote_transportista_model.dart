@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoteTransportistaModel {
   final String? id; // Firebase ID
+  final String userId; // ID del usuario transportista
   
   // Datos de entrada
   final DateTime? fechaRecepcion;
@@ -30,6 +31,7 @@ class LoteTransportistaModel {
 
   LoteTransportistaModel({
     this.id,
+    required this.userId,
     this.fechaRecepcion,
     required this.lotesEntrada,
     this.tipoOrigen,
@@ -53,6 +55,9 @@ class LoteTransportistaModel {
 
   Map<String, dynamic> toMap() {
     return {
+      // Identificación
+      'userId': userId,
+      
       // Entrada
       'ecoce_transportista_fecha_recepcion': fechaRecepcion != null ? Timestamp.fromDate(fechaRecepcion!) : null,
       'ecoce_transportista_lotes_entrada': lotesEntrada,
@@ -83,6 +88,7 @@ class LoteTransportistaModel {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return LoteTransportistaModel(
       id: doc.id,
+      userId: data['userId'] ?? '',
       // Entrada
       fechaRecepcion: data['ecoce_transportista_fecha_recepcion'] != null 
           ? (data['ecoce_transportista_fecha_recepcion'] as Timestamp).toDate() 
@@ -119,6 +125,7 @@ class LoteTransportistaModel {
 
   LoteTransportistaModel copyWith({
     String? id,
+    String? userId,
     DateTime? fechaRecepcion,
     List<String>? lotesEntrada,
     String? tipoOrigen,
@@ -141,6 +148,7 @@ class LoteTransportistaModel {
   }) {
     return LoteTransportistaModel(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       fechaRecepcion: fechaRecepcion ?? this.fechaRecepcion,
       lotesEntrada: lotesEntrada ?? this.lotesEntrada,
       tipoOrigen: tipoOrigen ?? this.tipoOrigen,

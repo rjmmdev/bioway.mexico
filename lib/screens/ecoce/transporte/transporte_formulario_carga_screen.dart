@@ -5,11 +5,13 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../utils/colors.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/image_service.dart';
 import '../../../services/lote_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
+import '../../../services/firebase/auth_service.dart';
 import '../../../models/lotes/lote_transportista_model.dart';
 import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
@@ -35,6 +37,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
   final UserSessionService _userSession = UserSessionService();
   final LoteService _loteService = LoteService();
   final FirebaseStorageService _storageService = FirebaseStorageService();
+  final AuthService _authService = AuthService();
   
   // Controladores
   final TextEditingController _nombreController = TextEditingController();
@@ -193,8 +196,15 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
         }
       }
 
+      // Obtener el userId del transportista actual
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        throw Exception('Usuario no autenticado');
+      }
+      
       // Crear el modelo del lote de transportista
       final loteTransportista = LoteTransportistaModel(
+        userId: currentUser.uid,
         fechaRecepcion: DateTime.now(),
         lotesEntrada: widget.lotes.map((l) => l['id'] as String).toList(),
         tipoOrigen: tipoPredominante,

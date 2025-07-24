@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoteTransformadorModel {
   final String? id; // Firebase ID
+  final String userId; // ID del usuario propietario del lote
   final List<String>? lotesRecibidos; // Lotes recibidos
   final DateTime? fechaCreacion;
   final String? proveedor;
@@ -33,6 +34,7 @@ class LoteTransformadorModel {
 
   LoteTransformadorModel({
     this.id,
+    required this.userId,
     this.lotesRecibidos,
     this.fechaCreacion,
     this.proveedor,
@@ -51,6 +53,7 @@ class LoteTransformadorModel {
 
   Map<String, dynamic> toMap() {
     return {
+      'userId': userId,
       'ecoce_transformador_lotes_recibidos': lotesRecibidos,
       'fecha_creacion': fechaCreacion != null ? Timestamp.fromDate(fechaCreacion!) : null,
       'ecoce_transformador_proveedor': proveedor,
@@ -85,6 +88,7 @@ class LoteTransformadorModel {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return LoteTransformadorModel(
       id: doc.id,
+      userId: data['userId'] ?? '',
       lotesRecibidos: data['ecoce_transformador_lotes_recibidos'] != null 
           ? List<String>.from(data['ecoce_transformador_lotes_recibidos']) 
           : (data['ecoce_transformador_lotes'] != null ? List<String>.from(data['ecoce_transformador_lotes']) : null),
@@ -120,6 +124,7 @@ class LoteTransformadorModel {
 
   LoteTransformadorModel copyWith({
     String? id,
+    String? userId,
     List<String>? lotesRecibidos,
     DateTime? fechaCreacion,
     String? proveedor,
@@ -137,6 +142,7 @@ class LoteTransformadorModel {
   }) {
     return LoteTransformadorModel(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       lotesRecibidos: lotesRecibidos ?? this.lotesRecibidos,
       fechaCreacion: fechaCreacion ?? this.fechaCreacion,
       proveedor: proveedor ?? this.proveedor,

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoteLaboratorioModel {
   final String? id; // Firebase ID
+  final String userId; // ID del usuario propietario del lote
   final String? loteOrigen; // ID del lote origen para Laboratorio
   final List<String>? lotes; // Lotes analizados (para compatibilidad)
   final double? pesoMuestra; // Peso de la muestra en kg
@@ -25,6 +26,7 @@ class LoteLaboratorioModel {
 
   LoteLaboratorioModel({
     this.id,
+    required this.userId,
     this.loteOrigen,
     this.lotes,
     this.pesoMuestra,
@@ -49,6 +51,7 @@ class LoteLaboratorioModel {
 
   Map<String, dynamic> toMap() {
     return {
+      'userId': userId,
       'ecoce_laboratorio_lote_origen': loteOrigen,
       'ecoce_laboratorio_lotes': lotes ?? (loteOrigen != null ? [loteOrigen!] : []),
       'ecoce_laboratorio_peso_muestra': pesoMuestra,
@@ -76,6 +79,7 @@ class LoteLaboratorioModel {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return LoteLaboratorioModel(
       id: doc.id,
+      userId: data['userId'] ?? '',
       loteOrigen: data['ecoce_laboratorio_lote_origen'],
       lotes: data['ecoce_laboratorio_lotes'] != null ? List<String>.from(data['ecoce_laboratorio_lotes']) : null,
       pesoMuestra: data['ecoce_laboratorio_peso_muestra']?.toDouble(),
@@ -101,6 +105,7 @@ class LoteLaboratorioModel {
 
   LoteLaboratorioModel copyWith({
     String? id,
+    String? userId,
     String? loteOrigen,
     List<String>? lotes,
     double? pesoMuestra,
@@ -124,6 +129,7 @@ class LoteLaboratorioModel {
   }) {
     return LoteLaboratorioModel(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       loteOrigen: loteOrigen ?? this.loteOrigen,
       lotes: lotes ?? this.lotes,
       pesoMuestra: pesoMuestra ?? this.pesoMuestra,

@@ -20,6 +20,7 @@ import '../../../models/lotes/lote_origen_model.dart';
 import '../../../services/lote_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
 import '../../../services/user_session_service.dart';
+import '../../../services/firebase/auth_service.dart';
 import '../shared/utils/dialog_utils.dart';
 
 class OrigenCrearLoteScreen extends StatefulWidget {
@@ -33,6 +34,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
   final LoteService _loteService = LoteService();
   final FirebaseStorageService _storageService = FirebaseStorageService();
   final UserSessionService _userSession = UserSessionService();
+  final AuthService _authService = AuthService();
   final ScreenshotController _screenshotController = ScreenshotController();
   bool _isLoading = false;
   List<File> _photoFiles = [];
@@ -256,7 +258,14 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
       }
 
       // Crear el modelo del lote
+      // Obtener el userId actual del AuthService
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        throw Exception('Usuario no autenticado');
+      }
+      
       final lote = LoteOrigenModel(
+        userId: currentUser.uid,
         fechaNace: DateTime.now(),
         direccion: userProfile['direccion'] ?? 'Sin dirección',
         fuente: _fuenteMaterialSeleccionada!,

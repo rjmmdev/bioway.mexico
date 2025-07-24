@@ -4,9 +4,24 @@ import 'package:app/models/lotes/lote_transportista_model.dart';
 import 'package:app/models/lotes/lote_reciclador_model.dart';
 import 'package:app/models/lotes/lote_laboratorio_model.dart';
 import 'package:app/models/lotes/lote_transformador_model.dart';
+import 'package:app/services/firebase/auth_service.dart';
+import 'package:app/services/firebase/firebase_manager.dart';
 
 class LoteService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseManager _firebaseManager = FirebaseManager();
+  final AuthService _authService = AuthService();
+  
+  // Obtener Firestore de la instancia correcta
+  FirebaseFirestore get _firestore {
+    final app = _firebaseManager.currentApp;
+    if (app == null) {
+      return FirebaseFirestore.instance;
+    }
+    return FirebaseFirestore.instanceFor(app: app);
+  }
+  
+  // Obtener el ID del usuario actual de la instancia correcta
+  String? get _currentUserId => _authService.currentUser?.uid;
 
   // Colecciones por tipo de usuario
   static const String LOTES_ORIGEN = 'lotes_origen';
@@ -26,8 +41,12 @@ class LoteService {
   }
 
   Stream<List<LoteOrigenModel>> getLotesOrigen() {
+    final userId = _currentUserId;
+    if (userId == null) return Stream.value([]);
+    
     return _firestore
         .collection(LOTES_ORIGEN)
+        .where('userId', isEqualTo: userId)
         .orderBy('ecoce_origen_fecha_nace', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
@@ -66,7 +85,30 @@ class LoteService {
   }
 
   Stream<List<LoteTransportistaModel>> getLotesTransportista({String? estado}) {
-    Query query = _firestore.collection(LOTES_TRANSPORTISTA);
+    final userId = _currentUserId;
+    if (userId == null) return Stream.value([]);
+    
+    Query query = _firestore.collection(LOTES_TRANSPORTISTA)
+        .where('userId', isEqualTo: userId);
+    
+    if (estado != null) {
+      query = query.where('estado', isEqualTo: estado);
+    }
+    
+    return query
+        .orderBy('ecoce_transportista_fecha_recepcion', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => LoteTransportistaModel.fromFirestore(doc))
+            .toList());
+  }
+
+  Stream<List<LoteTransportistaModel>> getLotesTransportistaByUserId({
+    required String userId,
+    String? estado,
+  }) {
+    Query query = _firestore.collection(LOTES_TRANSPORTISTA)
+        .where('userId', isEqualTo: userId);
     
     if (estado != null) {
       query = query.where('estado', isEqualTo: estado);
@@ -99,7 +141,11 @@ class LoteService {
   }
 
   Stream<List<LoteRecicladorModel>> getLotesReciclador({String? estado}) {
-    Query query = _firestore.collection(LOTES_RECICLADOR);
+    final userId = _currentUserId;
+    if (userId == null) return Stream.value([]);
+    
+    Query query = _firestore.collection(LOTES_RECICLADOR)
+        .where('userId', isEqualTo: userId);
     
     if (estado != null) {
       query = query.where('estado', isEqualTo: estado);
@@ -124,8 +170,12 @@ class LoteService {
   }
 
   Stream<List<LoteLaboratorioModel>> getLotesLaboratorio() {
+    final userId = _currentUserId;
+    if (userId == null) return Stream.value([]);
+    
     return _firestore
         .collection(LOTES_LABORATORIO)
+        .where('userId', isEqualTo: userId)
         .orderBy('fecha_analisis', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
@@ -144,8 +194,12 @@ class LoteService {
   }
 
   Stream<List<LoteTransformadorModel>> getLotesTransformador() {
+    final userId = _currentUserId;
+    if (userId == null) return Stream.value([]);
+    
     return _firestore
         .collection(LOTES_TRANSFORMADOR)
+        .where('userId', isEqualTo: userId)
         .orderBy('fecha_transformacion', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs

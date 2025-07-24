@@ -94,6 +94,9 @@ class EcoceProfileModel {
   final String? ecoceBancoNumCuenta; // Número de cuenta
   final String? ecoceBancoClabe; // CLABE interbancaria
   
+  // Estadísticas del reciclador
+  final int? ecoceLotesTotalesRecibidos; // Total de lotes escaneados por el reciclador
+  
   // Metadata
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -145,6 +148,7 @@ class EcoceProfileModel {
     this.ecoceBancoBeneficiario,
     this.ecoceBancoNumCuenta,
     this.ecoceBancoClabe,
+    this.ecoceLotesTotalesRecibidos,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -222,6 +226,7 @@ class EcoceProfileModel {
       ecoceBancoBeneficiario: data['ecoce_banco_beneficiario'],
       ecoceBancoNumCuenta: data['ecoce_banco_num_cuenta'],
       ecoceBancoClabe: data['ecoce_banco_clabe'],
+      ecoceLotesTotalesRecibidos: data['ecoce_lotes_totales_recibidos'],
       createdAt: _timestampToDateTime(data['createdAt']) ?? DateTime.now(),
       updatedAt: _timestampToDateTime(data['updatedAt']) ?? DateTime.now(),
     );
@@ -277,6 +282,7 @@ class EcoceProfileModel {
       'ecoce_banco_beneficiario': ecoceBancoBeneficiario,
       'ecoce_banco_num_cuenta': ecoceBancoNumCuenta,
       'ecoce_banco_clabe': ecoceBancoClabe,
+      'ecoce_lotes_totales_recibidos': ecoceLotesTotalesRecibidos,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };

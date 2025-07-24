@@ -43,7 +43,7 @@ void main() async {
   
   // Firebase NO se inicializa aquí
   // Se inicializará dinámicamente según la plataforma seleccionada
-  // Ver FirebaseManager para más detalles
+  // Ver FirebaseManager para más detalles-init
   
   // Desactivar animaciones del teclado
   SystemChannels.textInput.invokeMethod('TextInput.setClientFeatures', <String, dynamic>{
@@ -223,7 +223,12 @@ class BioWayApp extends StatelessWidget {
         
         // Rutas de Reciclador
         '/reciclador_inicio': (context) => const RecicladorInicio(),
-        '/reciclador_lotes': (context) => const RecicladorAdministracionLotes(),
+        '/reciclador_lotes': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          return RecicladorAdministracionLotes(
+            initialTab: args?['initialTab'] ?? 0,
+          );
+        },
         '/reciclador_escaneo': (context) => const RecicladorEscaneoQR(),
         '/reciclador_ayuda': (context) => const EcoceAyudaScreen(),
         '/reciclador_perfil': (context) => const EcocePerfilScreen(),

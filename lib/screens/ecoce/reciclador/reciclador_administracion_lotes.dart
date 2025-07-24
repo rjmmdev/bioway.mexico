@@ -5,6 +5,7 @@ import 'reciclador_formulario_salida.dart';
 import 'reciclador_documentacion.dart';
 import 'reciclador_lote_qr_screen.dart';
 import 'widgets/reciclador_bottom_navigation.dart';
+import '../shared/widgets/ecoce_bottom_navigation.dart';
 import 'widgets/reciclador_lote_card.dart';
 import '../../../services/lote_service.dart';
 import '../../../models/lotes/lote_reciclador_model.dart';
@@ -73,51 +74,61 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
 
   List<LoteRecicladorModel> get _lotesFiltrados {
     // Obtener lotes según la pestaña actual
-    String estadoActual = '';
     switch (_tabController.index) {
       case 0:
-        estadoActual = 'procesado';  // Lotes listos para salida
-        break;
+        // Lotes listos para salida (incluye: recibido, salida, procesado)
+        return _todosLotes.where((lote) {
+          final estado = lote.estado;
+          // Incluir lotes que pueden procesarse para salida
+          if (estado != 'recibido' && estado != 'salida' && estado != 'procesado') return false;
+          
+          // Aplicar otros filtros
+          if (_selectedMaterial != 'Todos') {
+            final material = _getTipoPredominante(lote.tipoPoli);
+            if (material != _selectedMaterial) return false;
+          }
+          
+          // Aplicar filtro de tiempo
+          return _aplicarFiltroTiempo(lote);
+        }).toList();
+        
       case 1:
-        estadoActual = 'enviado';     // Lotes enviados pendientes de documentación
-        break;
+        // Lotes enviados pendientes de documentación
+        return _todosLotes.where((lote) {
+          if (lote.estado != 'enviado') return false;
+          
+          // Aplicar otros filtros
+          if (_selectedMaterial != 'Todos') {
+            final material = _getTipoPredominante(lote.tipoPoli);
+            if (material != _selectedMaterial) return false;
+          }
+          
+          return _aplicarFiltroTiempo(lote);
+        }).toList();
+        
       case 2:
-        estadoActual = 'finalizado';  // Lotes con documentación completa
-        break;
+        // Lotes con documentación completa
+        return _todosLotes.where((lote) {
+          if (lote.estado != 'finalizado') return false;
+          
+          // Aplicar otros filtros
+          if (_selectedMaterial != 'Todos') {
+            final material = _getTipoPredominante(lote.tipoPoli);
+            if (material != _selectedMaterial) return false;
+          }
+          
+          return _aplicarFiltroTiempo(lote);
+        }).toList();
+        
+      default:
+        return [];
     }
-    
-    return _todosLotes.where((lote) {
-      // Filtrar por estado
-      if (lote.estado != estadoActual) return false;
-      
-      // Filtrar por material (obtener el tipo predominante)
-      if (_selectedMaterial != 'Todos') {
-        final tipoPredominante = _getTipoPredominante(lote.tipoPoli);
-        if (tipoPredominante != _selectedMaterial) return false;
-      }
-      
-      // Presentación no aplica para reciclador, siempre son lotes procesados
-      
-      // Filtrar por tiempo
-      final now = DateTime.now();
-      // Usar fecha_creacion del modelo ya que no hay fechaRecepcion
-      final fechaRecepcion = DateTime.now(); // Temporal, se debe obtener de Firebase
-      switch (_selectedTiempo) {
-        case 'Esta Semana':
-          final weekStart = now.subtract(Duration(days: now.weekday - 1));
-          return fechaRecepcion.isAfter(weekStart);
-        case 'Este Mes':
-          return fechaRecepcion.month == now.month &&
-                 fechaRecepcion.year == now.year;
-        case 'Últimos tres meses':
-          final threeMonthsAgo = DateTime(now.year, now.month - 3, now.day);
-          return fechaRecepcion.isAfter(threeMonthsAgo);
-        case 'Este Año':
-          return fechaRecepcion.year == now.year;
-      }
-      
-      return true;
-    }).toList();
+  }
+  
+  bool _aplicarFiltroTiempo(LoteRecicladorModel lote) {
+    // Por ahora siempre retornar true ya que no tenemos fecha de creación en el modelo
+    // TODO: Agregar campo de fecha al modelo LoteRecicladorModel
+    return true;
   }
   
   String _getTipoPredominante(Map<String, double>? tipoPoli) {
@@ -152,6 +163,10 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
   // Obtener texto del botón según el estado
   String _getActionButtonText(String estado) {
     switch (estado) {
+      case 'recibido':
+        return 'Formulario Salida';
+      case 'salida':
+        return 'Formulario Salida';
       case 'procesado':
         return 'Formulario Salida';
       case 'enviado':
@@ -166,6 +181,10 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
   // Obtener color del botón según el estado
   Color _getActionButtonColor(String estado) {
     switch (estado) {
+      case 'recibido':
+        return BioWayColors.error; // Rojo para salida
+      case 'salida':
+        return BioWayColors.error; // Rojo para salida
       case 'procesado':
         return BioWayColors.error; // Rojo para salida
       case 'enviado':
@@ -271,8 +290,11 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
         onItemTapped: _onBottomNavTapped,
         onFabPressed: _navigateToNewLot,
       ),
-      floatingActionButton: _isLoading ? null : RecicladorFloatingActionButton(
+      floatingActionButton: _isLoading ? null : EcoceFloatingActionButton(
         onPressed: _navigateToNewLot,
+        icon: Icons.add,
+        backgroundColor: BioWayColors.ecoceGreen,
+        tooltip: 'Escanear Nuevo Lote',
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
@@ -432,7 +454,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                     final loteMap = {
                       'id': lote.id,
                       'material': _getTipoPredominante(lote.tipoPoli),
-                      'peso': lote.pesoResultante ?? 0.0,
+                      'peso': lote.pesoNeto ?? lote.pesoBruto ?? 0.0, // Usar peso neto primero, luego bruto
                       'presentacion': 'Procesado',
                       'origen': lote.nombreOpeEntrada ?? 'Desconocido',
                       'fecha': _formatDate(DateTime.now()), // Temporal
@@ -553,6 +575,8 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
     final material = _getTipoPredominante(lote.tipoPoli);
     
     switch (lote.estado) {
+      case 'recibido':
+      case 'salida':
       case 'procesado':
         // Navegar a formulario de salida
         Navigator.push(
@@ -603,28 +627,3 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
 }
 
 // Floating Action Button separado para mayor reusabilidad
-class RecicladorFloatingActionButton extends StatelessWidget {
-  final VoidCallback onPressed;
-
-  const RecicladorFloatingActionButton({
-    super.key,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return FloatingActionButton(
-      onPressed: onPressed,
-      backgroundColor: BioWayColors.ecoceGreen,
-      elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: const Icon(
-        Icons.add,
-        size: 28,
-        color: Colors.white,
-      ),
-    );
-  }
-}

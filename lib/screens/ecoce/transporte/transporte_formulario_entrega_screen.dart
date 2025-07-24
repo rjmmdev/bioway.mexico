@@ -6,7 +6,11 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:path_provider/path_provider.dart';
 import '../../../utils/colors.dart';
-// import '../../../services/user_session_service.dart';
+import '../../../services/user_session_service.dart';
+import '../../../services/firebase/firebase_manager.dart';
+import '../../../services/firebase/auth_service.dart';
+import '../../../services/lote_service.dart';
+import '../../../services/firebase/firebase_storage_service.dart';
 import '../../../services/image_service.dart';
 import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
@@ -31,8 +35,11 @@ class TransporteFormularioEntregaScreen extends StatefulWidget {
 
 class _TransporteFormularioEntregaScreenState extends State<TransporteFormularioEntregaScreen> {
   final _formKey = GlobalKey<FormState>();
-  // final UserSessionService _userSession = UserSessionService();
-  // final ImageService _imageService = ImageService();
+  final UserSessionService _userSession = UserSessionService();
+  final FirebaseManager _firebaseManager = FirebaseManager();
+  final AuthService _authService = AuthService();
+  final LoteService _loteService = LoteService();
+  final FirebaseStorageService _storageService = FirebaseStorageService();
   
   // Controladores
   final TextEditingController _idDestinoController = TextEditingController();
@@ -86,8 +93,15 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
     });
     
     try {
+      // Obtener Firestore de la instancia correcta
+      final app = _firebaseManager.currentApp;
+      if (app == null) {
+        throw Exception('Firebase no inicializado');
+      }
+      final firestore = FirebaseFirestore.instanceFor(app: app);
+      
       // Buscar en ecoce_profiles
-      final profileDoc = await FirebaseFirestore.instance
+      final profileDoc = await firestore
           .collection('ecoce_profiles')
           .doc(folio)
           .get();
@@ -100,7 +114,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
       final profilePath = profileData['path'] as String;
       
       // Obtener datos completos del usuario
-      final userDoc = await FirebaseFirestore.instance.doc(profilePath).get();
+      final userDoc = await firestore.doc(profilePath).get();
       
       if (!userDoc.exists) {
         throw Exception('Datos del usuario no encontrados');
@@ -248,18 +262,44 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
     });
     
     try {
-      // TODO: Implementar actualización del lote con los datos de entrega
-      // Por ahora solo simularemos guardando el ID del lote entregado
-      await Future.delayed(const Duration(seconds: 2)); // Simulación
+      // Subir firma a Storage
+      String? firmaUrl;
+      if (_firmaRecibe.isNotEmpty) {
+        final signatureImage = await _captureSignature();
+        if (signatureImage != null) {
+          firmaUrl = await _storageService.uploadImage(
+            signatureImage,
+            'lotes/transportista/firmas_entrega',
+          );
+        }
+      }
       
-      // Aquí se debería actualizar el lote con:
-      // - destinatario: _destinatarioInfo!['folio']
-      // - fechaEntrega: DateTime.now()
-      // - pesoEntregado: double.parse(_pesoEntregadoController.text)
-      // - evidenciaFoto: (subir foto y guardar URL)
-      // - firmaRecepcion: (convertir firma a imagen y guardar URL)
-      // - comentarios: _comentariosController.text
-      // - estado: 'entregado'
+      // Subir fotos a Storage
+      List<String> photoUrls = [];
+      for (int i = 0; i < _photoFiles.length; i++) {
+        final url = await _storageService.uploadImage(
+          _photoFiles[i],
+          'lotes/transportista/evidencias_entrega',
+        );
+        if (url != null) {
+          photoUrls.add(url);
+        }
+      }
+      
+      // Actualizar el lote de transportista con los datos de entrega
+      await _loteService.actualizarLoteTransportista(
+        widget.nuevoLoteId,
+        {
+          'ecoce_transportista_direccion_destino': _destinatarioInfo!['direccion'],
+          'ecoce_transportista_destinatario': _destinatarioInfo!['folio'],
+          'ecoce_transportista_fecha_entrega': Timestamp.fromDate(DateTime.now()),
+          'ecoce_transportista_peso_entregado': double.parse(_pesoEntregadoController.text),
+          'ecoce_transportista_firma_recibe': firmaUrl,
+          'ecoce_transportista_evi_foto_entrega': photoUrls,
+          'ecoce_transportista_comentarios_entrega': _comentariosController.text.trim(),
+          'estado': 'entregado',
+        },
+      );
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

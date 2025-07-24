@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
 import '../../../services/lote_service.dart';
 import '../../../services/user_session_service.dart';
+import '../../../services/firebase/auth_service.dart';
 import '../../../models/lotes/lote_laboratorio_model.dart';
 import '../shared/utils/material_utils.dart';
 import 'laboratorio_escaneo.dart';
@@ -47,6 +49,7 @@ class _LaboratorioRegistroMuestrasScreenState extends State<LaboratorioRegistroM
   // Servicios
   final LoteService _loteService = LoteService();
   final UserSessionService _userSession = UserSessionService();
+  final AuthService _authService = AuthService();
   bool _isLoading = false;
 
   @override
@@ -211,9 +214,16 @@ class _LaboratorioRegistroMuestrasScreenState extends State<LaboratorioRegistroM
         throw Exception('No se pudo obtener el perfil del usuario');
       }
 
+      // Obtener el userId actual
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        throw Exception('Usuario no autenticado');
+      }
+      
       // Crear lotes de laboratorio para cada muestra escaneada
       for (final muestra in _scannedMuestras) {
         final loteLaboratorio = LoteLaboratorioModel(
+          userId: currentUser.uid,
           loteOrigen: muestra.id, // ID del lote escaneado
           fechaAnalisis: DateTime.now(),
           tipoMaterial: muestra.material,

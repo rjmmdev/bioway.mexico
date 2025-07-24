@@ -6,10 +6,12 @@ import 'dart:ui' as ui;
 import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../utils/colors.dart';
 import '../../../services/lote_service.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
+import '../../../services/firebase/auth_service.dart';
 import '../../../models/lotes/lote_transformador_model.dart';
 import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
@@ -41,6 +43,7 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
   final LoteService _loteService = LoteService();
   final UserSessionService _userSession = UserSessionService();
   final FirebaseStorageService _storageService = FirebaseStorageService();
+  final AuthService _authService = AuthService();
   
   // Controladores
   final TextEditingController _pesoController = TextEditingController();
@@ -239,8 +242,15 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
         }
       }
       
+      // Obtener el userId actual
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        throw Exception('Usuario no autenticado');
+      }
+      
       // Crear el lote de transformador
       final loteTransformador = LoteTransformadorModel(
+        userId: currentUser.uid,
         lotesRecibidos: widget.lotIds ?? [],
         fechaCreacion: DateTime.now(),
         proveedor: userProfile['ecoceNombre'] ?? 'Transformador',

@@ -22,7 +22,7 @@ class RecicladorInicio extends StatefulWidget {
   State<RecicladorInicio> createState() => _RecicladorInicioState();
 }
 
-class _RecicladorInicioState extends State<RecicladorInicio> {
+class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBindingObserver {
   final UserSessionService _sessionService = UserSessionService();
   final LoteService _loteService = LoteService();
   
@@ -43,9 +43,25 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadUserProfile();
     _loadStatistics();
     _setupLotesStream();
+  }
+  
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Refresh data when app returns to foreground
+      _loadUserProfile();
+      _loadStatistics();
+    }
   }
 
   Future<void> _loadUserProfile() async {
@@ -74,9 +90,13 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
       // Obtener todos los lotes del reciclador
       final lotes = await _loteService.getLotesReciclador().first;
       
+      // Obtener el total de lotes recibidos del perfil
+      final profile = await _sessionService.getCurrentUserProfile();
+      final lotesRecibidosTotal = profile?.ecoceLotesTotalesRecibidos ?? 0;
+      
       if (mounted) {
         setState(() {
-          _lotesRecibidos = lotes.where((l) => l.estado == 'recibido' || l.estado == 'procesando').length;
+          _lotesRecibidos = lotesRecibidosTotal;
           _lotesCreados = lotes.where((l) => l.estado == 'finalizado').length;
           _pesoProcesado = lotes.fold(0.0, (sum, lote) => sum + (lote.pesoResultante ?? lote.pesoNeto ?? lote.pesoBruto ?? 0.0));
           _isLoading = false;
@@ -112,9 +132,12 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
     };
   }
 
-  void _navigateToNewLot() {
+  void _navigateToNewLot() async {
     HapticFeedback.lightImpact();
-    Navigator.pushNamed(context, '/reciclador_escaneo');
+    await Navigator.pushNamed(context, '/reciclador_escaneo');
+    // Refresh statistics when returning from scanning
+    _loadUserProfile();
+    _loadStatistics();
   }
 
   void _navigateToLotControl() {
@@ -147,11 +170,13 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
   String _getActionButtonText(String estado) {
     switch (estado) {
       case 'recibido':
-        return 'Procesar Lote';
-      case 'procesando':
-        return 'Formulario de Salida';
-      case 'documentacion':
-        return 'Ingresar Documentación';
+        return 'Formulario Salida';
+      case 'salida':
+        return 'Formulario Salida';
+      case 'procesado':
+        return 'Formulario Salida';
+      case 'enviado':
+        return 'Añadir Documentación';
       case 'finalizado':
         return 'Ver Código QR';
       default:
@@ -163,11 +188,13 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
   Color _getActionButtonColor(String estado) {
     switch (estado) {
       case 'recibido':
-        return BioWayColors.info; // Azul para procesar
-      case 'procesando':
         return BioWayColors.error; // Rojo para salida
-      case 'documentacion':
-        return BioWayColors.warning; // Naranja/amarillo para documentación
+      case 'salida':
+        return BioWayColors.error; // Rojo para salida
+      case 'procesado':
+        return BioWayColors.error; // Rojo para salida
+      case 'enviado':
+        return BioWayColors.warning; // Naranja para documentación
       case 'finalizado':
         return BioWayColors.ecoceGreen; // Verde para finalizados
       default:
@@ -181,19 +208,9 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
     
     switch (lote['estado']) {
       case 'recibido':
-        // Actualizar el lote a procesando
-        _loteService.actualizarLoteReciclador(
-          lote['id'],
-          {'estado': 'procesando'},
-        );
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Lote marcado como en procesamiento'),
-            backgroundColor: BioWayColors.success,
-          ),
-        );
-        break;
-      case 'procesando':
+      case 'salida':
+      case 'procesado':
+        // Navegar a formulario de salida
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -204,7 +221,8 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
           ),
         );
         break;
-      case 'documentacion':
+      case 'enviado':
+        // Navegar a documentación
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -215,6 +233,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
         );
         break;
       case 'finalizado':
+        // Navegar a vista de QR
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -242,10 +261,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
         borderRadius: BorderRadius.circular(10),
       ),
       child: IconButton(
-        onPressed: () {
-          HapticFeedback.lightImpact();
-          _handleLoteTap(lote);
-        },
+        onPressed: () => _handleLoteTap(lote),
         icon: Icon(
           Icons.qr_code_2,
           color: BioWayColors.ecoceGreen,
@@ -743,26 +759,28 @@ class _RecicladorInicioState extends State<RecicladorInicio> {
                             children: lotes.map((loteModel) {
                               final lote = _loteToMap(loteModel);
                               
-                              // Para lotes finalizados, usar el estilo con botón QR lateral
+                              // Para lotes finalizados, mostrar botón QR debajo
                               if (lote['estado'] == 'finalizado') {
                                 return RecicladorLoteCard(
                                   lote: lote,
-                                  onTap: () => _handleLoteTap(lote),
-                                  showActionButton: false,
-                                  showActions: false,
-                                  trailing: _buildQRButton(lote),
+                                  onTap: null, // No hacer nada al tocar la tarjeta
+                                  showActionButton: true,
+                                  actionButtonText: 'Ver código QR',
+                                  actionButtonColor: BioWayColors.ecoceGreen,
+                                  onActionPressed: () => _handleLoteTap(lote),
+                                  showActions: false, // No mostrar flecha lateral
                                 );
                               }
                               
                               // Para otros estados, mostrar botón debajo
                               return RecicladorLoteCard(
                                 lote: lote,
-                                onTap: () => _handleLoteTap(lote),
+                                onTap: null, // No hacer nada al tocar la tarjeta
                                 showActionButton: true,
                                 actionButtonText: _getActionButtonText(lote['estado']),
                                 actionButtonColor: _getActionButtonColor(lote['estado']),
                                 onActionPressed: () => _handleLoteTap(lote),
-                                showActions: true, // Mostrar flecha lateral
+                                showActions: false, // No mostrar flecha lateral
                               );
                             }).toList(),
                           );
