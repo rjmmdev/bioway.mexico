@@ -204,12 +204,15 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
           proceso: 'reciclador',
           datos: {
             'usuario_id': _authService.currentUser?.uid,
+            'reciclador_id': _authService.currentUser?.uid, // Agregar explícitamente el reciclador_id
             'usuario_folio': _userSession.getUserData()?['folio'] ?? '',
             'fecha_recepcion': FieldValue.serverTimestamp(),
             'peso_entrada': lote['peso'],
             'peso_recibido': double.tryParse(_pesoRecibidoController.text) ?? lote['peso'],
+            'peso_neto': double.tryParse(_pesoRecibidoController.text) ?? lote['peso'], // Agregar peso_neto
             'merma_recepcion': double.tryParse(_mermaController.text) ?? 0,
             'firma_operador': _signatureUrl,
+            'operador_nombre': _operadorController.text.trim(), // Agregar nombre del operador
             'recepcion_completada': true, // Marcar que el reciclador completó su parte
           },
         );

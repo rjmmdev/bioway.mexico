@@ -518,7 +518,13 @@ class LoteUnificadoService {
           if (procesoDoc.exists) {
             final procesoData = procesoDoc.data()!;
             // Verificar que el usuario sea el propietario en este proceso
-            if (procesoData['usuario_id'] == userId) {
+            // Para reciclador, verificar primero reciclador_id, luego usuario_id
+            String propietarioId = procesoData['usuario_id'];
+            if (proceso == 'reciclador' && procesoData['reciclador_id'] != null) {
+              propietarioId = procesoData['reciclador_id'];
+            }
+            
+            if (propietarioId == userId) {
               final lote = await obtenerLotePorId(loteId);
               if (lote != null) {
                 lotes.add(lote);

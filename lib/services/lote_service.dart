@@ -301,7 +301,9 @@ class LoteService {
             final recicladorData = recicladorDoc.data()!;
             
             // Verificar que sea del usuario actual
-            if (recicladorData['usuario_id'] != userId) continue;
+            // Primero intentar con reciclador_id, si no existe usar usuario_id
+            final recicladorId = recicladorData['reciclador_id'] ?? recicladorData['usuario_id'];
+            if (recicladorId != userId) continue;
             
             // Obtener el tipo de polímero del material
             final tipoMaterial = datosGenerales['material_tipo'] ?? '';
