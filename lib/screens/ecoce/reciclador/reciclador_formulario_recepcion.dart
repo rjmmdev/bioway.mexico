@@ -221,7 +221,7 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
             'peso_neto': double.tryParse(_pesoRecibidoController.text) ?? lote['peso'], // Agregar peso_neto
             'merma_recepcion': double.tryParse(_mermaController.text) ?? 0,
             'firma_operador': _signatureUrl,
-            'operador_nombre': _operadorController.text.trim(), // Agregar nombre del operador
+            'operador_nombre': currentUserData?['nombre'] ?? 'Sin nombre', // Usar nombre del usuario actual
             'recepcion_completada': true, // Marcar que el reciclador completó su parte
           },
         );
