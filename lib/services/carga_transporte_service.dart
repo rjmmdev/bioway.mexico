@@ -78,10 +78,11 @@ class CargaTransporteService {
         final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
         final pesoOriginalLote = lote?.datosGenerales.peso ?? 0.0;
         
-        // Primero actualizar el proceso origen para marcarlo como entregado
+        // Primero actualizar el proceso anterior (origen, reciclador, etc.) para marcarlo como entregado
+        final procesoAnterior = lote?.datosGenerales.procesoActual ?? 'origen';
         await _loteUnificadoService.actualizarDatosProceso(
           loteId: loteId,
-          proceso: 'origen',
+          proceso: procesoAnterior,
           datos: {
             'entrega_completada': true,
             'fecha_salida': FieldValue.serverTimestamp(),
