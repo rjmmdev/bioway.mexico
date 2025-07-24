@@ -67,6 +67,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
   // Variables para las imágenes
   bool _hasImages = false;
   List<File> _photoFiles = [];
+  List<String> _existingPhotoUrls = []; // URLs de fotos ya guardadas
   
   // Variables para tipo de polímero y presentación
   String? _tipoPoliSalida;
@@ -168,12 +169,12 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
             _signatureUrl = data['firma_salida'];
           }
           
-          // Verificar si hay fotos guardadas
+          // Cargar fotos guardadas
           if (data['evidencias_foto_salida'] != null && 
               data['evidencias_foto_salida'] is List && 
               (data['evidencias_foto_salida'] as List).isNotEmpty) {
             _hasImages = true;
-            // Nota: Las fotos ya están en Firebase
+            _existingPhotoUrls = List<String>.from(data['evidencias_foto_salida']);
           }
         });
       } else {
@@ -927,20 +928,59 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                                 ),
                                                 child: ClipRRect(
                                                   borderRadius: BorderRadius.circular(7),
-                                                  child: FittedBox(
-                                                    fit: BoxFit.contain,
-                                                    child: SizedBox(
-                                                      width: 300,
-                                                      height: 300,
-                                                      child: CustomPaint(
-                                                        painter: SignaturePainter(
-                                                          points: _signaturePoints,
-                                                          color: BioWayColors.darkGreen,
-                                                          strokeWidth: 2.0,
+                                                  child: _signatureUrl != null
+                                                      ? Image.network(
+                                                          _signatureUrl!,
+                                                          fit: BoxFit.contain,
+                                                          loadingBuilder: (context, child, loadingProgress) {
+                                                            if (loadingProgress == null) return child;
+                                                            return Center(
+                                                              child: CircularProgressIndicator(
+                                                                value: loadingProgress.expectedTotalBytes != null
+                                                                    ? loadingProgress.cumulativeBytesLoaded /
+                                                                        loadingProgress.expectedTotalBytes!
+                                                                    : null,
+                                                                color: BioWayColors.ecoceGreen,
+                                                              ),
+                                                            );
+                                                          },
+                                                          errorBuilder: (context, error, stackTrace) {
+                                                            return Center(
+                                                              child: Column(
+                                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                                children: [
+                                                                  Icon(
+                                                                    Icons.error_outline,
+                                                                    color: Colors.red[300],
+                                                                    size: 30,
+                                                                  ),
+                                                                  const SizedBox(height: 4),
+                                                                  Text(
+                                                                    'Error al cargar',
+                                                                    style: TextStyle(
+                                                                      color: Colors.red[300],
+                                                                      fontSize: 10,
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            );
+                                                          },
+                                                        )
+                                                      : FittedBox(
+                                                          fit: BoxFit.contain,
+                                                          child: SizedBox(
+                                                            width: 300,
+                                                            height: 300,
+                                                            child: CustomPaint(
+                                                              painter: SignaturePainter(
+                                                                points: _signaturePoints,
+                                                                color: BioWayColors.darkGreen,
+                                                                strokeWidth: 2.0,
+                                                              ),
+                                                            ),
+                                                          ),
                                                         ),
-                                                      ),
-                                                    ),
-                                                  ),
                                                 ),
                                               ),
                                             ),
@@ -994,6 +1034,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                                     setState(() {
                                                       _signaturePoints = [];
                                                       _hasSignature = false;
+                                                      _signatureUrl = null;
                                                     });
                                                   },
                                                   icon: const Icon(
@@ -1021,12 +1062,97 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                     
                     const SizedBox(height: 20),
                     
-                    // Tarjeta de Evidencia Fotográfica usando el widget compartido
-                    PhotoEvidenceFormField(
-                      title: 'Evidencia Fotográfica',
-                      maxPhotos: 5,
-                      minPhotos: 1,
-                      isRequired: true,
+                    // Mostrar fotos existentes si las hay
+                    if (_existingPhotoUrls.isNotEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.photo_library, color: BioWayColors.ecoceGreen),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Evidencias Guardadas',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: BioWayColors.darkGreen,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: _existingPhotoUrls.map((url) {
+                                return Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Image.network(
+                                      url,
+                                      fit: BoxFit.cover,
+                                      loadingBuilder: (context, child, loadingProgress) {
+                                        if (loadingProgress == null) return child;
+                                        return Center(
+                                          child: CircularProgressIndicator(
+                                            value: loadingProgress.expectedTotalBytes != null
+                                                ? loadingProgress.cumulativeBytesLoaded /
+                                                    loadingProgress.expectedTotalBytes!
+                                                : null,
+                                            color: BioWayColors.ecoceGreen,
+                                          ),
+                                        );
+                                      },
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Container(
+                                          color: Colors.grey[200],
+                                          child: Icon(
+                                            Icons.broken_image,
+                                            color: Colors.grey[400],
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                    
+                    // Tarjeta de Evidencia Fotográfica para agregar nuevas
+                    PhotoEvidenceWidget(
+                      title: _existingPhotoUrls.isEmpty ? 'Evidencia Fotográfica' : 'Agregar Más Evidencias',
+                      maxPhotos: 5 - _existingPhotoUrls.length, // Ajustar el máximo según las existentes
+                      minPhotos: _existingPhotoUrls.isEmpty ? 1 : 0,
+                      isRequired: _existingPhotoUrls.isEmpty,
                       onPhotosChanged: _onPhotosChanged,
                       primaryColor: BioWayColors.ecoceGreen,
                     ),
