@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../utils/colors.dart';
+import 'required_field_label.dart';
 
 /// Unified container widget that supports multiple layout variants
 /// Combines functionality from gradient_header.dart, section_card.dart, and GradientContainer
@@ -27,6 +28,7 @@ class UnifiedContainer extends StatelessWidget {
   // Section properties (for section variant)
   final String? sectionIcon; // Emoji icon
   final Color? titleColor;
+  final bool isRequired;
   
   // Styling properties
   final Color? backgroundColor;
@@ -55,6 +57,7 @@ class UnifiedContainer extends StatelessWidget {
     // Section properties
     this.sectionIcon,
     this.titleColor,
+    this.isRequired = false,
     // Styling
     this.backgroundColor,
     this.primaryColor,
@@ -113,6 +116,7 @@ class UnifiedContainer extends StatelessWidget {
     required List<Widget> children,
     Color? titleColor,
     EdgeInsetsGeometry? padding,
+    bool isRequired = false,
   }) {
     return UnifiedContainer(
       variant: ContainerVariant.section,
@@ -121,6 +125,7 @@ class UnifiedContainer extends StatelessWidget {
       children: children,
       titleColor: titleColor,
       padding: padding,
+      isRequired: isRequired,
     );
   }
 
@@ -319,14 +324,23 @@ class UnifiedContainer extends StatelessWidget {
                   const SizedBox(width: 10),
                 ],
                 if (title != null)
-                  Text(
-                    title!,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: titleColor ?? BioWayColors.darkGreen,
-                    ),
-                  ),
+                  isRequired
+                    ? RequiredFieldLabel(
+                        label: title!,
+                        labelStyle: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: titleColor ?? BioWayColors.darkGreen,
+                        ),
+                      )
+                    : Text(
+                        title!,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: titleColor ?? BioWayColors.darkGreen,
+                        ),
+                      ),
               ],
             ),
           if (title != null || sectionIcon != null)
@@ -460,6 +474,7 @@ class SectionCard extends StatelessWidget {
   final List<Widget> children;
   final Color? titleColor;
   final EdgeInsetsGeometry? padding;
+  final bool isRequired;
 
   const SectionCard({
     super.key,
@@ -468,6 +483,7 @@ class SectionCard extends StatelessWidget {
     required this.children,
     this.titleColor,
     this.padding,
+    this.isRequired = false,
   });
 
   @override
@@ -478,6 +494,7 @@ class SectionCard extends StatelessWidget {
       children: children,
       titleColor: titleColor,
       padding: padding,
+      isRequired: isRequired,
     );
   }
 }

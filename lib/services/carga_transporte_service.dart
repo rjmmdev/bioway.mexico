@@ -74,6 +74,22 @@ class CargaTransporteService {
       final transporteIds = <String, String>{}; // loteId -> transporteId
       
       for (final loteId in lotesIds) {
+        // Obtener el peso original del lote
+        final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
+        final pesoOriginalLote = lote?.datosGenerales.peso ?? 0.0;
+        
+        // Primero actualizar el proceso origen para marcarlo como entregado
+        await _loteUnificadoService.actualizarDatosProceso(
+          loteId: loteId,
+          proceso: 'origen',
+          datos: {
+            'entrega_completada': true,
+            'fecha_salida': FieldValue.serverTimestamp(),
+            'entregado_a': transportistaFolio,
+          },
+        );
+        
+        // Luego crear el proceso transporte con los datos iniciales
         await _loteUnificadoService.transferirLote(
           loteId: loteId,
           procesoDestino: 'transporte',
@@ -83,10 +99,11 @@ class CargaTransporteService {
             'origen_recogida': origenUsuarioFolio,
             'vehiculo_placas': vehiculoPlacas,
             'nombre_conductor': nombreConductor,
-            'peso_recogido': pesoTotalRecogido / lotesIds.length, // Peso promedio por lote
+            'peso_recogido': pesoOriginalLote, // Usar el peso original del lote
             'firma_recogida': firmaRecogida,
             'evidencias_foto_recogida': evidenciasFotoRecogida,
             'comentarios_recogida': comentariosRecogida,
+            'recepcion_completada': true, // Marcar como recibido automáticamente
           },
         );
         
@@ -158,6 +175,76 @@ class CargaTransporteService {
     } catch (e) {
       print('Error al obtener lotes en transporte: $e');
       return [];
+    }
+  }
+  
+  /// Verificar y actualizar el estado de una carga
+  Future<void> actualizarEstadoCarga(String cargaId) async {
+    try {
+      print('=== ACTUALIZANDO ESTADO DE CARGA ===');
+      print('Carga ID: $cargaId');
+      
+      final cargaDoc = await _firestore
+          .collection('cargas_transporte')
+          .doc(cargaId)
+          .get();
+          
+      if (!cargaDoc.exists) {
+        print('ERROR: Carga no encontrada');
+        return;
+      }
+      
+      final carga = CargaTransporteModel.fromFirestore(cargaDoc);
+      print('Total lotes en carga: ${carga.lotesIds.length}');
+      print('Estado actual de la carga: ${carga.estadoCarga}');
+      
+      // Verificar el estado de todos los lotes
+      int lotesEntregados = 0;
+      int lotesEnTransito = 0;
+      
+      for (final loteId in carga.lotesIds) {
+        final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
+        if (lote != null) {
+          print('Lote $loteId - Proceso actual: ${lote.datosGenerales.procesoActual}');
+          if (lote.datosGenerales.procesoActual != 'transporte') {
+            // El lote ya fue transferido a otro proceso
+            lotesEntregados++;
+          } else {
+            lotesEnTransito++;
+          }
+        }
+      }
+      
+      // Actualizar el estado de la carga según los lotes
+      String nuevoEstado = carga.estadoCarga;
+      
+      if (lotesEntregados == carga.lotesIds.length) {
+        // Todos los lotes fueron entregados
+        nuevoEstado = 'entregada';
+      } else if (lotesEntregados > 0) {
+        // Algunos lotes fueron entregados
+        nuevoEstado = 'entregada_parcial';
+      }
+      
+      print('Lotes entregados: $lotesEntregados');
+      print('Lotes en tránsito: $lotesEnTransito');
+      
+      // Actualizar en Firebase si cambió el estado
+      if (nuevoEstado != carga.estadoCarga) {
+        print('Actualizando estado de carga de "${carga.estadoCarga}" a "$nuevoEstado"');
+        await cargaDoc.reference.update({
+          'estado_carga': nuevoEstado,
+          'lotes_entregados': lotesEntregados,
+          'lotes_en_transito': lotesEnTransito,
+          'ultima_actualizacion': FieldValue.serverTimestamp(),
+        });
+        print('Estado actualizado exitosamente');
+      } else {
+        print('No se requiere actualización del estado');
+      }
+      print('=== FIN ACTUALIZAR ESTADO DE CARGA ===');
+    } catch (e) {
+      print('Error al actualizar estado de carga: $e');
     }
   }
   
@@ -306,6 +393,25 @@ class CargaTransporteService {
       // Verificar si la carga está completamente entregada
       await _verificarEstadoCarga(entrega.cargaId);
       
+      // Intentar eliminar el documento de entregas_transporte
+      // Si falla por permisos, marcar como completada pero sin eliminar
+      try {
+        await _firestore
+            .collection('entregas_transporte')
+            .doc(entregaId)
+            .delete();
+      } catch (deleteError) {
+        print('No se pudo eliminar la entrega (posiblemente por permisos): $deleteError');
+        // Marcar la entrega como completada para que no aparezca en pendientes
+        await _firestore
+            .collection('entregas_transporte')
+            .doc(entregaId)
+            .update({
+          'estado_entrega': 'completada_archivada',
+          'fecha_archivado': FieldValue.serverTimestamp(),
+        });
+      }
+      
     } catch (e) {
       print('Error al completar entrega: $e');
       throw Exception('Error al completar entrega: $e');
@@ -325,23 +431,298 @@ class CargaTransporteService {
       
       final carga = CargaTransporteModel.fromFirestore(cargaDoc);
       
-      // Verificar si todos los lotes han sido entregados
+      // Verificar si todos los lotes han sido entregados Y recibidos
+      bool todosTransferidos = true;
       bool todosEntregados = true;
+      
       for (final loteId in carga.lotesIds) {
         final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
-        if (lote != null && lote.datosGenerales.procesoActual == 'transporte') {
-          todosEntregados = false;
-          break;
+        if (lote != null) {
+          // Verificar si el lote sigue en transporte
+          if (lote.datosGenerales.procesoActual == 'transporte') {
+            todosTransferidos = false;
+            
+            // Verificar si al menos fue entregado (aunque no recibido)
+            final transporteDoc = await _firestore
+                .collection('lotes')
+                .doc(loteId)
+                .collection('transporte')
+                .doc('data')
+                .get();
+                
+            if (transporteDoc.exists && 
+                transporteDoc.data()?['entrega_completada'] != true) {
+              todosEntregados = false;
+            }
+          }
         }
+      }
+      
+      // Determinar el estado de la carga
+      String nuevoEstado;
+      if (todosTransferidos) {
+        nuevoEstado = 'completada_y_transferida';
+      } else if (todosEntregados) {
+        nuevoEstado = 'entregada_completa';
+      } else {
+        nuevoEstado = 'entregada_parcial';
       }
       
       // Actualizar estado de la carga
       await cargaDoc.reference.update({
-        'estado_carga': todosEntregados ? 'entregada_completa' : 'entregada_parcial',
+        'estado_carga': nuevoEstado,
+        'fecha_actualizacion': FieldValue.serverTimestamp(),
       });
+      
+      // Si todos los lotes han sido transferidos completamente, 
+      // marcar la carga para limpieza
+      if (todosTransferidos) {
+        await _marcarCargaParaLimpieza(cargaId);
+        
+        // DESACTIVADO: Limpieza automática para evitar interferencias
+        // La limpieza debe ejecutarse manualmente o por un proceso batch
+        // _ejecutarLimpiezaAutomatica();
+      }
       
     } catch (e) {
       print('Error al verificar estado de carga: $e');
+    }
+  }
+  
+  /// Marcar una carga para limpieza posterior
+  Future<void> _marcarCargaParaLimpieza(String cargaId) async {
+    try {
+      print('=== MARCANDO CARGA PARA LIMPIEZA ===');
+      print('Carga ID: $cargaId');
+      
+      // Agregar un timestamp de cuando se completó la transferencia
+      await _firestore
+          .collection('cargas_transporte')
+          .doc(cargaId)
+          .update({
+        'fecha_transferencia_completa': FieldValue.serverTimestamp(),
+        'marcada_para_limpieza': true,
+      });
+      
+      print('Carga marcada para limpieza exitosamente');
+    } catch (e) {
+      print('Error marcando carga para limpieza: $e');
+    }
+  }
+  
+  /// Limpiar documentos de cargas y entregas completadas
+  /// Este método debe ejecutarse periódicamente o cuando sea conveniente
+  /// NOTA: Por defecto usa 30 días de retención para mayor seguridad
+  Future<void> limpiarDocumentosCompletados({
+    Duration tiempoRetencion = const Duration(days: 30),
+    bool soloMarcar = true, // Por defecto solo marca, no elimina
+  }) async {
+    try {
+      print('=== INICIANDO LIMPIEZA DE DOCUMENTOS ===');
+      
+      final ahora = DateTime.now();
+      final fechaLimite = ahora.subtract(tiempoRetencion);
+      
+      // 1. Limpiar cargas completadas y transferidas
+      final cargasQuery = await _firestore
+          .collection('cargas_transporte')
+          .where('marcada_para_limpieza', isEqualTo: true)
+          .where('fecha_transferencia_completa', isLessThan: Timestamp.fromDate(fechaLimite))
+          .get();
+      
+      print('Cargas a limpiar: ${cargasQuery.docs.length}');
+      
+      for (final cargaDoc in cargasQuery.docs) {
+        try {
+          // Verificar una vez más que todos los lotes están transferidos
+          final carga = CargaTransporteModel.fromFirestore(cargaDoc);
+          bool puedeEliminar = true;
+          
+          for (final loteId in carga.lotesIds) {
+            final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
+            if (lote != null && lote.datosGenerales.procesoActual == 'transporte') {
+              puedeEliminar = false;
+              break;
+            }
+          }
+          
+          if (puedeEliminar) {
+            if (soloMarcar) {
+              // Solo marcar como archivada, no eliminar
+              await cargaDoc.reference.update({
+                'estado_archivado': 'archivada_para_limpieza',
+                'fecha_archivado': FieldValue.serverTimestamp(),
+                'puede_eliminar': true,
+              });
+              print('Carga ${cargaDoc.id} marcada como archivada');
+            } else {
+              // Eliminar solo si explícitamente se solicita
+              await cargaDoc.reference.delete();
+              print('Carga ${cargaDoc.id} eliminada exitosamente');
+            }
+          } else {
+            print('Carga ${cargaDoc.id} aún tiene lotes activos, no se puede limpiar');
+          }
+        } catch (e) {
+          print('Error eliminando carga ${cargaDoc.id}: $e');
+        }
+      }
+      
+      // 2. Limpiar entregas completadas o archivadas
+      final entregasQuery = await _firestore
+          .collection('entregas_transporte')
+          .where('estado_entrega', whereIn: ['entregada', 'completada_archivada'])
+          .get();
+      
+      print('Entregas a evaluar: ${entregasQuery.docs.length}');
+      
+      for (final entregaDoc in entregasQuery.docs) {
+        try {
+          final entrega = EntregaTransporteModel.fromFirestore(entregaDoc);
+          
+          // Verificar si todos los lotes de la entrega han sido transferidos
+          bool todosTransferidos = true;
+          
+          for (final loteId in entrega.lotesIds) {
+            final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
+            if (lote != null && lote.datosGenerales.procesoActual == 'transporte') {
+              todosTransferidos = false;
+              break;
+            }
+          }
+          
+          if (todosTransferidos) {
+            // Verificar tiempo de retención
+            final fechaEntrega = entregaDoc.data()['fecha_entrega'] as Timestamp?;
+            final fechaArchivado = entregaDoc.data()['fecha_archivado'] as Timestamp?;
+            final fechaReferencia = fechaArchivado ?? fechaEntrega;
+            
+            if (fechaReferencia != null && 
+                fechaReferencia.toDate().isBefore(fechaLimite)) {
+              if (soloMarcar) {
+                // Solo marcar como archivada, no eliminar
+                await entregaDoc.reference.update({
+                  'estado_archivado': 'archivada_para_limpieza',
+                  'fecha_marcado_limpieza': FieldValue.serverTimestamp(),
+                  'puede_eliminar': true,
+                });
+                print('Entrega ${entregaDoc.id} marcada como archivada');
+              } else {
+                // Eliminar solo si explícitamente se solicita
+                await entregaDoc.reference.delete();
+                print('Entrega ${entregaDoc.id} eliminada exitosamente');
+              }
+            }
+          }
+        } catch (e) {
+          print('Error procesando entrega ${entregaDoc.id}: $e');
+        }
+      }
+      
+      print('=== LIMPIEZA COMPLETADA ===');
+    } catch (e) {
+      print('Error en limpieza de documentos: $e');
+    }
+  }
+  
+  /// Ejecutar limpieza automática al completar operaciones críticas
+  Future<void> _ejecutarLimpiezaAutomatica() async {
+    try {
+      // Solo ejecutar si han pasado más de 24 horas desde la última limpieza
+      final ultimaLimpieza = await _obtenerUltimaLimpieza();
+      final ahora = DateTime.now();
+      
+      if (ultimaLimpieza == null || 
+          ahora.difference(ultimaLimpieza).inHours >= 24) {
+        // Ejecutar limpieza en background sin bloquear
+        limpiarDocumentosCompletados().then((_) {
+          _guardarFechaLimpieza();
+        }).catchError((e) {
+          print('Error en limpieza automática: $e');
+        });
+      }
+    } catch (e) {
+      print('Error verificando limpieza automática: $e');
+    }
+  }
+  
+  Future<DateTime?> _obtenerUltimaLimpieza() async {
+    // Implementar usando SharedPreferences o un documento en Firestore
+    // Por ahora retornamos null para simplificar
+    return null;
+  }
+  
+  Future<void> _guardarFechaLimpieza() async {
+    // Implementar guardado de fecha de última limpieza
+    // Puede ser en SharedPreferences o Firestore
+  }
+  
+  /// Obtener estadísticas de documentos pendientes de limpieza
+  Future<Map<String, int>> obtenerEstadisticasLimpieza() async {
+    try {
+      // Contar cargas marcadas para limpieza
+      final cargasQuery = await _firestore
+          .collection('cargas_transporte')
+          .where('marcada_para_limpieza', isEqualTo: true)
+          .get();
+      
+      // Contar entregas completadas/archivadas
+      final entregasQuery = await _firestore
+          .collection('entregas_transporte')
+          .where('estado_entrega', whereIn: ['entregada', 'completada_archivada'])
+          .get();
+      
+      // Contar documentos archivados para limpieza
+      final archivadosQuery = await _firestore
+          .collection('cargas_transporte')
+          .where('estado_archivado', isEqualTo: 'archivada_para_limpieza')
+          .get();
+      
+      return {
+        'cargas_pendientes': cargasQuery.docs.length,
+        'entregas_completadas': entregasQuery.docs.length,
+        'documentos_archivados': archivadosQuery.docs.length,
+        'total_pendiente_limpieza': cargasQuery.docs.length + entregasQuery.docs.length,
+      };
+    } catch (e) {
+      print('Error obteniendo estadísticas: $e');
+      return {
+        'cargas_pendientes': 0,
+        'entregas_completadas': 0,
+        'documentos_archivados': 0,
+        'total_pendiente_limpieza': 0,
+      };
+    }
+  }
+  
+  /// Verificar si hay documentos que necesitan limpieza
+  Future<bool> hayDocumentosPendientesLimpieza({
+    Duration tiempoRetencion = const Duration(days: 30),
+  }) async {
+    try {
+      final fechaLimite = DateTime.now().subtract(tiempoRetencion);
+      
+      // Verificar cargas
+      final cargasQuery = await _firestore
+          .collection('cargas_transporte')
+          .where('marcada_para_limpieza', isEqualTo: true)
+          .where('fecha_transferencia_completa', isLessThan: Timestamp.fromDate(fechaLimite))
+          .limit(1)
+          .get();
+      
+      if (cargasQuery.docs.isNotEmpty) return true;
+      
+      // Verificar entregas
+      final entregasQuery = await _firestore
+          .collection('entregas_transporte')
+          .where('estado_entrega', whereIn: ['entregada', 'completada_archivada'])
+          .limit(1)
+          .get();
+      
+      return entregasQuery.docs.isNotEmpty;
+    } catch (e) {
+      print('Error verificando documentos pendientes: $e');
+      return false;
     }
   }
 }

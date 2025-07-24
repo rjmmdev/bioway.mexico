@@ -3,18 +3,19 @@ import 'package:flutter/services.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
-import 'package:path_provider/path_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../utils/colors.dart';
 import '../../../services/lote_service.dart';
+import '../../../services/lote_unificado_service.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
-import '../../../models/lotes/lote_reciclador_model.dart';
 import '../shared/utils/dialog_utils.dart';
 import 'reciclador_documentacion.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
 import '../shared/widgets/weight_input_widget.dart';
 import '../shared/widgets/signature_dialog.dart';
+import '../shared/widgets/signature_painter.dart';
 
 class RecicladorFormularioSalida extends StatefulWidget {
   final String loteId;
@@ -47,7 +48,6 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
   
   // Estados
   bool _isLoading = false;
-  LoteRecicladorModel? _loteReciclador;
   
   // Variables para procesos aplicados
   final Map<String, bool> _procesosAplicados = {
@@ -66,6 +66,10 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
   // Variables para las imágenes
   bool _hasImages = false;
   List<File> _photoFiles = [];
+  
+  // Variables para tipo de polímero y presentación
+  String? _tipoPoliSalida;
+  String? _presentacionSalida;
 
   @override
   void initState() {
@@ -81,17 +85,80 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
     });
     
     try {
-      // Obtener datos del lote de reciclador
-      final lotes = await _loteService.getLotesReciclador().first;
-      _loteReciclador = lotes.firstWhere((l) => l.id == widget.loteId);
+      // Obtener datos del lote desde la estructura unificada
+      final loteDoc = await FirebaseFirestore.instance
+          .collection('lotes')
+          .doc(widget.loteId)
+          .collection('reciclador')
+          .doc('data')
+          .get();
       
-      if (_loteReciclador != null) {
+      if (loteDoc.exists) {
+        final data = loteDoc.data()!;
         setState(() {
-          _pesoNetoAprovechable = _loteReciclador!.pesoNeto ?? _loteReciclador!.pesoBruto ?? 0.0;
+          // Cargar peso neto aprovechable (del formulario de entrada)
+          _pesoNetoAprovechable = (data['peso_neto'] ?? data['peso_entrada'] ?? widget.pesoOriginal).toDouble();
+          
+          // Cargar datos de salida guardados previamente
+          if (data['peso_neto_salida'] != null && data['peso_neto_salida'] > 0) {
+            _pesoResultanteController.text = data['peso_neto_salida'].toString();
+          }
+          
+          // Cargar operador de salida si existe
+          if (data['operador_salida_nombre'] != null && data['operador_salida_nombre'].isNotEmpty) {
+            _operadorController.text = data['operador_salida_nombre'];
+          }
+          
+          // Cargar procesos aplicados
+          if (data['procesos_aplicados'] != null && data['procesos_aplicados'] is List) {
+            for (String proceso in data['procesos_aplicados']) {
+              if (_procesosAplicados.containsKey(proceso)) {
+                _procesosAplicados[proceso] = true;
+              }
+            }
+          }
+          
+          // Cargar tipo de polímero seleccionado
+          if (data['tipo_poli_salida'] != null && data['tipo_poli_salida'].isNotEmpty) {
+            _tipoPoliSalida = data['tipo_poli_salida'];
+          }
+          
+          // Cargar presentación seleccionada
+          if (data['presentacion_salida'] != null && data['presentacion_salida'].isNotEmpty) {
+            _presentacionSalida = data['presentacion_salida'];
+          }
+          
+          // Cargar observaciones
+          if (data['comentarios_salida'] != null && data['comentarios_salida'].isNotEmpty) {
+            _comentariosController.text = data['comentarios_salida'];
+          }
+          
+          // Cargar firma si existe
+          if (data['firma_salida'] != null && data['firma_salida'].isNotEmpty) {
+            _hasSignature = true;
+            _signatureUrl = data['firma_salida'];
+          }
+          
+          // Verificar si hay fotos guardadas
+          if (data['evidencias_foto_salida'] != null && 
+              data['evidencias_foto_salida'] is List && 
+              (data['evidencias_foto_salida'] as List).isNotEmpty) {
+            _hasImages = true;
+            // Nota: Las fotos ya están en Firebase
+          }
+        });
+      } else {
+        // Si no existe el documento, usar el peso original pasado como parámetro
+        setState(() {
+          _pesoNetoAprovechable = widget.pesoOriginal;
         });
       }
     } catch (e) {
-      print('Error al cargar lote: $e');
+      print('Error al cargar datos del lote unificado: $e');
+      // Fallback al peso original
+      setState(() {
+        _pesoNetoAprovechable = widget.pesoOriginal;
+      });
     } finally {
       setState(() {
         _isLoading = false;
@@ -143,8 +210,15 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
     });
   }
 
-  void _submitForm() async {
-    if (_formKey.currentState!.validate()) {
+  // Guardar formulario (parcial o completo)
+  Future<void> _guardarFormulario({bool esGuardadoParcial = false}) async {
+    // Para guardado parcial, no validar campos obligatorios
+    if (!esGuardadoParcial && !_formKey.currentState!.validate()) {
+      return;
+    }
+    
+    // Para guardado completo, validar campos requeridos
+    if (!esGuardadoParcial) {
       // Validar que al menos un proceso esté seleccionado
       if (!_procesosAplicados.values.any((selected) => selected)) {
         _showErrorSnackBar('Por favor, seleccione al menos un proceso aplicado');
@@ -160,25 +234,36 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
         _showErrorSnackBar('Por favor, agregue al menos una evidencia fotográfica');
         return;
       }
+    }
 
-      setState(() {
-        _isLoading = true;
-      });
+    setState(() {
+      _isLoading = true;
+    });
 
-      try {
-        // Subir firma a Storage
-        if (_signaturePoints.isNotEmpty) {
-          final signatureImage = await _captureSignature();
-          if (signatureImage != null) {
-            _signatureUrl = await _storageService.uploadImage(
-              signatureImage,
-              'lotes/reciclador/firmas_salida',
-            );
-          }
+    try {
+      // Importar el servicio unificado
+      final loteUnificadoService = LoteUnificadoService();
+      
+      // Preparar datos para actualizar
+      Map<String, dynamic> datosActualizacion = {};
+      
+      // Solo subir firma si existe y no ha sido subida antes
+      if (_hasSignature && _signatureUrl == null && _signaturePoints.isNotEmpty) {
+        final signatureImage = await _captureSignature();
+        if (signatureImage != null) {
+          _signatureUrl = await _storageService.uploadImage(
+            signatureImage,
+            'lotes/reciclador/firmas_salida',
+          );
         }
+      }
+      if (_signatureUrl != null) {
+        datosActualizacion['firma_salida'] = _signatureUrl;
+      }
 
-        // Subir fotos a Storage
-        List<String> photoUrls = [];
+      // Solo subir nuevas fotos
+      List<String> photoUrls = [];
+      if (_hasImages) {
         for (int i = 0; i < _photoFiles.length; i++) {
           final url = await _storageService.uploadImage(
             _photoFiles[i],
@@ -188,33 +273,77 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
             photoUrls.add(url);
           }
         }
+      }
+      if (photoUrls.isNotEmpty) {
+        datosActualizacion['evidencias_foto_salida'] = photoUrls;
+      }
 
-        // Calcular tipo de polímero predominante
-        Map<String, double> tipoPolimeros = {};
-        if (_loteReciclador?.conjuntoLotes != null && _loteReciclador!.conjuntoLotes.isNotEmpty) {
-          tipoPolimeros = await _loteService.calcularTipoPolimeroPredominante(_loteReciclador!.conjuntoLotes);
+      // Agregar procesos aplicados
+      List<String> procesosSeleccionados = [];
+      _procesosAplicados.forEach((proceso, seleccionado) {
+        if (seleccionado) {
+          procesosSeleccionados.add(proceso);
         }
+      });
+      if (procesosSeleccionados.isNotEmpty) {
+        datosActualizacion['procesos_aplicados'] = procesosSeleccionados;
+      }
 
-        // Actualizar el lote de reciclador
-        await _loteService.actualizarLoteReciclador(
-          widget.loteId,
-          {
-            'ecoce_reciclador_procesos_aplicados': _procesosAplicados,
-            'ecoce_reciclador_peso_final': double.parse(_pesoResultanteController.text),
-            'ecoce_reciclador_merma': _mermaCalculada,
-            'ecoce_reciclador_tipo_poli': tipoPolimeros,
-            'ecoce_reciclador_sale_operador': _operadorController.text.trim(),
-            'ecoce_reciclador_firma_salida': _signatureUrl,
-            'ecoce_reciclador_evi_foto_salida': photoUrls,
-            'ecoce_reciclador_comentarios_salida': _comentariosController.text.trim(),
-            'ecoce_reciclador_fecha_salida': Timestamp.fromDate(DateTime.now()),
-            'estado': 'documentacion',
-          },
-        );
+      // Agregar datos del formulario
+      if (_pesoResultanteController.text.isNotEmpty) {
+        datosActualizacion['peso_neto_salida'] = double.tryParse(_pesoResultanteController.text) ?? 0.0;
+        datosActualizacion['merma'] = _mermaCalculada;
+      }
+      
+      if (_operadorController.text.isNotEmpty) {
+        datosActualizacion['operador_salida_nombre'] = _operadorController.text.trim();
+      }
+      
+      if (_comentariosController.text.isNotEmpty) {
+        datosActualizacion['comentarios_salida'] = _comentariosController.text.trim();
+      }
 
-        if (mounted) {
+      // Guardar tipo de polímero y presentación si están seleccionados
+      if (_tipoPoliSalida != null) {
+        datosActualizacion['tipo_poli_salida'] = _tipoPoliSalida;
+      } else if (!esGuardadoParcial) {
+        // Solo requerir si es guardado completo
+        datosActualizacion['tipo_poli_salida'] = 'Mixto';
+      }
+      
+      if (_presentacionSalida != null) {
+        datosActualizacion['presentacion_salida'] = _presentacionSalida;
+      } else if (!esGuardadoParcial) {
+        // Solo requerir si es guardado completo
+        datosActualizacion['presentacion_salida'] = 'Pacas';
+      }
+
+      // Si es guardado completo, agregar fecha de salida
+      if (!esGuardadoParcial) {
+        datosActualizacion['fecha_salida'] = FieldValue.serverTimestamp();
+      }
+
+      // Actualizar usando el servicio unificado
+      await loteUnificadoService.actualizarDatosProceso(
+        loteId: widget.loteId,
+        proceso: 'reciclador',
+        datos: datosActualizacion,
+      );
+
+      if (mounted) {
+        if (esGuardadoParcial) {
+          DialogUtils.showSuccessDialog(
+            context: context,
+            title: 'Guardado',
+            message: 'Los cambios se han guardado correctamente',
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          );
+        } else {
           _showSuccessAndNavigate();
         }
+      }
       } catch (e) {
         if (mounted) {
           DialogUtils.showErrorDialog(
@@ -229,7 +358,6 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
         });
       }
     }
-  }
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -263,7 +391,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
               ),
               const SizedBox(height: 20),
               const Text(
-                'Salida Registrada',
+                'Formulario Completado',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -271,7 +399,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
               ),
               const SizedBox(height: 10),
               Text(
-                'Se ha registrado correctamente la salida del lote ${widget.loteId}',
+                'Se ha guardado el formulario de salida del lote ${widget.loteId}.\n\nAhora debe cargar la documentación requerida.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
@@ -283,20 +411,6 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
-                // TODO: Navegar a la pantalla de carga de documentación
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Navegando a carga de documentación...'),
-                    backgroundColor: BioWayColors.info,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                );
-                // Por ahora volvemos a administración de lotes
-                // Navegar a la pantalla de documentación
                 Navigator.of(context).pop(); // Cerrar el diálogo
                 Navigator.pushReplacement(
                   context,
@@ -961,28 +1075,61 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                     
                     const SizedBox(height: 30),
                     
-                    // Botón de confirmar
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: _submitForm,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: BioWayColors.ecoceGreen,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(28),
+                    // Botones de acción
+                    Row(
+                      children: [
+                        // Botón guardar parcial
+                        Expanded(
+                          child: SizedBox(
+                            height: 56,
+                            child: OutlinedButton(
+                              onPressed: _isLoading ? null : () => _guardarFormulario(esGuardadoParcial: true),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(
+                                  color: BioWayColors.ecoceGreen,
+                                  width: 2,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
+                              ),
+                              child: Text(
+                                'Guardar Cambios',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: BioWayColors.ecoceGreen,
+                                ),
+                              ),
+                            ),
                           ),
-                          elevation: 3,
                         ),
-                        child: const Text(
-                          'Confirmar Salida de Material',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                        const SizedBox(width: 16),
+                        // Botón confirmar
+                        Expanded(
+                          child: SizedBox(
+                            height: 56,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : () => _guardarFormulario(esGuardadoParcial: false),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: BioWayColors.ecoceGreen,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
+                                elevation: 3,
+                              ),
+                              child: const Text(
+                                'Siguiente',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                     
                     const SizedBox(height: 20),
@@ -1082,5 +1229,7 @@ class SignaturePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(SignaturePainter oldDelegate) => true;
+  bool shouldRepaint(SignaturePainter oldDelegate) {
+    return oldDelegate.points != points;
+  }
 }

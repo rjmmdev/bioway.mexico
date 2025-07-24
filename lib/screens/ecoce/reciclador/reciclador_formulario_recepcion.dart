@@ -18,6 +18,7 @@ import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/form_widgets.dart';
 import '../shared/widgets/dialog_utils.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
+import '../shared/widgets/required_field_label.dart';
 
 /// Painter personalizado para dibujar la firma con el color definido
 class SignaturePainter extends CustomPainter {
@@ -182,38 +183,74 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
         );
       }
 
+      // Obtener el carga_id del primer lote (todos deberían tener el mismo)
+      String? cargaId;
+      
       // Procesar cada lote recibido
       for (final lote in _lotes) {
-        // Actualizar el lote en el sistema unificado para reflejar que fue recibido por el reciclador
-        await _loteUnificadoService.transferirLote(
-          loteId: lote['id'],
-          procesoDestino: 'reciclador',
-          usuarioDestinoFolio: _userSession.getUserData()?['folio'] ?? '',
-          datosIniciales: {
+        final loteId = lote['id'] as String;
+        
+        // Obtener información del transporte para conseguir el carga_id
+        if (cargaId == null) {
+          final transporteActivo = await _loteUnificadoService.obtenerTransporteActivo(loteId);
+          if (transporteActivo != null && transporteActivo['carga_id'] != null) {
+            cargaId = transporteActivo['carga_id'];
+          }
+        }
+        
+        // Crear o actualizar el proceso reciclador con la información de recepción
+        await _loteUnificadoService.crearOActualizarProceso(
+          loteId: loteId,
+          proceso: 'reciclador',
+          datos: {
             'usuario_id': _authService.currentUser?.uid,
-            'fecha_entrada': FieldValue.serverTimestamp(),
+            'usuario_folio': _userSession.getUserData()?['folio'] ?? '',
+            'fecha_recepcion': FieldValue.serverTimestamp(),
             'peso_entrada': lote['peso'],
             'peso_recibido': double.tryParse(_pesoRecibidoController.text) ?? lote['peso'],
             'merma_recepcion': double.tryParse(_mermaController.text) ?? 0,
-            'transportista_folio': _datosEntrega!['transportista_folio'],
             'firma_operador': _signatureUrl,
-            'comentarios_recepcion': '', // No comments field anymore
+            'recepcion_completada': true, // Marcar que el reciclador completó su parte
           },
         );
-
+        
+        // Actualizar datos del transporte para marcar que fue recibido
+        await _loteUnificadoService.actualizarProcesoTransporte(
+          loteId: loteId,
+          datos: {
+            'recibido_por': _userSession.getUserData()?['folio'] ?? '',
+            'fecha_recepcion_destinatario': FieldValue.serverTimestamp(),
+          },
+        );
+        
+        // Verificar si la transferencia está completa y transferir el lote
+        await _loteUnificadoService.transferirLote(
+          loteId: loteId,
+          procesoDestino: 'reciclador',
+          usuarioDestinoFolio: _userSession.getUserData()?['folio'] ?? '',
+          datosIniciales: {}, // Los datos ya se crearon/actualizaron arriba
+        );
+        
+        // Depurar el estado del lote después de la transferencia
+        await _loteUnificadoService.depurarEstadoLote(loteId);
+        
         // Crear registro en la colección de lotes del reciclador (para compatibilidad)
-        // Crear modelo de lote reciclador
         final loteReciclador = LoteRecicladorModel(
           userId: _authService.currentUser!.uid,
           conjuntoLotes: [lote['id']],
           loteEntrada: lote['id'],
           pesoBruto: lote['peso']?.toDouble() ?? 0,
-          pesoNeto: double.tryParse(_pesoRecibidoController.text) ?? 0,
+          pesoNeto: double.tryParse(_pesoRecibidoController.text) ?? lote['peso'],
           nombreOpeEntrada: _userSession.getUserData()?['nombre'] ?? 'Sin nombre',
           firmaEntrada: _signatureUrl,
-          estado: 'entrada',
+          estado: 'salida', // Cambiar a 'salida' para que aparezca en la pestaña correcta
         );
         await _loteService.crearLoteReciclador(loteReciclador);
+      }
+
+      // Actualizar el estado de la carga si tenemos el carga_id
+      if (cargaId != null) {
+        await _cargaService.actualizarEstadoCarga(cargaId);
       }
 
       // Actualizar estadísticas del usuario
@@ -232,8 +269,9 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
           message: 'Los lotes han sido recibidos correctamente.',
           onAccept: () {
             Navigator.of(context).pushNamedAndRemoveUntil(
-              '/reciclador_inicio',
+              '/reciclador_lotes',
               (route) => false,
+              arguments: {'initialTab': 0}, // Ir a la pestaña de Salida
             );
           },
         );
@@ -664,12 +702,8 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                           style: TextStyle(fontSize: 24),
                         ),
                         const SizedBox(width: 10),
-                        const Text(
-                          'Control de Peso',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        const RequiredFieldLabel(
+                          label: 'Control de Peso',
                         ),
                       ],
                     ),
@@ -696,14 +730,9 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                     TextFormField(
                       controller: _pesoRecibidoController,
                       keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'Peso Recibido Real (kg)',
+                      decoration: 'Peso Recibido Real (kg)'.toRequiredInputDecoration(
+                        hint: 'Ingrese el peso real que usted recibió',
                         prefixIcon: Icon(Icons.scale),
-                        helperText: 'Ingrese el peso real que usted recibió',
-                        helperStyle: TextStyle(fontSize: 12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -769,12 +798,8 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                           size: 24,
                         ),
                         const SizedBox(width: 12),
-                        const Text(
-                          'Firma del Operador',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        const RequiredFieldLabel(
+                          label: 'Firma del Operador',
                         ),
                       ],
                     ),

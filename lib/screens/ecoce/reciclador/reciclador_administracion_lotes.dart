@@ -84,11 +84,11 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
     // Obtener lotes según la pestaña actual
     switch (_tabController.index) {
       case 0:
-        // Lotes listos para salida (incluye: recibido, salida, procesado)
+        // Pestaña "Salida" - Lotes recién recibidos o con formulario parcial
         return _todosLotes.where((lote) {
           final estado = lote.estado;
-          // Incluir lotes que pueden procesarse para salida
-          if (estado != 'recibido' && estado != 'salida' && estado != 'procesado') return false;
+          // Solo mostrar lotes en estado "salida" o "entrada" (compatibilidad)
+          if (estado != 'salida' && estado != 'entrada') return false;
           
           // Aplicar otros filtros
           if (_selectedMaterial != 'Todos') {
@@ -101,9 +101,9 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
         }).toList();
         
       case 1:
-        // Lotes enviados pendientes de documentación
+        // Pestaña "Documentación" - Lotes con formulario completo pero sin documentos
         return _todosLotes.where((lote) {
-          if (lote.estado != 'enviado') return false;
+          if (lote.estado != 'documentado') return false;
           
           // Aplicar otros filtros
           if (_selectedMaterial != 'Todos') {
@@ -115,7 +115,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
         }).toList();
         
       case 2:
-        // Lotes con documentación completa
+        // Pestaña "Finalizados" - Lotes con documentación completa
         return _todosLotes.where((lote) {
           if (lote.estado != 'finalizado') return false;
           
@@ -171,13 +171,11 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
   // Obtener texto del botón según el estado
   String _getActionButtonText(String estado) {
     switch (estado) {
-      case 'recibido':
-        return 'Formulario Salida';
+      case 'entrada':
+        return 'Formulario Salida'; // Compatibilidad
       case 'salida':
         return 'Formulario Salida';
-      case 'procesado':
-        return 'Formulario Salida';
-      case 'enviado':
+      case 'documentado':
         return 'Añadir Documentación';
       case 'finalizado':
         return 'Ver Código QR';
@@ -189,13 +187,11 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
   // Obtener color del botón según el estado
   Color _getActionButtonColor(String estado) {
     switch (estado) {
-      case 'recibido':
-        return BioWayColors.error; // Rojo para salida
+      case 'entrada':
+        return BioWayColors.error; // Rojo para salida (compatibilidad)
       case 'salida':
         return BioWayColors.error; // Rojo para salida
-      case 'procesado':
-        return BioWayColors.error; // Rojo para salida
-      case 'enviado':
+      case 'documentado':
         return BioWayColors.warning; // Naranja para documentación
       case 'finalizado':
         return BioWayColors.ecoceGreen; // Verde para finalizados

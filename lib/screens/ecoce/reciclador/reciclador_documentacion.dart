@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
 import '../../../services/lote_service.dart';
+import '../../../services/lote_unificado_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
 import '../../../models/lotes/lote_reciclador_model.dart';
 import 'reciclador_lote_qr_screen.dart';
@@ -70,27 +71,34 @@ class _RecicladorDocumentacionState extends State<RecicladorDocumentacion> {
 
   void _onDocumentsSubmitted(Map<String, DocumentInfo> documents) async {
     try {
+      final loteUnificadoService = LoteUnificadoService();
+      
       // Subir documentos a Firebase Storage
-      List<String> documentUrls = [];
-      for (var doc in documents.values) {
-        if (doc.file != null) {
+      Map<String, String> documentUrls = {};
+      for (var entry in documents.entries) {
+        if (entry.value.file != null) {
           final url = await _storageService.uploadFile(
-            doc.file!,
+            entry.value.file!,
             'lotes/reciclador/documentos',
           );
           if (url != null) {
-            documentUrls.add(url);
+            // Mapear según el tipo de documento
+            if (entry.key == 'ficha_tecnica') {
+              documentUrls['f_tecnica_pellet'] = url;
+            } else if (entry.key == 'reporte_reciclaje') {
+              documentUrls['rep_result_reci'] = url;
+            }
           }
         }
       }
       
-      // Actualizar el lote con los documentos
-      await _loteService.actualizarLoteReciclador(
-        widget.lotId,
-        {
-          'ecoce_reciclador_documentos': documentUrls,
-          'ecoce_reciclador_fecha_documentos': Timestamp.fromDate(DateTime.now()),
-          'estado': 'finalizado',
+      // Actualizar el lote usando el servicio unificado
+      await loteUnificadoService.actualizarDatosProceso(
+        loteId: widget.lotId,
+        proceso: 'reciclador',
+        datos: {
+          ...documentUrls,
+          'fecha_documentos': FieldValue.serverTimestamp(),
         },
       );
       

@@ -126,7 +126,7 @@ service cloud.firestore {
     match /entregas_transporte/{entregaId} {
       allow read: if isAuthenticated();
       allow create, update: if isAuthenticated();
-      allow delete: if false;
+      allow delete: if isAuthenticated(); // Permitir eliminar entregas completadas
     }
     
     // ============ OTRAS COLECCIONES ============

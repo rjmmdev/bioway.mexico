@@ -124,7 +124,114 @@ class LoteUnificadoService {
     }
   }
   
-  /// Transferir lote a otro proceso
+  /// Crear o actualizar datos de un proceso para manejar transferencias parciales
+  Future<void> crearOActualizarProceso({
+    required String loteId,
+    required String proceso,
+    required Map<String, dynamic> datos,
+  }) async {
+    try {
+      final loteRef = _firestore.collection(COLECCION_LOTES).doc(loteId);
+      
+      // Verificar si el proceso ya existe
+      final procesoDoc = await loteRef.collection(proceso).doc('data').get();
+      
+      if (procesoDoc.exists) {
+        // Actualizar datos existentes
+        await procesoDoc.reference.update(datos);
+      } else {
+        // Crear nuevo proceso
+        await procesoDoc.reference.set({
+          'fecha_entrada': FieldValue.serverTimestamp(),
+          ...datos,
+        });
+      }
+    } catch (e) {
+      throw Exception('Error al crear/actualizar proceso: $e');
+    }
+  }
+
+  /// Verificar si ambas partes han completado la transferencia
+  Future<bool> verificarTransferenciaCompleta({
+    required String loteId,
+    required String procesoOrigen,
+    required String procesoDestino,
+  }) async {
+    try {
+      print('=== VERIFICANDO TRANSFERENCIA COMPLETA ===');
+      print('Lote ID: $loteId');
+      print('Proceso Origen: $procesoOrigen');
+      print('Proceso Destino: $procesoDestino');
+      
+      final loteRef = _firestore.collection(COLECCION_LOTES).doc(loteId);
+      
+      // Para casos especiales donde el destino puede completar primero
+      // (ej: el reciclador puede escanear y recibir antes que el transportista entregue)
+      bool origenExiste = false;
+      bool tieneEntrega = false;
+      bool destinoExiste = false;
+      bool tieneRecepcion = false;
+      
+      // Verificar proceso origen (transporte)
+      final origenDoc = await loteRef.collection(procesoOrigen).doc('data').get();
+      if (origenDoc.exists) {
+        origenExiste = true;
+        final datosOrigen = origenDoc.data()!;
+        print('Datos Origen: $datosOrigen');
+        
+        // Verificar si el origen ha completado su parte
+        tieneEntrega = datosOrigen['entrega_completada'] == true || 
+                      datosOrigen['fecha_salida'] != null || 
+                      datosOrigen['firma_entrega'] != null ||
+                      datosOrigen['firma_conductor'] != null; // Para transportista
+        print('Origen existe: $origenExiste, Tiene Entrega: $tieneEntrega');
+      }
+      
+      // Verificar proceso destino (reciclador/transformador)
+      final destinoDoc = await loteRef.collection(procesoDestino).doc('data').get();
+      if (destinoDoc.exists) {
+        destinoExiste = true;
+        final datosDestino = destinoDoc.data()!;
+        print('Datos Destino: $datosDestino');
+        
+        // Verificar si el destino ha completado su parte
+        tieneRecepcion = datosDestino['recepcion_completada'] == true ||
+                        datosDestino['firma_operador'] != null ||
+                        datosDestino['firma_recepcion'] != null ||
+                        datosDestino['peso_recibido'] != null ||
+                        datosDestino['peso_entrada'] != null;
+        print('Destino existe: $destinoExiste, Tiene Recepción: $tieneRecepcion');
+      }
+      
+      // La transferencia está completa si:
+      // 1. Ambos procesos existen Y ambos han completado su parte
+      // 2. O si solo existe el destino y ha completado la recepción (caso de recepción anticipada)
+      bool resultado = false;
+      
+      if (origenExiste && destinoExiste) {
+        // Caso normal: ambos existen
+        resultado = tieneEntrega && tieneRecepcion;
+      } else if (!origenExiste && destinoExiste && tieneRecepcion) {
+        // Caso especial: solo el destino ha completado (recepción anticipada)
+        // En este caso, esperamos a que el origen complete
+        resultado = false;
+      } else if (origenExiste && !destinoExiste && tieneEntrega) {
+        // Caso especial: solo el origen ha completado (entrega anticipada)
+        // En este caso, esperamos a que el destino complete
+        resultado = false;
+      }
+      
+      print('Transferencia Completa: $resultado');
+      print('=====================================');
+      
+      return resultado;
+    } catch (e) {
+      print('Error verificando transferencia: $e');
+      return false;
+    }
+  }
+
+  /// Transferir lote a otro proceso (actualizado para manejar transferencias parciales)
   Future<void> transferirLote({
     required String loteId,
     required String procesoDestino,
@@ -132,6 +239,11 @@ class LoteUnificadoService {
     required Map<String, dynamic> datosIniciales,
   }) async {
     try {
+      print('=== INICIANDO TRANSFERIR LOTE ===');
+      print('Lote ID: $loteId');
+      print('Proceso Destino: $procesoDestino');
+      print('Usuario Destino: $usuarioDestinoFolio');
+      
       final batch = _firestore.batch();
       final loteRef = _firestore.collection(COLECCION_LOTES).doc(loteId);
       
@@ -143,66 +255,61 @@ class LoteUnificadoService {
       
       final datosGenerales = datosGeneralesDoc.data()!;
       final procesoActual = datosGenerales['proceso_actual'] as String;
+      print('Proceso Actual: $procesoActual');
       
-      // 2. Marcar salida del proceso actual
-      batch.update(
-        loteRef.collection(procesoActual).doc('data'),
-        {'fecha_salida': FieldValue.serverTimestamp()},
-      );
-      
-      // 3. Actualizar datos generales
-      batch.update(
-        loteRef.collection(DATOS_GENERALES).doc('info'),
-        {
-          'estado_actual': 'en_$procesoDestino',
-          'proceso_actual': procesoDestino,
-          'historial_procesos': FieldValue.arrayUnion([procesoDestino]),
+      // 2. Crear o actualizar el proceso destino
+      await crearOActualizarProceso(
+        loteId: loteId,
+        proceso: procesoDestino,
+        datos: {
+          'usuario_id': _currentUserId,
+          'usuario_folio': usuarioDestinoFolio,
+          ...datosIniciales,
         },
       );
       
-      // 4. Crear entrada en nuevo proceso
-      // Si es transporte, crear una nueva subcarpeta con timestamp para evitar sobreescribir
-      if (procesoDestino == PROCESO_TRANSPORTE) {
-        // Contar cuántos transportes ha tenido
-        final transportesSnapshot = await loteRef
-            .collection(PROCESO_TRANSPORTE)
-            .get();
-        
-        final numeroTransporte = transportesSnapshot.docs.length + 1;
-        final transporteId = 'transporte_${numeroTransporte}_${DateTime.now().millisecondsSinceEpoch}';
-        
-        final datosNuevoProceso = {
-          'usuario_id': _currentUserId,
-          'usuario_folio': usuarioDestinoFolio,
-          'fecha_entrada': FieldValue.serverTimestamp(),
-          'fecha_salida': null,
-          'numero_transporte': numeroTransporte,
-          'transporte_id': transporteId,
-          ...datosIniciales,
-        };
-        
-        batch.set(
-          loteRef.collection(procesoDestino).doc(transporteId),
-          datosNuevoProceso,
-        );
-      } else {
-        // Para otros procesos, usar 'data' como antes
-        final datosNuevoProceso = {
-          'usuario_id': _currentUserId,
-          'usuario_folio': usuarioDestinoFolio,
-          'fecha_entrada': FieldValue.serverTimestamp(),
-          'fecha_salida': null,
-          ...datosIniciales,
-        };
-        
-        batch.set(
-          loteRef.collection(procesoDestino).doc('data'),
-          datosNuevoProceso,
-        );
-      }
+      // 3. Si es una transferencia completa, actualizar datos generales
+      final esTransferenciaCompleta = await verificarTransferenciaCompleta(
+        loteId: loteId,
+        procesoOrigen: procesoActual,
+        procesoDestino: procesoDestino,
+      );
       
-      await batch.commit();
+      if (esTransferenciaCompleta) {
+        print('TRANSFERENCIA COMPLETA DETECTADA - Actualizando proceso_actual a: $procesoDestino');
+        // Marcar salida del proceso actual
+        batch.update(
+          loteRef.collection(procesoActual).doc('data'),
+          {'fecha_salida': FieldValue.serverTimestamp()},
+        );
+        
+        // Asegurar que el proceso destino tenga fecha_entrada
+        final destinoDoc = await loteRef.collection(procesoDestino).doc('data').get();
+        if (destinoDoc.exists && destinoDoc.data()!['fecha_entrada'] == null) {
+          batch.update(
+            loteRef.collection(procesoDestino).doc('data'),
+            {'fecha_entrada': FieldValue.serverTimestamp()},
+          );
+        }
+        
+        // Actualizar datos generales
+        batch.update(
+          loteRef.collection(DATOS_GENERALES).doc('info'),
+          {
+            'estado_actual': 'en_$procesoDestino',
+            'proceso_actual': procesoDestino,
+            'historial_procesos': FieldValue.arrayUnion([procesoDestino]),
+          },
+        );
+        
+        await batch.commit();
+        print('BATCH COMMIT EXITOSO - Lote transferido a: $procesoDestino');
+      } else {
+        print('TRANSFERENCIA PARCIAL - Esperando que la otra parte complete');
+      }
+      print('=== FIN TRANSFERIR LOTE ===');
     } catch (e) {
+      print('ERROR en transferirLote: $e');
       throw Exception('Error al transferir lote: $e');
     }
   }
@@ -375,6 +482,51 @@ class LoteUnificadoService {
         final lote = await obtenerLotePorId(loteId);
         if (lote != null) {
           lotes.add(lote);
+        }
+      }
+      
+      return lotes;
+    });
+  }
+  
+  /// Obtener lotes por proceso actual filtrando por usuario
+  Stream<List<LoteUnificadoModel>> obtenerMisLotesPorProceso(String proceso) {
+    final userId = _currentUserId;
+    if (userId == null) return Stream.value([]);
+    
+    return _firestore
+        .collectionGroup(DATOS_GENERALES)
+        .where('proceso_actual', isEqualTo: proceso)
+        .orderBy('fecha_creacion', descending: true)
+        .snapshots()
+        .asyncMap((snapshot) async {
+      final lotes = <LoteUnificadoModel>[];
+      
+      for (final doc in snapshot.docs) {
+        try {
+          // Obtener el ID del lote desde la ruta del documento
+          final loteId = doc.reference.parent.parent!.id;
+          
+          // Obtener el documento del proceso específico
+          final procesoDoc = await _firestore
+              .collection(COLECCION_LOTES)
+              .doc(loteId)
+              .collection(proceso)
+              .doc('data')
+              .get();
+          
+          if (procesoDoc.exists) {
+            final procesoData = procesoDoc.data()!;
+            // Verificar que el usuario sea el propietario en este proceso
+            if (procesoData['usuario_id'] == userId) {
+              final lote = await obtenerLotePorId(loteId);
+              if (lote != null) {
+                lotes.add(lote);
+              }
+            }
+          }
+        } catch (e) {
+          print('Error procesando lote en obtenerMisLotesPorProceso: $e');
         }
       }
       
@@ -661,6 +813,45 @@ class LoteUnificadoService {
       
       return lotes;
     });
+  }
+  
+  /// Método de depuración para imprimir el estado completo de un lote
+  Future<void> depurarEstadoLote(String loteId) async {
+    try {
+      print('=== DEPURANDO ESTADO DEL LOTE $loteId ===');
+      
+      final loteRef = _firestore.collection(COLECCION_LOTES).doc(loteId);
+      
+      // Obtener datos generales
+      final datosGeneralesDoc = await loteRef.collection(DATOS_GENERALES).doc('info').get();
+      if (datosGeneralesDoc.exists) {
+        print('DATOS GENERALES:');
+        final datos = datosGeneralesDoc.data()!;
+        print('- proceso_actual: ${datos['proceso_actual']}');
+        print('- estado_actual: ${datos['estado_actual']}');
+        print('- historial_procesos: ${datos['historial_procesos']}');
+      } else {
+        print('ERROR: No existen datos generales');
+      }
+      
+      // Verificar cada proceso
+      final procesos = ['origen', 'transporte', 'reciclador'];
+      for (final proceso in procesos) {
+        final procesoDoc = await loteRef.collection(proceso).doc('data').get();
+        if (procesoDoc.exists) {
+          print('\nPROCESO $proceso:');
+          final datos = procesoDoc.data()!;
+          print('- fecha_entrada: ${datos['fecha_entrada']}');
+          print('- fecha_salida: ${datos['fecha_salida']}');
+          print('- entrega_completada: ${datos['entrega_completada']}');
+          print('- recepcion_completada: ${datos['recepcion_completada']}');
+        }
+      }
+      
+      print('=== FIN DEPURACIÓN ===');
+    } catch (e) {
+      print('Error en depuración: $e');
+    }
   }
   
   /// Obtener todos los lotes de manera simple (para el repositorio)

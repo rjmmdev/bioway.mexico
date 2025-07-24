@@ -273,19 +273,157 @@ class LoteService {
     final userId = _currentUserId;
     if (userId == null) return Stream.value([]);
     
-    Query query = _firestore.collection(LOTES_RECICLADOR)
-        .where('userId', isEqualTo: userId);
-    
-    if (estado != null) {
-      query = query.where('estado', isEqualTo: estado);
+    // Primero intentar obtener lotes del sistema unificado
+    return _firestore
+        .collectionGroup('datos_generales')
+        .where('proceso_actual', isEqualTo: 'reciclador')
+        .snapshots()
+        .asyncMap((snapshot) async {
+      final lotes = <LoteRecicladorModel>[];
+      
+      for (final doc in snapshot.docs) {
+        try {
+          // Obtener el ID del lote desde la ruta del documento
+          final pathSegments = doc.reference.path.split('/');
+          final loteId = pathSegments[pathSegments.length - 3];
+          
+          // Obtener el documento del proceso reciclador
+          final recicladorDoc = await _firestore
+              .collection('lotes')
+              .doc(loteId)
+              .collection('reciclador')
+              .doc('data')
+              .get();
+          
+          if (recicladorDoc.exists) {
+            final recicladorData = recicladorDoc.data()!;
+            final datosGenerales = doc.data();
+            
+            // Verificar que sea del usuario actual
+            if (recicladorData['usuario_id'] != userId) continue;
+            
+            // Obtener el tipo de polímero del material
+            final tipoMaterial = datosGenerales['material_tipo'] ?? '';
+            Map<String, double> tipoPoliMap = {};
+            
+            // Crear mapa de tipo poli según el material
+            if (tipoMaterial.isNotEmpty) {
+              tipoPoliMap[tipoMaterial] = 100.0; // 100% del material especificado
+            }
+            
+            // Crear modelo compatible con LoteRecicladorModel
+            final loteModel = LoteRecicladorModel(
+              id: loteId,
+              userId: recicladorData['usuario_id'] ?? '',
+              conjuntoLotes: [loteId], // Por ahora solo el lote actual
+              loteEntrada: loteId,
+              tipoPoli: tipoPoliMap.isNotEmpty ? tipoPoliMap : null,
+              pesoBruto: (recicladorData['peso_bruto'] ?? recicladorData['peso_entrada'] ?? 0.0).toDouble(),
+              pesoNeto: (recicladorData['peso_neto'] ?? 0.0).toDouble(),
+              nombreOpeEntrada: recicladorData['operador_nombre'] ?? '',
+              firmaEntrada: recicladorData['firma_operador'],
+              // Datos de salida
+              pesoResultante: (recicladorData['peso_neto_salida'] ?? 0.0).toDouble(),
+              merma: (recicladorData['merma'] ?? 0.0).toDouble(),
+              procesos: recicladorData['procesos_aplicados'] != null 
+                  ? List<String>.from(recicladorData['procesos_aplicados']) 
+                  : [],
+              nombreOpeSalida: recicladorData['operador_salida_nombre'],
+              firmaSalida: recicladorData['firma_salida'],
+              eviFoto: recicladorData['evidencias_foto'] != null 
+                  ? List<String>.from(recicladorData['evidencias_foto']) 
+                  : [],
+              observaciones: recicladorData['comentarios'],
+              // Documentación
+              fTecnicaPellet: recicladorData['f_tecnica_pellet'],
+              repResultReci: recicladorData['rep_result_reci'],
+              // Estado
+              estado: _mapearEstadoReciclador(recicladorData),
+            );
+            
+            // Aplicar filtro de estado si se especifica
+            if (estado == null || loteModel.estado == estado) {
+              lotes.add(loteModel);
+            }
+          }
+        } catch (e) {
+          print('Error procesando lote del sistema unificado: $e');
+        }
+      }
+      
+      // También buscar en la colección antigua para compatibilidad
+      Query query = _firestore.collection(LOTES_RECICLADOR)
+          .where('userId', isEqualTo: userId);
+      
+      if (estado != null) {
+        query = query.where('estado', isEqualTo: estado);
+      }
+      
+      try {
+        final oldSnapshot = await query
+            .orderBy('fecha_creacion', descending: true)
+            .get();
+            
+        for (var doc in oldSnapshot.docs) {
+          lotes.add(LoteRecicladorModel.fromFirestore(doc));
+        }
+      } catch (e) {
+        print('Error obteniendo lotes antiguos: $e');
+      }
+      
+      // Ordenar por fecha (los del sistema unificado no tienen fecha_creacion, 
+      // así que usamos el ID que contiene timestamp)
+      lotes.sort((a, b) {
+        // Para lotes del sistema unificado, usar el ID como referencia de tiempo
+        final timeA = a.id?.split('-').last ?? '';
+        final timeB = b.id?.split('-').last ?? '';
+        return timeB.compareTo(timeA);
+      });
+      
+      return lotes;
+    });
+  }
+  
+  // Método auxiliar para mapear el estado del reciclador
+  String _mapearEstadoReciclador(Map<String, dynamic> data) {
+    // Si tiene documentación completa, está finalizado
+    if ((data['f_tecnica_pellet'] != null && data['f_tecnica_pellet'] != '') && 
+        (data['rep_result_reci'] != null && data['rep_result_reci'] != '')) {
+      return 'finalizado';
     }
     
-    return query
-        .orderBy('fecha_creacion', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => LoteRecicladorModel.fromFirestore(doc))
-            .toList());
+    // Si tiene formulario de salida completo (todos los campos requeridos), está en documentación
+    if (data['peso_neto_salida'] != null && data['peso_neto_salida'] > 0 &&
+        data['operador_salida_nombre'] != null && data['operador_salida_nombre'] != '' &&
+        data['firma_salida'] != null && data['firma_salida'] != '' &&
+        data['procesos_aplicados'] != null && (data['procesos_aplicados'] as List).isNotEmpty &&
+        data['tipo_poli_salida'] != null && data['tipo_poli_salida'] != '' &&
+        data['presentacion_salida'] != null && data['presentacion_salida'] != '') {
+      return 'documentado';
+    }
+    
+    // Si solo tiene documentación parcial, sigue en documentación
+    if (data['f_tecnica_pellet'] != null || data['rep_result_reci'] != null) {
+      return 'documentado';
+    }
+    
+    // Si tiene algún dato de salida (formulario parcial), está en salida
+    if (data['peso_neto_salida'] != null || 
+        data['operador_salida_nombre'] != null ||
+        data['firma_salida'] != null ||
+        data['procesos_aplicados'] != null ||
+        data['tipo_poli_salida'] != null ||
+        data['presentacion_salida'] != null) {
+      return 'salida';
+    }
+    
+    // Si es un lote recién recibido (solo tiene datos de entrada), va a salida
+    if (data['peso_bruto'] != null || data['peso_neto'] != null || data['peso_entrada'] != null) {
+      return 'salida';
+    }
+    
+    // Por defecto, salida (para lotes recién transferidos)
+    return 'salida';
   }
 
   // === LABORATORIO ===

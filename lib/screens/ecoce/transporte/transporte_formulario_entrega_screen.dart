@@ -13,10 +13,12 @@ import '../../../services/lote_service.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
 import '../../../services/image_service.dart';
+import '../../../services/carga_transporte_service.dart';
 import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/form_widgets.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
+import '../shared/widgets/required_field_label.dart';
 
 class TransporteFormularioEntregaScreen extends StatefulWidget {
   final List<Map<String, dynamic>> lotes;
@@ -44,10 +46,10 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
   final LoteService _loteService = LoteService();
   final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
   final FirebaseStorageService _storageService = FirebaseStorageService();
+  final CargaTransporteService _cargaService = CargaTransporteService();
   
   // Controladores
   final TextEditingController _idDestinoController = TextEditingController();
-  final TextEditingController _pesoEntregadoController = TextEditingController();
   final TextEditingController _comentariosController = TextEditingController();
   
   // Estados
@@ -67,10 +69,12 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
     _idDestinoController.addListener(_onFolioChanged);
   }
   
+  // Variable para almacenar el peso total
+  double _pesoTotal = 0.0;
+  
   void _initializeForm() {
     // Calcular peso total
-    double pesoTotal = widget.lotes.fold(0.0, (total, lote) => total + (lote['peso'] as double));
-    _pesoEntregadoController.text = pesoTotal.toStringAsFixed(1);
+    _pesoTotal = widget.lotes.fold(0.0, (total, lote) => total + (lote['peso'] as double));
     
     // Si ya tenemos datos del receptor desde el QR, usarlos
     if (widget.datosReceptor != null) {
@@ -104,7 +108,6 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
   void dispose() {
     _idDestinoController.removeListener(_onFolioChanged);
     _idDestinoController.dispose();
-    _pesoEntregadoController.dispose();
     _comentariosController.dispose();
     super.dispose();
   }
@@ -396,9 +399,20 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
         throw Exception('No se pudo obtener el perfil del usuario');
       }
       
+      // Obtener el carga_id del primer lote (todos deberían tener el mismo)
+      String? cargaId;
+      
       // Actualizar cada lote individualmente en el sistema unificado
       for (final lote in widget.lotes) {
         final loteId = lote['id'] as String;
+        
+        // Obtener información del transporte para conseguir el carga_id
+        if (cargaId == null) {
+          final transporteActivo = await _loteUnificadoService.obtenerTransporteActivo(loteId);
+          if (transporteActivo != null && transporteActivo['carga_id'] != null) {
+            cargaId = transporteActivo['carga_id'];
+          }
+        }
         
         // Primero actualizar los datos del transporte con la información de entrega
         await _loteUnificadoService.actualizarProcesoTransporte(
@@ -406,38 +420,54 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
           datos: {
             'fecha_salida': FieldValue.serverTimestamp(),
             'destino_entrega': _destinatarioInfo!['folio'],
-            'peso_entregado': double.tryParse(_pesoEntregadoController.text) ?? lote['peso'],
-            'merma': (lote['peso'] as double) - (double.tryParse(_pesoEntregadoController.text) ?? lote['peso']),
             'firma_entrega': firmaUrl,
             'evidencias_foto_entrega': photoUrls,
             'comentarios_entrega': _comentariosController.text.trim(),
+            'entrega_completada': true, // Marcar que el transportista completó su parte
           },
         );
         
-        // Luego transferir automáticamente al siguiente proceso (reciclador)
-        final tipoDestinatario = _destinatarioInfo!['tipo_actor'];
+        // Determinar el proceso destino
+        final tipoDestinatario = _destinatarioInfo!['tipo'];
         String procesoDestino = 'reciclador'; // Por defecto
         
         if (tipoDestinatario == 'R') {
           procesoDestino = 'reciclador';
         } else if (tipoDestinatario == 'T') {
           procesoDestino = 'transformador';
+        } else if (tipoDestinatario == 'L') {
+          procesoDestino = 'laboratorio';
         }
         
-        // Transferir el lote al proceso destino
+        // Crear o actualizar el proceso destino con información parcial
+        await _loteUnificadoService.crearOActualizarProceso(
+          loteId: loteId,
+          proceso: procesoDestino,
+          datos: {
+            'transportista_folio': userProfile['folio'],
+            'transportista_id': userProfile['id'],
+            'peso_declarado': lote['peso'], // Usar el peso original del lote
+            'destinatario_folio': _destinatarioInfo!['folio'],
+            'destinatario_id': _destinatarioInfo!['id'],
+            'fecha_entrega_transportista': FieldValue.serverTimestamp(),
+          },
+        );
+        
+        // Verificar si la transferencia está completa (ambas partes han completado)
         await _loteUnificadoService.transferirLote(
           loteId: loteId,
           procesoDestino: procesoDestino,
           usuarioDestinoFolio: _destinatarioInfo!['folio'],
-          datosIniciales: {
-            'usuario_id': _destinatarioInfo!['id'],
-            'usuario_folio': _destinatarioInfo!['folio'],
-            'fecha_entrada': FieldValue.serverTimestamp(),
-            'peso_entrada': double.tryParse(_pesoEntregadoController.text) ?? lote['peso'],
-            'transportista_folio': userProfile['folio'],
-            'comentarios_recepcion': '', // El receptor llenará esto cuando complete su formulario
-          },
+          datosIniciales: {}, // Los datos ya se crearon/actualizaron arriba
         );
+        
+        // Depurar el estado del lote después de la transferencia
+        await _loteUnificadoService.depurarEstadoLote(loteId);
+      }
+      
+      // Actualizar el estado de la carga si tenemos el carga_id
+      if (cargaId != null) {
+        await _cargaService.actualizarEstadoCarga(cargaId);
       }
       
       if (mounted) {
@@ -634,7 +664,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                'Peso total: ${_pesoEntregadoController.text} kg',
+                                'Peso total: ${_pesoTotal.toStringAsFixed(1)} kg',
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
@@ -711,21 +741,12 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                               style: TextStyle(fontSize: 24),
                             ),
                             const SizedBox(width: 10),
-                            Text(
-                              'Identificar Destinatario',
-                              style: TextStyle(
+                            RequiredFieldLabel(
+                              label: 'Identificar Destinatario',
+                              labelStyle: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: BioWayColors.darkGreen,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '*',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: BioWayColors.error,
                               ),
                             ),
                           ],
@@ -1014,21 +1035,12 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                               style: TextStyle(fontSize: 24),
                             ),
                             const SizedBox(width: 10),
-                            Text(
-                              'Firma del Receptor',
-                              style: TextStyle(
+                            RequiredFieldLabel(
+                              label: 'Firma del Receptor',
+                              labelStyle: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: BioWayColors.darkGreen,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '*',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: BioWayColors.error,
                               ),
                             ),
                           ],

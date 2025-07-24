@@ -24,6 +24,7 @@ import '../../../services/user_session_service.dart';
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
 import '../shared/utils/dialog_utils.dart';
+import '../shared/widgets/required_field_label.dart';
 
 class OrigenCrearLoteScreen extends StatefulWidget {
   const OrigenCrearLoteScreen({super.key});
@@ -374,9 +375,10 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                     SectionCard(
                       icon: '📦',
                       title: 'Información del Material',
+                      isRequired: true,
                       children: [
                         // Origen del Material
-                        const FieldLabel(text: 'Origen del Material'),
+                        const FieldLabel(text: 'Origen del Material', isRequired: true),
                         const SizedBox(height: 8),
                         Row(
                           children: [
@@ -416,7 +418,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                         const SizedBox(height: 20),
                         
                         // Fuente del Material
-                        const FieldLabel(text: 'Fuente del Material'),
+                        const FieldLabel(text: 'Fuente del Material', isRequired: true),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
                           value: _fuenteMaterialSeleccionada,
@@ -487,7 +489,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                         SizedBox(height: screenHeight * 0.025),
                         
                         // Presentación del Material (selección con iconos)
-                        const FieldLabel(text: 'Presentación del Material'),
+                        const FieldLabel(text: 'Presentación del Material', isRequired: true),
                         SizedBox(height: screenHeight * 0.015),
                         Row(
                           children: [
@@ -559,7 +561,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                         const SizedBox(height: 20),
                         
                         // Tipo de Polímero (lista desplegable)
-                        const FieldLabel(text: 'Tipo de Polímero'),
+                        const FieldLabel(text: 'Tipo de Polímero', isRequired: true),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
                           value: _tipoPolimeroSeleccionado,
@@ -589,12 +591,13 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                           label: 'Peso del Material',
                           primaryColor: _primaryColor,
                           quickAddValues: const [100, 250, 500, 1000],
+                          isRequired: true,
                         ),
                         
                         const SizedBox(height: 20),
                         
                         // Condiciones del Material (hasta 100 caracteres)
-                        const FieldLabel(text: 'Condiciones del Material'),
+                        const FieldLabel(text: 'Condiciones del Material', isRequired: true),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _condicionesController,
@@ -620,9 +623,10 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                     SectionCard(
                       icon: '👤',
                       title: 'Datos del Responsable',
+                      isRequired: true,
                       children: [
                         // Nombre del Operador (hasta 50 caracteres)
-                        const FieldLabel(text: 'Nombre del Operador'),
+                        const FieldLabel(text: 'Nombre del Operador', isRequired: true),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _operadorController,
@@ -650,7 +654,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                         const SizedBox(height: 20),
                         
                         // Firma del Operador
-                        const FieldLabel(text: 'Firma del Operador'),
+                        const FieldLabel(text: 'Firma del Operador', isRequired: true),
                         const SizedBox(height: 8),
                         _buildSignatureArea(),
                       ],
