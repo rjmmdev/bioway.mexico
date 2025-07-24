@@ -273,19 +273,31 @@ class LoteService {
     final userId = _currentUserId;
     if (userId == null) return Stream.value([]);
     
-    // Solo buscar en el sistema unificado
+    // Solución temporal: obtener todos los documentos y filtrar localmente
     return _firestore
-        .collectionGroup('datos_generales')
-        .where('proceso_actual', isEqualTo: 'reciclador')
+        .collection('lotes')
         .snapshots()
         .asyncMap((snapshot) async {
       final lotes = <LoteRecicladorModel>[];
       
       for (final doc in snapshot.docs) {
         try {
-          // Obtener el ID del lote desde la ruta del documento
-          final pathSegments = doc.reference.path.split('/');
-          final loteId = pathSegments[pathSegments.length - 3];
+          final loteId = doc.id;
+          
+          // Primero verificar si el lote está en proceso reciclador
+          final datosGeneralesDoc = await _firestore
+              .collection('lotes')
+              .doc(loteId)
+              .collection('datos_generales')
+              .doc('info')
+              .get();
+              
+          if (!datosGeneralesDoc.exists) continue;
+          
+          final datosGenerales = datosGeneralesDoc.data()!;
+          
+          // Filtrar por proceso_actual
+          if (datosGenerales['proceso_actual'] != 'reciclador') continue;
           
           // Obtener el documento del proceso reciclador
           final recicladorDoc = await _firestore
@@ -297,7 +309,6 @@ class LoteService {
           
           if (recicladorDoc.exists) {
             final recicladorData = recicladorDoc.data()!;
-            final datosGenerales = doc.data();
             
             // Verificar que sea del usuario actual
             if (recicladorData['usuario_id'] != userId) continue;
