@@ -7,6 +7,7 @@ import '../../../models/bioway/material_reciclable.dart';
 import '../../../models/bio_competencia.dart';
 import '../../../widgets/bioway/bio_celebration_widget.dart';
 import '../../../widgets/bioway/bio_motivational_popup.dart';
+import '../../../widgets/bioway/premium_lock_overlay.dart';
 
 class BrindadorPerfilCompetenciasScreen extends StatefulWidget {
   const BrindadorPerfilCompetenciasScreen({super.key});
@@ -71,6 +72,8 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
       totalResiduosBrindados: 123,
       totalKgReciclados: 245.5,
       totalCO2Evitado: 612.3,
+      isPremium: false, // Usuario freemium por defecto
+      diasConsecutivosReciclando: 15,
     );
   }
 
@@ -195,30 +198,102 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: _getLevelColor(mockUser.nivel),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  _getLevelIcon(mockUser.nivel),
-                  color: Colors.white,
-                  size: 20,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _getLevelColor(mockUser.nivel),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  mockUser.nivel,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                child: Row(
+                  children: [
+                    Icon(
+                      _getLevelIcon(mockUser.nivel),
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      mockUser.nivel,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (!mockUser.isPremium)
+                GestureDetector(
+                  onTap: () => _showPremiumDialog(),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.grey[300]!,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.lock_outline,
+                          size: 14,
+                          color: Colors.grey[600],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Cuenta Freemium',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        BioWayColors.warning,
+                        BioWayColors.warning.withOpacity(0.8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.star_rounded,
+                        size: 14,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Premium',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
         ],
       ),
@@ -467,20 +542,28 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
   }
 
   Widget _buildImpactSection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
+    return PremiumLockOverlay(
+      isLocked: !mockUser.isPremium,
+      title: 'Impacto Ambiental Detallado',
+      description: 'Visualiza tu CO₂ evitado y equivalencias ambientales',
+      onUpgradeTap: () {
+        // Aquí se manejaría la actualización a premium
+        _showSnackBar('Actualizar a Premium - Próximamente');
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
@@ -542,6 +625,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -588,20 +672,27 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
   Widget _buildMaterialsBreakdown() {
     final totalKg = materialesReciclados.values.reduce((a, b) => a + b);
     
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
+    return PremiumLockOverlay(
+      isLocked: !mockUser.isPremium,
+      title: 'Desglose por Material',
+      description: 'Conoce el porcentaje exacto de cada material reciclado',
+      onUpgradeTap: () {
+        _showSnackBar('Actualizar a Premium - Próximamente');
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
@@ -684,6 +775,7 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
           }).toList(),
         ],
       ),
+    ),
     );
   }
 
@@ -1244,6 +1336,160 @@ class _BrindadorPerfilCompetenciasScreenState extends State<BrindadorPerfilCompe
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
         ),
+      ),
+    );
+  }
+
+  void _showPremiumDialog() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: BioWayColors.warning.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.star_rounded,
+                  size: 40,
+                  color: BioWayColors.warning,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'BioWay Premium',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: BioWayColors.darkGreen,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Desbloquea todas las funcionalidades premium y maximiza tu impacto ambiental',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              _buildPremiumFeature(
+                Icons.analytics_outlined,
+                'Estadísticas Detalladas',
+                'Visualiza tu impacto ambiental completo con CO₂ evitado',
+              ),
+              _buildPremiumFeature(
+                Icons.pie_chart_rounded,
+                'Desglose por Material',
+                'Conoce el porcentaje exacto de cada material reciclado',
+              ),
+              _buildPremiumFeature(
+                Icons.download_rounded,
+                'Reportes Mensuales',
+                'Descarga reportes PDF de tu impacto',
+              ),
+              _buildPremiumFeature(
+                Icons.emoji_events_rounded,
+                'Sistema de Reconocimientos',
+                'Gana insignias y reconocimientos especiales',
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    _showSnackBar('Actualizar a Premium - Próximamente');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: BioWayColors.warning,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Actualizar Ahora',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text(
+                  'Tal vez después',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPremiumFeature(IconData icon, String title, String subtitle) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: BioWayColors.warning.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              icon,
+              color: BioWayColors.warning,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

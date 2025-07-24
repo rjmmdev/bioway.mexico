@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../utils/colors.dart'; // ACTUALIZADA
 import '../../../widgets/common/gradient_background.dart'; // ACTUALIZADA
 import '../../../services/bioway/bioway_auth_service.dart';
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
+import '../../../widgets/common/location_picker_widget.dart';
 
 class BioWayRegisterScreen extends StatefulWidget {
   const BioWayRegisterScreen({super.key});
@@ -19,22 +21,23 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
   // Controladores
   final PageController _pageController = PageController();
   late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
 
   // Estados
   int _currentPage = 0;
-  int _totalPages = 3; // Se ajustará según el tipo de usuario
+  int _totalPages = 4; // Se ajustará según el tipo de usuario
+  bool _isEmailVerified = false;
+  String? _userId; // ID del usuario después de crear la cuenta
 
   // Form keys para cada paso
-  final _formKeyStep1 = GlobalKey<FormState>();
   final _formKeyStep2 = GlobalKey<FormState>();
-  final _formKeyStep3 = GlobalKey<FormState>();
+  final _formKeyStep4 = GlobalKey<FormState>();
 
   // Controladores de los campos
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _phoneController = TextEditingController();
 
   // Campos para Brindador
   final _addressController = TextEditingController();
@@ -43,6 +46,8 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
   final _stateController = TextEditingController();
   final _cityController = TextEditingController();
   final _colonyController = TextEditingController();
+  double? _selectedLatitude;
+  double? _selectedLongitude;
 
   // Campos para Recolector
   String? _selectedCompany;
@@ -77,9 +82,6 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
-    );
     _animationController.forward();
     _initializeFirebase();
   }
@@ -107,6 +109,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _phoneController.dispose();
     _addressController.dispose();
     _numExtController.dispose();
     _cpController.dispose();
@@ -121,36 +124,9 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
     Navigator.pop(context);
   }
 
-  Future<void> _register() async {
-    // Validar formularios según el paso actual
-    bool isValid = false;
-    
-    if (_currentPage == 1) {
-      if (_selectedUserType == 'brindador') {
-        isValid = _formKeyStep2.currentState?.validate() ?? false;
-      } else {
-        isValid = true; // Recolector no tiene validación en paso 2
-      }
-    } else if (_currentPage == 2) {
-      isValid = _formKeyStep3.currentState?.validate() ?? false;
-    }
-    
-    if (!isValid && _currentPage > 0) {
-      return;
-    }
-    
-    // Validar aceptación de términos
-    if (!_acceptedPrivacy) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Debes aceptar los términos y condiciones'),
-          backgroundColor: BioWayColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+  // Crear cuenta con solo email y contraseña
+  Future<void> _createAccount() async {
+    if (!(_formKeyStep2.currentState?.validate() ?? false)) {
       return;
     }
     
@@ -175,43 +151,159 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
       // Inicializar Firebase para BioWay
       await _authService.initializeForPlatform(FirebasePlatform.bioway);
       
-      if (_selectedUserType == 'brindador') {
-        // Registrar Brindador
-        await _bioWayAuthService.registrarBrindador(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-          nombre: _fullNameController.text.trim(),
-          direccion: _addressController.text.trim(),
-          numeroExterior: _numExtController.text.trim(),
-          codigoPostal: _cpController.text.trim(),
-          estado: _stateController.text.trim(),
-          municipio: _cityController.text.trim(),
-          colonia: _colonyController.text.trim(),
+      // Crear cuenta usando el servicio
+      final userId = await _bioWayAuthService.crearCuenta(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+      
+      setState(() {
+        _userId = userId;
+      });
+        
+      if (mounted) {
+        setState(() => _isLoading = false);
+        
+        // Mostrar mensaje de éxito y avanzar a verificación
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Cuenta creada. Revisa tu correo para verificar.'),
+            backgroundColor: BioWayColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
         );
+        
+        _nextPage();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        
+        String errorMessage = 'Error al crear cuenta';
+        if (e.toString().contains('email-already-in-use')) {
+          errorMessage = 'Este correo ya está registrado';
+        } else if (e.toString().contains('weak-password')) {
+          errorMessage = 'La contraseña debe tener al menos 6 caracteres';
+        } else if (e.toString().contains('invalid-email')) {
+          errorMessage = 'Correo electrónico inválido';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: BioWayColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  // Verificar si el correo fue verificado
+  Future<void> _checkEmailVerification() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final isVerified = await _bioWayAuthService.verificarCorreo();
+      
+      if (isVerified) {
+        setState(() {
+          _isEmailVerified = true;
+          _isLoading = false;
+        });
+        
+        _nextPage();
       } else {
-        // Registrar Recolector
-        await _bioWayAuthService.registrarRecolector(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
+        setState(() => _isLoading = false);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('El correo aún no ha sido verificado'),
+            backgroundColor: BioWayColors.warning,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Error al verificar el correo'),
+          backgroundColor: BioWayColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
+  }
+
+  // Completar registro con información adicional
+  Future<void> _completeRegistration() async {
+    if (!_acceptedPrivacy) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Debes aceptar los términos y condiciones'),
+          backgroundColor: BioWayColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+      return;
+    }
+    
+    setState(() => _isLoading = true);
+
+    try {
+      if (_selectedUserType == 'brindador') {
+        // Completar registro de Brindador
+        await _bioWayAuthService.completarRegistroBrindador(
+          userId: _userId!,
           nombre: _fullNameController.text.trim(),
+          telefono: _phoneController.text.trim(),
+          latitud: _selectedLatitude ?? 0.0,
+          longitud: _selectedLongitude ?? 0.0,
+          direccion: _addressController.text.trim(),
+        );
+      } else if (_selectedUserType == 'recolector') {
+        // Completar registro de Recolector
+        await _bioWayAuthService.completarRegistroRecolector(
+          userId: _userId!,
+          nombre: _fullNameController.text.trim(),
+          telefono: _phoneController.text.trim(),
           empresa: _selectedCompany,
+        );
+      } else if (_selectedUserType == 'centro_acopio') {
+        // Completar registro de Centro de Acopio
+        await _bioWayAuthService.completarRegistroCentroAcopio(
+          userId: _userId!,
+          nombre: _fullNameController.text.trim(),
+          telefono: _phoneController.text.trim(),
+          latitud: _selectedLatitude ?? 0.0,
+          longitud: _selectedLongitude ?? 0.0,
+          direccion: _addressController.text.trim(),
+          nombreCentro: _fullNameController.text.trim(),
         );
       }
 
       if (mounted) {
         setState(() => _isLoading = false);
 
-        String userType = _selectedUserType == 'brindador' ? 'Brindador' : 'Recolector';
-
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 12),
-                Text('¡Registro exitoso como $userType!'),
-              ],
-            ),
+            content: const Text('¡Registro completado exitosamente!'),
             backgroundColor: BioWayColors.success,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -227,26 +319,9 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
       if (mounted) {
         setState(() => _isLoading = false);
         
-        String errorMessage = 'Error al registrar usuario';
-        if (e.toString().contains('email-already-in-use')) {
-          errorMessage = 'Este correo ya está registrado';
-        } else if (e.toString().contains('weak-password')) {
-          errorMessage = 'La contraseña es muy débil';
-        } else if (e.toString().contains('invalid-email')) {
-          errorMessage = 'Correo electrónico inválido';
-        } else if (e.toString().contains('network-request-failed')) {
-          errorMessage = 'Error de conexión. Verifica tu internet';
-        }
-
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(child: Text(errorMessage)),
-              ],
-            ),
+            content: Text('Error al completar registro: ${e.toString()}'),
             backgroundColor: BioWayColors.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -260,10 +335,13 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
 
   void _nextPage() {
     if (_currentPage == 0 && _selectedUserType != null) {
-      // Después de seleccionar tipo de usuario
+      // Después de seleccionar tipo de usuario, ir a crear cuenta
       _animateToNextPage();
     } else if (_currentPage == 1) {
-      // Después de información adicional
+      // Después de crear cuenta, llamar a _createAccount
+      _createAccount();
+    } else if (_currentPage == 2 && _isEmailVerified) {
+      // Después de verificar email, ir a información adicional
       _animateToNextPage();
     }
   }
@@ -296,7 +374,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
     try {
       await launchUrl(Uri.parse(url));
     } catch (e) {
-      print('Error al abrir URL: $e');
+      debugPrint('Error al abrir URL: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -333,7 +411,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
       ];
       icon = Icons.home_outlined;
       color = BioWayColors.primaryGreen;
-    } else {
+    } else if (_selectedUserType == 'recolector') {
       title = '¿Qué es un Recolector?';
       description = 'Los Recolectores dignifican su labor recogiendo materiales reciclables ya limpios y separados usando BioWay.';
       features = [
@@ -344,6 +422,17 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
       ];
       icon = Icons.person_pin_circle;
       color = BioWayColors.mediumGreen;
+    } else {
+      title = '¿Qué es un Centro de Acopio?';
+      description = 'Los Centros de Acopio son establecimientos especializados en la recepción y gestión de materiales reciclables.';
+      features = [
+        'Gestiona tu inventario de materiales reciclables de forma digital',
+        'Conecta con brindadores y recolectores de tu zona',
+        'Genera reportes de impacto ambiental y financiero',
+        'Optimiza tus operaciones con herramientas de gestión'
+      ];
+      icon = Icons.warehouse;
+      color = BioWayColors.info;
     }
 
     showDialog(
@@ -593,6 +682,14 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                 value: 'recolector',
                 isSelected: _selectedUserType == 'recolector',
               ),
+              const SizedBox(height: 16),
+              _buildUserTypeCard(
+                icon: Icons.warehouse,
+                title: 'Centro de Acopio',
+                subtitle: 'Establecimiento de\nrecolección',
+                value: 'centro_acopio',
+                isSelected: _selectedUserType == 'centro_acopio',
+              ),
             ],
           ),
 
@@ -631,8 +728,8 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
     );
   }
 
-  // PASO 2A: Información específica para Brindador
-  Widget _buildBrindadorInfoStep() {
+  // PASO 4A: Información específica para Brindador (con mapa)
+  Widget _buildBrindadorAdditionalInfoStep() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -645,7 +742,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
           ),
           const SizedBox(height: 16),
           const Text(
-            'Ubicación del Centro',
+            'Ubicación de tu Hogar',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -654,7 +751,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
           ),
           const SizedBox(height: 8),
           const Text(
-            'Ingresa la dirección de tu centro de acopio',
+            'Selecciona tu ubicación para conectar con recolectores cercanos',
             style: TextStyle(
               fontSize: 14,
               color: Colors.white70,
@@ -663,67 +760,198 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
           const SizedBox(height: 24),
 
           Form(
-            key: _formKeyStep2,
+            key: _formKeyStep4,
             child: Column(
               children: [
-                // Calle y número
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: _buildTextField(
-                        controller: _addressController,
-                        hintText: 'Calle',
-                        icon: Icons.location_on_outlined,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildTextField(
-                        controller: _numExtController,
-                        hintText: 'Núm.',
-                        icon: Icons.numbers,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Código postal con búsqueda
-                _buildCPField(),
-                const SizedBox(height: 16),
-
-                // Estado
+                // Nombre completo
                 _buildTextField(
-                  controller: _stateController,
-                  hintText: 'Estado',
-                  icon: Icons.map,
-                  readOnly: true,
+                  controller: _fullNameController,
+                  hintText: 'Nombre completo',
+                  icon: Icons.person_outline,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor ingresa tu nombre';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
 
-                // Municipio
+                // Selector de ubicación con mapa
+                GestureDetector(
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => LocationPickerWidget(
+                          title: 'Selecciona tu ubicación',
+                          onLocationSelected: (location, address) {
+                            setState(() {
+                              _selectedLatitude = location.latitude;
+                              _selectedLongitude = location.longitude;
+                              
+                              // Parsear la dirección devuelta
+                              final addressParts = address.split(', ');
+                              if (addressParts.isNotEmpty) {
+                                _addressController.text = addressParts[0];
+                                if (addressParts.length > 1) {
+                                  _colonyController.text = addressParts[1];
+                                }
+                                if (addressParts.length > 2) {
+                                  _cityController.text = addressParts[2];
+                                }
+                                if (addressParts.length > 3) {
+                                  final stateAndCP = addressParts[3].split(' ');
+                                  if (stateAndCP.isNotEmpty) {
+                                    _stateController.text = stateAndCP[0];
+                                    if (stateAndCP.length > 1) {
+                                      _cpController.text = stateAndCP[1];
+                                    }
+                                  }
+                                }
+                              }
+                            });
+                          },
+                          initialLocation: _selectedLatitude != null && _selectedLongitude != null
+                              ? LatLng(_selectedLatitude!, _selectedLongitude!)
+                              : null,
+                          initialAddress: _addressController.text.isNotEmpty
+                              ? '${_addressController.text}, ${_colonyController.text}, ${_cityController.text}'
+                              : null,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(15),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.map_outlined,
+                          color: BioWayColors.primaryGreen,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _addressController.text.isNotEmpty
+                                    ? 'Ubicación seleccionada'
+                                    : 'Seleccionar ubicación en el mapa',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: _addressController.text.isNotEmpty
+                                      ? BioWayColors.darkGreen
+                                      : Colors.grey[600],
+                                ),
+                              ),
+                              if (_addressController.text.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${_addressController.text} ${_numExtController.text}, ${_colonyController.text}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right,
+                          color: BioWayColors.primaryGreen,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Número exterior (opcional)
                 _buildTextField(
-                  controller: _cityController,
-                  hintText: 'Municipio',
-                  icon: Icons.location_city,
-                  readOnly: true,
+                  controller: _numExtController,
+                  hintText: 'Número exterior (opcional)',
+                  icon: Icons.numbers,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 ),
                 const SizedBox(height: 16),
 
-                // Colonia
+                // Campos de dirección (solo lectura, se llenan con el mapa)
+                _buildTextField(
+                  controller: _addressController,
+                  hintText: 'Calle',
+                  icon: Icons.location_on_outlined,
+                  readOnly: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor selecciona tu ubicación en el mapa';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
                 _buildTextField(
                   controller: _colonyController,
                   hintText: 'Colonia',
                   icon: Icons.home,
                   readOnly: true,
                 ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildTextField(
+                        controller: _cityController,
+                        hintText: 'Municipio',
+                        icon: Icons.location_city,
+                        readOnly: true,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildTextField(
+                        controller: _stateController,
+                        hintText: 'Estado',
+                        icon: Icons.map,
+                        readOnly: true,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _buildTextField(
+                  controller: _cpController,
+                  hintText: 'Código Postal',
+                  icon: Icons.pin_drop,
+                  readOnly: true,
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 24),
+
+                // Aviso de privacidad
+                _buildPrivacySection(),
               ],
             ),
           ),
-          const SizedBox(height: 80), // Espacio para los botones
+          const SizedBox(height: 80),
         ],
       ),
     );
@@ -904,8 +1132,8 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
     );
   }
 
-  // PASO 3: Información de cuenta (común para ambos)
-  Widget _buildAccountInfoStep() {
+  // PASO 2: Crear cuenta (email y contraseña)
+  Widget _buildAccountCreationStep() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -927,7 +1155,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
           ),
           const SizedBox(height: 8),
           const Text(
-            'Estos datos serán verificados por correo',
+            'Ingresa tu correo y contraseña para comenzar',
             style: TextStyle(
               fontSize: 14,
               color: Colors.white70,
@@ -936,59 +1164,44 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
           const SizedBox(height: 24),
 
           Form(
-            key: _formKeyStep3,
+            key: _formKeyStep2,
             child: Column(
               children: [
-                // Nombre completo (limitado a 10 caracteres)
-                _buildTextField(
-                  controller: _fullNameController,
-                  hintText: 'Nombre completo',
-                  icon: Icons.person_outline,
-                  inputFormatters: [LengthLimitingTextInputFormatter(10)],
-                ),
-                const SizedBox(height: 16),
-
                 // Email
                 _buildTextField(
                   controller: _emailController,
                   hintText: 'Correo electrónico',
                   icon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: BioWayColors.info.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: BioWayColors.info.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline, color: BioWayColors.info, size: 16),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Se enviará un código de verificación a este correo',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: BioWayColors.info,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor ingresa tu correo';
+                    }
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                      return 'Por favor ingresa un correo válido';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
 
-                // Contraseña (limitada a 10 caracteres)
+                // Contraseña
                 _buildTextField(
                   controller: _passwordController,
                   hintText: 'Contraseña',
                   icon: Icons.lock_outline,
                   isPassword: true,
                   customObscure: _obscurePassword,
-                  inputFormatters: [LengthLimitingTextInputFormatter(10)],
+                  inputFormatters: [LengthLimitingTextInputFormatter(20)],
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor ingresa una contraseña';
+                    }
+                    if (value.length < 6) {
+                      return 'La contraseña debe tener al menos 6 caracteres';
+                    }
+                    return null;
+                  },
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -1011,7 +1224,16 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                   icon: Icons.lock_outline,
                   isPassword: true,
                   customObscure: _obscureConfirmPassword,
-                  inputFormatters: [LengthLimitingTextInputFormatter(10)],
+                  inputFormatters: [LengthLimitingTextInputFormatter(20)],
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor confirma tu contraseña';
+                    }
+                    if (value != _passwordController.text) {
+                      return 'Las contraseñas no coinciden';
+                    }
+                    return null;
+                  },
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
@@ -1025,10 +1247,255 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                     },
                   ),
                 ),
-                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+          const SizedBox(height: 80),
+        ],
+      ),
+    );
+  }
 
-                // Aviso de privacidad
-                _buildPrivacySection(),
+  // PASO 3: Verificación de email
+  Widget _buildEmailVerificationStep() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          const SizedBox(height: 40),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.email_outlined,
+              size: 60,
+              color: BioWayColors.primaryGreen,
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Verifica tu correo',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Hemos enviado un correo de verificación a:',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white70,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _emailController.text,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 32),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.2),
+              ),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: Colors.white70,
+                  size: 24,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Revisa tu bandeja de entrada y haz clic en el enlace de verificación.\n\nUna vez verificado, presiona "Verificar" para continuar.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white70,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isLoading ? null : _checkEmailVerification,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: BioWayColors.primaryGreen,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: _isLoading
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(BioWayColors.primaryGreen),
+                      ),
+                    )
+                  : Icon(Icons.check_circle_outline),
+              label: Text(
+                _isLoading ? 'Verificando...' : 'Verificar',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () async {
+              try {
+                await _bioWayAuthService.reenviarCorreoVerificacion();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Correo de verificación reenviado'),
+                    backgroundColor: BioWayColors.success,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Error al reenviar correo'),
+                    backgroundColor: BioWayColors.error,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                );
+              }
+            },
+            child: const Text(
+              'Reenviar correo de verificación',
+              style: TextStyle(
+                color: Colors.white,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+          const SizedBox(height: 80),
+        ],
+      ),
+    );
+  }
+
+  // PASO 4A: Información específica para Brindador (con mapa)
+
+  // PASO 2C: Información específica para Centro de Acopio
+  Widget _buildCentroAcopioInfoStep() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          const SizedBox(height: 20),
+          Icon(
+            Icons.warehouse,
+            size: 50,
+            color: Colors.white,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Ubicación del Centro',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Ingresa la dirección de tu centro de acopio',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white70,
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          Form(
+            key: _formKeyStep2,
+            child: Column(
+              children: [
+                // Calle y número
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: _buildTextField(
+                        controller: _addressController,
+                        hintText: 'Calle',
+                        icon: Icons.location_on_outlined,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildTextField(
+                        controller: _numExtController,
+                        hintText: 'Núm.',
+                        icon: Icons.numbers,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Código postal con búsqueda
+                _buildCPField(),
+                const SizedBox(height: 16),
+
+                // Estado
+                _buildTextField(
+                  controller: _stateController,
+                  hintText: 'Estado',
+                  icon: Icons.map,
+                  readOnly: true,
+                ),
+                const SizedBox(height: 16),
+
+                // Municipio
+                _buildTextField(
+                  controller: _cityController,
+                  hintText: 'Municipio',
+                  icon: Icons.location_city,
+                  readOnly: true,
+                ),
+                const SizedBox(height: 16),
+
+                // Colonia
+                _buildTextField(
+                  controller: _colonyController,
+                  hintText: 'Colonia',
+                  icon: Icons.home,
+                  readOnly: true,
+                ),
               ],
             ),
           ),
@@ -1068,6 +1535,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
       ),
     );
   }
+
 
   Widget _buildUserTypeCard({
     required IconData icon,
@@ -1383,7 +1851,7 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
               onPressed: (_currentPage == 0 && _selectedUserType == null)
                   ? null
                   : (_currentPage == _totalPages - 1)
-                  ? (_isLoading ? null : _register)
+                  ? (_isLoading ? null : _completeRegistration)
                   : _nextPage,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
@@ -1470,14 +1938,21 @@ class _BioWayRegisterScreenState extends State<BioWayRegisterScreen>
                     // Paso 1: Tipo de usuario
                     _buildUserTypeStep(),
 
-                    // Paso 2: Información específica según tipo
+                    // Paso 2: Creación de cuenta
+                    _buildAccountCreationStep(),
+                    
+                    // Paso 3: Verificación de email
+                    _buildEmailVerificationStep(),
+                    
+                    // Paso 4: Información adicional según tipo de usuario
                     if (_selectedUserType == 'brindador')
-                      _buildBrindadorInfoStep()
+                      _buildBrindadorAdditionalInfoStep()
+                    else if (_selectedUserType == 'recolector')
+                      _buildRecolectorInfoStep()
+                    else if (_selectedUserType == 'centro_acopio')
+                      _buildCentroAcopioInfoStep()
                     else
-                      _buildRecolectorInfoStep(),
-
-                    // Paso 3: Información de cuenta
-                    _buildAccountInfoStep(),
+                      Container(), // Placeholder for null selected type
                   ],
                 ),
               ),

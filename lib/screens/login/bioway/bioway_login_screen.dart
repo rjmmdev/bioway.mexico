@@ -10,6 +10,8 @@ import '../platform_selector_screen.dart'; // ACTUALIZADA
 import 'bioway_register_screen.dart'; // ACTUALIZADA
 import '../../bioway/brindador/brindador_main_screen.dart';
 import '../../bioway/recolector/recolector_main_screen.dart';
+import '../../bioway/centro_acopio/centro_acopio_home_screen.dart';
+import '../../bioway/maestro/maestro_home_screen.dart';
 
 class BioWayLoginScreen extends StatefulWidget {
   const BioWayLoginScreen({super.key});
@@ -188,11 +190,25 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
                   builder: (context) => const BrindadorMainScreen(),
                 ),
               );
-            } else {
+            } else if (bioWayUser.isRecolector) {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const RecolectorMainScreen(),
+                ),
+              );
+            } else if (bioWayUser.isCentroAcopio) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CentroAcopioHomeScreen(),
+                ),
+              );
+            } else if (bioWayUser.isMaestro) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MaestroHomeScreen(),
                 ),
               );
             }
@@ -733,6 +749,26 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildTempAccessButton(
+                  label: 'Centro Acopio',
+                  icon: Icons.warehouse,
+                  onTap: _navigateToCentroAcopioDashboard,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildTempAccessButton(
+                  label: 'Maestro',
+                  icon: Icons.admin_panel_settings,
+                  onTap: _navigateToMaestroDashboard,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -827,6 +863,56 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
           context,
           MaterialPageRoute(
             builder: (context) => const RecolectorMainScreen(),
+          ),
+        );
+      }
+    });
+  }
+
+  void _navigateToCentroAcopioDashboard() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Accediendo como Centro de Acopio (modo desarrollo)'),
+        backgroundColor: BioWayColors.info,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const CentroAcopioHomeScreen(),
+          ),
+        );
+      }
+    });
+  }
+
+  void _navigateToMaestroDashboard() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Accediendo como Maestro (modo desarrollo)'),
+        backgroundColor: BioWayColors.info,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const MaestroHomeScreen(),
           ),
         );
       }

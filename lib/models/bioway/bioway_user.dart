@@ -5,7 +5,7 @@ class BioWayUser {
   final String uid;
   final String nombre;
   final String email;
-  final String tipoUsuario; // 'brindador' o 'recolector'
+  final String tipoUsuario; // 'brindador', 'recolector', 'centro_acopio' o 'maestro'
   final int bioCoins;
   final String nivel;
   final DateTime fechaRegistro;
@@ -22,6 +22,11 @@ class BioWayUser {
   final double? longitud;
   final String? estadoResiduo; // '0' = puede brindar, '1' = ya brindó
   final Map<String, dynamic>? residuoActual;
+  final bool isPremium; // Indica si el usuario brindador tiene cuenta premium
+  final DateTime? fechaPremium; // Fecha desde que es premium
+  final String? nivelReconocimiento; // Bronce, Plata, Oro, Platino
+  final int diasConsecutivosReciclando; // Para el sistema de reconocimientos
+  final Map<String, dynamic>? estadisticasAmbientales; // CO2 evitado, árboles salvados, etc.
   
   // Campos específicos para Recolector
   final String? empresa;
@@ -63,6 +68,11 @@ class BioWayUser {
     this.longitud,
     this.estadoResiduo = '0',
     this.residuoActual,
+    this.isPremium = false,
+    this.fechaPremium,
+    this.nivelReconocimiento,
+    this.diasConsecutivosReciclando = 0,
+    this.estadisticasAmbientales,
     // Recolector
     this.empresa,
     this.codigoEspecial,
@@ -88,8 +98,26 @@ class BioWayUser {
   /// Determina si es un usuario Recolector
   bool get isRecolector => tipoUsuario == 'recolector';
   
+  /// Determina si es un Centro de Acopio
+  bool get isCentroAcopio => tipoUsuario == 'centro_acopio';
+  
+  /// Determina si es un usuario Maestro
+  bool get isMaestro => tipoUsuario == 'maestro';
+  
   /// Determina si el usuario puede brindar residuos (solo Brindador)
   bool get puedeBrindar => isBrindador && estadoResiduo == '0';
+  
+  /// Determina si es un usuario premium (solo Brindador)
+  bool get isBrindadorPremium => isBrindador && isPremium;
+  
+  /// Obtiene el nivel de reconocimiento basado en días consecutivos
+  String obtenerNivelReconocimiento() {
+    if (diasConsecutivosReciclando >= 100) return 'Platino';
+    if (diasConsecutivosReciclando >= 50) return 'Oro';
+    if (diasConsecutivosReciclando >= 30) return 'Plata';
+    if (diasConsecutivosReciclando >= 7) return 'Bronce';
+    return 'Sin nivel';
+  }
   
   /// Calcula el nivel basado en BioCoins
   String calcularNivel() {
@@ -149,6 +177,11 @@ class BioWayUser {
         'longitud': longitud,
         'estadoResiduo': estadoResiduo,
         'residuoActual': residuoActual,
+        'isPremium': isPremium,
+        'fechaPremium': fechaPremium != null ? Timestamp.fromDate(fechaPremium!) : null,
+        'nivelReconocimiento': nivelReconocimiento,
+        'diasConsecutivosReciclando': diasConsecutivosReciclando,
+        'estadisticasAmbientales': estadisticasAmbientales,
       },
       // Campos de Recolector
       if (isRecolector) ...{
@@ -194,6 +227,11 @@ class BioWayUser {
       longitud: map['longitud']?.toDouble(),
       estadoResiduo: map['estadoResiduo'] ?? '0',
       residuoActual: map['residuoActual'],
+      isPremium: map['isPremium'] ?? false,
+      fechaPremium: (map['fechaPremium'] as Timestamp?)?.toDate(),
+      nivelReconocimiento: map['nivelReconocimiento'],
+      diasConsecutivosReciclando: map['diasConsecutivosReciclando'] ?? 0,
+      estadisticasAmbientales: map['estadisticasAmbientales'],
       // Recolector
       empresa: map['empresa'],
       codigoEspecial: map['codigoEspecial'],
@@ -231,6 +269,11 @@ class BioWayUser {
     double? longitud,
     String? estadoResiduo,
     Map<String, dynamic>? residuoActual,
+    bool? isPremium,
+    DateTime? fechaPremium,
+    String? nivelReconocimiento,
+    int? diasConsecutivosReciclando,
+    Map<String, dynamic>? estadisticasAmbientales,
     String? empresa,
     String? codigoEspecial,
     bool? verificado,
@@ -265,6 +308,11 @@ class BioWayUser {
       longitud: longitud ?? this.longitud,
       estadoResiduo: estadoResiduo ?? this.estadoResiduo,
       residuoActual: residuoActual ?? this.residuoActual,
+      isPremium: isPremium ?? this.isPremium,
+      fechaPremium: fechaPremium ?? this.fechaPremium,
+      nivelReconocimiento: nivelReconocimiento ?? this.nivelReconocimiento,
+      diasConsecutivosReciclando: diasConsecutivosReciclando ?? this.diasConsecutivosReciclando,
+      estadisticasAmbientales: estadisticasAmbientales ?? this.estadisticasAmbientales,
       empresa: empresa ?? this.empresa,
       codigoEspecial: codigoEspecial ?? this.codigoEspecial,
       verificado: verificado ?? this.verificado,

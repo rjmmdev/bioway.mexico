@@ -1,7 +1,5 @@
 import 'dart:typed_data';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:screenshot/screenshot.dart';
 
@@ -39,7 +37,14 @@ class QRService {
               version: QrVersions.auto,
               size: 250.0,
               backgroundColor: backgroundColor ?? Colors.white,
-              foregroundColor: foregroundColor ?? Colors.black,
+              dataModuleStyle: QrDataModuleStyle(
+                dataModuleShape: QrDataModuleShape.square,
+                color: foregroundColor ?? Colors.black,
+              ),
+              eyeStyle: QrEyeStyle(
+                eyeShape: QrEyeShape.square,
+                color: foregroundColor ?? Colors.black,
+              ),
               errorStateBuilder: (cxt, err) {
                 return Center(
                   child: Text(
@@ -102,7 +107,7 @@ class QRService {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -127,7 +132,14 @@ class QRService {
             version: QrVersions.auto,
             size: size,
             backgroundColor: backgroundColor ?? Colors.white,
-            foregroundColor: foregroundColor ?? Colors.black,
+            dataModuleStyle: QrDataModuleStyle(
+              dataModuleShape: QrDataModuleShape.square,
+              color: foregroundColor ?? Colors.black,
+            ),
+            eyeStyle: QrEyeStyle(
+              eyeShape: QrEyeShape.square,
+              color: foregroundColor ?? Colors.black,
+            ),
             errorStateBuilder: (cxt, err) {
               return Container(
                 width: size,
@@ -145,7 +157,7 @@ class QRService {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: (foregroundColor ?? Colors.black).withOpacity(0.1),
+              color: (foregroundColor ?? Colors.black).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -163,7 +175,7 @@ class QRService {
               subtitle,
               style: TextStyle(
                 fontSize: 14,
-                color: (foregroundColor ?? Colors.black).withOpacity(0.7),
+                color: (foregroundColor ?? Colors.black).withValues(alpha: 0.7),
               ),
               textAlign: TextAlign.center,
             ),
