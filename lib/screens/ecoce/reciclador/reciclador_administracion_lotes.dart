@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 import '../../../utils/colors.dart';
 import 'reciclador_formulario_salida.dart';
 import 'reciclador_documentacion.dart';
@@ -37,6 +38,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
   final LoteService _loteService = LoteService();
   List<LoteRecicladorModel> _todosLotes = [];
   bool _isLoading = true;
+  StreamSubscription<List<LoteRecicladorModel>>? _lotesSubscription;
 
   @override
   void initState() {
@@ -55,10 +57,17 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
   }
   
   void _loadLotes() async {
+    // Cancelar suscripción anterior si existe
+    await _lotesSubscription?.cancel();
+    
+    setState(() {
+      _isLoading = true;
+    });
+    
     // Pequeño delay para evitar problemas de renderizado
     await Future.delayed(const Duration(milliseconds: 100));
     
-    _loteService.getLotesReciclador().listen((lotes) {
+    _lotesSubscription = _loteService.getLotesReciclador().listen((lotes) {
       if (mounted) {
         setState(() {
           _todosLotes = lotes;
@@ -66,6 +75,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
         });
       }
     }, onError: (error) {
+      print('Error cargando lotes: $error');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -77,6 +87,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
   @override
   void dispose() {
     _tabController.dispose();
+    _lotesSubscription?.cancel();
     super.dispose();
   }
 
@@ -428,31 +439,54 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
         
         // Lista de lotes
         Expanded(
-          child: _lotesFiltrados.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+          child: RefreshIndicator(
+            onRefresh: () async {
+              // Forzar recarga de lotes
+              _loadLotes();
+              // Esperar un poco para que se complete la carga
+              await Future.delayed(const Duration(seconds: 1));
+            },
+            color: BioWayColors.ecoceGreen,
+            child: _lotesFiltrados.isEmpty
+                ? ListView(
                     children: [
-                      Icon(
-                        Icons.inventory_2_outlined,
-                        size: 80,
-                        color: Colors.grey[300],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No hay lotes en esta sección',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.4,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.inventory_2_outlined,
+                                size: 80,
+                                color: Colors.grey[300],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No hay lotes en esta sección',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Desliza hacia abajo para actualizar',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[400],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: _lotesFiltrados.length,
-                  itemBuilder: (context, index) {
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _lotesFiltrados.length,
+                    itemBuilder: (context, index) {
                     final lote = _lotesFiltrados[index];
                     final loteMap = {
                       'id': lote.id,
@@ -502,6 +536,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                     );
                   },
                 ),
+          ),
         ),
       ],
     );
@@ -572,7 +607,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
     );
   }
 
-  void _onLoteTap(LoteRecicladorModel lote) {
+  void _onLoteTap(LoteRecicladorModel lote) async {
     HapticFeedback.lightImpact();
     
     final material = _getTipoPredominante(lote.tipoPoli);
@@ -582,7 +617,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
       case 'salida':
       case 'procesado':
         // Navegar a formulario de salida
-        Navigator.push(
+        await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => RecicladorFormularioSalida(
@@ -591,10 +626,13 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
             ),
           ),
         );
+        // Refrescar al volver
+        _loadLotes();
         break;
       case 'enviado':
+      case 'documentado':
         // Navegar a documentación
-        Navigator.push(
+        await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => RecicladorDocumentacion(
@@ -602,10 +640,12 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
             ),
           ),
         );
+        // Refrescar al volver
+        _loadLotes();
         break;
       case 'finalizado':
         // Ver código QR
-        Navigator.push(
+        await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => RecicladorLoteQRScreen(
@@ -620,6 +660,8 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
             ),
           ),
         );
+        // Refrescar al volver
+        _loadLotes();
         break;
     }
   }
