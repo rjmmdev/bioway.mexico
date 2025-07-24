@@ -234,18 +234,8 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
         // Depurar el estado del lote después de la transferencia
         await _loteUnificadoService.depurarEstadoLote(loteId);
         
-        // Crear registro en la colección de lotes del reciclador (para compatibilidad)
-        final loteReciclador = LoteRecicladorModel(
-          userId: _authService.currentUser!.uid,
-          conjuntoLotes: [lote['id']],
-          loteEntrada: lote['id'],
-          pesoBruto: lote['peso']?.toDouble() ?? 0,
-          pesoNeto: double.tryParse(_pesoRecibidoController.text) ?? lote['peso'],
-          nombreOpeEntrada: _userSession.getUserData()?['nombre'] ?? 'Sin nombre',
-          firmaEntrada: _signatureUrl,
-          estado: 'salida', // Cambiar a 'salida' para que aparezca en la pestaña correcta
-        );
-        await _loteService.crearLoteReciclador(loteReciclador);
+        // Ya no es necesario crear registro en la colección antigua
+        // Todo se maneja en la estructura unificada
       }
 
       // Actualizar el estado de la carga si tenemos el carga_id

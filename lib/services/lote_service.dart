@@ -273,7 +273,7 @@ class LoteService {
     final userId = _currentUserId;
     if (userId == null) return Stream.value([]);
     
-    // Primero intentar obtener lotes del sistema unificado
+    // Solo buscar en el sistema unificado
     return _firestore
         .collectionGroup('datos_generales')
         .where('proceso_actual', isEqualTo: 'reciclador')
@@ -311,6 +311,12 @@ class LoteService {
               tipoPoliMap[tipoMaterial] = 100.0; // 100% del material especificado
             }
             
+            // Si no hay peso_neto, usar peso_recibido como peso neto
+            final pesoNeto = recicladorData['peso_neto'] ?? 
+                            recicladorData['peso_recibido'] ?? 
+                            recicladorData['peso_entrada'] ?? 
+                            0.0;
+            
             // Crear modelo compatible con LoteRecicladorModel
             final loteModel = LoteRecicladorModel(
               id: loteId,
@@ -318,8 +324,8 @@ class LoteService {
               conjuntoLotes: [loteId], // Por ahora solo el lote actual
               loteEntrada: loteId,
               tipoPoli: tipoPoliMap.isNotEmpty ? tipoPoliMap : null,
-              pesoBruto: (recicladorData['peso_bruto'] ?? recicladorData['peso_entrada'] ?? 0.0).toDouble(),
-              pesoNeto: (recicladorData['peso_neto'] ?? 0.0).toDouble(),
+              pesoBruto: (recicladorData['peso_entrada'] ?? 0.0).toDouble(),
+              pesoNeto: pesoNeto.toDouble(),
               nombreOpeEntrada: recicladorData['operador_nombre'] ?? '',
               firmaEntrada: recicladorData['firma_operador'],
               // Datos de salida
@@ -330,10 +336,10 @@ class LoteService {
                   : [],
               nombreOpeSalida: recicladorData['operador_salida_nombre'],
               firmaSalida: recicladorData['firma_salida'],
-              eviFoto: recicladorData['evidencias_foto'] != null 
-                  ? List<String>.from(recicladorData['evidencias_foto']) 
+              eviFoto: recicladorData['evidencias_foto_salida'] != null 
+                  ? List<String>.from(recicladorData['evidencias_foto_salida']) 
                   : [],
-              observaciones: recicladorData['comentarios'],
+              observaciones: recicladorData['comentarios_salida'],
               // Documentación
               fTecnicaPellet: recicladorData['f_tecnica_pellet'],
               repResultReci: recicladorData['rep_result_reci'],
@@ -351,45 +357,9 @@ class LoteService {
         }
       }
       
-      // También buscar en la colección antigua para compatibilidad
-      Query query = _firestore.collection(LOTES_RECICLADOR)
-          .where('userId', isEqualTo: userId);
-      
-      if (estado != null) {
-        query = query.where('estado', isEqualTo: estado);
-      }
-      
-      try {
-        // Temporalmente sin orderBy hasta que se cree el índice
-        final oldSnapshot = await query.get();
-            
-        for (var doc in oldSnapshot.docs) {
-          lotes.add(LoteRecicladorModel.fromFirestore(doc));
-        }
-      } catch (e) {
-        print('Error obteniendo lotes antiguos: $e');
-        // Si el error es por índice, intentar sin orderBy
-        if (e.toString().contains('index')) {
-          try {
-            final simpleSnapshot = await _firestore.collection(LOTES_RECICLADOR)
-                .where('userId', isEqualTo: userId)
-                .get();
-            for (var doc in simpleSnapshot.docs) {
-              // Evitar duplicados
-              if (!lotes.any((l) => l.id == doc.id)) {
-                lotes.add(LoteRecicladorModel.fromFirestore(doc));
-              }
-            }
-          } catch (e2) {
-            print('Error en consulta simple: $e2');
-          }
-        }
-      }
-      
-      // Ordenar por fecha (los del sistema unificado no tienen fecha_creacion, 
-      // así que usamos el ID que contiene timestamp)
+      // Ordenar por fecha (usar fecha_creacion de datos_generales o ID como fallback)
       lotes.sort((a, b) {
-        // Para lotes del sistema unificado, usar el ID como referencia de tiempo
+        // Intentar usar el ID que contiene timestamp
         final timeA = a.id?.split('-').last ?? '';
         final timeB = b.id?.split('-').last ?? '';
         return timeB.compareTo(timeA);
