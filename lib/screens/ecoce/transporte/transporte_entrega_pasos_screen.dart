@@ -204,14 +204,17 @@ class _TransporteEntregaPasosScreenState extends State<TransporteEntregaPasosScr
           
           final loteData = {
             'id': loteId,
-            'peso': lote.datosGenerales.peso,
+            'peso': lote.pesoActual,
+            'peso_original': lote.datosGenerales.peso,
+            'tiene_muestras_lab': lote.tieneAnalisisLaboratorio,
+            'peso_muestras': lote.tieneAnalisisLaboratorio ? lote.pesoTotalMuestras : 0.0,
             'material': lote.datosGenerales.tipoMaterial,
             'origen_nombre': origenNombre,
             'origen_folio': origenFolio,
             'carga_id': loteCargoId,
           };
           _lotesCompletos.add(loteData);
-          pesoTotal += lote.datosGenerales.peso;
+          pesoTotal += lote.pesoActual;
           
           // Usar el carga_id del primer lote
           if (cargaId == null) {

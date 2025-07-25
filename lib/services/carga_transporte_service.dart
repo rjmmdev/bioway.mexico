@@ -22,6 +22,87 @@ class CargaTransporteService {
   
   String? get _currentUserId => _authService.currentUser?.uid;
   
+  /// Verificar si un lote ya está en una carga activa
+  Future<bool> loteEstaEnCargaActiva(String loteId) async {
+    try {
+      // Buscar cargas activas que contengan este lote
+      final cargasSnapshot = await _firestore
+          .collection('cargas_transporte')
+          .where('transportista_id', isEqualTo: _currentUserId)
+          .where('estado_carga', whereIn: ['en_transporte', 'entregada_parcial'])
+          .where('lotes_ids', arrayContains: loteId)
+          .get();
+      
+      if (cargasSnapshot.docs.isNotEmpty) {
+        print('Lote $loteId encontrado en ${cargasSnapshot.docs.length} cargas activas');
+        for (final doc in cargasSnapshot.docs) {
+          print('  - Carga ID: ${doc.id}');
+        }
+      }
+      
+      return cargasSnapshot.docs.isNotEmpty;
+    } catch (e) {
+      print('Error verificando si lote está en carga activa: $e');
+      return false;
+    }
+  }
+  
+  /// Limpiar lotes duplicados de cargas activas
+  Future<void> limpiarLotesDuplicados() async {
+    try {
+      print('=== LIMPIANDO LOTES DUPLICADOS ===');
+      
+      // Obtener todas las cargas activas del transportista
+      final cargasSnapshot = await _firestore
+          .collection('cargas_transporte')
+          .where('transportista_id', isEqualTo: _currentUserId)
+          .where('estado_carga', whereIn: ['en_transporte', 'entregada_parcial'])
+          .orderBy('fecha_creacion', descending: false) // Más antiguas primero
+          .get();
+      
+      final lotesVistos = <String, String>{}; // loteId -> cargaId (primera aparición)
+      final cargasConDuplicados = <String, List<String>>{}; // cargaId -> lotes a remover
+      
+      // Identificar duplicados
+      for (final cargaDoc in cargasSnapshot.docs) {
+        final cargaId = cargaDoc.id;
+        final lotesIds = List<String>.from(cargaDoc.data()['lotes_ids'] ?? []);
+        final lotesARemover = <String>[];
+        
+        for (final loteId in lotesIds) {
+          if (lotesVistos.containsKey(loteId)) {
+            // Este lote ya está en otra carga
+            print('Lote duplicado $loteId: ya está en carga ${lotesVistos[loteId]}, removiendo de carga $cargaId');
+            lotesARemover.add(loteId);
+          } else {
+            lotesVistos[loteId] = cargaId;
+          }
+        }
+        
+        if (lotesARemover.isNotEmpty) {
+          cargasConDuplicados[cargaId] = lotesARemover;
+        }
+      }
+      
+      // Remover duplicados
+      for (final entry in cargasConDuplicados.entries) {
+        final cargaId = entry.key;
+        final lotesARemover = entry.value;
+        
+        await _firestore.collection('cargas_transporte').doc(cargaId).update({
+          'lotes_ids': FieldValue.arrayRemove(lotesARemover),
+        });
+        
+        print('Removidos ${lotesARemover.length} lotes duplicados de carga $cargaId');
+      }
+      
+      print('Limpieza de duplicados completada');
+      print('================================');
+    } catch (e) {
+      print('Error limpiando lotes duplicados: $e');
+    }
+  }
+  
   /// Crear una nueva carga con los lotes escaneados
   Future<String> crearCarga({
     required List<String> lotesIds,
@@ -38,6 +119,14 @@ class CargaTransporteService {
     String? comentariosRecogida,
   }) async {
     try {
+      // Verificar que ningún lote esté ya en una carga activa
+      for (final loteId in lotesIds) {
+        final yaEnCarga = await loteEstaEnCargaActiva(loteId);
+        if (yaEnCarga) {
+          throw Exception('El lote $loteId ya está en una carga activa');
+        }
+      }
+      
       // Generar ID para la carga
       final cargaRef = _firestore.collection('cargas_transporte').doc();
       final cargaId = cargaRef.id;
@@ -74,20 +163,30 @@ class CargaTransporteService {
       final transporteIds = <String, String>{}; // loteId -> transporteId
       
       for (final loteId in lotesIds) {
-        // Obtener el peso original del lote
+        // Obtener el peso actual del lote (puede ser diferente al original si fue procesado)
         final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
-        final pesoOriginalLote = lote?.datosGenerales.peso ?? 0.0;
+        final pesoActualLote = lote?.pesoActual ?? 0.0;
         
         // Primero actualizar el proceso anterior (origen, reciclador, etc.) para marcarlo como entregado
         final procesoAnterior = lote?.datosGenerales.procesoActual ?? 'origen';
+        
+        // No sobrescribir firma_salida si ya existe (preservar la firma del proceso anterior)
+        final datosActualizacion = <String, dynamic>{
+          'entrega_completada': true,
+          'fecha_salida': FieldValue.serverTimestamp(),
+          'entregado_a': transportistaFolio,
+        };
+        
+        // Solo agregar firma_salida si el proceso anterior no tiene una
+        // (por ejemplo, si es origen que no usa firma_salida)
+        if (procesoAnterior == 'origen') {
+          datosActualizacion['firma_salida'] = firmaRecogida;
+        }
+        
         await _loteUnificadoService.actualizarDatosProceso(
           loteId: loteId,
           proceso: procesoAnterior,
-          datos: {
-            'entrega_completada': true,
-            'fecha_salida': FieldValue.serverTimestamp(),
-            'entregado_a': transportistaFolio,
-          },
+          datos: datosActualizacion,
         );
         
         // Luego crear el proceso transporte con los datos iniciales
@@ -100,11 +199,12 @@ class CargaTransporteService {
             'origen_recogida': origenUsuarioFolio,
             'vehiculo_placas': vehiculoPlacas,
             'nombre_conductor': nombreConductor,
-            'peso_recogido': pesoOriginalLote, // Usar el peso original del lote
+            'peso_recogido': pesoActualLote, // Usar el peso actual del lote
             'firma_recogida': firmaRecogida,
             'evidencias_foto_recogida': evidenciasFotoRecogida,
             'comentarios_recogida': comentariosRecogida,
             'recepcion_completada': true, // Marcar como recibido automáticamente
+            'fecha_entrada': FieldValue.serverTimestamp(), // Asegurar que tenga fecha de entrada
           },
         );
         
@@ -112,6 +212,61 @@ class CargaTransporteService {
         final transporteActivo = await _loteUnificadoService.obtenerTransporteActivo(loteId);
         if (transporteActivo != null) {
           transporteIds[loteId] = transporteActivo['id'];
+        }
+        
+        // Solo agregar delay para origen (mantiene compatibilidad)
+        // Para reciclador no es necesario ya que la actualización es inmediata
+        if (procesoAnterior == 'origen') {
+          await Future.delayed(const Duration(milliseconds: 500));
+        }
+        
+        // Verificar y actualizar la transferencia si está completa
+        print('Verificando transferencia para lote: $loteId');
+        print('DEBUG - Proceso anterior: $procesoAnterior');
+        await _loteUnificadoService.verificarYActualizarTransferencia(
+          loteId: loteId,
+          procesoOrigen: procesoAnterior,
+          procesoDestino: 'transporte',
+        );
+        
+        // Verificar si el proceso_actual ya se actualizó
+        final verificacionDoc = await _firestore
+            .collection('lotes')
+            .doc(loteId)
+            .collection('datos_generales')
+            .doc('info')
+            .get();
+            
+        final procesoActualDespues = verificacionDoc.data()?['proceso_actual'];
+        print('DEBUG - Proceso actual después de verificarYActualizarTransferencia: $procesoActualDespues');
+        
+        // Para reciclador -> transporte, SIEMPRE actualizamos inmediatamente
+        // porque el reciclador ya autorizó la salida al generar el QR
+        if (procesoAnterior == 'reciclador') {
+          if (procesoActualDespues == 'transporte') {
+            print('El proceso ya fue actualizado por verificarYActualizarTransferencia');
+          } else {
+            print('Transferencia desde Reciclador - Forzando actualización del proceso_actual');
+            print('ADVERTENCIA: verificarYActualizarTransferencia no actualizó el proceso');
+            
+            // Actualizar directamente el proceso_actual en una transacción para garantizar atomicidad
+            await _firestore.runTransaction((transaction) async {
+              final datosGeneralesRef = _firestore
+                  .collection('lotes')
+                  .doc(loteId)
+                  .collection('datos_generales')
+                  .doc('info');
+                  
+              transaction.update(datosGeneralesRef, {
+                'proceso_actual': 'transporte',
+                'estado_actual': 'en_transporte',
+                'fecha_ultima_actualizacion': FieldValue.serverTimestamp(),
+                'historial_procesos': FieldValue.arrayUnion(['transporte_fase_2']),
+              });
+            });
+            
+            print('Proceso actualizado exitosamente a transporte para lote: $loteId');
+          }
         }
       }
       
@@ -151,19 +306,34 @@ class CargaTransporteService {
           .get();
       
       final lotesInfo = <Map<String, dynamic>>[];
+      final lotesProcessed = <String>{}; // Para evitar duplicados
+      
+      print('=== OBTENIENDO LOTES EN TRANSPORTE ===');
+      print('Cargas encontradas: ${cargasSnapshot.docs.length}');
       
       for (final cargaDoc in cargasSnapshot.docs) {
         final carga = CargaTransporteModel.fromFirestore(cargaDoc);
+        print('Procesando carga: ${carga.id} con ${carga.lotesIds.length} lotes');
         
         // Obtener información de cada lote
         for (final loteId in carga.lotesIds) {
+          // Verificar si ya procesamos este lote
+          if (lotesProcessed.contains(loteId)) {
+            print('ADVERTENCIA: Lote $loteId duplicado en múltiples cargas');
+            continue;
+          }
+          
           final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
           if (lote != null && lote.datosGenerales.procesoActual == 'transporte') {
+            lotesProcessed.add(loteId);
             lotesInfo.add({
               'lote_id': loteId,
               'carga_id': carga.id,
               'material': lote.datosGenerales.tipoMaterial,
-              'peso': lote.datosGenerales.peso,
+              'peso': lote.pesoActual,
+              'peso_original': lote.datosGenerales.peso,
+              'tiene_muestras_lab': lote.tieneAnalisisLaboratorio,
+              'peso_muestras': lote.tieneAnalisisLaboratorio ? lote.pesoTotalMuestras : 0.0,
               'origen_folio': carga.origenUsuarioFolio,
               'origen_nombre': carga.origenUsuarioNombre,
               'fecha_recogida': carga.fechaRecogida,
@@ -171,6 +341,9 @@ class CargaTransporteService {
           }
         }
       }
+      
+      print('Total lotes únicos encontrados: ${lotesInfo.length}');
+      print('=================================');
       
       return lotesInfo;
     } catch (e) {

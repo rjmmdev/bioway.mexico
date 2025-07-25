@@ -35,6 +35,9 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
         _isLoading = true;
       });
       
+      // Primero limpiar posibles duplicados
+      await _cargaService.limpiarLotesDuplicados();
+      
       // Obtener lotes individuales en transporte desde las cargas
       final lotesInfo = await _cargaService.getLotesEnTransporte();
       
@@ -552,6 +555,40 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
                         _buildLoteData('Peso', '${lote['peso']} kg'),
                       ],
                     ),
+                    
+                    // Indicador de muestras de laboratorio
+                    if (lote['tiene_muestras_lab'] == true) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: BioWayColors.info.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: BioWayColors.info.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.science,
+                              size: 14,
+                              color: BioWayColors.info,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Muestras lab: ${lote['peso_muestras']} kg',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: BioWayColors.info,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

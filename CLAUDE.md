@@ -126,6 +126,7 @@ lib/
 │   ├── document_service.dart         # Document upload/compression
 │   ├── image_service.dart           # Image compression (50KB target)
 │   ├── lote_service.dart            # Lot management across all user types
+│   ├── lote_unificado_service.dart  # Unified lot system service
 │   └── user_session_service.dart    # User session management
 ├── models/                          # Data models
 ├── utils/                           # Utilities (colors, formats, etc.)
@@ -228,6 +229,16 @@ Lots appear in user screens based on `proceso_actual` field:
 
 When a lot is successfully transferred (both delivery and reception completed), the `proceso_actual` updates and the lot moves to the new user's screen.
 
+### Weight Tracking System
+The system uses dynamic weight calculation through the `pesoActual` getter:
+- **Origin**: Uses initial weight (`pesoNace`)
+- **After Transport Phase 1**: Uses delivered or picked weight
+- **Recycler**: Uses processed weight (`pesoProcesado`) minus laboratory samples
+- **After Transport Phase 2**: Uses delivered or picked weight  
+- **Transformer**: Uses output weight or input weight
+
+**Important**: Laboratory samples are automatically subtracted from recycler's weight. The laboratory must take samples BEFORE transport picks up the lot.
+
 ## Unified Lot System
 
 ### Key Concepts
@@ -264,6 +275,20 @@ final loteId = QRUtils.extractLoteIdFromQR(qrCode);
 
 // Generate QR code
 final qrCode = QRUtils.generateLoteQR(tipoPoli, loteId);
+```
+
+### QR Scanner Implementation
+The app uses a unified full-screen QR scanner (`SharedQRScannerScreen`) for all user types:
+```dart
+// Navigate to scanner
+final qrCode = await Navigator.push<String>(
+  context,
+  MaterialPageRoute(
+    builder: (context) => SharedQRScannerScreen(
+      isAddingMore: widget.isAddingMore,
+    ),
+  ),
+);
 ```
 
 ## Critical Implementation Patterns
@@ -320,6 +345,40 @@ if (procesoDestino == PROCESO_TRANSPORTE) {
 
 // WRONG - Transport doesn't use 'data' document
 destinoDoc = await loteRef.collection(PROCESO_TRANSPORTE).doc('data').get();
+```
+
+### Bidirectional Transfer System
+Lot transfers require both parties to complete their parts:
+1. **Sender**: Marks lot as delivered with `entrega_completada: true` and `firma_salida`
+2. **Receiver**: Marks lot as received with `recepcion_completada: true`
+3. **System**: Updates `proceso_actual` only when both are complete
+
+Use `verificarYActualizarTransferencia` to ensure transfers are completed:
+```dart
+await _loteUnificadoService.verificarYActualizarTransferencia(
+  loteId: loteId,
+  procesoOrigen: 'reciclador',
+  procesoDestino: 'transporte',
+);
+```
+
+### Laboratory Sample Flow
+Laboratory operates as a parallel process without transferring lot ownership:
+```dart
+// Laboratory takes samples from recycler lots
+await _loteUnificadoService.registrarAnalisisLaboratorio(
+  loteId: loteId,
+  pesoMuestra: peso,
+  certificado: null, // Added later
+  firmaOperador: firma,
+  evidenciasFoto: fotos,
+);
+```
+
+To get lots with laboratory analyses:
+```dart
+// Stream of lots where current user has taken samples
+_loteService.obtenerLotesConAnalisisLaboratorio()
 ```
 
 ### Signature Widget Pattern
@@ -539,3 +598,11 @@ NEVER hardcode colors. Always use `BioWayColors` constants:
 10. QRUtils for consistent QR code handling across all screens
 11. Transport phase verification in lot transfer (fixed fase_1/fase_2 document lookup)
 12. Origin to Transport lot transfer completion detection
+13. Fixed QR scanning triplication in Transport (added debounce and single-scan logic)
+14. Transport now uses dynamic weight (pesoActual) instead of static initial weight
+15. Recycler form now saves peso_procesado field for proper weight tracking
+16. Bidirectional transfer verification ensures both parties complete their parts
+17. Laboratory management screen updated to use unified lot system
+18. Laboratory scanner updated to use full-screen SharedQRScannerScreen
+19. Weight display in Transport QR shows actual weight after lab samples
+20. Added visual indicators when laboratory has taken samples from lots

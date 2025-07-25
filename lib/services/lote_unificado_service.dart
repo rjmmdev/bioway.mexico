@@ -23,6 +23,7 @@ class LoteUnificadoService {
   
   // Obtener el ID del usuario actual
   String? get _currentUserId => _authService.currentUser?.uid;
+  String? get currentUserId => _currentUserId;
   
   // Colección principal de lotes
   static const String COLECCION_LOTES = 'lotes';
@@ -195,14 +196,25 @@ class LoteUnificadoService {
       if (origenDoc != null && origenDoc.exists) {
         origenExiste = true;
         final datosOrigen = origenDoc.data() as Map<String, dynamic>;
-        print('Datos Origen: $datosOrigen');
+        print('VERIFICACIÓN ORIGEN ($procesoOrigen):');
+        print('  Campos relevantes: ${datosOrigen.keys.toList()}');
         
         // Verificar si el origen ha completado su parte
         tieneEntrega = datosOrigen['entrega_completada'] == true || 
                       datosOrigen['fecha_salida'] != null || 
                       datosOrigen['firma_entrega'] != null ||
+                      datosOrigen['firma_salida'] != null ||  // Agregar verificación de firma_salida
                       datosOrigen['firma_conductor'] != null; // Para transportista
-        print('Origen existe: $origenExiste, Tiene Entrega: $tieneEntrega');
+        print('  - Origen existe: $origenExiste');
+        print('  - Tiene Entrega: $tieneEntrega');
+        print('  - entrega_completada: ${datosOrigen['entrega_completada']}');
+        print('  - fecha_salida: ${datosOrigen['fecha_salida']}');
+        print('  - firma_entrega: ${datosOrigen['firma_entrega']}');
+        print('  - firma_salida: ${datosOrigen['firma_salida']}');
+        print('  - firma_conductor: ${datosOrigen['firma_conductor']}');
+        print('  - entregado_a: ${datosOrigen['entregado_a']}');
+      } else {
+        print('ADVERTENCIA: Documento origen ($procesoOrigen) no existe');
       }
       
       // Verificar proceso destino (reciclador/transformador/transporte)
@@ -222,33 +234,57 @@ class LoteUnificadoService {
       if (destinoDoc != null && destinoDoc.exists) {
         destinoExiste = true;
         final datosDestino = destinoDoc.data() as Map<String, dynamic>;
-        print('Datos Destino: $datosDestino');
+        print('VERIFICACIÓN DESTINO ($procesoDestino):');
+        print('  Campos relevantes: ${datosDestino.keys.toList()}');
         
         // Verificar si el destino ha completado su parte
         tieneRecepcion = datosDestino['recepcion_completada'] == true ||
                         datosDestino['firma_operador'] != null ||
                         datosDestino['firma_recepcion'] != null ||
                         datosDestino['peso_recibido'] != null ||
-                        datosDestino['peso_entrada'] != null;
-        print('Destino existe: $destinoExiste, Tiene Recepción: $tieneRecepcion');
+                        datosDestino['peso_entrada'] != null ||
+                        datosDestino['fecha_entrada'] != null;  // Agregar verificación de fecha_entrada
+        print('  - Destino existe: $destinoExiste');
+        print('  - Tiene Recepción: $tieneRecepcion');
+        print('  - recepcion_completada: ${datosDestino['recepcion_completada']}');
+        print('  - firma_operador: ${datosDestino['firma_operador']}');
+        print('  - firma_recepcion: ${datosDestino['firma_recepcion']}');
+        print('  - peso_recibido: ${datosDestino['peso_recibido']}');
+        print('  - peso_entrada: ${datosDestino['peso_entrada']}');
+        print('  - fecha_entrada: ${datosDestino['fecha_entrada']}');
+      } else {
+        print('ADVERTENCIA: Documento destino ($procesoDestino) no existe');
       }
       
       // La transferencia está completa si:
-      // 1. Ambos procesos existen Y ambos han completado su parte
-      // 2. O si solo existe el destino y ha completado la recepción (caso de recepción anticipada)
+      // 1. Para reciclador -> transporte: Solo verificar que el transportista recibió (unidireccional)
+      // 2. Para otros casos: Ambos procesos deben completar su parte (bidireccional)
       bool resultado = false;
       
-      if (origenExiste && destinoExiste) {
-        // Caso normal: ambos existen
+      // Caso especial: Reciclador -> Transportista es unidireccional
+      if (procesoOrigen == PROCESO_RECICLADOR && procesoDestino == PROCESO_TRANSPORTE) {
+        // El reciclador ya autorizó la salida al generar el QR
+        // Solo necesitamos que el transportista haya recibido
+        resultado = destinoExiste && tieneRecepcion;
+        print('RESULTADO: Transferencia Reciclador->Transporte - Destino existe: $destinoExiste, Tiene recepción: $tieneRecepcion');
+        print('DEBUG - OrigenExiste: $origenExiste, TieneEntrega: $tieneEntrega');
+        print('DEBUG - Este caso ES unidireccional, resultado: $resultado');
+      } else if (origenExiste && destinoExiste) {
+        // Caso normal: ambos existen (para otros flujos)
         resultado = tieneEntrega && tieneRecepcion;
+        print('RESULTADO: Ambos existen - Entrega: $tieneEntrega, Recepción: $tieneRecepcion');
       } else if (!origenExiste && destinoExiste && tieneRecepcion) {
         // Caso especial: solo el destino ha completado (recepción anticipada)
         // En este caso, esperamos a que el origen complete
         resultado = false;
+        print('RESULTADO: Solo destino existe con recepción - Esperando origen');
       } else if (origenExiste && !destinoExiste && tieneEntrega) {
         // Caso especial: solo el origen ha completado (entrega anticipada)
         // En este caso, esperamos a que el destino complete
         resultado = false;
+        print('RESULTADO: Solo origen existe con entrega - Esperando destino');
+      } else {
+        print('RESULTADO: Ninguna condición cumplida');
       }
       
       print('Transferencia Completa: $resultado');
@@ -410,12 +446,20 @@ class LoteUnificadoService {
     required Map<String, dynamic> datos,
   }) async {
     try {
-      await _firestore
-          .collection(COLECCION_LOTES)
-          .doc(loteId)
-          .collection(proceso)
-          .doc('data')
-          .update(datos);
+      // Si es transporte, necesitamos determinar la fase
+      if (proceso == PROCESO_TRANSPORTE) {
+        await actualizarProcesoTransporte(
+          loteId: loteId,
+          datos: datos,
+        );
+      } else {
+        await _firestore
+            .collection(COLECCION_LOTES)
+            .doc(loteId)
+            .collection(proceso)
+            .doc('data')
+            .update(datos);
+      }
     } catch (e) {
       throw Exception('Error al actualizar datos del proceso: $e');
     }
@@ -432,21 +476,41 @@ class LoteUnificadoService {
       
       // Si no se especifica fase, determinar la fase activa
       if (faseTransporte == null) {
-        // Obtener datos generales para ver el proceso actual
-        final datosGenerales = await loteRef.collection(DATOS_GENERALES).doc('info').get();
-        if (datosGenerales.exists) {
-          final procesoActual = datosGenerales.data()!['proceso_actual'];
+        // Estrategia más robusta: verificar qué documento existe
+        final fase1Doc = await loteRef.collection(PROCESO_TRANSPORTE).doc('fase_1').get();
+        final fase2Doc = await loteRef.collection(PROCESO_TRANSPORTE).doc('fase_2').get();
+        
+        if (fase2Doc.exists && !fase1Doc.exists) {
+          // Solo existe fase_2
+          faseTransporte = 'fase_2';
+        } else if (fase1Doc.exists && !fase2Doc.exists) {
+          // Solo existe fase_1
+          faseTransporte = 'fase_1';
+        } else if (fase1Doc.exists && fase2Doc.exists) {
+          // Existen ambas fases, usar la más reciente basado en fecha_entrada
+          final fecha1 = fase1Doc.data()!['fecha_entrada'] as Timestamp?;
+          final fecha2 = fase2Doc.data()!['fecha_entrada'] as Timestamp?;
           
-          // Determinar la fase basado en el historial
-          final historial = List<String>.from(datosGenerales.data()!['historial_procesos'] ?? []);
-          
-          if (historial.contains('transporte_fase_2') || procesoActual == PROCESO_TRANSFORMADOR) {
+          if (fecha2 != null && (fecha1 == null || fecha2.compareTo(fecha1) > 0)) {
             faseTransporte = 'fase_2';
           } else {
             faseTransporte = 'fase_1';
           }
         } else {
-          faseTransporte = 'fase_1'; // Por defecto
+          // No existe ninguna fase, usar lógica basada en historial
+          final datosGenerales = await loteRef.collection(DATOS_GENERALES).doc('info').get();
+          if (datosGenerales.exists) {
+            final historial = List<String>.from(datosGenerales.data()!['historial_procesos'] ?? []);
+            
+            // Si el lote pasó por reciclador, debe ser fase_2
+            if (historial.contains('reciclador')) {
+              faseTransporte = 'fase_2';
+            } else {
+              faseTransporte = 'fase_1';
+            }
+          } else {
+            faseTransporte = 'fase_1'; // Por defecto
+          }
         }
       }
       
@@ -483,6 +547,84 @@ class LoteUnificadoService {
     } catch (e) {
       print('Error al obtener transporte activo: $e');
       return null;
+    }
+  }
+  
+  /// Verificar y actualizar transferencia después de que ambas partes completen
+  Future<void> verificarYActualizarTransferencia({
+    required String loteId,
+    required String procesoOrigen,
+    required String procesoDestino,
+  }) async {
+    try {
+      print('=== VERIFICANDO Y ACTUALIZANDO TRANSFERENCIA ===');
+      print('Lote: $loteId, Origen: $procesoOrigen, Destino: $procesoDestino');
+      
+      // Primero verificar el estado actual del lote
+      final datosGeneralesDoc = await _firestore
+          .collection(COLECCION_LOTES)
+          .doc(loteId)
+          .collection(DATOS_GENERALES)
+          .doc('info')
+          .get();
+          
+      if (datosGeneralesDoc.exists) {
+        final procesoActualActual = datosGeneralesDoc.data()!['proceso_actual'];
+        print('Proceso actual en DB: $procesoActualActual');
+      }
+      
+      // Verificar si la transferencia está completa
+      final esCompleta = await verificarTransferenciaCompleta(
+        loteId: loteId,
+        procesoOrigen: procesoOrigen,
+        procesoDestino: procesoDestino,
+      );
+      
+      if (esCompleta) {
+        print('Transferencia completa detectada, actualizando proceso_actual...');
+        
+        // Actualizar proceso_actual y estado
+        final batch = _firestore.batch();
+        final loteRef = _firestore.collection(COLECCION_LOTES).doc(loteId);
+        
+        // Determinar fase de transporte si aplica
+        String historialEntry = procesoDestino;
+        if (procesoDestino == PROCESO_TRANSPORTE) {
+          String faseTransporte = procesoOrigen == PROCESO_ORIGEN ? 'fase_1' : 'fase_2';
+          historialEntry = '${PROCESO_TRANSPORTE}_$faseTransporte';
+          print('Agregando al historial: $historialEntry');
+        }
+        
+        batch.update(
+          loteRef.collection(DATOS_GENERALES).doc('info'),
+          {
+            'estado_actual': 'en_$procesoDestino',
+            'proceso_actual': procesoDestino,
+            'historial_procesos': FieldValue.arrayUnion([historialEntry]),
+            'fecha_ultima_actualizacion': FieldValue.serverTimestamp(),
+          },
+        );
+        
+        await batch.commit();
+        print('PROCESO ACTUALIZADO EXITOSAMENTE A: $procesoDestino');
+        
+        // Verificar que se actualizó correctamente
+        final verificacion = await _firestore
+            .collection(COLECCION_LOTES)
+            .doc(loteId)
+            .collection(DATOS_GENERALES)
+            .doc('info')
+            .get();
+            
+        if (verificacion.exists) {
+          print('Verificación - proceso_actual ahora es: ${verificacion.data()!['proceso_actual']}');
+        }
+      } else {
+        print('Transferencia aún no completa - Falta que una de las partes complete');
+      }
+    } catch (e) {
+      print('ERROR verificando y actualizando transferencia: $e');
+      print('Stack trace: ${StackTrace.current}');
     }
   }
   
@@ -1104,5 +1246,49 @@ class LoteUnificadoService {
       print('Error al obtener análisis: $e');
       return [];
     }
+  }
+  
+  /// Obtener todos los lotes que tienen análisis del laboratorio actual
+  Stream<List<LoteUnificadoModel>> obtenerLotesConAnalisisLaboratorio() {
+    final userId = _currentUserId;
+    if (userId == null) {
+      print('No hay usuario autenticado');
+      return Stream.value([]);
+    }
+    
+    print('=== OBTENIENDO LOTES CON ANÁLISIS DE LABORATORIO ===');
+    print('Usuario ID: $userId');
+    
+    return _firestore
+        .collectionGroup('analisis_laboratorio')
+        .where('usuario_id', isEqualTo: userId)
+        .snapshots()
+        .asyncMap((snapshot) async {
+      print('Análisis encontrados: ${snapshot.docs.length}');
+      
+      // Obtener IDs únicos de lotes
+      final loteIds = <String>{};
+      for (final doc in snapshot.docs) {
+        // El ID del lote está en el path: lotes/[loteId]/analisis_laboratorio/[analisisId]
+        final pathSegments = doc.reference.path.split('/');
+        if (pathSegments.length >= 2) {
+          loteIds.add(pathSegments[1]);
+        }
+      }
+      
+      print('Lotes únicos con análisis: ${loteIds.length}');
+      
+      // Cargar los lotes completos
+      final lotes = <LoteUnificadoModel>[];
+      for (final loteId in loteIds) {
+        final lote = await obtenerLotePorId(loteId);
+        if (lote != null) {
+          lotes.add(lote);
+        }
+      }
+      
+      print('Lotes cargados exitosamente: ${lotes.length}');
+      return lotes;
+    });
   }
 }

@@ -321,8 +321,11 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
 
       // Agregar datos del formulario
       if (_pesoResultanteController.text.isNotEmpty) {
-        datosActualizacion['peso_neto_salida'] = double.tryParse(_pesoResultanteController.text) ?? 0.0;
+        final pesoResultante = double.tryParse(_pesoResultanteController.text) ?? 0.0;
+        datosActualizacion['peso_neto_salida'] = pesoResultante;
+        datosActualizacion['peso_procesado'] = pesoResultante; // Campo esperado por el modelo
         datosActualizacion['merma'] = _mermaCalculada;
+        datosActualizacion['merma_proceso'] = _mermaCalculada; // Campo esperado por el modelo
       }
       
       if (_operadorController.text.isNotEmpty) {

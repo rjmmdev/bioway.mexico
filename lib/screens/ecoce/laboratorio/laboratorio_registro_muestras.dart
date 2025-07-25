@@ -94,18 +94,18 @@ class _LaboratorioRegistroMuestrasScreenState extends State<LaboratorioRegistroM
           return; // Salir del método
         }
         
-        // Si no es del reciclador, tratar como muestra normal
-        final newMuestra = ScannedMuestra(
-          id: muestraId,
-          material: loteUnificado.datosGenerales.tipoMaterial,
-          weight: loteUnificado.pesoActual,
-          format: 'Muestra',
-          dateScanned: DateTime.now(),
-        );
-
-        setState(() {
-          _scannedMuestras.add(newMuestra);
-        });
+        // Si no es del reciclador, navegar directamente a toma de muestra
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LaboratorioTomaMuestraScreen(
+                loteId: muestraId,
+                lote: loteUnificado,
+              ),
+            ),
+          );
+        }
       } else {
         // Si no es del sistema unificado, buscar en el sistema antiguo
         final loteInfo = await _loteService.getLotesInfo([muestraId]);
@@ -261,32 +261,33 @@ class _LaboratorioRegistroMuestrasScreenState extends State<LaboratorioRegistroM
         throw Exception('Usuario no autenticado');
       }
       
-      // Crear lotes de laboratorio para cada muestra escaneada
-      for (final muestra in _scannedMuestras) {
-        final loteLaboratorio = LoteLaboratorioModel(
-          userId: currentUser.uid,
-          loteOrigen: muestra.id, // ID del lote escaneado
-          fechaAnalisis: DateTime.now(),
-          tipoMaterial: muestra.material,
-          pesoMuestra: muestra.weight,
-          proveedor: userProfile['ecoceNombre'] ?? 'Laboratorio',
-          estado: 'pendiente',
-        );
-
-        await _loteService.crearLoteLaboratorio(loteLaboratorio);
-      }
-
-      if (mounted) {
-        // Navegar al formulario con el ID de la primera muestra
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => LaboratorioFormulario(
-              muestraId: _scannedMuestras.first.id,
-              peso: _scannedMuestras.first.weight,
+      // Para el sistema unificado, navegar directamente a la toma de muestra
+      // Solo se puede procesar un lote a la vez en el sistema unificado
+      if (_scannedMuestras.length == 1) {
+        final muestra = _scannedMuestras.first;
+        final lote = await _loteUnificadoService.obtenerLotePorId(muestra.id);
+        
+        if (lote != null) {
+          // Navegar a la pantalla de toma de muestra
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LaboratorioTomaMuestraScreen(
+                loteId: muestra.id,
+                lote: lote,
+              ),
             ),
-          ),
-        );
+          );
+        } else {
+          throw Exception('No se pudo obtener información del lote');
+        }
+      } else {
+        // Por ahora solo se puede procesar un lote a la vez
+        _showError('En el sistema actual solo se puede procesar un lote a la vez');
+        // Quedarse con el primer lote
+        setState(() {
+          _scannedMuestras = [_scannedMuestras.first];
+        });
       }
     } catch (e) {
       if (mounted) {

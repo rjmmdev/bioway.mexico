@@ -5,6 +5,7 @@ import '../../../utils/colors.dart';
 import '../../../utils/qr_utils.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../services/user_session_service.dart';
+import '../../../services/carga_transporte_service.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
 import '../../../models/lotes/lote_unificado_model.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
@@ -26,6 +27,8 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
   MobileScannerController? _scannerController;
   bool _isProcessing = false;
   bool _flashEnabled = false;
+  String? _lastScannedCode; // Para evitar procesar el mismo código múltiples veces
+  DateTime? _lastScanTime; // Para implementar debounce
   
   // Datos de la carga
   final List<Map<String, dynamic>> _lotesEscaneados = [];
@@ -53,7 +56,20 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
   }
 
   Future<void> _procesarCodigoQR(String codigo) async {
-    if (_isProcessing || _lotesIds.contains(codigo)) return;
+    // Implementar debounce para evitar procesamiento múltiple
+    final now = DateTime.now();
+    if (_lastScannedCode == codigo && _lastScanTime != null) {
+      // Si es el mismo código y han pasado menos de 2 segundos, ignorar
+      if (now.difference(_lastScanTime!).inMilliseconds < 2000) {
+        return;
+      }
+    }
+    
+    // Actualizar último código escaneado y tiempo
+    _lastScannedCode = codigo;
+    _lastScanTime = now;
+    
+    if (_isProcessing) return;
     
     setState(() {
       _isProcessing = true;
@@ -62,6 +78,12 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
     try {
       // Extraer ID del lote del código QR usando la utilidad
       final loteId = QRUtils.extractLoteIdFromQR(codigo);
+      
+      // Verificar si ya agregamos este lote
+      if (_lotesIds.contains(loteId)) {
+        _mostrarError('Este lote ya fue agregado a la carga');
+        return;
+      }
       
       // Obtener información del lote
       final lote = await _loteService.obtenerLotePorId(loteId);
@@ -73,7 +95,18 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
       
       // Verificar que el lote no esté ya en transporte
       if (lote.datosGenerales.procesoActual == 'transporte') {
-        _mostrarError('Este lote ya está en transporte');
+        // Verificar si está en una carga activa del transportista actual
+        final cargaService = CargaTransporteService();
+        final estaEnCargaActiva = await cargaService.loteEstaEnCargaActiva(loteId);
+        
+        if (estaEnCargaActiva) {
+          _mostrarError('Este lote ya está en una de tus cargas activas');
+          return;
+        }
+        
+        // Si está en transporte pero no en una carga activa del usuario actual,
+        // podría ser de otro transportista
+        _mostrarError('Este lote ya está siendo transportado');
         return;
       }
       
@@ -96,7 +129,7 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
           'id': loteId,
           'codigo_qr': codigo,
           'material': lote.datosGenerales.tipoMaterial,
-          'peso': lote.datosGenerales.peso,
+          'peso': lote.pesoActual, // Usar el peso actual calculado dinámicamente
           'presentacion': lote.datosGenerales.materialPresentacion ?? 'Sin especificar',
           'fecha_creacion': lote.datosGenerales.fechaCreacion,
         });
@@ -114,6 +147,8 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
       print('Error al procesar QR: $e');
       _mostrarError('Error al procesar el código QR');
     } finally {
+      // Esperar un poco antes de permitir otro escaneo
+      await Future.delayed(const Duration(milliseconds: 500));
       setState(() {
         _isProcessing = false;
       });
@@ -278,11 +313,12 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
                   MobileScanner(
                     controller: _scannerController!,
                     onDetect: (capture) {
+                      if (_isProcessing) return; // Evitar procesamiento múltiple
+                      
                       final List<Barcode> barcodes = capture.barcodes;
-                      for (final barcode in barcodes) {
-                        if (barcode.rawValue != null) {
-                          _procesarCodigoQR(barcode.rawValue!);
-                        }
+                      // Procesar solo el primer código QR detectado
+                      if (barcodes.isNotEmpty && barcodes.first.rawValue != null) {
+                        _procesarCodigoQR(barcodes.first.rawValue!);
                       }
                     },
                   ),

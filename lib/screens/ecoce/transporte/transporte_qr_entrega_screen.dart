@@ -198,6 +198,17 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
     (sum, lote) => sum + (lote['peso'] as double)
   );
   
+  bool _tieneMuestrasLab() {
+    return widget.lotesSeleccionados.any((lote) => lote['tiene_muestras_lab'] == true);
+  }
+  
+  double _pesoTotalMuestras() {
+    return widget.lotesSeleccionados.fold(
+      0.0,
+      (sum, lote) => sum + (lote['peso_muestras'] as double? ?? 0.0)
+    );
+  }
+  
   String get _origenInfo {
     // Obtener información del origen del primer lote (todos deben ser del mismo origen en una carga)
     final primerLote = widget.lotesSeleccionados.first;
@@ -459,10 +470,19 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                         const SizedBox(height: 16),
                         _buildInfoRow(
                           icon: Icons.scale,
-                          label: 'Peso total',
+                          label: 'Peso total actual',
                           value: '${_pesoTotal.toStringAsFixed(1)} kg',
                           color: Colors.blue,
                         ),
+                        if (_tieneMuestrasLab()) ...[
+                          const SizedBox(height: 16),
+                          _buildInfoRow(
+                            icon: Icons.science,
+                            label: 'Muestras de laboratorio',
+                            value: '${_pesoTotalMuestras().toStringAsFixed(1)} kg',
+                            color: BioWayColors.info,
+                          ),
+                        ],
                         const SizedBox(height: 16),
                         _buildInfoRow(
                           icon: Icons.location_on,
