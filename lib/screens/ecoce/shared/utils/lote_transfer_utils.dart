@@ -138,16 +138,22 @@ class LoteTransferUtils {
         break;
         
       case 'transporte':
-        if (lote.transporte != null) {
-          buffer.writeln('   - Usuario: ${lote.transporte!.usuarioFolio}');
-          buffer.writeln('   - Fecha entrada: ${_formatDate(lote.transporte!.fechaEntrada)}');
-          if (lote.transporte!.fechaSalida != null) {
-            buffer.writeln('   - Fecha salida: ${_formatDate(lote.transporte!.fechaSalida!)}');
-          }
-          buffer.writeln('   - Peso recogido: ${lote.transporte!.pesoRecogido} kg');
-          if (lote.transporte!.pesoEntregado != null) {
-            buffer.writeln('   - Peso entregado: ${lote.transporte!.pesoEntregado} kg');
-          }
+        // Buscar la fase de transporte correspondiente
+        if (lote.transporteFases.isNotEmpty) {
+          // Mostrar información de todas las fases de transporte
+          lote.transporteFases.forEach((fase, datos) {
+            buffer.writeln('   - Fase: $fase');
+            buffer.writeln('   - Usuario: ${datos.usuarioFolio}');
+            buffer.writeln('   - Fecha entrada: ${_formatDate(datos.fechaEntrada)}');
+            if (datos.fechaSalida != null) {
+              buffer.writeln('   - Fecha salida: ${_formatDate(datos.fechaSalida!)}');
+            }
+            buffer.writeln('   - Peso recogido: ${datos.pesoRecogido} kg');
+            if (datos.pesoEntregado != null) {
+              buffer.writeln('   - Peso entregado: ${datos.pesoEntregado} kg');
+            }
+            buffer.writeln('');
+          });
         }
         break;
         
@@ -163,10 +169,15 @@ class LoteTransferUtils {
         break;
         
       case 'laboratorio':
-        if (lote.laboratorio != null) {
-          buffer.writeln('   - Usuario: ${lote.laboratorio!.usuarioFolio}');
-          buffer.writeln('   - Fecha: ${_formatDate(lote.laboratorio!.fechaEntrada)}');
-          buffer.writeln('   - Peso muestra: ${lote.laboratorio!.pesoMuestra} kg');
+        // Laboratorio ahora es un proceso paralelo
+        if (lote.analisisLaboratorio.isNotEmpty) {
+          buffer.writeln('   - Total análisis: ${lote.analisisLaboratorio.length}');
+          for (final analisis in lote.analisisLaboratorio) {
+            buffer.writeln('   - Usuario: ${analisis.usuarioFolio}');
+            buffer.writeln('   - Fecha: ${_formatDate(analisis.fechaToma)}');
+            buffer.writeln('   - Peso muestra: ${analisis.pesoMuestra} kg');
+            buffer.writeln('');
+          }
         }
         break;
         

@@ -4,13 +4,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
 import '../../../services/lote_service.dart';
+import '../../../services/lote_unificado_service.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/firebase/auth_service.dart';
 import '../../../models/lotes/lote_laboratorio_model.dart';
+import '../../../models/lotes/lote_unificado_model.dart';
 import '../shared/utils/material_utils.dart';
 import 'laboratorio_escaneo.dart';
 import 'laboratorio_gestion_muestras.dart';
 import 'laboratorio_formulario.dart';
+import 'laboratorio_toma_muestra_screen.dart';
 import 'widgets/laboratorio_muestra_card.dart';
 
 // Modelo temporal para representar una muestra
@@ -48,6 +51,7 @@ class _LaboratorioRegistroMuestrasScreenState extends State<LaboratorioRegistroM
   
   // Servicios
   final LoteService _loteService = LoteService();
+  final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
   final UserSessionService _userSession = UserSessionService();
   final AuthService _authService = AuthService();
   bool _isLoading = false;
@@ -67,59 +71,96 @@ class _LaboratorioRegistroMuestrasScreenState extends State<LaboratorioRegistroM
     });
     
     try {
-      // Buscar el lote en cualquier colección (puede venir de reciclador o transportista)
-      final loteInfo = await _loteService.getLotesInfo([muestraId]);
+      // Primero intentar obtener el lote del sistema unificado
+      final loteUnificado = await _loteUnificadoService.obtenerLotePorId(muestraId);
       
-      if (loteInfo.isEmpty) {
-        _showError('No se encontró información del lote');
-        return;
-      }
-      
-      final info = loteInfo.first;
-      
-      // Extraer información relevante
-      String material = 'Sin especificar';
-      double peso = 0.0;
-      String origen = 'Sin origen';
-      
-      // Determinar el material según el tipo de lote
-      if (info['tipo_lote'] == 'lotes_reciclador' && info['data']['ecoce_reciclador_tipo_poli'] != null) {
-        // Si viene de reciclador, usar el tipo de polímero predominante
-        final tipoPoli = info['data']['ecoce_reciclador_tipo_poli'] as Map<String, dynamic>;
-        if (tipoPoli.isNotEmpty) {
-          material = tipoPoli.entries.reduce((a, b) => a.value > b.value ? a : b).key;
-        }
-        peso = (info['data']['ecoce_reciclador_peso_final'] ?? 0.0).toDouble();
-        origen = info['data']['ecoce_reciclador_recibe_proveedor'] ?? 'Reciclador';
-      } else if (info['tipo_lote'] == 'lotes_transportista') {
-        // Si viene de transportista, buscar el tipo predominante de los lotes que transporta
-        final lotesTransportados = info['data']['ecoce_transportista_lotes'] as List<dynamic>? ?? [];
-        if (lotesTransportados.isNotEmpty) {
-          final tiposPoli = await _loteService.calcularTipoPolimeroPredominante(
-            lotesTransportados.map((e) => e.toString()).toList()
-          );
-          if (tiposPoli.isNotEmpty) {
-            material = tiposPoli.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+      if (loteUnificado != null) {
+        // Es un lote del sistema unificado
+        
+        // Verificar si el proceso actual es reciclador
+        if (loteUnificado.datosGenerales.procesoActual == 'reciclador') {
+          // Navegar directamente al formulario de toma de muestra
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => LaboratorioTomaMuestraScreen(
+                  loteId: muestraId,
+                  lote: loteUnificado,
+                ),
+              ),
+            );
           }
+          return; // Salir del método
         }
-        peso = (info['data']['ecoce_transportista_peso_total'] ?? 0.0).toDouble();
-        origen = info['data']['ecoce_transportista_proveedor'] ?? 'Transportista';
-      }
-      
-      // Tomar solo una muestra pequeña del peso total (1-5 kg)
-      final pesoMuestra = peso > 5 ? 1 + (DateTime.now().millisecondsSinceEpoch % 40) / 10 : peso;
-      
-      final newMuestra = ScannedMuestra(
-        id: muestraId,
-        material: material,
-        weight: pesoMuestra,
-        format: 'Muestra',
-        dateScanned: DateTime.now(),
-      );
+        
+        // Si no es del reciclador, tratar como muestra normal
+        final newMuestra = ScannedMuestra(
+          id: muestraId,
+          material: loteUnificado.datosGenerales.tipoMaterial,
+          weight: loteUnificado.pesoActual,
+          format: 'Muestra',
+          dateScanned: DateTime.now(),
+        );
 
-      setState(() {
-        _scannedMuestras.add(newMuestra);
-      });
+        setState(() {
+          _scannedMuestras.add(newMuestra);
+        });
+      } else {
+        // Si no es del sistema unificado, buscar en el sistema antiguo
+        final loteInfo = await _loteService.getLotesInfo([muestraId]);
+        
+        if (loteInfo.isEmpty) {
+          _showError('No se encontró información del lote');
+          return;
+        }
+        
+        final info = loteInfo.first;
+        
+        // Extraer información relevante
+        String material = 'Sin especificar';
+        double peso = 0.0;
+        String origen = 'Sin origen';
+        
+        // Determinar el material según el tipo de lote
+        if (info['tipo_lote'] == 'lotes_reciclador' && info['data']['ecoce_reciclador_tipo_poli'] != null) {
+          // Si viene de reciclador, usar el tipo de polímero predominante
+          final tipoPoli = info['data']['ecoce_reciclador_tipo_poli'] as Map<String, dynamic>;
+          if (tipoPoli.isNotEmpty) {
+            material = tipoPoli.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+          }
+          peso = (info['data']['ecoce_reciclador_peso_final'] ?? 0.0).toDouble();
+          origen = info['data']['ecoce_reciclador_recibe_proveedor'] ?? 'Reciclador';
+        } else if (info['tipo_lote'] == 'lotes_transportista') {
+          // Si viene de transportista, buscar el tipo predominante de los lotes que transporta
+          final lotesTransportados = info['data']['ecoce_transportista_lotes'] as List<dynamic>? ?? [];
+          if (lotesTransportados.isNotEmpty) {
+            final tiposPoli = await _loteService.calcularTipoPolimeroPredominante(
+              lotesTransportados.map((e) => e.toString()).toList()
+            );
+            if (tiposPoli.isNotEmpty) {
+              material = tiposPoli.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+            }
+          }
+          peso = (info['data']['ecoce_transportista_peso_total'] ?? 0.0).toDouble();
+          origen = info['data']['ecoce_transportista_proveedor'] ?? 'Transportista';
+        }
+        
+        // Tomar solo una muestra pequeña del peso total (1-5 kg)
+        final pesoMuestra = peso > 5 ? 1 + (DateTime.now().millisecondsSinceEpoch % 40) / 10 : peso;
+        
+        final newMuestra = ScannedMuestra(
+          id: muestraId,
+          material: material,
+          weight: pesoMuestra,
+          format: 'Muestra',
+          dateScanned: DateTime.now(),
+        );
+
+        setState(() {
+          _scannedMuestras.add(newMuestra);
+        });
+      }
     } catch (e) {
       _showError('Error al obtener información del lote: $e');
     } finally {

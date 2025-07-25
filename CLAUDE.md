@@ -176,11 +176,14 @@ ecoce_profiles/[type]/usuarios/  # Profile data by type
 ├── transporte/usuarios/
 └── laboratorio/usuarios/
 
-lotes_origen/                  # Origin lots (collection centers)
-lotes_transportista/          # Transport lots
-lotes_reciclador/            # Recycler lots
-lotes_laboratorio/           # Laboratory samples
-lotes_transformador/         # Transformer lots
+lotes/                         # Unified lot collection
+├── [loteId]/
+│   ├── datos_generales/      # General lot information
+│   ├── origen/               # Origin process data
+│   ├── transporte/           # Transport phases (fase_1, fase_2)
+│   ├── reciclador/          # Recycler process data
+│   ├── analisis_laboratorio/ # Laboratory analysis (parallel process)
+│   └── transformador/        # Transformer process data
 
 users_pending_deletion/        # Users marked for Auth deletion
 ├── [userId]
@@ -210,11 +213,58 @@ users_pending_deletion/        # Users marked for Auth deletion
 - **Laboratorio**: Sample types
 
 ### QR Code Flow Architecture
-1. **Origin creates lot** → QR contains lot ID
-2. **Transport scans lots** → Creates new transport lot → QR contains transport lot ID
-3. **Recycler scans transport lot** → Creates recycler lot with reference
-4. **Laboratory takes samples** → References source lot
-5. **Transformer processes** → Final product tracking
+1. **Origin creates lot** → QR format: `LOTE-TIPOMATERIAL-ID`
+2. **Transport scans lots** → Creates cargo with multiple lots
+3. **Transport delivers** → Creates delivery QR: `ENTREGA-ID`
+4. **Recycler scans delivery** → Receives lots automatically
+5. **Laboratory takes samples** → Parallel process, no ownership transfer
+
+### Lot Visibility Rules
+Lots appear in user screens based on `proceso_actual` field:
+- **Origin**: Shows lots where `proceso_actual == 'origen'`
+- **Transport**: Shows lots where `proceso_actual == 'transporte'`
+- **Recycler**: Shows lots where `proceso_actual == 'reciclador'`
+- **Transformer**: Shows lots where `proceso_actual == 'transformador'`
+
+When a lot is successfully transferred (both delivery and reception completed), the `proceso_actual` updates and the lot moves to the new user's screen.
+
+## Unified Lot System
+
+### Key Concepts
+- **Immutable ID**: Each lot has a single ID throughout its lifecycle
+- **Transport Phases**: Map structure for multiple transport phases
+- **Laboratory Process**: List of analyses without ownership transfer
+- **Automatic Phase Detection**: System determines transport phase based on current process
+
+### LoteUnificadoModel Structure
+```dart
+class LoteUnificadoModel {
+  final String id;                                    // Immutable unique ID
+  final DatosGeneralesLote datosGenerales;          // General information
+  final ProcesoOrigenData? origen;                   // Origin data
+  final Map<String, ProcesoTransporteData> transporteFases; // Transport phases
+  final ProcesoRecicladorData? reciclador;          // Recycler data
+  final List<AnalisisLaboratorioData> analisisLaboratorio; // Lab analyses
+  final ProcesoTransformadorData? transformador;     // Transformer data
+}
+```
+
+### Transport Phases
+- **fase_1**: Origin → Recycler
+- **fase_2**: Recycler → Transformer
+- Automatically determined based on `proceso_actual`
+
+### QR Code Handling
+```dart
+// Use QRUtils for consistent QR code handling
+import 'package:app/utils/qr_utils.dart';
+
+// Extract lot ID from QR code
+final loteId = QRUtils.extractLoteIdFromQR(qrCode);
+
+// Generate QR code
+final qrCode = QRUtils.generateLoteQR(tipoPoli, loteId);
+```
 
 ## Critical Implementation Patterns
 
@@ -241,9 +291,9 @@ void _scanAnotherLot() async {
 ### Firebase Field Naming
 Always check actual Firebase field names in models:
 ```dart
-// Example: LoteTransportistaModel uses specific field names
-'ecoce_transportista_lotes_entrada' // NOT 'lotes'
-'ecoce_transportista_peso_recibido' // NOT 'peso_total'
+// Example: Transport phases use specific field names
+'transporteFases' // Map<String, ProcesoTransporteData>
+'analisisLaboratorio' // List<AnalisisLaboratorioData>
 ```
 
 ### Navigation After Success
@@ -257,6 +307,19 @@ Navigator.of(context).pushNamedAndRemoveUntil(
 
 // WRONG - Goes to login screen
 Navigator.of(context).popUntil((route) => route.isFirst);
+```
+
+### Transport Phase Document Verification
+When verifying lot transfers involving Transport, always check the correct phase document:
+```dart
+// CORRECT - Check phase document for Transport
+if (procesoDestino == PROCESO_TRANSPORTE) {
+  String faseDestino = procesoOrigen == PROCESO_RECICLADOR ? 'fase_2' : 'fase_1';
+  destinoDoc = await loteRef.collection(PROCESO_TRANSPORTE).doc(faseDestino).get();
+}
+
+// WRONG - Transport doesn't use 'data' document
+destinoDoc = await loteRef.collection(PROCESO_TRANSPORTE).doc('data').get();
 ```
 
 ### Signature Widget Pattern
@@ -450,125 +513,6 @@ NEVER hardcode colors. Always use `BioWayColors` constants:
 - PDFs limited to 5MB
 - Use `ImageService.optimizeImageForDatabase()` for consistency
 
-## Sistema de Lotes y Trazabilidad
-
-### Arquitectura Unificada de Lotes
-
-El sistema utiliza una estructura de lotes unificada con ID único e inmutable que permite la trazabilidad completa del material reciclable a través de toda la cadena de suministro.
-
-#### Estructura de Base de Datos
-```
-lotes/
-└── {loteId}/                          # ID único generado automáticamente
-    ├── datos_generales/
-    │   └── info                       # Documento con información general del lote
-    │       ├── id                     # ID del lote
-    │       ├── fecha_creacion         # Timestamp de creación
-    │       ├── creado_por             # UID del usuario origen
-    │       ├── proceso_actual         # "origen" | "transporte" | "reciclador" | etc.
-    │       ├── historial_procesos     # ["origen", "transporte", "reciclador"]
-    │       ├── qr_code               # Código QR único: "LOTE-{tipo}-{id}"
-    │       ├── material_tipo         # Tipo de polímero
-    │       ├── material_presentacion # Forma del material
-    │       ├── material_fuente       # Origen del material
-    │       └── peso                  # Peso actual del lote
-    │
-    ├── origen/                       # Datos del proceso origen
-    │   └── data
-    │       ├── usuario_id
-    │       ├── fecha_entrada
-    │       ├── peso_nace            # Peso inicial
-    │       ├── firma_operador       # URL de la firma
-    │       ├── evidencias_foto      # Array de URLs de fotos
-    │       └── ... (todos los campos del formulario)
-    │
-    ├── transporte/                   # Datos del proceso transporte
-    │   └── data
-    │       ├── usuario_id
-    │       ├── fecha_recepcion
-    │       ├── vehiculo_placas
-    │       ├── firma_conductor
-    │       └── ... (campos del transportista)
-    │
-    └── reciclador/                   # Datos del proceso reciclador
-        └── data
-            ├── usuario_id
-            ├── peso_entrada
-            ├── peso_salida
-            ├── merma
-            └── ... (campos del reciclador)
-```
-
-### Flujo de Transferencia de Lotes
-
-1. **Creación (Usuario Origen)**
-   - Crea el lote con ID único
-   - Genera código QR automáticamente
-   - Estado inicial: `proceso_actual = "origen"`
-   - Guarda toda la información del formulario en `/origen/data`
-
-2. **Transferencia Automática por QR**
-   - **NO hay botones de transferir** - la transferencia es automática
-   - El siguiente usuario escanea el QR
-   - Al completar su formulario de recepción:
-     - Se actualiza `proceso_actual` al nuevo proceso
-     - Se agrega el proceso a `historial_procesos`
-     - Se crea la subcarpeta del nuevo proceso con todos los datos
-   - **Garantiza interacción física** entre usuarios
-
-3. **Trazabilidad Completa**
-   - Cada proceso guarda TODOS sus datos
-   - La información es **inmutable** - nunca se modifica
-   - El repositorio puede ver toda la historia del lote
-   - Incluye: usuarios, fechas, pesos, firmas, fotos, etc.
-
-### Servicios Principales
-
-#### LoteUnificadoService
-```dart
-// Crear lote desde origen
-crearLoteDesdeOrigen({
-  tipoMaterial, pesoInicial, fuente, presentacion,
-  firmaOperador, evidenciasFoto, ...
-}) → String (loteId)
-
-// Transferir lote entre procesos
-transferirLote({
-  loteId, procesoDestino, datosIniciales
-}) → void
-```
-
-#### LoteService (actualizado)
-```dart
-// Obtener lotes del usuario origen actual
-getLotesOrigen() → Stream<List<LoteOrigenModel>>
-
-// Busca en la nueva estructura usando collectionGroup
-// Filtra por creado_por y proceso_actual = "origen"
-```
-
-### Puntos Clave de Implementación
-
-1. **IDs Únicos**: Usar Firestore auto-generated IDs
-2. **QR Codes**: Formato `LOTE-{tipo}-{id}` 
-3. **Inmutabilidad**: Los datos nunca se modifican, solo se agregan
-4. **Atomicidad**: Usar batch operations para consistencia
-5. **Permisos**: Cualquier usuario autenticado puede crear/leer lotes
-
-### Consultas Comunes
-
-```dart
-// Lotes en proceso origen del usuario actual
-collectionGroup('datos_generales')
-  .where('creado_por', '==', userId)
-  .where('proceso_actual', '==', 'origen')
-
-// Historial completo de un lote
-lotes/{loteId}/origen/data
-lotes/{loteId}/transporte/data
-lotes/{loteId}/reciclador/data
-```
-
 ## Known Issues & Limitations
 
 ### BioWay Platform
@@ -589,6 +533,9 @@ lotes/{loteId}/reciclador/data
 4. Recycler form weight calculations (gross = sum, net = user input)
 5. Signature widget positioning with proportional scaling
 6. Navigation after form completion (avoid logout)
-7. Unified lot structure with complete traceability
-8. Automatic lot transfer via QR scanning
-9. Master users in separate collection (`maestros`)
+7. Unified lot structure with immutable IDs
+8. Transport phases (fase_1, fase_2) implementation
+9. Laboratory as parallel process without ownership transfer
+10. QRUtils for consistent QR code handling across all screens
+11. Transport phase verification in lot transfer (fixed fase_1/fase_2 document lookup)
+12. Origin to Transport lot transfer completion detection

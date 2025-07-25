@@ -4,6 +4,7 @@ import 'package:app/services/firebase/auth_service.dart';
 import 'package:app/services/firebase/firebase_manager.dart';
 import 'package:app/services/firebase/firebase_storage_service.dart';
 import 'package:app/models/lotes/lote_unificado_model.dart';
+import 'package:app/utils/qr_utils.dart';
 
 /// Servicio centralizado para gestión de lotes con ID único e inmutable
 class LoteUnificadoService {
@@ -151,7 +152,7 @@ class LoteUnificadoService {
     }
   }
 
-  /// Verificar si ambas partes han completado la transferencia
+  /// Verificar si ambas partes han completado la transferencia (actualizado para subfases)
   Future<bool> verificarTransferenciaCompleta({
     required String loteId,
     required String procesoOrigen,
@@ -172,11 +173,28 @@ class LoteUnificadoService {
       bool destinoExiste = false;
       bool tieneRecepcion = false;
       
-      // Verificar proceso origen (transporte)
-      final origenDoc = await loteRef.collection(procesoOrigen).doc('data').get();
-      if (origenDoc.exists) {
+      // Verificar proceso origen
+      DocumentSnapshot? origenDoc;
+      
+      // Si el origen es transporte, determinar la fase
+      if (procesoOrigen == PROCESO_TRANSPORTE) {
+        // Verificar ambas fases para encontrar la activa
+        final fase1Doc = await loteRef.collection(PROCESO_TRANSPORTE).doc('fase_1').get();
+        final fase2Doc = await loteRef.collection(PROCESO_TRANSPORTE).doc('fase_2').get();
+        
+        // Usar la fase más reciente
+        if (fase2Doc.exists && procesoDestino == PROCESO_TRANSFORMADOR) {
+          origenDoc = fase2Doc;
+        } else if (fase1Doc.exists) {
+          origenDoc = fase1Doc;
+        }
+      } else {
+        origenDoc = await loteRef.collection(procesoOrigen).doc('data').get();
+      }
+      
+      if (origenDoc != null && origenDoc.exists) {
         origenExiste = true;
-        final datosOrigen = origenDoc.data()!;
+        final datosOrigen = origenDoc.data() as Map<String, dynamic>;
         print('Datos Origen: $datosOrigen');
         
         // Verificar si el origen ha completado su parte
@@ -187,11 +205,23 @@ class LoteUnificadoService {
         print('Origen existe: $origenExiste, Tiene Entrega: $tieneEntrega');
       }
       
-      // Verificar proceso destino (reciclador/transformador)
-      final destinoDoc = await loteRef.collection(procesoDestino).doc('data').get();
-      if (destinoDoc.exists) {
+      // Verificar proceso destino (reciclador/transformador/transporte)
+      DocumentSnapshot? destinoDoc;
+      
+      if (procesoDestino == PROCESO_TRANSPORTE) {
+        // Para transporte, verificar las fases
+        String faseDestino = 'fase_1'; // Por defecto fase_1 cuando viene de origen
+        if (procesoOrigen == PROCESO_RECICLADOR) {
+          faseDestino = 'fase_2';
+        }
+        destinoDoc = await loteRef.collection(PROCESO_TRANSPORTE).doc(faseDestino).get();
+      } else {
+        destinoDoc = await loteRef.collection(procesoDestino).doc('data').get();
+      }
+      
+      if (destinoDoc != null && destinoDoc.exists) {
         destinoExiste = true;
-        final datosDestino = destinoDoc.data()!;
+        final datosDestino = destinoDoc.data() as Map<String, dynamic>;
         print('Datos Destino: $datosDestino');
         
         // Verificar si el destino ha completado su parte
@@ -231,7 +261,7 @@ class LoteUnificadoService {
     }
   }
 
-  /// Transferir lote a otro proceso (actualizado para manejar transferencias parciales)
+  /// Transferir lote a otro proceso (actualizado para manejar subfases de transporte)
   Future<void> transferirLote({
     required String loteId,
     required String procesoDestino,
@@ -257,6 +287,22 @@ class LoteUnificadoService {
       final procesoActual = datosGenerales['proceso_actual'] as String;
       print('Proceso Actual: $procesoActual');
       
+      // Determinar si es una fase de transporte
+      String procesoRealDestino = procesoDestino;
+      String? faseTransporte;
+      
+      if (procesoDestino == PROCESO_TRANSPORTE) {
+        // Determinar la fase basado en el proceso actual
+        if (procesoActual == PROCESO_ORIGEN) {
+          faseTransporte = 'fase_1';
+        } else if (procesoActual == PROCESO_RECICLADOR) {
+          faseTransporte = 'fase_2';
+        } else {
+          faseTransporte = 'fase_1'; // Por defecto
+        }
+        print('Fase de transporte determinada: $faseTransporte');
+      }
+      
       // 2. Crear o actualizar el proceso destino
       // No sobrescribir usuario_id si ya viene en datosIniciales
       final datosFinales = {
@@ -269,11 +315,19 @@ class LoteUnificadoService {
         datosFinales['usuario_id'] = _currentUserId;
       }
       
-      await crearOActualizarProceso(
-        loteId: loteId,
-        proceso: procesoDestino,
-        datos: datosFinales,
-      );
+      // Si es transporte, guardar en la subfase correspondiente
+      if (faseTransporte != null) {
+        await loteRef.collection(PROCESO_TRANSPORTE).doc(faseTransporte).set({
+          'fecha_entrada': FieldValue.serverTimestamp(),
+          ...datosFinales,
+        });
+      } else {
+        await crearOActualizarProceso(
+          loteId: loteId,
+          proceso: procesoDestino,
+          datos: datosFinales,
+        );
+      }
       
       // 3. Si es una transferencia completa, actualizar datos generales
       final esTransferenciaCompleta = await verificarTransferenciaCompleta(
@@ -284,28 +338,56 @@ class LoteUnificadoService {
       
       if (esTransferenciaCompleta) {
         print('TRANSFERENCIA COMPLETA DETECTADA - Actualizando proceso_actual a: $procesoDestino');
-        // Marcar salida del proceso actual
-        batch.update(
-          loteRef.collection(procesoActual).doc('data'),
-          {'fecha_salida': FieldValue.serverTimestamp()},
-        );
         
-        // Asegurar que el proceso destino tenga fecha_entrada
-        final destinoDoc = await loteRef.collection(procesoDestino).doc('data').get();
-        if (destinoDoc.exists && destinoDoc.data()!['fecha_entrada'] == null) {
+        // Marcar salida del proceso actual
+        if (procesoActual == PROCESO_TRANSPORTE) {
+          // Si el proceso actual es transporte, determinar qué fase marcar como completada
+          final fase = faseTransporte == 'fase_2' ? 'fase_1' : 'fase_2';
+          final faseDoc = await loteRef.collection(PROCESO_TRANSPORTE).doc(fase).get();
+          if (faseDoc.exists) {
+            batch.update(
+              loteRef.collection(PROCESO_TRANSPORTE).doc(fase),
+              {'fecha_salida': FieldValue.serverTimestamp()},
+            );
+          }
+        } else {
           batch.update(
-            loteRef.collection(procesoDestino).doc('data'),
-            {'fecha_entrada': FieldValue.serverTimestamp()},
+            loteRef.collection(procesoActual).doc('data'),
+            {'fecha_salida': FieldValue.serverTimestamp()},
           );
         }
         
+        // Asegurar que el proceso destino tenga fecha_entrada
+        if (procesoDestino == PROCESO_TRANSPORTE && faseTransporte != null) {
+          final destinoDoc = await loteRef.collection(PROCESO_TRANSPORTE).doc(faseTransporte).get();
+          if (destinoDoc.exists && destinoDoc.data()!['fecha_entrada'] == null) {
+            batch.update(
+              loteRef.collection(PROCESO_TRANSPORTE).doc(faseTransporte),
+              {'fecha_entrada': FieldValue.serverTimestamp()},
+            );
+          }
+        } else {
+          final destinoDoc = await loteRef.collection(procesoDestino).doc('data').get();
+          if (destinoDoc.exists && destinoDoc.data()!['fecha_entrada'] == null) {
+            batch.update(
+              loteRef.collection(procesoDestino).doc('data'),
+              {'fecha_entrada': FieldValue.serverTimestamp()},
+            );
+          }
+        }
+        
         // Actualizar datos generales
+        // Para el historial, agregar la fase específica si es transporte
+        final historialEntry = procesoDestino == PROCESO_TRANSPORTE && faseTransporte != null
+            ? '${PROCESO_TRANSPORTE}_$faseTransporte'
+            : procesoDestino;
+            
         batch.update(
           loteRef.collection(DATOS_GENERALES).doc('info'),
           {
             'estado_actual': 'en_$procesoDestino',
             'proceso_actual': procesoDestino,
-            'historial_procesos': FieldValue.arrayUnion([procesoDestino]),
+            'historial_procesos': FieldValue.arrayUnion([historialEntry]),
           },
         );
         
@@ -339,35 +421,40 @@ class LoteUnificadoService {
     }
   }
   
-  /// Actualizar datos del proceso transporte
+  /// Actualizar datos del proceso transporte (actualizado para subfases)
   Future<void> actualizarProcesoTransporte({
     required String loteId,
     required Map<String, dynamic> datos,
-    String? transporteId,
+    String? faseTransporte,
   }) async {
     try {
-      // Si no se especifica transporteId, obtener el más reciente
-      if (transporteId == null) {
-        final transportesSnapshot = await _firestore
-            .collection(COLECCION_LOTES)
-            .doc(loteId)
-            .collection(PROCESO_TRANSPORTE)
-            .orderBy('fecha_entrada', descending: true)
-            .limit(1)
-            .get();
-        
-        if (transportesSnapshot.docs.isEmpty) {
-          throw Exception('No se encontró proceso de transporte activo');
+      final loteRef = _firestore.collection(COLECCION_LOTES).doc(loteId);
+      
+      // Si no se especifica fase, determinar la fase activa
+      if (faseTransporte == null) {
+        // Obtener datos generales para ver el proceso actual
+        final datosGenerales = await loteRef.collection(DATOS_GENERALES).doc('info').get();
+        if (datosGenerales.exists) {
+          final procesoActual = datosGenerales.data()!['proceso_actual'];
+          
+          // Determinar la fase basado en el historial
+          final historial = List<String>.from(datosGenerales.data()!['historial_procesos'] ?? []);
+          
+          if (historial.contains('transporte_fase_2') || procesoActual == PROCESO_TRANSFORMADOR) {
+            faseTransporte = 'fase_2';
+          } else {
+            faseTransporte = 'fase_1';
+          }
+        } else {
+          faseTransporte = 'fase_1'; // Por defecto
         }
-        
-        transporteId = transportesSnapshot.docs.first.id;
       }
       
-      await _firestore
-          .collection(COLECCION_LOTES)
-          .doc(loteId)
+      print('Actualizando transporte fase: $faseTransporte');
+      
+      await loteRef
           .collection(PROCESO_TRANSPORTE)
-          .doc(transporteId)
+          .doc(faseTransporte)
           .update(datos);
     } catch (e) {
       print('Error al actualizar proceso transporte: $e');
@@ -427,23 +514,45 @@ class LoteUnificadoService {
       
       final loteRef = _firestore.collection(COLECCION_LOTES).doc(loteId);
       
+      // Obtener las fases de transporte
+      final Map<String, DocumentSnapshot> transporteFases = {};
+      
+      // Verificar fase_1
+      final fase1Doc = await loteRef.collection(PROCESO_TRANSPORTE).doc('fase_1').get();
+      if (fase1Doc.exists) {
+        transporteFases['fase_1'] = fase1Doc;
+      }
+      
+      // Verificar fase_2
+      final fase2Doc = await loteRef.collection(PROCESO_TRANSPORTE).doc('fase_2').get();
+      if (fase2Doc.exists) {
+        transporteFases['fase_2'] = fase2Doc;
+      }
+      
+      // Obtener análisis de laboratorio
+      final analisisSnapshot = await loteRef
+          .collection('analisis_laboratorio')
+          .orderBy('fecha_toma', descending: true)
+          .get();
+      
+      final List<DocumentSnapshot> analisisLaboratorio = analisisSnapshot.docs;
+      
       // Obtener todos los datos en paralelo
       final futures = await Future.wait([
         loteRef.collection(DATOS_GENERALES).doc('info').get(),
         loteRef.collection(PROCESO_ORIGEN).doc('data').get(),
-        _firestore.collection(COLECCION_LOTES).doc(loteId).collection(PROCESO_TRANSPORTE).orderBy('fecha_entrada', descending: true).limit(1).get().then((snapshot) => snapshot.docs.isNotEmpty ? snapshot.docs.first : null),
         loteRef.collection(PROCESO_RECICLADOR).doc('data').get(),
-        loteRef.collection(PROCESO_LABORATORIO).doc('data').get(),
         loteRef.collection(PROCESO_TRANSFORMADOR).doc('data').get(),
       ]);
       
       print('Resultados de las consultas:');
       print('- Datos generales existe: ${futures[0]?.exists ?? false}');
       print('- Origen existe: ${futures[1]?.exists ?? false}');
-      print('- Transporte existe: ${futures[2] != null}');
-      print('- Reciclador existe: ${futures[3]?.exists ?? false}');
-      print('- Laboratorio existe: ${futures[4]?.exists ?? false}');
-      print('- Transformador existe: ${futures[5]?.exists ?? false}');
+      print('- Transporte fase_1 existe: ${transporteFases.containsKey('fase_1')}');
+      print('- Transporte fase_2 existe: ${transporteFases.containsKey('fase_2')}');
+      print('- Reciclador existe: ${futures[2]?.exists ?? false}');
+      print('- Análisis laboratorio: ${analisisLaboratorio.length} análisis');
+      print('- Transformador existe: ${futures[3]?.exists ?? false}');
       
       // Verificar que existan datos generales
       if (futures[0] == null || !futures[0]!.exists) {
@@ -462,10 +571,10 @@ class LoteUnificadoService {
         id: loteId,
         datosGenerales: futures[0]!,
         origen: (futures[1] != null && futures[1]!.exists) ? futures[1] : null,
-        transporte: futures[2] != null ? futures[2] as DocumentSnapshot : null,
-        reciclador: (futures[3] != null && futures[3]!.exists) ? futures[3] : null,
-        laboratorio: (futures[4] != null && futures[4]!.exists) ? futures[4] : null,
-        transformador: (futures[5] != null && futures[5]!.exists) ? futures[5] : null,
+        transporteFases: transporteFases,
+        reciclador: (futures[2] != null && futures[2]!.exists) ? futures[2] : null,
+        analisisLaboratorio: analisisLaboratorio,
+        transformador: (futures[3] != null && futures[3]!.exists) ? futures[3] : null,
       );
     } catch (e) {
       print('ERROR al obtener lote: $e');
@@ -615,6 +724,26 @@ class LoteUnificadoService {
       return obtenerLotePorId(loteId);
     } catch (e) {
       throw Exception('Error al buscar lote por QR: $e');
+    }
+  }
+  
+  /// Buscar lote por código QR o ID directo
+  /// Intenta primero buscar por QR completo, si no encuentra, extrae el ID y busca por ID
+  Future<LoteUnificadoModel?> buscarLotePorCodigoOId(String codigo) async {
+    try {
+      // Primero intentar buscar por QR completo
+      var lote = await buscarLotePorQR(codigo);
+      
+      if (lote == null) {
+        // Si no encuentra, intentar extraer el ID y buscar directamente
+        final loteId = QRUtils.extractLoteIdFromQR(codigo);
+        lote = await obtenerLotePorId(loteId);
+      }
+      
+      return lote;
+    } catch (e) {
+      print('Error al buscar lote por código o ID: $e');
+      return null;
     }
   }
   
@@ -884,5 +1013,96 @@ class LoteUnificadoService {
         return data;
       }).toList();
     });
+  }
+  
+  /// Registrar análisis de laboratorio (proceso paralelo - no transfiere el lote)
+  Future<void> registrarAnalisisLaboratorio({
+    required String loteId,
+    required double pesoMuestra,
+    required String folioLaboratorio,
+    String? firmaOperador,
+    List<String>? evidenciasFoto,
+  }) async {
+    try {
+      print('=== REGISTRANDO ANÁLISIS DE LABORATORIO ===');
+      print('Lote ID: $loteId');
+      print('Peso Muestra: $pesoMuestra kg');
+      print('Folio Laboratorio: $folioLaboratorio');
+      
+      final loteRef = _firestore.collection(COLECCION_LOTES).doc(loteId);
+      final batch = _firestore.batch();
+      
+      // Verificar que el lote esté en proceso reciclador
+      final datosGeneralesDoc = await loteRef.collection(DATOS_GENERALES).doc('info').get();
+      if (!datosGeneralesDoc.exists) {
+        throw Exception('Lote no encontrado');
+      }
+      
+      final procesoActual = datosGeneralesDoc.data()!['proceso_actual'];
+      if (procesoActual != PROCESO_RECICLADOR) {
+        throw Exception('El lote debe estar en proceso reciclador para tomar muestras');
+      }
+      
+      // Generar ID único para el análisis
+      final analisisId = _firestore.collection('temp').doc().id;
+      
+      // Crear documento de análisis
+      final analisisData = {
+        'id': analisisId,
+        'usuario_id': _currentUserId,
+        'usuario_folio': folioLaboratorio,
+        'fecha_toma': FieldValue.serverTimestamp(),
+        'peso_muestra': pesoMuestra,
+        'firma_operador': firmaOperador,
+        'evidencias_foto': evidenciasFoto ?? [],
+        'certificado': null,
+      };
+      
+      batch.set(
+        loteRef.collection('analisis_laboratorio').doc(analisisId),
+        analisisData,
+      );
+      
+      // Actualizar el peso en el proceso reciclador
+      final recicladorDoc = await loteRef.collection(PROCESO_RECICLADOR).doc('data').get();
+      if (recicladorDoc.exists) {
+        final pesoActual = recicladorDoc.data()!['peso_procesado'] ?? 
+                          recicladorDoc.data()!['peso_entrada'] ?? 0.0;
+        
+        // NO actualizamos el peso del reciclador aquí
+        // El peso se calculará dinámicamente en el modelo
+        // Esto mantiene la integridad de los datos originales
+      }
+      
+      // Agregar al historial que se tomó muestra (opcional)
+      // No modificamos proceso_actual porque el lote sigue con el reciclador
+      
+      await batch.commit();
+      print('=== ANÁLISIS REGISTRADO EXITOSAMENTE ===');
+      
+    } catch (e) {
+      print('ERROR al registrar análisis: $e');
+      throw Exception('Error al registrar análisis de laboratorio: $e');
+    }
+  }
+  
+  
+  /// Obtener análisis de laboratorio de un lote
+  Future<List<AnalisisLaboratorioData>> obtenerAnalisisLaboratorio(String loteId) async {
+    try {
+      final snapshot = await _firestore
+          .collection(COLECCION_LOTES)
+          .doc(loteId)
+          .collection('analisis_laboratorio')
+          .orderBy('fecha_toma', descending: true)
+          .get();
+      
+      return snapshot.docs.map((doc) => 
+        AnalisisLaboratorioData.fromMap(doc.data())
+      ).toList();
+    } catch (e) {
+      print('Error al obtener análisis: $e');
+      return [];
+    }
   }
 }

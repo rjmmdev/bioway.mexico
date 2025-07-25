@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/qr_utils.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
@@ -59,14 +60,8 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
     });
     
     try {
-      // Extraer ID del lote del código QR
-      String loteId = codigo;
-      if (codigo.startsWith('LOTE-')) {
-        final partes = codigo.split('-');
-        if (partes.length >= 3) {
-          loteId = partes.sublist(2).join('-');
-        }
-      }
+      // Extraer ID del lote del código QR usando la utilidad
+      final loteId = QRUtils.extractLoteIdFromQR(codigo);
       
       // Obtener información del lote
       final lote = await _loteService.obtenerLotePorId(loteId);
@@ -149,7 +144,12 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
         userId = lote.transformador?.usuarioId;
         break;
       case 'laboratorio':
-        userId = lote.laboratorio?.usuarioId;
+        // Laboratorio es un proceso paralelo, no toma posesión del lote
+        // Por lo tanto, no debería aparecer como proceso actual
+        // pero si aparece, usar el primer análisis
+        userId = lote.analisisLaboratorio.isNotEmpty 
+            ? lote.analisisLaboratorio.first.usuarioId 
+            : null;
         break;
     }
     

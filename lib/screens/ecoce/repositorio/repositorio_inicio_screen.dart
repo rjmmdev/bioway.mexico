@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
+import '../../../utils/qr_utils.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../models/lotes/lote_unificado_model.dart';
 import '../shared/widgets/shared_qr_scanner_screen.dart';
@@ -88,12 +89,8 @@ class _RepositorioInicioScreenState extends State<RepositorioInicioScreen>
     );
     
     if (result != null && mounted) {
-      String loteId = result;
-      if (result.contains('-')) {
-        final parts = result.split('-');
-        loteId = parts.last;
-      }
-      
+      // Extraer el ID del lote usando la utilidad
+      final loteId = QRUtils.extractLoteIdFromQR(result);
       _navigateToDetail(loteId);
     }
   }
@@ -782,7 +779,9 @@ class _RepositorioInicioScreenState extends State<RepositorioInicioScreen>
       case 'reciclador':
         return lote.reciclador?.usuarioFolio ?? 'N/A';
       case 'laboratorio':
-        return lote.laboratorio?.usuarioFolio ?? 'N/A';
+        return lote.analisisLaboratorio.isNotEmpty 
+            ? lote.analisisLaboratorio.first.usuarioFolio 
+            : 'N/A';
       case 'transformador':
         return lote.transformador?.usuarioFolio ?? 'N/A';
       default:

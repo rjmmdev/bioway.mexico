@@ -416,13 +416,51 @@ class _LoteTrazabilidadScreenState extends State<LoteTrazabilidadScreen> {
 
   List<Widget> _buildTimelineItems() {
     final items = <Widget>[];
-    final historial = _lote!.datosGenerales.historialProcesos;
+    final historial = <String>[];
+    
+    // Construir el historial expandido con subfases de transporte
+    for (final proceso in _lote!.datosGenerales.historialProcesos) {
+      if (proceso == 'transporte' && _lote!.transporteFases.isNotEmpty) {
+        // Si es transporte y hay subfases, agregar cada fase
+        final fases = _lote!.transporteFases.keys.toList()..sort();
+        for (final fase in fases) {
+          if (_lote!.transporteFases[fase] != null) {
+            historial.add('transporte_$fase');
+          }
+        }
+      } else {
+        historial.add(proceso);
+      }
+    }
+    
+    // Agregar análisis de laboratorio como procesos paralelos si existen
+    if (_lote!.analisisLaboratorio.isNotEmpty) {
+      // Insertar después del reciclador si existe
+      final recicladorIndex = historial.indexOf('reciclador');
+      if (recicladorIndex != -1) {
+        historial.insert(recicladorIndex + 1, 'analisis_laboratorio');
+      }
+    }
     
     for (int i = 0; i < historial.length; i++) {
       final proceso = historial[i];
       final isFirst = i == 0;
       final isLast = i == historial.length - 1;
-      final isCurrent = proceso == _lote!.datosGenerales.procesoActual;
+      
+      // Determinar si es el proceso actual
+      bool isCurrent = false;
+      if (proceso.startsWith('transporte_')) {
+        // Para transporte, verificar si es la fase actual
+        final fase = proceso.split('_')[1];
+        final transporteFase = _lote!.transporteFases[fase];
+        isCurrent = _lote!.datosGenerales.procesoActual == 'transporte' && 
+                   transporteFase != null && transporteFase.fechaSalida == null;
+      } else if (proceso == 'analisis_laboratorio') {
+        // Los análisis de laboratorio nunca son "actuales" ya que son paralelos
+        isCurrent = false;
+      } else {
+        isCurrent = proceso == _lote!.datosGenerales.procesoActual;
+      }
       
       items.add(
         TimelineTile(
@@ -435,7 +473,7 @@ class _LoteTrazabilidadScreenState extends State<LoteTrazabilidadScreen> {
           afterLineStyle: LineStyle(
             color: isLast 
                 ? Colors.grey.withOpacity(0.3)
-                : _getProcesoColor(historial[i + 1]).withOpacity(0.3),
+                : _getProcesoColor(i < historial.length - 1 ? historial[i + 1] : proceso).withOpacity(0.3),
             thickness: 3,
           ),
           indicatorStyle: IndicatorStyle(
@@ -563,6 +601,52 @@ class _LoteTrazabilidadScreenState extends State<LoteTrazabilidadScreen> {
   }
 
   Map<String, String>? _getProcesoData(String proceso) {
+    // Manejar subfases de transporte
+    if (proceso.startsWith('transporte_')) {
+      final fase = proceso.split('_')[1];
+      final transporteFase = _lote!.transporteFases[fase];
+      if (transporteFase == null) return null;
+      
+      return {
+        'Usuario': transporteFase.usuarioFolio,
+        'Entrada': FormatUtils.formatDateTime(transporteFase.fechaEntrada),
+        if (transporteFase.fechaSalida != null)
+          'Salida': FormatUtils.formatDateTime(transporteFase.fechaSalida!),
+        'Peso recogido': '${transporteFase.pesoRecogido} kg',
+        if (transporteFase.pesoEntregado != null)
+          'Peso entregado': '${transporteFase.pesoEntregado} kg',
+        if (transporteFase.merma != null)
+          'Merma': '${transporteFase.merma} kg',
+        'Origen': transporteFase.origenRecogida ?? 'No especificado',
+        if (transporteFase.destinoEntrega != null)
+          'Destino': transporteFase.destinoEntrega!,
+      };
+    }
+    
+    // Manejar análisis de laboratorio
+    if (proceso == 'analisis_laboratorio') {
+      if (_lote!.analisisLaboratorio.isEmpty) return null;
+      
+      // Mostrar resumen de todos los análisis
+      final totalMuestras = _lote!.analisisLaboratorio.length;
+      final pesoTotal = _lote!.analisisLaboratorio
+          .map((a) => a.pesoMuestra)
+          .reduce((a, b) => a + b);
+      
+      return {
+        'Muestras tomadas': totalMuestras.toString(),
+        'Peso total muestras': '${pesoTotal.toStringAsFixed(2)} kg',
+        'Primera muestra': FormatUtils.formatDateTime(
+          _lote!.analisisLaboratorio.first.fechaToma
+        ),
+        if (totalMuestras > 1)
+          'Última muestra': FormatUtils.formatDateTime(
+            _lote!.analisisLaboratorio.last.fechaToma
+          ),
+      };
+    }
+    
+    // Procesos regulares
     switch (proceso) {
       case 'origen':
         if (_lote!.origen == null) return null;
@@ -603,13 +687,8 @@ class _LoteTrazabilidadScreenState extends State<LoteTrazabilidadScreen> {
         };
         
       case 'laboratorio':
-        if (_lote!.laboratorio == null) return null;
-        return {
-          'Usuario': _lote!.laboratorio!.usuarioFolio,
-          'Entrada': FormatUtils.formatDateTime(_lote!.laboratorio!.fechaEntrada),
-          'Peso muestra': '${_lote!.laboratorio!.pesoMuestra} kg',
-          'Análisis': _lote!.laboratorio!.tipoAnalisis.join(', '),
-        };
+        // El proceso laboratorio ya no existe como tal, se maneja con analisis_laboratorio
+        return null;
         
       case 'transformador':
         if (_lote!.transformador == null) return null;
@@ -663,6 +742,11 @@ class _LoteTrazabilidadScreenState extends State<LoteTrazabilidadScreen> {
   }
 
   Color _getProcesoColor(String proceso) {
+    // Manejar subfases de transporte
+    if (proceso.startsWith('transporte_')) {
+      return const Color(0xFF1976D2);
+    }
+    
     switch (proceso) {
       case 'origen':
         return const Color(0xFF2E7D32);
@@ -671,6 +755,7 @@ class _LoteTrazabilidadScreenState extends State<LoteTrazabilidadScreen> {
       case 'reciclador':
         return const Color(0xFF388E3C);
       case 'laboratorio':
+      case 'analisis_laboratorio':
         return const Color(0xFF7B1FA2);
       case 'transformador':
         return const Color(0xFFD32F2F);
@@ -680,6 +765,16 @@ class _LoteTrazabilidadScreenState extends State<LoteTrazabilidadScreen> {
   }
 
   IconData _getProcesoIcon(String proceso) {
+    // Manejar subfases de transporte
+    if (proceso.startsWith('transporte_')) {
+      final fase = proceso.split('_')[1];
+      if (fase == 'fase-1') {
+        return Icons.local_shipping_outlined;
+      } else {
+        return Icons.local_shipping;
+      }
+    }
+    
     switch (proceso) {
       case 'origen':
         return Icons.source;
@@ -689,6 +784,8 @@ class _LoteTrazabilidadScreenState extends State<LoteTrazabilidadScreen> {
         return Icons.recycling;
       case 'laboratorio':
         return Icons.science;
+      case 'analisis_laboratorio':
+        return Icons.biotech;
       case 'transformador':
         return Icons.precision_manufacturing;
       default:
@@ -697,6 +794,18 @@ class _LoteTrazabilidadScreenState extends State<LoteTrazabilidadScreen> {
   }
 
   String _getProcesoLabel(String proceso) {
+    // Manejar subfases de transporte
+    if (proceso.startsWith('transporte_')) {
+      final fase = proceso.split('_')[1];
+      if (fase == 'fase-1') {
+        return 'Transporte (Fase 1)';
+      } else if (fase == 'fase-2') {
+        return 'Transporte (Fase 2)';
+      } else {
+        return 'Transporte';
+      }
+    }
+    
     switch (proceso) {
       case 'origen':
         return 'Origen';
@@ -706,6 +815,8 @@ class _LoteTrazabilidadScreenState extends State<LoteTrazabilidadScreen> {
         return 'Reciclador';
       case 'laboratorio':
         return 'Laboratorio';
+      case 'analisis_laboratorio':
+        return 'Análisis de Laboratorio';
       case 'transformador':
         return 'Transformador';
       default:
@@ -876,6 +987,67 @@ class _ProcesoDetailsSheet extends StatelessWidget {
   }
   
   Map<String, dynamic> _getProcesoCompleteData() {
+    // Manejar subfases de transporte
+    if (proceso.startsWith('transporte_')) {
+      final fase = proceso.split('_')[1];
+      final transporteFase = lote.transporteFases[fase];
+      if (transporteFase == null) return {};
+      
+      return {
+        'usuario_folio': transporteFase.usuarioFolio,
+        'fecha_entrada': FormatUtils.formatDateTime(transporteFase.fechaEntrada),
+        'fecha_salida': transporteFase.fechaSalida != null
+            ? FormatUtils.formatDateTime(transporteFase.fechaSalida!)
+            : null,
+        'peso_recogido': '${transporteFase.pesoRecogido} kg',
+        'peso_entregado': transporteFase.pesoEntregado != null
+            ? '${transporteFase.pesoEntregado} kg'
+            : null,
+        'merma': transporteFase.merma != null
+            ? '${transporteFase.merma} kg'
+            : null,
+        'origen_recogida': transporteFase.origenRecogida ?? 'No especificado',
+        'destino_entrega': transporteFase.destinoEntrega,
+        'vehiculo_placas': transporteFase.vehiculoPlacas ?? '',
+        'nombre_conductor': transporteFase.nombreConductor ?? '',
+        'firma_recogida': transporteFase.firmaRecogida,
+        'firma_entrega': transporteFase.firmaEntrega,
+        'evidencias_foto_recogida': transporteFase.evidenciasFotoRecogida,
+        'evidencias_foto_entrega': transporteFase.evidenciasFotoEntrega,
+        'comentarios_recogida': transporteFase.comentariosRecogida,
+        'comentarios_entrega': transporteFase.comentariosEntrega,
+        'evidencias_foto': [
+          ...transporteFase.evidenciasFotoRecogida ?? [],
+          ...transporteFase.evidenciasFotoEntrega ?? [],
+        ],
+      };
+    }
+    
+    // Manejar análisis de laboratorio
+    if (proceso == 'analisis_laboratorio') {
+      if (lote.analisisLaboratorio.isEmpty) return {};
+      
+      // Devolver datos del primer análisis como representativo
+      final primerAnalisis = lote.analisisLaboratorio.first;
+      
+      return {
+        'total_analisis': lote.analisisLaboratorio.length.toString(),
+        'fecha_entrada': FormatUtils.formatDateTime(primerAnalisis.fechaToma),
+        'laboratorios': lote.analisisLaboratorio
+            .map((a) => a.usuarioFolio)
+            .toSet()
+            .join(', '),
+        'peso_total_muestras': '${lote.analisisLaboratorio
+            .map((a) => a.pesoMuestra)
+            .reduce((a, b) => a + b)
+            .toStringAsFixed(2)} kg',
+        'evidencias_foto': lote.analisisLaboratorio
+            .expand((a) => a.evidenciasFoto ?? [])
+            .toList(),
+      };
+    }
+    
+    // Procesos regulares
     switch (proceso) {
       case 'origen':
         if (lote.origen == null) return {};
@@ -937,15 +1109,8 @@ class _ProcesoDetailsSheet extends StatelessWidget {
         };
         
       case 'laboratorio':
-        if (lote.laboratorio == null) return {};
-        return {
-          'usuario_folio': lote.laboratorio!.usuarioFolio,
-          'fecha_entrada': FormatUtils.formatDateTime(lote.laboratorio!.fechaEntrada),
-          'peso_muestra': '${lote.laboratorio!.pesoMuestra} kg',
-          'tipo_analisis': lote.laboratorio!.tipoAnalisis.join(', '),
-          'resultados': lote.laboratorio!.resultados,
-          'observaciones': lote.laboratorio!.observaciones ?? '',
-        };
+        // El proceso laboratorio ya no existe como tal, se maneja con analisis_laboratorio
+        return {};
         
       case 'transformador':
         if (lote.transformador == null) return {};
@@ -970,6 +1135,28 @@ class _ProcesoDetailsSheet extends StatelessWidget {
   
   Map<String, String> _getProcesoSpecificInfo(Map<String, dynamic> data) {
     final info = <String, String>{};
+    
+    // Manejar subfases de transporte
+    if (proceso.startsWith('transporte_')) {
+      if (data['origen_recogida'] != null) info['Origen de Recogida'] = data['origen_recogida'];
+      if (data['destino_entrega'] != null) info['Destino de Entrega'] = data['destino_entrega'];
+      if (data['vehiculo_placas'] != null) info['Placas del Vehículo'] = data['vehiculo_placas'];
+      if (data['nombre_conductor'] != null) info['Nombre del Conductor'] = data['nombre_conductor'];
+      if (data['peso_recogido'] != null) info['Peso Recogido'] = data['peso_recogido'];
+      if (data['peso_entregado'] != null) info['Peso Entregado'] = data['peso_entregado'];
+      if (data['merma'] != null) info['Merma'] = data['merma'];
+      if (data['comentarios_recogida'] != null) info['Comentarios de Recogida'] = data['comentarios_recogida'];
+      if (data['comentarios_entrega'] != null) info['Comentarios de Entrega'] = data['comentarios_entrega'];
+      return info;
+    }
+    
+    // Manejar análisis de laboratorio
+    if (proceso == 'analisis_laboratorio') {
+      if (data['total_analisis'] != null) info['Total de Análisis'] = data['total_analisis'];
+      if (data['laboratorios'] != null) info['Laboratorios'] = data['laboratorios'];
+      if (data['peso_total_muestras'] != null) info['Peso Total de Muestras'] = data['peso_total_muestras'];
+      return info;
+    }
     
     // Agregar campos específicos según el proceso
     switch (proceso) {
@@ -1324,6 +1511,11 @@ class _ProcesoDetailsSheet extends StatelessWidget {
   }
   
   Color _getProcesoColor(String proceso) {
+    // Manejar subfases de transporte
+    if (proceso.startsWith('transporte_')) {
+      return const Color(0xFF1976D2);
+    }
+    
     switch (proceso) {
       case 'origen':
         return const Color(0xFF2E7D32);
@@ -1332,6 +1524,7 @@ class _ProcesoDetailsSheet extends StatelessWidget {
       case 'reciclador':
         return const Color(0xFF388E3C);
       case 'laboratorio':
+      case 'analisis_laboratorio':
         return const Color(0xFF7B1FA2);
       case 'transformador':
         return const Color(0xFFD32F2F);
@@ -1341,6 +1534,16 @@ class _ProcesoDetailsSheet extends StatelessWidget {
   }
   
   IconData _getProcesoIcon(String proceso) {
+    // Manejar subfases de transporte
+    if (proceso.startsWith('transporte_')) {
+      final fase = proceso.split('_')[1];
+      if (fase == 'fase-1') {
+        return Icons.local_shipping_outlined;
+      } else {
+        return Icons.local_shipping;
+      }
+    }
+    
     switch (proceso) {
       case 'origen':
         return Icons.source;
@@ -1350,6 +1553,8 @@ class _ProcesoDetailsSheet extends StatelessWidget {
         return Icons.recycling;
       case 'laboratorio':
         return Icons.science;
+      case 'analisis_laboratorio':
+        return Icons.biotech;
       case 'transformador':
         return Icons.precision_manufacturing;
       default:
@@ -1358,6 +1563,18 @@ class _ProcesoDetailsSheet extends StatelessWidget {
   }
   
   String _getProcesoLabel(String proceso) {
+    // Manejar subfases de transporte
+    if (proceso.startsWith('transporte_')) {
+      final fase = proceso.split('_')[1];
+      if (fase == 'fase-1') {
+        return 'Transporte (Fase 1)';
+      } else if (fase == 'fase-2') {
+        return 'Transporte (Fase 2)';
+      } else {
+        return 'Transporte';
+      }
+    }
+    
     switch (proceso) {
       case 'origen':
         return 'Origen';
@@ -1367,6 +1584,8 @@ class _ProcesoDetailsSheet extends StatelessWidget {
         return 'Reciclador';
       case 'laboratorio':
         return 'Laboratorio';
+      case 'analisis_laboratorio':
+        return 'Análisis de Laboratorio';
       case 'transformador':
         return 'Transformador';
       default:

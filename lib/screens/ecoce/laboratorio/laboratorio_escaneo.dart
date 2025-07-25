@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'laboratorio_registro_muestras.dart';
 import '../shared/widgets/qr_scanner_widget.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/qr_utils.dart';
 
 class LaboratorioEscaneoScreen extends StatelessWidget {
   final bool isAddingMore;
@@ -11,16 +12,19 @@ class LaboratorioEscaneoScreen extends StatelessWidget {
     this.isAddingMore = false,
   });
 
-  void _navigateToScannedMuestras(BuildContext context, String muestraId) {
+  void _navigateToScannedMuestras(BuildContext context, String qrCode) {
+    // Extraer el ID del lote del código QR
+    final loteId = QRUtils.extractLoteIdFromQR(qrCode);
+    
     // Si estamos agregando más muestras, devolver el ID
     if (isAddingMore) {
-      Navigator.pop(context, muestraId);
+      Navigator.pop(context, loteId);
     } else {
       // Si es la primera vez, navegar a la pantalla de muestras escaneadas
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => LaboratorioRegistroMuestrasScreen(initialMuestraId: muestraId),
+          builder: (context) => LaboratorioRegistroMuestrasScreen(initialMuestraId: loteId),
         ),
       );
     }

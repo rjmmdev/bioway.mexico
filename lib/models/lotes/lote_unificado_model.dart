@@ -10,31 +10,61 @@ class LoteUnificadoModel {
   
   // Datos por proceso (pueden ser null si no ha pasado por ese proceso)
   final ProcesoOrigenData? origen;
-  final ProcesoTransporteData? transporte;
+  
+  // Transporte con múltiples fases
+  final Map<String, ProcesoTransporteData> transporteFases;
+  
   final ProcesoRecicladorData? reciclador;
-  final ProcesoLaboratorioData? laboratorio;
+  
+  // Laboratorio como proceso paralelo (no toma posesión del lote)
+  final List<AnalisisLaboratorioData> analisisLaboratorio;
+  
   final ProcesoTransformadorData? transformador;
   
   LoteUnificadoModel({
     required this.id,
     required this.datosGenerales,
     this.origen,
-    this.transporte,
+    Map<String, ProcesoTransporteData>? transporteFases,
     this.reciclador,
-    this.laboratorio,
+    List<AnalisisLaboratorioData>? analisisLaboratorio,
     this.transformador,
-  });
+  }) : transporteFases = transporteFases ?? {},
+        analisisLaboratorio = analisisLaboratorio ?? [];
+  
+  // Getter de compatibilidad para código existente
+  ProcesoTransporteData? get transporte => transporteFases['fase_1'];
   
   /// Crear desde documentos de Firestore
   factory LoteUnificadoModel.fromFirestore({
     required String id,
     required DocumentSnapshot datosGenerales,
     DocumentSnapshot? origen,
-    DocumentSnapshot? transporte,
+    Map<String, DocumentSnapshot>? transporteFases,
     DocumentSnapshot? reciclador,
-    DocumentSnapshot? laboratorio,
+    List<DocumentSnapshot>? analisisLaboratorio,
     DocumentSnapshot? transformador,
   }) {
+    // Convertir documentos de transporte a Map de ProcesoTransporteData
+    final Map<String, ProcesoTransporteData> fasesTransporte = {};
+    transporteFases?.forEach((fase, doc) {
+      if (doc.exists) {
+        fasesTransporte[fase] = ProcesoTransporteData.fromMap(
+          doc.data() as Map<String, dynamic>,
+        );
+      }
+    });
+    
+    // Convertir documentos de análisis de laboratorio
+    final List<AnalisisLaboratorioData> analisis = [];
+    analisisLaboratorio?.forEach((doc) {
+      if (doc.exists) {
+        analisis.add(AnalisisLaboratorioData.fromMap(
+          doc.data() as Map<String, dynamic>,
+        ));
+      }
+    });
+    
     return LoteUnificadoModel(
       id: id,
       datosGenerales: DatosGeneralesLote.fromMap(
@@ -43,15 +73,11 @@ class LoteUnificadoModel {
       origen: origen != null 
           ? ProcesoOrigenData.fromMap(origen.data() as Map<String, dynamic>)
           : null,
-      transporte: transporte != null
-          ? ProcesoTransporteData.fromMap(transporte.data() as Map<String, dynamic>)
-          : null,
+      transporteFases: fasesTransporte,
       reciclador: reciclador != null
           ? ProcesoRecicladorData.fromMap(reciclador.data() as Map<String, dynamic>)
           : null,
-      laboratorio: laboratorio != null
-          ? ProcesoLaboratorioData.fromMap(laboratorio.data() as Map<String, dynamic>)
-          : null,
+      analisisLaboratorio: analisis,
       transformador: transformador != null
           ? ProcesoTransformadorData.fromMap(transformador.data() as Map<String, dynamic>)
           : null,
@@ -60,10 +86,20 @@ class LoteUnificadoModel {
   
   /// Verificar si un usuario ha participado en el lote
   bool usuarioHaParticipado(String userId) {
+    // Verificar en todas las fases de transporte
+    final participoEnTransporte = transporteFases.values.any(
+      (fase) => fase.usuarioId == userId
+    );
+    
+    // Verificar en todos los análisis de laboratorio
+    final participoEnLaboratorio = analisisLaboratorio.any(
+      (analisis) => analisis.usuarioId == userId
+    );
+    
     return (origen?.usuarioId == userId) ||
-           (transporte?.usuarioId == userId) ||
+           participoEnTransporte ||
            (reciclador?.usuarioId == userId) ||
-           (laboratorio?.usuarioId == userId) ||
+           participoEnLaboratorio ||
            (transformador?.usuarioId == userId);
   }
   
@@ -71,9 +107,28 @@ class LoteUnificadoModel {
   double get pesoActual {
     // Retornar el peso del proceso más reciente
     if (transformador != null) return transformador!.pesoSalida ?? transformador!.pesoEntrada;
-    if (laboratorio != null) return laboratorio!.pesoMuestra;
-    if (reciclador != null) return reciclador!.pesoProcesado ?? reciclador!.pesoEntrada;
-    if (transporte != null) return transporte!.pesoEntregado ?? transporte!.pesoRecogido;
+    
+    // Verificar fase_2 de transporte (reciclador -> transformador)
+    if (transporteFases.containsKey('fase_2')) {
+      final fase2 = transporteFases['fase_2']!;
+      return fase2.pesoEntregado ?? fase2.pesoRecogido;
+    }
+    
+    if (reciclador != null) {
+      // Si hay análisis de laboratorio, restar el peso de las muestras
+      double pesoReciclador = reciclador!.pesoProcesado ?? reciclador!.pesoEntrada;
+      double pesoMuestras = analisisLaboratorio.fold(0.0, 
+        (sum, analisis) => sum + analisis.pesoMuestra
+      );
+      return pesoReciclador - pesoMuestras;
+    }
+    
+    // Verificar fase_1 de transporte (origen -> reciclador)
+    if (transporteFases.containsKey('fase_1')) {
+      final fase1 = transporteFases['fase_1']!;
+      return fase1.pesoEntregado ?? fase1.pesoRecogido;
+    }
+    
     if (origen != null) return origen!.pesoNace;
     return datosGenerales.pesoInicial;
   }
@@ -82,9 +137,11 @@ class LoteUnificadoModel {
   double get mermaTotal {
     double merma = 0.0;
     
-    if (transporte != null) {
-      merma += transporte!.merma ?? 0.0;
-    }
+    // Sumar merma de todas las fases de transporte
+    transporteFases.values.forEach((fase) {
+      merma += fase.merma ?? 0.0;
+    });
+    
     if (reciclador != null) {
       merma += reciclador!.mermaProceso ?? 0.0;
     }
@@ -100,6 +157,38 @@ class LoteUnificadoModel {
     if (datosGenerales.pesoInicial == 0) return 0;
     return (mermaTotal / datosGenerales.pesoInicial) * 100;
   }
+  
+  /// Obtener la fase de transporte más reciente
+  ProcesoTransporteData? get transporteActual {
+    if (transporteFases.containsKey('fase_2')) {
+      return transporteFases['fase_2'];
+    }
+    return transporteFases['fase_1'];
+  }
+  
+  /// Determinar la siguiente fase de transporte basado en el proceso actual
+  String determinarFaseTransporte() {
+    // Si el proceso actual es origen, es fase_1
+    if (datosGenerales.procesoActual == 'origen') {
+      return 'fase_1';
+    }
+    // Si el proceso actual es reciclador, es fase_2
+    else if (datosGenerales.procesoActual == 'reciclador') {
+      return 'fase_2';
+    }
+    // Por defecto retornar fase_1
+    return 'fase_1';
+  }
+  
+  /// Obtener el peso total de muestras tomadas por laboratorio
+  double get pesoTotalMuestras {
+    return analisisLaboratorio.fold(0.0, 
+      (sum, analisis) => sum + analisis.pesoMuestra
+    );
+  }
+  
+  /// Verificar si el lote tiene análisis de laboratorio
+  bool get tieneAnalisisLaboratorio => analisisLaboratorio.isNotEmpty;
 }
 
 /// Datos generales del lote (siempre presentes)
@@ -241,9 +330,16 @@ class ProcesoTransporteData {
   final double? pesoEntregado;
   final double? merma;
   final String? condicionesTransporte;
+  final String? vehiculoPlacas;
+  final String? nombreConductor;
   final String? firmaRecogida;
   final String? firmaEntrega;
   final List<String> evidenciasFoto;
+  final List<String>? evidenciasFotoRecogida;
+  final List<String>? evidenciasFotoEntrega;
+  final String? comentariosRecogida;
+  final String? comentariosEntrega;
+  final String? transporteNumero;
   
   ProcesoTransporteData({
     required this.usuarioId,
@@ -256,9 +352,16 @@ class ProcesoTransporteData {
     this.pesoEntregado,
     this.merma,
     this.condicionesTransporte,
+    this.vehiculoPlacas,
+    this.nombreConductor,
     this.firmaRecogida,
     this.firmaEntrega,
     required this.evidenciasFoto,
+    this.evidenciasFotoRecogida,
+    this.evidenciasFotoEntrega,
+    this.comentariosRecogida,
+    this.comentariosEntrega,
+    this.transporteNumero,
   });
   
   factory ProcesoTransporteData.fromMap(Map<String, dynamic> map) {
@@ -277,9 +380,20 @@ class ProcesoTransporteData {
           : null,
       merma: map['merma'] != null ? (map['merma'] as num).toDouble() : null,
       condicionesTransporte: map['condiciones_transporte'],
+      vehiculoPlacas: map['vehiculo_placas'],
+      nombreConductor: map['nombre_conductor'],
       firmaRecogida: map['firma_recogida'],
       firmaEntrega: map['firma_entrega'],
       evidenciasFoto: List<String>.from(map['evidencias_foto'] ?? []),
+      evidenciasFotoRecogida: map['evidencias_foto_recogida'] != null 
+          ? List<String>.from(map['evidencias_foto_recogida']) 
+          : null,
+      evidenciasFotoEntrega: map['evidencias_foto_entrega'] != null
+          ? List<String>.from(map['evidencias_foto_entrega'])
+          : null,
+      comentariosRecogida: map['comentarios_recogida'],
+      comentariosEntrega: map['comentarios_entrega'],
+      transporteNumero: map['transporte_numero'],
     );
   }
 }
@@ -418,5 +532,54 @@ class ProcesoTransformadorData {
       especificaciones: map['especificaciones'] as Map<String, dynamic>?,
       evidenciasFoto: List<String>.from(map['evidencias_foto'] ?? []),
     );
+  }
+}
+
+/// Datos de análisis de laboratorio (proceso paralelo)
+class AnalisisLaboratorioData {
+  final String id;
+  final String usuarioId;
+  final String usuarioFolio;
+  final DateTime fechaToma;
+  final double pesoMuestra;
+  final String? certificado;
+  final String? firmaOperador;
+  final List<String> evidenciasFoto;
+  
+  AnalisisLaboratorioData({
+    required this.id,
+    required this.usuarioId,
+    required this.usuarioFolio,
+    required this.fechaToma,
+    required this.pesoMuestra,
+    this.certificado,
+    this.firmaOperador,
+    required this.evidenciasFoto,
+  });
+  
+  factory AnalisisLaboratorioData.fromMap(Map<String, dynamic> map) {
+    return AnalisisLaboratorioData(
+      id: map['id'] ?? '',
+      usuarioId: map['usuario_id'] ?? '',
+      usuarioFolio: map['usuario_folio'] ?? '',
+      fechaToma: (map['fecha_toma'] as Timestamp).toDate(),
+      pesoMuestra: (map['peso_muestra'] ?? 0.0).toDouble(),
+      certificado: map['certificado'],
+      firmaOperador: map['firma_operador'],
+      evidenciasFoto: List<String>.from(map['evidencias_foto'] ?? []),
+    );
+  }
+  
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'usuario_id': usuarioId,
+      'usuario_folio': usuarioFolio,
+      'fecha_toma': Timestamp.fromDate(fechaToma),
+      'peso_muestra': pesoMuestra,
+      'certificado': certificado,
+      'firma_operador': firmaOperador,
+      'evidencias_foto': evidenciasFoto,
+    };
   }
 }

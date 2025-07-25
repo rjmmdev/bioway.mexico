@@ -365,7 +365,6 @@ class CargaTransporteService {
         // Primero actualizar datos del transporte
         await _loteUnificadoService.actualizarProcesoTransporte(
           loteId: loteId,
-          transporteId: transporteId,
           datos: {
             'fecha_salida': FieldValue.serverTimestamp(),
             'destino_entrega': entrega.destinatarioFolio,
