@@ -606,3 +606,14 @@ NEVER hardcode colors. Always use `BioWayColors` constants:
 18. Laboratory scanner updated to use full-screen SharedQRScannerScreen
 19. Weight display in Transport QR shows actual weight after lab samples
 20. Added visual indicators when laboratory has taken samples from lots
+21. **[2025-07-25] Reciclador→Transportista Transfer Issue**: Lotes no desaparecían del Reciclador después del escaneo
+    - **Problema**: El sistema requería confirmación bidireccional pero el Reciclador ya había autorizado
+    - **Solución implementada**:
+      - Transferencia Reciclador→Transportista ahora es unidireccional en `verificarTransferenciaCompleta`
+      - Actualización inmediata de `proceso_actual` cuando transportista escanea del reciclador
+      - Verificación doble: si `verificarYActualizarTransferencia` falla, forzar actualización
+      - Mejorada determinación de fase de transporte verificando documentos existentes
+    - **Cambios en archivos**:
+      - `lote_unificado_service.dart`: Lógica unidireccional líneas 264-271
+      - `carga_transporte_service.dart`: Actualización forzada líneas 243-270
+      - `lote_unificado_service.dart`: Determinación de fase mejorada líneas 476-513
