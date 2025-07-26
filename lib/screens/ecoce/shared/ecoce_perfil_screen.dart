@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/document_utils.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/firebase/auth_service.dart';
 import '../../../models/ecoce/ecoce_profile_model.dart';
@@ -93,38 +94,12 @@ class _EcocePerfilScreenState extends State<EcocePerfilScreen> with SingleTicker
     }
   }
 
-  Future<void> _openDocument(String? url) async {
-    if (url == null || url.isEmpty) {
-      DialogUtils.showErrorDialog(
-        context: context,
-        title: 'Error',
-        message: 'Documento no disponible',
-      );
-      return;
-    }
-
-    try {
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        if (mounted) {
-          DialogUtils.showErrorDialog(
-            context: context,
-            title: 'Error',
-            message: 'No se pudo abrir el documento',
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        DialogUtils.showErrorDialog(
-          context: context,
-          title: 'Error',
-          message: 'Error al abrir el documento',
-        );
-      }
-    }
+  Future<void> _openDocument(String? url, String documentName) async {
+    await DocumentUtils.openDocument(
+      context: context,
+      url: url,
+      documentName: documentName,
+    );
   }
 
   Widget _buildInfoRow(String label, String? value, {IconData? icon}) {
@@ -582,7 +557,7 @@ class _EcocePerfilScreenState extends State<EcocePerfilScreen> with SingleTicker
             borderRadius: BorderRadius.circular(16),
             elevation: 2,
             child: InkWell(
-              onTap: isUploaded ? () => _openDocument(doc['url'] as String) : null,
+              onTap: isUploaded ? () => _openDocument(doc['url'] as String, doc['name'] as String) : null,
               borderRadius: BorderRadius.circular(16),
               child: Padding(
                 padding: const EdgeInsets.all(16),

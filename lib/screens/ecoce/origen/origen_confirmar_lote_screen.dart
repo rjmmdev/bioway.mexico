@@ -65,11 +65,11 @@ class _OrigenConfirmarLoteScreenState extends State<OrigenConfirmarLoteScreen> {
   Future<File?> _captureSignature() async {
     try {
       final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, 300, 200));
+      final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, 300, 120));
       
       // Fondo blanco
       canvas.drawRect(
-        Rect.fromLTWH(0, 0, 300, 200),
+        Rect.fromLTWH(0, 0, 300, 120),
         Paint()..color = Colors.white,
       );
 
@@ -87,7 +87,7 @@ class _OrigenConfirmarLoteScreenState extends State<OrigenConfirmarLoteScreen> {
       }
 
       final picture = recorder.endRecording();
-      final img = await picture.toImage(300, 200);
+      final img = await picture.toImage(300, 120);
       final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
       
       if (byteData != null) {
@@ -400,27 +400,28 @@ class _OrigenConfirmarLoteScreenState extends State<OrigenConfirmarLoteScreen> {
                     ),
                     const SizedBox(height: 8),
                     Container(
-                      height: 120,
+                      height: 200,
                       width: double.infinity,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        border: Border.all(color: Colors.grey[300]!),
                         borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey[300]!),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(7),
                         child: FittedBox(
                           fit: BoxFit.contain,
+                          alignment: Alignment.center,
                           child: SizedBox(
-                            width: 300,
-                            height: 200,
+                            width: MediaQuery.of(context).size.width * 0.95,
+                            height: 400,
                             child: CustomPaint(
-                              size: const Size(300, 200),
                               painter: SignaturePainter(
                                 widget.signaturePoints,
                                 color: Colors.black,
-                                strokeWidth: 3.0,
+                                strokeWidth: MediaQuery.of(context).size.width * 0.008,
                               ),
+                              size: Size.infinite,
                             ),
                           ),
                         ),

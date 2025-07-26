@@ -137,6 +137,127 @@ class FirebaseStorageService {
     }
   }
 
+  // Verificar si la URL es accesible (simplificado)
+  Future<bool> isUrlAccessible(String? url) async {
+    if (url == null || url.isEmpty) return false;
+    
+    try {
+      // Para URLs de Firebase Storage, verificar si necesitan actualización
+      if (url.contains('firebasestorage.googleapis.com')) {
+        // Si la URL ya tiene un token, probablemente sea válida
+        if (url.contains('token=')) {
+          return true;
+        }
+        
+        // Si no tiene token, intentar obtener una URL actualizada
+        try {
+          final ref = _storage.refFromURL(url);
+          await ref.getDownloadURL(); // Solo verificar si podemos obtenerla
+          return true;
+        } catch (e) {
+          print('URL de Firebase Storage no accesible: $e');
+          return false;
+        }
+      }
+      
+      // Para otras URLs, asumimos que son accesibles
+      return url.startsWith('http://') || url.startsWith('https://');
+    } catch (e) {
+      print('Error verificando accesibilidad de URL: $e');
+      return false;
+    }
+  }
+
+  // Obtener URL de descarga con token válido
+  Future<String?> getValidDownloadUrl(String? fileUrl) async {
+    if (fileUrl == null || fileUrl.isEmpty) {
+      return null;
+    }
+    
+    try {
+      // Si es una URL de Firebase Storage, intentar obtener una nueva con token válido
+      if (fileUrl.contains('firebasestorage.googleapis.com')) {
+        try {
+          print('Intentando obtener URL con token válido para: $fileUrl');
+          
+          // Obtener la referencia desde la URL
+          final ref = _storage.refFromURL(fileUrl);
+          
+          // Generar nueva URL con token actualizado
+          final newUrl = await ref.getDownloadURL();
+          print('Nueva URL generada exitosamente');
+          
+          return newUrl;
+        } catch (e) {
+          print('Error al generar nueva URL: $e');
+          
+          // Si falla, intentar extraer el path y regenerar
+          try {
+            final storagePath = _extractStoragePathFromUrl(fileUrl);
+            if (storagePath != null) {
+              print('Intentando con path extraído: $storagePath');
+              final ref = _storage.ref().child(storagePath);
+              final newUrl = await ref.getDownloadURL();
+              print('URL generada desde path exitosamente');
+              return newUrl;
+            }
+          } catch (e2) {
+            print('Error al generar URL desde path: $e2');
+          }
+        }
+      }
+      
+      // Para URLs normales, devolverlas directamente
+      if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+        return fileUrl;
+      }
+      
+      // Si es un path relativo, intentar construir la URL completa
+      if (!fileUrl.startsWith('http')) {
+        try {
+          final ref = _storage.ref().child(fileUrl);
+          return await ref.getDownloadURL();
+        } catch (e) {
+          print('Error construyendo URL desde path: $e');
+        }
+      }
+      
+      return fileUrl;
+    } catch (e) {
+      print('Error en getValidDownloadUrl: $e');
+      return null;
+    }
+  }
+  
+  // Extraer el path de storage desde una URL de Firebase
+  String? _extractStoragePathFromUrl(String url) {
+    try {
+      final uri = Uri.parse(url);
+      final path = uri.path;
+      
+      // Buscar el patrón /o/ que indica el inicio del path
+      if (path.contains('/o/')) {
+        final startIndex = path.indexOf('/o/') + 3;
+        final endIndex = path.indexOf('?', startIndex);
+        
+        String storagePath;
+        if (endIndex > startIndex) {
+          storagePath = path.substring(startIndex, endIndex);
+        } else {
+          storagePath = path.substring(startIndex);
+        }
+        
+        // Decodificar el path (los espacios y caracteres especiales están codificados)
+        return Uri.decodeComponent(storagePath);
+      }
+      
+      return null;
+    } catch (e) {
+      print('Error extrayendo path de URL: $e');
+      return null;
+    }
+  }
+
   // Subir imagen desde base64
   Future<String?> uploadBase64Image(String base64String, String fileName) async {
     try {

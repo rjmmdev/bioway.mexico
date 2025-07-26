@@ -493,9 +493,14 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: SafeArea(
+    return WillPopScope(
+      onWillPop: () async {
+        // Prevenir que el botón atrás cierre la sesión
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        body: SafeArea(
         child: Column(
           children: [
             // Header con gradiente
@@ -855,6 +860,7 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
         ),
       ),
       // Removed bottom navigation since ECOCE user only needs the dashboard
+      ),
     );
   }
 

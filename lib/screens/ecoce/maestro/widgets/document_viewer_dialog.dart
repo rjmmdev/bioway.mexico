@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../models/maestro/documento_usuario.dart';
 import '../../../../utils/colors.dart';
 
 /// Dialog reutilizable para visualizar documentos
 /// Soporta imágenes y PDFs con manejo de errores
-class DocumentViewerDialog extends StatelessWidget {
+class DocumentViewerDialog extends StatefulWidget {
   final DocumentoUsuario documento;
   final Color headerColor;
   final String? headerTitle;
@@ -15,6 +17,16 @@ class DocumentViewerDialog extends StatelessWidget {
     this.headerColor = BioWayColors.ecoceGreen,
     this.headerTitle,
   });
+
+  @override
+  State<DocumentViewerDialog> createState() => _DocumentViewerDialogState();
+}
+
+class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +45,7 @@ class DocumentViewerDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: headerColor,
+                color: widget.headerColor,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(16),
                   topRight: Radius.circular(16),
@@ -42,14 +54,14 @@ class DocumentViewerDialog extends StatelessWidget {
               child: Row(
                 children: [
                   Icon(
-                    documento.icon,
+                    widget.documento.icon,
                     color: Colors.white,
                     size: 24,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      headerTitle ?? documento.nombre,
+                      widget.headerTitle ?? widget.documento.nombre,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -79,9 +91,9 @@ class DocumentViewerDialog extends StatelessWidget {
   }
 
   Widget _buildDocumentViewer() {
-    if (documento.isImage) {
+    if (widget.documento.isImage) {
       return _buildImageViewer();
-    } else if (documento.isPDF) {
+    } else if (widget.documento.isPDF) {
       return _buildPDFViewer();
     } else {
       return _buildUnsupportedViewer();
@@ -96,7 +108,7 @@ class DocumentViewerDialog extends StatelessWidget {
       maxScale: 4.0,
       child: Center(
         child: Image.network(
-          documento.path,
+          widget.documento.path,
           fit: BoxFit.contain,
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
@@ -141,7 +153,7 @@ class DocumentViewerDialog extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              documento.nombre,
+              widget.documento.nombre,
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.grey[600],
@@ -149,18 +161,84 @@ class DocumentViewerDialog extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              icon: const Icon(Icons.download),
-              label: const Text('Descargar PDF'),
+              icon: const Icon(Icons.open_in_new),
+              label: const Text('Abrir PDF'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: BioWayColors.primaryGreen,
               ),
-              onPressed: () {
-                // Implementar descarga
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Función de descarga no implementada'),
-                  ),
-                );
+              onPressed: () async {
+                try {
+                  final uri = Uri.parse(widget.documento.path);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  } else {
+                    if (context.mounted) {
+                      // Mostrar diálogo para copiar URL
+                      showDialog(
+                        context: context,
+                        builder: (dialogContext) => AlertDialog(
+                          title: const Text('No se pudo abrir el documento'),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Puede copiar la URL e intentar abrirla en su navegador:',
+                                style: TextStyle(fontSize: 14),
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: SelectableText(
+                                  widget.documento.path,
+                                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                                ),
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(dialogContext),
+                              child: const Text('Cerrar'),
+                            ),
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                await Clipboard.setData(ClipboardData(text: widget.documento.path));
+                                if (dialogContext.mounted) {
+                                  Navigator.pop(dialogContext);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('URL copiada al portapapeles'),
+                                      backgroundColor: BioWayColors.success,
+                                    ),
+                                  );
+                                }
+                              },
+                              icon: const Icon(Icons.copy, size: 18),
+                              label: const Text('Copiar URL'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: BioWayColors.ecoceGreen,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error al abrir PDF: $e'),
+                      ),
+                    );
+                  }
+                }
               },
             ),
           ],
@@ -190,7 +268,7 @@ class DocumentViewerDialog extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Tipo: ${documento.tipo}',
+            'Tipo: ${widget.documento.tipo}',
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[600],

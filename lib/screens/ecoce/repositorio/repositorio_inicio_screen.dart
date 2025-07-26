@@ -156,9 +156,14 @@ class _RepositorioInicioScreenState extends State<RepositorioInicioScreen>
   
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: CustomScrollView(
+    return WillPopScope(
+      onWillPop: () async {
+        // Prevenir que el botón atrás cierre la sesión
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA),
+        body: CustomScrollView(
         slivers: [
           // App Bar personalizado
           _buildSliverAppBar(),
@@ -174,6 +179,7 @@ class _RepositorioInicioScreenState extends State<RepositorioInicioScreen>
           // Lista de lotes
           _buildLotesList(),
         ],
+      ),
       ),
     );
   }

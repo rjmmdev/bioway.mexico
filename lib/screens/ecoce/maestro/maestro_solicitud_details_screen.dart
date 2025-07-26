@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
-import '../shared/widgets/document_viewer_dialog.dart';
+import '../../../utils/document_utils.dart';
 import 'widgets/maestro_info_section.dart';
 
 /// Pantalla de detalles de una solicitud para revisión completa
@@ -417,12 +417,10 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
   }
   
   void _viewDocument(BuildContext context, String title, String url) {
-    showDialog(
+    DocumentUtils.openDocument(
       context: context,
-      builder: (context) => DocumentViewerDialog(
-        title: title,
-        url: url,
-      ),
+      url: url,
+      documentName: title,
     );
   }
   

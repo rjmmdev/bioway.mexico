@@ -43,6 +43,37 @@ class LoteService {
     }
   }
 
+  // Obtener TODOS los lotes creados por el usuario Origen (para estadísticas)
+  Stream<Map<String, dynamic>> getEstadisticasOrigenCompletas() {
+    final userId = _currentUserId;
+    if (userId == null) return Stream.value({'totalLotes': 0, 'pesoTotal': 0.0});
+    
+    return _firestore
+        .collectionGroup('datos_generales')
+        .where('creado_por', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) {
+          int totalLotes = 0;
+          double pesoTotal = 0.0;
+          
+          for (var doc in snapshot.docs) {
+            final data = doc.data();
+            
+            // Contar TODOS los lotes creados, sin importar el proceso_actual
+            totalLotes++;
+            
+            // Sumar el peso inicial de cada lote
+            final peso = (data['peso'] as num?)?.toDouble() ?? 0.0;
+            pesoTotal += peso;
+          }
+          
+          return {
+            'totalLotes': totalLotes,
+            'pesoTotal': pesoTotal,
+          };
+        });
+  }
+
   Stream<List<LoteOrigenModel>> getLotesOrigen() {
     final userId = _currentUserId;
     if (userId == null) return Stream.value([]);

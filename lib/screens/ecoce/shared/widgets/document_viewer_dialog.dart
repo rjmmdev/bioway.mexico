@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../utils/colors.dart';
 import '../utils/dialog_utils.dart';
@@ -127,24 +128,81 @@ class DocumentViewerDialog extends StatelessWidget {
 
   Future<void> _openDocument(BuildContext context) async {
     try {
+      print('Intentando abrir documento: $url');
+      
+      // Intentar abrir la URL directamente
       final uri = Uri.parse(url);
+      
       if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        await launchUrl(
+          uri, 
+          mode: LaunchMode.externalApplication,
+          webViewConfiguration: const WebViewConfiguration(
+            enableJavaScript: true,
+            enableDomStorage: true,
+          ),
+        );
       } else {
-        if (context.mounted) {
-          DialogUtils.showErrorDialog(
-            context: context,
-            title: 'Error',
-            message: 'No se pudo abrir el documento',
-          );
-        }
+        throw Exception('No se pudo abrir la URL');
       }
     } catch (e) {
+      print('Error al abrir documento: $e');
+      
       if (context.mounted) {
-        DialogUtils.showErrorDialog(
+        // Mostrar diálogo con opción de copiar URL
+        showDialog(
           context: context,
-          title: 'Error',
-          message: 'Error al abrir el documento: $e',
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('No se pudo abrir el documento'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Puede copiar la URL e intentar abrirla en su navegador:',
+                  style: TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: SelectableText(
+                    url,
+                    style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Cerrar'),
+              ),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: url));
+                  if (dialogContext.mounted) {
+                    Navigator.pop(dialogContext);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('URL copiada al portapapeles'),
+                        backgroundColor: BioWayColors.success,
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.copy, size: 18),
+                label: const Text('Copiar URL'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: BioWayColors.ecoceGreen,
+                ),
+              ),
+            ],
+          ),
         );
       }
     }

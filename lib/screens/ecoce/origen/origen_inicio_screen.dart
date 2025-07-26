@@ -39,6 +39,10 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
   List<LoteOrigenModel> _lotesRecientes = [];
   int _totalLotes = 0;
   double _totalPeso = 0.0;
+  
+  // Estadísticas completas (todos los lotes creados)
+  int _totalLotesCreados = 0;
+  double _totalPesoProcesado = 0.0;
 
   String get _nombreCentro => _userProfile?.ecoceNombre ?? 'Cargando...';
   String get _folioCentro => _userProfile?.ecoceFolio ?? 'PENDIENTE';
@@ -58,6 +62,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
     super.initState();
     _loadUserData();
     _loadLotes();
+    _loadEstadisticasCompletas();
   }
   
   @override
@@ -66,13 +71,25 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
   }
   
   Future<void> _loadLotes() async {
-    // Escuchar cambios en los lotes de origen
+    // Escuchar cambios en los lotes de origen (solo los que están actualmente en origen)
     _loteService.getLotesOrigen().listen((lotes) {
       if (mounted) {
         setState(() {
           _lotesRecientes = lotes.take(3).toList(); // Solo los 3 más recientes
           _totalLotes = lotes.length;
           _totalPeso = lotes.fold(0.0, (sum, lote) => sum + lote.pesoNace);
+        });
+      }
+    });
+  }
+  
+  Future<void> _loadEstadisticasCompletas() async {
+    // Escuchar cambios en las estadísticas completas (TODOS los lotes creados)
+    _loteService.getEstadisticasOrigenCompletas().listen((stats) {
+      if (mounted) {
+        setState(() {
+          _totalLotesCreados = stats['totalLotes'] ?? 0;
+          _totalPesoProcesado = stats['pesoTotal'] ?? 0.0;
         });
       }
     });
@@ -386,7 +403,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               Expanded(
                                 child: UnifiedStatCard.horizontal(
                                   title: 'Lotes creados',
-                                  value: _totalLotes.toString(),
+                                  value: _totalLotesCreados.toString(),
                                   icon: Icons.inventory_2,
                                   color: Colors.blue,
                                   height: 70,
@@ -397,7 +414,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               Expanded(
                                 child: UnifiedStatCard.horizontal(
                                   title: 'Material procesado',
-                                  value: (_totalPeso / 1000).toStringAsFixed(1),
+                                  value: (_totalPesoProcesado / 1000).toStringAsFixed(1),
                                   unit: 'ton',
                                   icon: Icons.scale,
                                   color: Colors.green,
