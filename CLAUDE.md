@@ -1,29 +1,21 @@
 # CLAUDE.md
 
-> This file provides comprehensive guidance to Claude Code (claude.ai/code) when working with code in this repository. Last updated: 2025-01-26
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-# BioWay México - Sistema de Trazabilidad de Reciclaje
+# BioWay México - Flutter Mobile Application
 
 ## Project Overview
 
-BioWay México is a production-ready Flutter mobile application that provides complete traceability for recyclable materials throughout the entire supply chain. The app supports two independent platforms (BioWay and ECOCE) through a multi-tenant Firebase architecture, with role-based access control and real-time tracking via QR codes.
+BioWay México is a dual-platform Flutter mobile application for recycling and waste management supporting both BioWay and ECOCE systems. The app implements a complete supply chain tracking system for recyclable materials with role-based access and multi-tenant Firebase architecture.
 
-### Production Status
-- **ECOCE Platform**: ✅ Fully functional and tested
-- **BioWay Platform**: ⏳ Configuration ready, Firebase project pending
-- **Current Version**: 1.0.0+1
-- **Active Branch**: funcionamiento_final
-
-### Core Features
-- **Unified Lot System**: Single immutable ID tracks materials through entire lifecycle
-- **Multi-Tenant Architecture**: Independent Firebase projects for BioWay and ECOCE
-- **Role-Based Access Control**: 7 distinct user types with specific workflows
-- **Real-Time QR Tracking**: 4 types of QR codes for different operations
-- **Bidirectional Transfer System**: Both sender and receiver must confirm transfers
-- **Parallel Laboratory Process**: Sample taking without ownership transfer
-- **Smart Weight Tracking**: Dynamic weight calculation based on current process
-- **Document Management**: Automatic compression to 50KB for images, 5MB for PDFs
-- **Offline-First Design**: Essential operations work without constant connectivity
+### Key Features
+- **Dual Platform Support**: BioWay and ECOCE in a single application
+- **Multi-Tenant Firebase**: Separate projects per platform
+- **Role-Based Access Control**: Different user types with specific permissions
+- **Material Tracking**: Complete tracking of recyclable materials through the supply chain
+- **QR Code System**: Generation and scanning for batch tracking
+- **Document Management**: Upload and management with compression
+- **Geolocation**: Location selection without GPS permissions required
 
 ## Commands
 
@@ -96,15 +88,6 @@ flutter pub outdated
 flutter pub upgrade
 ```
 
-### Automation Scripts (Windows)
-```powershell
-# Build and run APK
-.\build_and_run.ps1
-
-# Quick run (uses existing build)
-.\run_app.ps1
-```
-
 ## Architecture
 
 ### Directory Structure
@@ -144,17 +127,15 @@ lib/
 ### Firebase Multi-Tenant Architecture
 
 #### Projects Configuration
-1. **ECOCE Project** (Production)
+1. **ECOCE Project** (Configured)
    - Project ID: `trazabilidad-ecoce`
    - Package: `com.biowaymexico.app`
-   - Status: ✅ Active in production
-   - Features: Full traceability, all user types functional
+   - Status: ✅ Working
 
-2. **BioWay Project** (Pending Setup)
+2. **BioWay Project** (Pending)
    - Project ID: `bioway-mexico` (suggested)
    - Package: `com.biowaymexico.app`
-   - Status: ⏳ Firebase project not created
-   - Note: Configuration exists in code, awaiting Firebase setup
+   - Status: ⏳ Not created
 
 #### Firebase Initialization Pattern
 ```dart
@@ -163,97 +144,42 @@ lib/
 await _authService.initializeForPlatform(FirebasePlatform.ecoce);
 ```
 
-### Database Structure (Firestore)
+### Database Structure
 
-#### Core Collections
+#### Collections
 ```
-lotes/                                    # Unified lot collection (main data store)
-├── [loteId]/                            # Auto-generated unique ID
-│   ├── datos_generales/                 # General lot information
-│   │   └── info
-│   │       ├── id: String               # Immutable lot ID
-│   │       ├── proceso_actual: String   # Current owner process
-│   │       ├── estado_actual: String    # Current state
-│   │       ├── tipo_material: String    # Material type (PEBD, PP, etc.)
-│   │       ├── peso_nace: double        # Initial weight
-│   │       ├── creado_por: String       # Creator user ID
-│   │       ├── fecha_creacion: Timestamp
-│   │       └── qr_code: String          # QR code identifier
-│   │
-│   ├── origen/                          # Origin process data
-│   │   └── data                         # Complete origin form data
-│   │
-│   ├── transporte/                      # Transport phases (Map structure)
-│   │   ├── fase_1/                      # Origin → Recycler
-│   │   │   ├── recogida/                # Pickup data
-│   │   │   └── entrega/                 # Delivery data
-│   │   └── fase_2/                      # Recycler → Transformer
-│   │       ├── recogida/
-│   │       └── entrega/
-│   │
-│   ├── reciclador/                      # Recycler process
-│   │   └── data
-│   │       ├── recepcion/               # Reception data
-│   │       └── salida/                  # Output data
-│   │
-│   ├── analisis_laboratorio/            # Laboratory analyses (List)
-│   │   └── [analisisId]/                # Each analysis is independent
-│   │       ├── fecha_toma: Timestamp
-│   │       ├── peso_muestra: double
-│   │       ├── folio_laboratorio: String
-│   │       └── certificado: String (URL)
-│   │
-│   └── transformador/                   # Transformer process
-│       └── data
-│           ├── recepcion/               # Reception data
-│           ├── salida/                  # Production data
-│           └── especificaciones/        # Additional specs
-│               └── estado: String       # Process-specific state
-
-solicitudes_cuentas/                     # Account registration requests
+solicitudes_cuentas/           # Account requests pending approval
 ├── [solicitudId]
 │   ├── estado: "pendiente"/"aprobada"/"rechazada"
-│   ├── tipo_cuenta: String              # User type requested
-│   ├── datos_perfil: Map                # Profile information
-│   ├── documentos: Map                  # Required documents
-│   └── fecha_solicitud: Timestamp
+│   ├── datos_perfil: {...}
+│   └── documentos: {...}
 
-ecoce_profiles/                          # User profiles index (for quick lookup)
+ecoce_profiles/                # User profiles index
 ├── [userId]
-│   ├── path: String                     # Full path to profile data
-│   ├── folio: String                    # Unique user identifier
-│   ├── tipo: String                     # User type
-│   └── aprobado: boolean                # Approval status
+│   ├── path: "ecoce_profiles/[type]/usuarios/[userId]"
+│   ├── folio: "A0000001"
+│   └── aprobado: true
 
-ecoce_profiles/[type]/usuarios/          # Detailed profile data by type
-├── origen/
-│   ├── centro_acopio/[userId]           # Collection centers (A prefix)
-│   └── planta_separacion/[userId]       # Separation plants (P prefix)
-├── reciclador/usuarios/[userId]         # Recyclers (R prefix)
-├── transformador/usuarios/[userId]      # Transformers (T prefix)
-├── transporte/usuarios/[userId]         # Transporters (V prefix)
-├── laboratorio/usuarios/[userId]        # Laboratories (L prefix)
-└── maestro/usuarios/[userId]            # Master admins (M prefix)
+ecoce_profiles/[type]/usuarios/  # Profile data by type
+├── origen/centro_acopio/
+├── origen/planta_separacion/
+├── reciclador/usuarios/
+├── transformador/usuarios/
+├── transporte/usuarios/
+└── laboratorio/usuarios/
 
-cargas_transporte/                       # Transport cargo tracking
-├── [cargaId]
-│   ├── lotes_ids: List<String>
-│   ├── transportista_id: String
-│   ├── origen_id: String
-│   └── estado: "en_transito"/"entregado"
+lotes/                         # Unified lot collection
+├── [loteId]/
+│   ├── datos_generales/      # General lot information
+│   ├── origen/               # Origin process data
+│   ├── transporte/           # Transport phases (fase_1, fase_2)
+│   ├── reciclador/          # Recycler process data
+│   ├── analisis_laboratorio/ # Laboratory analysis (parallel process)
+│   └── transformador/        # Transformer process data
 
-entregas/                                # Delivery tracking (15-min validity)
-├── [entregaId]
-│   ├── lotes_ids: List<String>
-│   ├── destinatario_id: String
-│   ├── transportista_id: String
-│   ├── fecha_creacion: Timestamp
-│   └── valido_hasta: Timestamp
-
-users_pending_deletion/                  # Cleanup queue for Auth users
+users_pending_deletion/        # Users marked for Auth deletion
 ├── [userId]
-│   ├── status: "pending"/"completed"/"failed"
-│   └── fecha_marcado: Timestamp
+│   └── status: "pending"/"completed"/"failed"
 ```
 
 ## ECOCE System
@@ -278,117 +204,31 @@ users_pending_deletion/                  # Cleanup queue for Auth users
 - **Transformador**: Pellets and flakes
 - **Laboratorio**: Sample types
 
-### QR Code System Architecture
+### QR Code Flow Architecture
+1. **Origin creates lot** → QR format: `LOTE-TIPOMATERIAL-ID`
+2. **Transport scans lots** → Creates cargo with multiple lots
+3. **Transport delivers** → Creates delivery QR: `ENTREGA-ID`
+4. **Recycler scans delivery** → Receives lots automatically
+5. **Laboratory takes samples** → Parallel process, no ownership transfer
 
-#### QR Code Types and Formats
-1. **User Identification QR**: `USER-[TYPE]-[USER_ID]`
-   - Purpose: Mutual identification between users
-   - Example: `USER-RECICLADOR-abc123def456`
-   - Validity: Permanent
-
-2. **Lot QR**: `LOTE-[MATERIAL]-[LOT_ID]`
-   - Purpose: Track individual lots
-   - Example: `LOTE-PEBD-xyz789ghi012`
-   - Contains: Material type and unique lot ID
-
-3. **Cargo QR**: `CARGA-[CARGO_ID]`
-   - Purpose: Group multiple lots for transport
-   - Example: `CARGA-cargo456jkl789`
-   - Internal use by transporters
-
-4. **Delivery QR**: `ENTREGA-[DELIVERY_ID]`
-   - Purpose: Temporary transfer authorization
-   - Example: `ENTREGA-del789mno012`
-   - Validity: 15 minutes from generation
-   - Auto-transfers lots when scanned
-
-#### Complete Transfer Flow
-```mermaid
-sequenceDiagram
-    participant O as Origin
-    participant T as Transporter
-    participant R as Receiver
-    participant S as System
-    
-    Note over O,S: Step 1: Lot Creation
-    O->>S: Create lot with material info
-    S->>O: Generate LOTE-PEBD-123
-    
-    Note over T,R: Step 2: Pickup Process
-    T->>O: Show USER-TRANSPORTE-456
-    O->>T: Verify transporter identity
-    T->>S: Scan LOTE-PEBD-123
-    S->>T: Add to cargo, update proceso_actual
-    
-    Note over T,R: Step 3: Delivery Process
-    T->>R: Request receiver QR
-    R->>T: Show USER-RECICLADOR-789
-    T->>S: Generate ENTREGA-DEL001
-    S->>T: Display delivery QR
-    R->>S: Scan ENTREGA-DEL001
-    S->>R: Auto-transfer lots, update proceso_actual
-```
-
-### Lot Visibility and State Management
-
-#### Visibility Rules
+### Lot Visibility Rules
 Lots appear in user screens based on `proceso_actual` field:
-- **Origin**: `proceso_actual == 'origen'` (newly created lots)
-- **Transport**: `proceso_actual == 'transporte'` (in transit)
-- **Recycler**: `proceso_actual == 'reciclador'` (being processed)
-- **Transformer**: `proceso_actual == 'transformador'` (final processing)
-- **Laboratory**: Special case - sees lots via `analisis_laboratorio` subcollection
-- **Repository**: Sees ALL lots regardless of `proceso_actual` (read-only)
+- **Origin**: Shows lots where `proceso_actual == 'origen'`
+- **Transport**: Shows lots where `proceso_actual == 'transporte'`
+- **Recycler**: Shows lots where `proceso_actual == 'reciclador'`
+- **Transformer**: Shows lots where `proceso_actual == 'transformador'`
 
-#### Transfer Completion Rules
-1. **Unidirectional Transfers** (Transport picking up):
-   - Transport scans → `proceso_actual` updates immediately
-   - No receiver confirmation needed for pickup
+When a lot is successfully transferred (both delivery and reception completed), the `proceso_actual` updates and the lot moves to the new user's screen.
 
-2. **Bidirectional Transfers** (Deliveries):
-   - Sender marks: `entrega_completada: true`
-   - Receiver marks: `recepcion_completada: true`
-   - System updates `proceso_actual` when BOTH complete
+### Weight Tracking System
+The system uses dynamic weight calculation through the `pesoActual` getter:
+- **Origin**: Uses initial weight (`pesoNace`)
+- **After Transport Phase 1**: Uses delivered or picked weight
+- **Recycler**: Uses processed weight (`pesoProcesado`) minus laboratory samples
+- **After Transport Phase 2**: Uses delivered or picked weight  
+- **Transformer**: Uses output weight or input weight
 
-3. **Special Cases**:
-   - Laboratory: Never changes `proceso_actual` (parallel process)
-   - Repository: Read-only access, cannot modify lots
-
-### Dynamic Weight Tracking System
-
-#### Weight Calculation Logic
-The `pesoActual` getter dynamically calculates current weight based on process:
-
-```dart
-double get pesoActual {
-  // Priority order for weight determination:
-  if (transformador?.salida?.pesoSalida != null) {
-    return transformador!.salida!.pesoSalida!;
-  }
-  if (transporteFases['fase_2']?.entrega?.pesoEntregado != null) {
-    return transporteFases['fase_2']!.entrega!.pesoEntregado!;
-  }
-  if (transporteFases['fase_2']?.recogida?.pesoRecogido != null) {
-    return transporteFases['fase_2']!.recogida!.pesoRecogido!;
-  }
-  if (reciclador?.salida?.pesoProcesado != null) {
-    double pesoBase = reciclador!.salida!.pesoProcesado!;
-    double pesoMuestras = analisisLaboratorio
-        .fold(0.0, (sum, analisis) => sum + (analisis.pesoMuestra ?? 0));
-    return pesoBase - pesoMuestras; // Auto-subtract lab samples
-  }
-  if (transporteFases['fase_1']?.entrega?.pesoEntregado != null) {
-    return transporteFases['fase_1']!.entrega!.pesoEntregado!;
-  }
-  return datosGenerales.pesoNace; // Initial weight as fallback
-}
-```
-
-#### Critical Weight Rules
-1. **Laboratory Samples**: Automatically subtracted from recycler's weight
-2. **Sample Timing**: MUST be taken BEFORE transport phase 2
-3. **Weight Immutability**: Historical weights never change
-4. **Validation**: Each process validates weight changes
+**Important**: Laboratory samples are automatically subtracted from recycler's weight. The laboratory must take samples BEFORE transport picks up the lot.
 
 ## Unified Lot System
 
@@ -411,44 +251,10 @@ class LoteUnificadoModel {
 }
 ```
 
-### Transport Phase Management
-
-#### Phase Determination
-Transport phases are automatically determined by the system:
-
-```dart
-String _determinarFaseTransporte(String procesoOrigen) {
-  switch (procesoOrigen) {
-    case 'origen':
-      return 'fase_1';  // Origin → Recycler
-    case 'reciclador':
-      return 'fase_2';  // Recycler → Transformer
-    default:
-      throw Exception('Invalid origin process for transport');
-  }
-}
-```
-
-#### Phase Structure
-```
-transporteFases: {
-  'fase_1': {
-    'recogida': {
-      'fecha_recogida': Timestamp,
-      'transportista_id': String,
-      'peso_recogido': double,
-      'origen_id': String
-    },
-    'entrega': {
-      'fecha_entrega': Timestamp,
-      'peso_entregado': double,
-      'destinatario_id': String,
-      'firma_receptor': String (URL)
-    }
-  },
-  'fase_2': { /* Same structure */ }
-}
-```
+### Transport Phases
+- **fase_1**: Origin → Recycler
+- **fase_2**: Recycler → Transformer
+- Automatically determined based on `proceso_actual`
 
 ### QR Code Handling
 ```dart
@@ -478,25 +284,11 @@ final qrCode = await Navigator.push<String>(
 
 ## Critical Implementation Patterns
 
-### QR Scanner Implementation
-
-#### Single Scanner for All Users
+### Multi-Lot Scanning Fix
+When implementing multi-lot QR scanning, avoid double Navigator.pop():
 ```dart
-// Always use SharedQRScannerScreen for consistency
-final result = await Navigator.push<String>(
-  context,
-  MaterialPageRoute(
-    builder: (context) => SharedQRScannerScreen(
-      isAddingMore: isAddingMore, // For multi-lot scanning
-    ),
-  ),
-);
-```
-
-#### Multi-Lot Scanning Pattern
-```dart
+// CORRECT - Scanner returns value to caller
 void _scanAnotherLot() async {
-  // CORRECT: Let scanner handle its own navigation
   final code = await Navigator.push<String>(
     context,
     MaterialPageRoute(
@@ -509,27 +301,6 @@ void _scanAnotherLot() async {
   if (code != null) {
     _processScannedCode(code, fromScanner: true);
   }
-}
-
-// WRONG: Double pop causes navigation issues
-// Navigator.pop(context);
-// Navigator.pop(context, scannedCode);
-```
-
-#### QR Debounce Logic
-```dart
-// Prevent duplicate scans
-DateTime? _lastScanTime;
-const _scanDebounceMs = 1000;
-
-void _onDetect(BarcodeCapture capture) {
-  final now = DateTime.now();
-  if (_lastScanTime != null && 
-      now.difference(_lastScanTime!).inMilliseconds < _scanDebounceMs) {
-    return; // Ignore rapid duplicate scans
-  }
-  _lastScanTime = now;
-  // Process QR code...
 }
 ```
 
@@ -567,98 +338,39 @@ if (procesoDestino == PROCESO_TRANSPORTE) {
 destinoDoc = await loteRef.collection(PROCESO_TRANSPORTE).doc('data').get();
 ```
 
-### Transfer System Implementation
+### Bidirectional Transfer System
+Lot transfers require both parties to complete their parts:
+1. **Sender**: Marks lot as delivered with `entrega_completada: true` and `firma_salida`
+2. **Receiver**: Marks lot as received with `recepcion_completada: true`
+3. **System**: Updates `proceso_actual` only when both are complete
 
-#### Unidirectional Transfer (Pickup)
-Used when Transport picks up from Origin or Recycler:
+Use `verificarYActualizarTransferencia` to ensure transfers are completed:
 ```dart
-// Immediate ownership transfer on scan
-await _loteUnificadoService.actualizarProcesoActual(
-  loteId: loteId,
-  nuevoProceso: 'transporte',
-);
-```
-
-#### Bidirectional Transfer (Delivery)
-Used for deliveries requiring confirmation:
-```dart
-// Step 1: Sender completes delivery
-await _loteUnificadoService.marcarEntregaCompletada(
-  loteId: loteId,
-  fase: 'fase_1',
-  datosEntrega: {
-    'entrega_completada': true,
-    'firma_salida': firmaUrl,
-    'fecha_entrega': FieldValue.serverTimestamp(),
-  },
-);
-
-// Step 2: Receiver confirms reception
-await _loteUnificadoService.marcarRecepcionCompletada(
-  loteId: loteId,
-  datosRecepcion: {
-    'recepcion_completada': true,
-    'firma_entrada': firmaUrl,
-    'fecha_recepcion': FieldValue.serverTimestamp(),
-  },
-);
-
-// Step 3: System auto-updates proceso_actual when both complete
-```
-
-#### Transfer Verification
-```dart
-// Use this to check and complete pending transfers
 await _loteUnificadoService.verificarYActualizarTransferencia(
   loteId: loteId,
-  procesoOrigen: 'origen',
+  procesoOrigen: 'reciclador',
   procesoDestino: 'transporte',
 );
 ```
 
-### Laboratory Parallel Process
-
-#### Sample Registration
-Laboratory takes samples without transferring ownership:
+### Laboratory Sample Flow
+Laboratory operates as a parallel process without transferring lot ownership:
 ```dart
-// Register new analysis
-String analysisId = await _loteUnificadoService.registrarAnalisisLaboratorio(
+// Laboratory takes samples from recycler lots
+await _loteUnificadoService.registrarAnalisisLaboratorio(
   loteId: loteId,
   pesoMuestra: peso,
-  folioLaboratorio: currentUserFolio,
-  firmaOperador: firmaUrl,
-  evidenciasFoto: fotosUrls,
-);
-
-// Weight is automatically subtracted from recycler's available weight
-```
-
-#### Certificate Upload (Later)
-```dart
-await _loteUnificadoService.actualizarCertificadoLaboratorio(
-  loteId: loteId,
-  analysisId: analysisId,
-  certificadoUrl: certificadoUrl,
+  certificado: null, // Added later
+  firmaOperador: firma,
+  evidenciasFoto: fotos,
 );
 ```
 
-#### Laboratory Queries
+To get lots with laboratory analyses:
 ```dart
-// Get all lots where lab has taken samples
-Stream<List<LoteUnificadoModel>> lotesConAnalisis = 
-    _loteService.obtenerLotesConAnalisisLaboratorio();
-
-// Filter by current lab user
-lotesConAnalisis.where((lote) => 
-    lote.analisisLaboratorio.any((a) => 
-        a.usuarioId == currentUserId));
+// Stream of lots where current user has taken samples
+_loteService.obtenerLotesConAnalisisLaboratorio()
 ```
-
-#### Important Rules
-1. **No Ownership Transfer**: `proceso_actual` never changes to 'laboratorio'
-2. **Weight Impact**: Samples reduce recycler's available weight
-3. **Timing Critical**: Must sample BEFORE transport phase 2
-4. **Multiple Analyses**: One lot can have multiple lab analyses
 
 ### Signature Widget Pattern
 For signature capture with dynamic sizing:
@@ -844,124 +556,39 @@ NEVER hardcode colors. Always use `BioWayColors` constants:
 
 ## Known Issues & Limitations
 
-### Platform Status
-
-#### ECOCE Platform ✅
-- Fully functional in production
-- All user types tested and working
-- Complete lot lifecycle verified
-- Document management operational
-
-#### BioWay Platform ⏳
-- Firebase project NOT created
-- Configuration template exists in `firebase_config.dart`
-- UI and flows ready, awaiting Firebase setup
-- Estimated setup time: 2-3 hours
+### BioWay Platform
+- Firebase project NOT created yet
+- Configuration exists in `firebase_config.dart` but needs actual values
+- Login and features are placeholders
 
 ### Technical Limitations
+1. Google Maps API keys need to be configured
+2. iOS build not tested (no GoogleService-Info.plist)
+3. User deletion requires Cloud Function (see `docs/CLOUD_FUNCTION_DELETE_USERS.md`)
+4. Default emulator is `emulator-5554`
+5. Firebase Storage rules must be configured for document access (see `docs/FIREBASE_STORAGE_RULES_SOLUTION.md`)
 
-1. **Google Maps API**
-   - Status: Not configured
-   - Impact: Location picker shows placeholder
-   - Solution: Add API key to `google_maps_config.dart`
+## Recent Critical Fixes
 
-2. **iOS Build**
-   - Status: Untested
-   - Missing: GoogleService-Info.plist per platform
-   - Requires: Mac environment for testing
+### Transfer System
+- **Reciclador→Transportista Transfer** (2025-07-25): Changed from bidirectional to unidirectional confirmation
+  - Files: `lote_unificado_service.dart`, `carga_transporte_service.dart`
+  - When Transport scans from Recycler, `proceso_actual` updates immediately
 
-3. **User Deletion**
-   - Current: Marks for deletion in Firestore
-   - Required: Cloud Function for Auth cleanup
-   - See: `docs/CLOUD_FUNCTION_DELETE_USERS.md`
+### UI/UX Improvements
+- **Signature Display**: Fixed AspectRatio to 2.5 with 300x120 dimensions
+- **Origin Statistics**: Shows ALL lots created (using `creado_por` field)
+- **Back Button**: All main screens use WillPopScope to prevent accidental logout
+- **Document Viewing**: Simplified approach with DocumentUtils and external browser
 
-4. **Firebase Storage Rules**
-   - Must be configured for document access
-   - Required rules in: `docs/FIREBASE_STORAGE_RULES_SOLUTION.md`
-   - Impact: Documents won't load without proper rules
+### Weight Tracking
+- Dynamic weight calculation through `pesoActual` getter
+- Laboratory samples automatically subtracted from recycler weight
+- Transport uses actual weight, not initial weight
 
-5. **Performance Considerations**
-   - Large lot lists may need pagination
-   - Image compression set to 50KB (adjustable)
-   - Offline sync can consume significant storage
+### QR Code System
+- Unified scanner implementation across all user types
+- Debounce logic to prevent duplicate scans
+- QRUtils for consistent QR code handling
 
-## Recent Updates & Fixes (2025-01-26)
-
-### System-Wide Updates
-
-1. **Unified Lot System Integration**
-   - All users now use `LoteUnificadoModel`
-   - Repository has full system visibility
-   - Transformer fully integrated
-   - Property updates: `tipoPoli` → `tipoMaterial`
-
-2. **Origin User Completion**
-   - Fully functional lot creation
-   - Statistics showing all created lots
-   - Photo limit reduced from 5 to 3
-   - QR generation working perfectly
-
-3. **Transfer System Refinement**
-   - Pickup: Unidirectional (immediate transfer)
-   - Delivery: Bidirectional (requires confirmation)
-   - Special handling for Recycler → Transport transfers
-   - Automatic phase detection (fase_1, fase_2)
-
-4. **Laboratory Updates**
-   - Removed unnecessary "My QR" button
-   - Fixed FAB navigation on all screens
-   - Confirmed parallel process operation
-   - Weight subtraction working correctly
-
-5. **Transformer Visual Update**
-   - UI aligned with Laboratory style
-   - Tab reordering: Output → Documentation → Completed
-   - Purple color scheme consistently applied
-   - State transitions working properly
-
-6. **Navigation Fixes**
-   - Resolved black screen issues
-   - Fixed route parameter passing
-   - WillPopScope on all main screens
-   - Proper back button handling
-
-### Critical Bug Fixes
-
-1. **Weight Calculation**
-   - Fixed `pesoActual` getter logic
-   - Laboratory sample subtraction corrected
-   - Transport phase weight tracking fixed
-
-2. **QR Scanner**
-   - Unified implementation for all users
-   - Debounce preventing duplicate scans
-   - Proper navigation flow maintained
-
-3. **State Management**
-   - Fixed lot visibility rules
-   - Corrected `proceso_actual` updates
-   - Proper state transitions in Transformer
-
-4. **Firebase Integration**
-   - Fixed `uploadBase64Image` implementation
-   - Corrected field naming inconsistencies
-   - Proper error handling added
-
-### Performance Optimizations
-
-1. **Image Handling**
-   - Automatic compression to ~50KB
-   - Base64 encoding for signatures
-   - Efficient storage usage
-
-2. **Query Optimization**
-   - Stream-based real-time updates
-   - Filtered queries for each user type
-   - Minimized unnecessary reads
-
-3. **Navigation Performance**
-   - Removed redundant screen rebuilds
-   - Optimized route transitions
-   - Proper state preservation
-
-For implementation details, see `docs/` directory.
+For detailed implementation fixes, see documentation in `docs/` directory.
