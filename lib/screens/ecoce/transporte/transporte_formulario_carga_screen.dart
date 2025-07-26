@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
@@ -12,13 +11,15 @@ import '../../../services/user_session_service.dart';
 import '../../../services/image_service.dart';
 import '../../../services/carga_transporte_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
-import '../../../services/firebase/auth_service.dart';
 import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/form_widgets.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
 import '../shared/widgets/lote_card_unified.dart';
 import '../shared/utils/dialog_utils.dart';
+import '../shared/widgets/unified_container.dart';
+import '../shared/widgets/field_label.dart' as field_label;
+import '../shared/utils/shared_input_decorations.dart';
 
 class TransporteFormularioCargaScreen extends StatefulWidget {
   final List<Map<String, dynamic>> lotes;
@@ -39,7 +40,6 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
   final UserSessionService _userSession = UserSessionService();
   final CargaTransporteService _cargaService = CargaTransporteService();
   final FirebaseStorageService _storageService = FirebaseStorageService();
-  final AuthService _authService = AuthService();
   
   // Controladores
   final TextEditingController _nombreController = TextEditingController();
@@ -79,34 +79,6 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
     _comentariosController.dispose();
     _operadorController.dispose();
     super.dispose();
-  }
-  
-  Future<void> _pickImage() async {
-    try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? photo = await picker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 80,
-      );
-      
-      if (photo != null) {
-        // Optimizar la imagen
-        final compressedImage = await ImageService.optimizeImageForDatabase(File(photo.path));
-        
-        setState(() {
-          _evidenciaFoto = compressedImage;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al capturar imagen: $e'),
-            backgroundColor: BioWayColors.error,
-          ),
-        );
-      }
-    }
   }
   
   void _showSignatureDialog() {
@@ -185,7 +157,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
       }
 
       // Crear la carga usando el servicio de carga
-      final cargaId = await _cargaService.crearCarga(
+      await _cargaService.crearCarga(
         lotesIds: widget.lotes.map((l) => l['id'] as String).toList(),
         transportistaFolio: userProfile['folio'] ?? 'V0000001',
         origenUsuarioId: widget.datosOrigen['id'],
@@ -216,11 +188,13 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
         );
       }
     } catch (e) {
-      DialogUtils.showErrorDialog(
-        context: context,
-        title: 'Error',
-        message: 'No se pudo confirmar la carga: ${e.toString()}',
-      );
+      if (mounted) {
+        DialogUtils.showErrorDialog(
+          context: context,
+          title: 'Error',
+          message: 'No se pudo confirmar la carga: ${e.toString()}',
+        );
+      }
     } finally {
       setState(() {
         _isLoading = false;
@@ -269,7 +243,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
       
       return null;
     } catch (e) {
-      print('Error al capturar firma: $e');
+      debugPrint('Error al capturar firma: $e');
       return null;
     }
   }
@@ -493,82 +467,42 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                   
                   const SizedBox(height: 24),
                   
-                  // Información del Operador (nombre y firma unificados)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
+                  // Sección: Datos del Responsable
+                  SectionCard(
+                    icon: '👤',
+                    title: 'Datos del Responsable',
+                    isRequired: true,
+                    children: [
+                      // Nombre del Operador
+                      const field_label.FieldLabel(text: 'Nombre del Operador', isRequired: true),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _operadorController,
+                        maxLength: 50,
+                        keyboardType: TextInputType.name,
+                        textInputAction: TextInputAction.next,
+                        autocorrect: false,
+                        enableSuggestions: false,
+                        decoration: SharedInputDecorations.ecoceStyle(
+                          hintText: 'Ingresa el nombre completo',
+                          primaryColor: BioWayColors.primaryGreen,
                         ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Text(
-                              '👷',
-                              style: TextStyle(fontSize: 24),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Información del Operador',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: BioWayColors.darkGreen,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        
-                        // Campo de nombre del operador
-                        _buildTextField(
-                          controller: _operadorController,
-                          label: 'Nombre del Operador',
-                          hint: 'Ingrese el nombre completo del operador',
-                          keyId: 'input_nombre_operador',
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Este campo es obligatorio';
-                            }
-                            return null;
-                          },
-                        ),
-                        
-                        const SizedBox(height: 24),
-                        
-                        // Sección de firma
-                        Row(
-                          children: [
-                            Text(
-                              'Firma del Operador',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: BioWayColors.textGrey,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '*',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: BioWayColors.error,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Ingresa el nombre del operador';
+                          }
+                          if (value.length < 3) {
+                            return 'El nombre debe tener al menos 3 caracteres';
+                          }
+                          return null;
+                        },
+                      ),
+                      
+                      const SizedBox(height: 20),
+                      
+                      // Firma del Operador
+                      const field_label.FieldLabel(text: 'Firma del Operador', isRequired: true),
+                      const SizedBox(height: 8),
                         GestureDetector(
                           onTap: _firma.isEmpty ? _showSignatureDialog : null,
                           child: AnimatedContainer(
@@ -709,8 +643,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                                   ),
                           ),
                         ),
-                      ],
-                    ),
+                    ],
                   ),
                   
                   const SizedBox(height: 24),
@@ -974,36 +907,15 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
     );
   }
   
-  Widget _buildSection({
-    required String title,
-    required List<Widget> children,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: BioWayColors.darkGreen,
-          ),
-        ),
-        const SizedBox(height: 16),
-        ...children,
-      ],
-    );
-  }
-  
   Widget _buildOrigenInfo() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: BioWayColors.primaryGreen.withOpacity(0.05),
+        color: BioWayColors.primaryGreen.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: BioWayColors.primaryGreen.withOpacity(0.2),
+          color: BioWayColors.primaryGreen.withValues(alpha: 0.2),
           width: 1,
         ),
       ),

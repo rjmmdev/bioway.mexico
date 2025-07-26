@@ -3,10 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../utils/colors.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
-import '../shared/widgets/ecoce_bottom_navigation.dart';
-import '../shared/utils/dialog_utils.dart';
-import 'transporte_qr_entrega_screen.dart';
-import 'transporte_escanear_carga_screen.dart';
 
 class TransporteEscanearReceptorScreen extends StatefulWidget {
   final List<Map<String, dynamic>> lotesSeleccionados;
@@ -54,9 +50,21 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
     });
     
     try {
+      // Detectar si se escaneó un código de lote en lugar de usuario
+      if (codigo.startsWith('LOTE-')) {
+        _mostrarError('Has escaneado un código de lote. Por favor escanea el código QR del receptor');
+        return;
+      }
+      
+      // Detectar si se escaneó un código de entrega
+      if (codigo.startsWith('ENTREGA-')) {
+        _mostrarError('Has escaneado un código de entrega. Por favor escanea el código QR del receptor');
+        return;
+      }
+      
       // Validar formato del código QR del usuario
       if (!codigo.startsWith('USER-')) {
-        _mostrarError('Este no es un código QR de usuario válido');
+        _mostrarError('Por favor escanea el código QR de identificación del receptor');
         return;
       }
       
@@ -102,26 +110,15 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
       // Vibración de éxito
       HapticFeedback.mediumImpact();
       
-      // Navegar a la pantalla de generación de QR de entrega
+      // Devolver los datos del receptor a la pantalla anterior
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TransporteQREntregaScreen(
-              lotesSeleccionados: widget.lotesSeleccionados,
-              datosReceptor: datosReceptor,
-            ),
-          ),
-        );
+        Navigator.pop(context, datosReceptor);
       }
       
     } catch (e) {
-      print('Error al procesar QR: $e');
+      debugPrint('Error al procesar QR: $e');
       _mostrarError('Error al procesar el código QR');
-    } finally {
-      setState(() {
-        _isProcessing = false;
-      });
+      // No reiniciamos _isProcessing aquí porque _mostrarError ya lo maneja
     }
   }
   
@@ -146,62 +143,68 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
   }
   
   void _mostrarError(String mensaje) {
+    // Vibración de error
+    HapticFeedback.heavyImpact();
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(mensaje),
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text(mensaje)),
+          ],
+        ),
         backgroundColor: BioWayColors.error,
         behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        margin: const EdgeInsets.all(20),
       ),
     );
+    
+    // Esperar un poco antes de permitir el siguiente escaneo
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
+    });
   }
   
-  void _onBottomNavTapped(int index) {
-    switch (index) {
-      case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const TransporteEscanearCargaScreen(),
-          ),
-        );
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(context, '/transporte_entregar');
-        break;
-      case 2:
-        Navigator.pushNamed(context, '/transporte_ayuda');
-        break;
-      case 3:
-        Navigator.pushNamed(context, '/transporte_perfil');
-        break;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            Navigator.pop(context);
+          },
         ),
         title: const Text(
           'Identificar Receptor',
           style: TextStyle(
-            color: Colors.black87,
+            color: Colors.white,
             fontSize: 20,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.bold,
           ),
         ),
+        centerTitle: true,
         actions: [
           if (_scannerController != null)
             IconButton(
               icon: Icon(
                 _flashEnabled ? Icons.flash_on : Icons.flash_off,
-                color: Colors.black87,
+                color: _flashEnabled ? Colors.yellow : Colors.white,
               ),
               onPressed: () {
                 setState(() {
@@ -212,181 +215,252 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
             ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // Información de los lotes a entregar
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            color: BioWayColors.info.withOpacity(0.1),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.inventory_2,
-                      color: BioWayColors.info,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Lotes a entregar: ${widget.lotesSeleccionados.length}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: BioWayColors.darkGreen,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Peso total: ${_calcularPesoTotal()} kg',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
-                ),
-              ],
-            ),
+          // Scanner de pantalla completa
+          MobileScanner(
+            controller: _scannerController!,
+            onDetect: (capture) {
+              final List<Barcode> barcodes = capture.barcodes;
+              for (final barcode in barcodes) {
+                if (barcode.rawValue != null && !_isProcessing) {
+                  _procesarCodigoQR(barcode.rawValue!);
+                }
+              }
+            },
           ),
           
-          // Scanner área
-          Expanded(
+          // Overlay con marco de escaneo
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              border: Border.all(color: Colors.transparent),
+            ),
             child: Stack(
               children: [
-                MobileScanner(
-                  controller: _scannerController!,
-                  onDetect: (capture) {
-                    final List<Barcode> barcodes = capture.barcodes;
-                    for (final barcode in barcodes) {
-                      if (barcode.rawValue != null && !_isProcessing) {
-                        _procesarCodigoQR(barcode.rawValue!);
-                      }
-                    }
-                  },
-                ),
-                // Overlay con instrucciones
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
-                      width: 2,
-                    ),
+                // Oscurecer áreas fuera del recuadro
+                ColorFiltered(
+                  colorFilter: ColorFilter.mode(
+                    Colors.black.withOpacity(0.5),
+                    BlendMode.srcOut,
                   ),
-                  child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(12),
+                  child: Stack(
+                    children: [
+                      Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.black,
+                          backgroundBlendMode: BlendMode.dstOut,
+                        ),
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.qr_code_scanner,
+                      Center(
+                        child: Container(
+                          height: 300,
+                          width: 300,
+                          decoration: BoxDecoration(
                             color: Colors.white,
-                            size: 48,
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Escanea el código QR del receptor',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Solicita al ${_getTipoReceptor()} que muestre\nsu código QR de identificación',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
                 
-                if (_isProcessing)
-                  Container(
-                    color: Colors.black.withOpacity(0.5),
-                    child: const Center(
-                      child: CircularProgressIndicator(
+                // Marco del escáner
+                Center(
+                  child: Container(
+                    height: 300,
+                    width: 300,
+                    decoration: BoxDecoration(
+                      border: Border.all(
                         color: Colors.white,
+                        width: 2,
                       ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Stack(
+                      children: [
+                        // Esquinas decorativas
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          child: Container(
+                            height: 50,
+                            width: 50,
+                            decoration: const BoxDecoration(
+                              border: Border(
+                                top: BorderSide(color: Color(0xFF1490EE), width: 4),
+                                left: BorderSide(color: Color(0xFF1490EE), width: 4),
+                              ),
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(20),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: Container(
+                            height: 50,
+                            width: 50,
+                            decoration: const BoxDecoration(
+                              border: Border(
+                                top: BorderSide(color: Color(0xFF1490EE), width: 4),
+                                right: BorderSide(color: Color(0xFF1490EE), width: 4),
+                              ),
+                              borderRadius: BorderRadius.only(
+                                topRight: Radius.circular(20),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          child: Container(
+                            height: 50,
+                            width: 50,
+                            decoration: const BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(color: Color(0xFF1490EE), width: 4),
+                                left: BorderSide(color: Color(0xFF1490EE), width: 4),
+                              ),
+                              borderRadius: BorderRadius.only(
+                                bottomLeft: Radius.circular(20),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            height: 50,
+                            width: 50,
+                            decoration: const BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(color: Color(0xFF1490EE), width: 4),
+                                right: BorderSide(color: Color(0xFF1490EE), width: 4),
+                              ),
+                              borderRadius: BorderRadius.only(
+                                bottomRight: Radius.circular(20),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                ),
               ],
             ),
           ),
           
-          // Información adicional
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.white,
-            child: Column(
-              children: [
-                const Icon(
-                  Icons.info_outline,
-                  color: BioWayColors.warning,
-                  size: 48,
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Identificación Requerida',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: BioWayColors.darkGreen,
+          // Información de lotes en la parte superior
+          Positioned(
+            top: 20,
+            left: 20,
+            right: 20,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.95),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'El receptor debe mostrar su código QR de usuario para continuar con la entrega',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.inventory_2,
+                        color: const Color(0xFF1490EE),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Lotes a entregar: ${widget.lotesSeleccionados.length}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: BioWayColors.darkGreen,
+                        ),
+                      ),
+                    ],
                   ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Text(
+                    'Peso total: ${_calcularPesoTotal()} kg',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
-      ),
-      bottomNavigationBar: EcoceBottomNavigation(
-        selectedIndex: 1,
-        onItemTapped: _onBottomNavTapped,
-        primaryColor: const Color(0xFF1490EE),
-        items: const [
-          NavigationItem(
-            icon: Icons.qr_code_scanner_rounded,
-            label: 'Recoger',
-            testKey: 'transporte_nav_recoger',
+          
+          // Instrucciones en la parte inferior
+          Positioned(
+            bottom: 100,
+            left: 20,
+            right: 20,
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.qr_code_scanner,
+                    size: 40,
+                    color: Colors.grey[700],
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Escanea el código QR del receptor',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: BioWayColors.darkGreen,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Solicita al ${_getTipoReceptor()} que muestre\nsu código QR de identificación',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          NavigationItem(
-            icon: Icons.local_shipping_rounded,
-            label: 'Entregar',
-            testKey: 'transporte_nav_entregar',
-          ),
-          NavigationItem(
-            icon: Icons.help_outline_rounded,
-            label: 'Ayuda',
-            testKey: 'transporte_nav_ayuda',
-          ),
-          NavigationItem(
-            icon: Icons.person_outline_rounded,
-            label: 'Perfil',
-            testKey: 'transporte_nav_perfil',
-          ),
+          
+          // Indicador de procesamiento
+          if (_isProcessing)
+            Container(
+              color: Colors.black.withOpacity(0.5),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                ),
+              ),
+            ),
         ],
       ),
     );

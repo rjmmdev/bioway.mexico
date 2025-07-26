@@ -7,7 +7,7 @@ import '../../../services/firebase/auth_service.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
 import '../../../services/carga_transporte_service.dart';
 import '../../../services/lote_unificado_service.dart';
-import '../shared/widgets/shared_qr_scanner_screen.dart';
+import 'transporte_escanear_receptor_screen.dart';
 import '../shared/widgets/dialog_utils.dart';
 import 'transporte_qr_entrega_screen.dart';
 import 'transporte_formulario_entrega_screen.dart';
@@ -93,78 +93,89 @@ class _TransporteEntregaPasosScreenState extends State<TransporteEntregaPasosScr
   Future<void> _scanReceptorQR() async {
     HapticFeedback.lightImpact();
     
-    final qrCode = await Navigator.push<String>(
+    // Navegar a la pantalla específica de escanear receptor
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const SharedQRScannerScreen(),
+        builder: (context) => TransporteEscanearReceptorScreen(
+          lotesSeleccionados: widget.lotesSeleccionados.map((id) => {
+            'id': id,
+            'peso': _lotesCompletos.firstWhere((l) => l['id'] == id, orElse: () => {'peso': 0.0})['peso'] ?? 0.0,
+          }).toList(),
+        ),
       ),
     );
     
-    if (qrCode != null && mounted) {
-      await _processReceptorQR(qrCode);
+    // Si la navegación devuelve datos del receptor, procesarlos
+    if (result != null && result is Map<String, dynamic> && mounted) {
+      setState(() {
+        _datosReceptor = result;
+      });
+      _nextStep();
     }
   }
   
-  Future<void> _processReceptorQR(String qrCode) async {
-    setState(() => _isProcessing = true);
-    
-    try {
-      // Validar formato del QR
-      if (!qrCode.startsWith('USER-')) {
-        throw 'Código QR inválido. Debe ser un QR de identificación de usuario.';
-      }
-      
-      final parts = qrCode.split('-');
-      if (parts.length < 3) {
-        throw 'Formato de QR inválido';
-      }
-      
-      final tipoUsuario = parts[1].toLowerCase();
-      final userId = parts[2];
-      
-      // Validar tipo de usuario (solo reciclador, laboratorio o transformador)
-      if (!['reciclador', 'laboratorio', 'transformador'].contains(tipoUsuario)) {
-        throw 'Este usuario no está autorizado para recibir materiales';
-      }
-      
-      // Obtener información del usuario receptor desde Firebase
-      final profileService = EcoceProfileService();
-      final perfilReceptor = await profileService.getProfileByUserId(userId);
-      
-      if (perfilReceptor == null) {
-        _mostrarError('Usuario receptor no encontrado');
-        return;
-      }
-      
-      // Verificar que el usuario esté aprobado
-      if (!perfilReceptor.isApproved) {
-        _mostrarError('El usuario receptor no está aprobado para recibir materiales');
-        return;
-      }
-      
-      setState(() {
-        _datosReceptor = {
-          'id': userId,
-          'tipo': tipoUsuario,
-          'folio': perfilReceptor.ecoceFolio,
-          'nombre': perfilReceptor.ecoceNombre,
-          'direccion': _construirDireccion(perfilReceptor),
-        };
-      });
-      
-      // Avanzar al siguiente paso
-      _nextStep();
-      
-    } catch (e) {
-      DialogUtils.showErrorDialog(
-        context,
-        title: 'Error',
-        message: e.toString(),
-      );
-    } finally {
-      setState(() => _isProcessing = false);
-    }
-  }
+  // Este método ya no se usa, se usa TransporteEscanearReceptorScreen directamente
+  // Future<void> _processReceptorQR(String qrCode) async {
+  //   setState(() => _isProcessing = true);
+  //   
+  //   try {
+  //     // Validar formato del QR
+  //     if (!qrCode.startsWith('USER-')) {
+  //       throw 'Código QR inválido. Debe ser un QR de identificación de usuario.';
+  //     }
+  //     
+  //     final parts = qrCode.split('-');
+  //     if (parts.length < 3) {
+  //       throw 'Formato de QR inválido';
+  //     }
+  //     
+  //     final tipoUsuario = parts[1].toLowerCase();
+  //     final userId = parts[2];
+  //     
+  //     // Validar tipo de usuario (solo reciclador, laboratorio o transformador)
+  //     if (!['reciclador', 'laboratorio', 'transformador'].contains(tipoUsuario)) {
+  //       throw 'Este usuario no está autorizado para recibir materiales';
+  //     }
+  //     
+  //     // Obtener información del usuario receptor desde Firebase
+  //     final profileService = EcoceProfileService();
+  //     final perfilReceptor = await profileService.getProfileByUserId(userId);
+  //     
+  //     if (perfilReceptor == null) {
+  //       _mostrarError('Usuario receptor no encontrado');
+  //       return;
+  //     }
+  //     
+  //     // Verificar que el usuario esté aprobado
+  //     if (!perfilReceptor.isApproved) {
+  //       _mostrarError('El usuario receptor no está aprobado para recibir materiales');
+  //       return;
+  //     }
+  //     
+  //     setState(() {
+  //       _datosReceptor = {
+  //         'id': userId,
+  //         'tipo': tipoUsuario,
+  //         'folio': perfilReceptor.ecoceFolio,
+  //         'nombre': perfilReceptor.ecoceNombre,
+  //         'direccion': _construirDireccion(perfilReceptor),
+  //       };
+  //     });
+  //     
+  //     // Avanzar al siguiente paso
+  //     _nextStep();
+  //     
+  //   } catch (e) {
+  //     DialogUtils.showErrorDialog(
+  //       context,
+  //       title: 'Error',
+  //       message: e.toString(),
+  //     );
+  //   } finally {
+  //     setState(() => _isProcessing = false);
+  //   }
+  // }
   
   Future<void> _generateDeliveryQR() async {
     setState(() => _isProcessing = true);
@@ -1004,35 +1015,36 @@ class _TransporteEntregaPasosScreenState extends State<TransporteEntregaPasosScr
     );
   }
   
-  void _mostrarError(String mensaje) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(mensaje),
-        backgroundColor: BioWayColors.error,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-  
-  String _construirDireccion(dynamic perfil) {
-    final calle = perfil.ecoceCalle ?? '';
-    final numExt = perfil.ecoceNumExt ?? '';
-    final numInt = perfil.ecoceNumInt ?? '';
-    final colonia = perfil.ecoceColonia ?? '';
-    final municipio = perfil.ecoceMunicipio ?? '';
-    final estado = perfil.ecoceEstado ?? '';
-    final cp = perfil.ecoceCp ?? '';
-    
-    String direccion = calle;
-    if (numExt.isNotEmpty) direccion += ' $numExt';
-    if (numInt.isNotEmpty) direccion += ' Int. $numInt';
-    if (colonia.isNotEmpty) direccion += ', $colonia';
-    if (municipio.isNotEmpty) direccion += ', $municipio';
-    if (estado.isNotEmpty) direccion += ', $estado';
-    if (cp.isNotEmpty) direccion += ', CP $cp';
-    
-    return direccion.trim();
-  }
+  // Estos métodos ya no se usan, se manejan en TransporteEscanearReceptorScreen
+  // void _mostrarError(String mensaje) {
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(
+  //       content: Text(mensaje),
+  //       backgroundColor: BioWayColors.error,
+  //       behavior: SnackBarBehavior.floating,
+  //     ),
+  //   );
+  // }
+  // 
+  // String _construirDireccion(dynamic perfil) {
+  //   final calle = perfil.ecoceCalle ?? '';
+  //   final numExt = perfil.ecoceNumExt ?? '';
+  //   final numInt = perfil.ecoceNumInt ?? '';
+  //   final colonia = perfil.ecoceColonia ?? '';
+  //   final municipio = perfil.ecoceMunicipio ?? '';
+  //   final estado = perfil.ecoceEstado ?? '';
+  //   final cp = perfil.ecoceCp ?? '';
+  //   
+  //   String direccion = calle;
+  //   if (numExt.isNotEmpty) direccion += ' $numExt';
+  //   if (numInt.isNotEmpty) direccion += ' Int. $numInt';
+  //   if (colonia.isNotEmpty) direccion += ', $colonia';
+  //   if (municipio.isNotEmpty) direccion += ', $municipio';
+  //   if (estado.isNotEmpty) direccion += ', $estado';
+  //   if (cp.isNotEmpty) direccion += ', CP $cp';
+  //   
+  //   return direccion.trim();
+  // }
   
   double _calcularPesoTotal() {
     return _lotesCompletos.fold(

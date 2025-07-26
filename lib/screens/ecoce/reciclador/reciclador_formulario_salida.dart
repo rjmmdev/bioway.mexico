@@ -589,6 +589,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                             primaryColor: BioWayColors.ecoceGreen,
                             quickAddValues: const [50, 100, 250, 500],
                             isRequired: true,
+                            maxValue: _pesoNetoAprovechable > 0 ? _pesoNetoAprovechable : null,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Por favor ingresa el peso recibido';
@@ -597,8 +598,8 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                               if (peso == null || peso <= 0) {
                                 return 'Ingresa un peso válido';
                               }
-                              if (peso > widget.pesoOriginal) {
-                                return 'El peso no puede ser mayor al original';
+                              if (peso > _pesoNetoAprovechable) {
+                                return 'El peso no puede ser mayor al peso neto aprovechable ($_pesoNetoAprovechable kg)';
                               }
                               return null;
                             },
@@ -1153,7 +1154,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                     // Tarjeta de Evidencia Fotográfica para agregar nuevas
                     PhotoEvidenceWidget(
                       title: _existingPhotoUrls.isEmpty ? 'Evidencia Fotográfica' : 'Agregar Más Evidencias',
-                      maxPhotos: 5 - _existingPhotoUrls.length, // Ajustar el máximo según las existentes
+                      maxPhotos: 3 - _existingPhotoUrls.length, // Ajustar el máximo según las existentes
                       minPhotos: _existingPhotoUrls.isEmpty ? 1 : 0,
                       isRequired: _existingPhotoUrls.isEmpty,
                       onPhotosChanged: _onPhotosChanged,
@@ -1254,7 +1255,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                               child: Text(
                                 'Guardar Cambios',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                   color: BioWayColors.ecoceGreen,
                                 ),

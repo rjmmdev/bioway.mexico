@@ -38,12 +38,10 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
   Stream<List<LoteUnificadoModel>>? _lotesStream;
   String _selectedMaterial = 'Todos';
   String _selectedTime = 'Todos';
-  String _selectedDocFilter = 'Todos'; // Nuevo filtro para documentación
+  final String _selectedDocFilter = 'Todos'; // Nuevo filtro para documentación
   String _selectedPresentacion = 'Todos'; // Filtro de presentación
   int _selectedIndex = 1; // Bottom nav index
   
-  // Lista local para cálculos
-  List<LoteUnificadoModel> _todosLotes = [];
   
   @override
   void initState() {
@@ -55,7 +53,10 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
     );
     _tabController.addListener(() {
       if (_tabController.indexIsChanging || _tabController.index != _tabController.previousIndex) {
-        setState(() {});
+        setState(() {
+          // Limpiar búsqueda al cambiar de pestaña
+          _searchController.clear();
+        });
       }
     });
     _loadLotes();
@@ -64,15 +65,6 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
   void _loadLotes() {
     setState(() {
       _lotesStream = _loteService.obtenerLotesRecicladorConPendientes();
-    });
-    
-    // También cargar lista local para cálculos
-    _loteService.obtenerLotesRecicladorConPendientes().listen((lotes) {
-      if (mounted) {
-        setState(() {
-          _todosLotes = lotes;
-        });
-      }
     });
   }
   
@@ -155,9 +147,6 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
     }
   }
   
-  void _handleSearch(String value) {
-    _filterLotes();
-  }
   
   Color _getTabColor() {
     switch (_tabController.index) {
@@ -170,122 +159,6 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
     }
   }
   
-  void _showFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Filtros'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Filtro por material
-            DropdownButtonFormField<String>(
-              value: _selectedMaterial,
-              decoration: const InputDecoration(
-                labelText: 'Tipo de Material',
-                border: OutlineInputBorder(),
-              ),
-              items: ['Todos', 'PEBD', 'PP', 'Multilaminado']
-                  .map((material) => DropdownMenuItem(
-                        value: material,
-                        child: Text(material),
-                      ))
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedMaterial = value!;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-            // Filtro por tiempo
-            DropdownButtonFormField<String>(
-              value: _selectedTime,
-              decoration: const InputDecoration(
-                labelText: 'Periodo',
-                border: OutlineInputBorder(),
-              ),
-              items: ['Todos', 'Hoy', 'Esta semana', 'Este mes']
-                  .map((time) => DropdownMenuItem(
-                        value: time,
-                        child: Text(time),
-                      ))
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedTime = value!;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-            // Filtro por presentación
-            DropdownButtonFormField<String>(
-              value: _selectedPresentacion,
-              decoration: const InputDecoration(
-                labelText: 'Presentación',
-                border: OutlineInputBorder(),
-              ),
-              items: ['Todos', 'Pacas', 'Costales', 'Separados']
-                  .map((pres) => DropdownMenuItem(
-                        value: pres,
-                        child: Text(pres),
-                      ))
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedPresentacion = value!;
-                });
-              },
-            ),
-            // Filtro por documentación (solo visible en pestaña Completados)
-            if (_tabController.index == 1) ...[
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _selectedDocFilter,
-                decoration: const InputDecoration(
-                  labelText: 'Documentación',
-                  border: OutlineInputBorder(),
-                ),
-                items: ['Todos', 'Pendientes']
-                    .map((doc) => DropdownMenuItem(
-                          value: doc,
-                          child: Text(doc),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedDocFilter = value!;
-                  });
-                },
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _selectedMaterial = 'Todos';
-                _selectedTime = 'Todos';
-                _selectedPresentacion = 'Todos';
-                _selectedDocFilter = 'Todos';
-              });
-              _loadLotes();
-              Navigator.pop(context);
-            },
-            child: const Text('Limpiar'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              _filterLotes();
-              Navigator.pop(context);
-            },
-            child: const Text('Aplicar'),
-          ),
-        ],
-      ),
-    );
-  }
   
   void _showLoteDetails(LoteUnificadoModel lote) {
     showModalBottomSheet(
@@ -322,6 +195,8 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
               unselectedLabelColor: Colors.grey,
               indicatorColor: _getTabColor(),
               indicatorWeight: 3,
+              indicatorSize: TabBarIndicatorSize.tab,
+              labelPadding: const EdgeInsets.symmetric(horizontal: 16),
               tabs: const [
                 Tab(text: 'Salida'),
                 Tab(text: 'Completados'),
@@ -330,81 +205,88 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
           ),
         ),
       ),
-      body: Column(
-        children: [
-          // Lista de lotes con filtros y estadísticas
-          Expanded(
-            child: StreamBuilder<List<LoteUnificadoModel>>(
-              stream: _lotesStream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Error al cargar lotes',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: _loadLotes,
-                          child: const Text('Reintentar'),
-                        ),
-                      ],
+      body: StreamBuilder<List<LoteUnificadoModel>>(
+        stream: _lotesStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: Colors.grey[400],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error al cargar lotes',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[600],
                     ),
-                  );
-                }
-                
-                final allLotes = snapshot.data ?? [];
-                final filteredLotes = _filterByTab(allLotes);
-                
-                if (filteredLotes.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.inventory_2_outlined,
-                          size: 80,
-                          color: Colors.grey[300],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No hay lotes en esta categoría',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: _loadLotes,
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              ),
+            );
+          }
+          
+          final allLotes = snapshot.data ?? [];
+          final filteredLotes = _filterByTab(allLotes);
+          
+          if (filteredLotes.isEmpty && _tabController.index == 0) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.inventory_2_outlined,
+                    size: 80,
+                    color: Colors.grey[300],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No hay lotes en esta categoría',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[600],
                     ),
-                  );
-                }
-                
-                return TabBarView(
-                  controller: _tabController,
-                  children: List.generate(2, (tabIndex) {
-                    return _buildTabContent(filteredLotes);
-                  }),
-                );
-              },
-            ),
-          ),
-        ],
+                  ),
+                ],
+              ),
+            );
+          }
+          
+          return Column(
+            children: [
+              // Contenido con TabBarView
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    _loadLotes();
+                    await Future.delayed(const Duration(seconds: 1));
+                  },
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildTabContent(filteredLotes), // Pestaña 0: Salida
+                      _buildTabContent(filteredLotes), // Pestaña 1: Completados
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
       bottomNavigationBar: EcoceBottomNavigation(
         selectedIndex: _selectedIndex,
@@ -457,10 +339,13 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
           child: Column(
             children: [
               // Filtro de materiales
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: ['Todos', 'PEBD', 'PP', 'Multilaminado'].map((material) {
+              SizedBox(
+                height: 40,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    children: ['Todos', 'PEBD', 'PP', 'Multilaminado'].map((material) {
                     final isSelected = _selectedMaterial == material;
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
@@ -481,6 +366,7 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
                       ),
                     );
                   }).toList(),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -717,6 +603,7 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
                 )
               : ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
+                  physics: const BouncingScrollPhysics(),
                   itemCount: lotes.length,
                   itemBuilder: (context, index) {
                     final lote = lotes[index];
@@ -818,116 +705,116 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      statusIcon,
-                      color: statusColor,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'ID: ${lote.id.substring(0, 8).toUpperCase()}',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'monospace',
-                          ),
+                  // Header
+                  Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        Text(
-                          statusText,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: statusColor,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        child: Icon(
+                          statusIcon,
+                          color: statusColor,
+                          size: 24,
                         ),
-                      ],
-                    ),
-                  ),
-                  // Botones de acción según la pestaña
-                  if (_tabController.index == 0) ...[
-                    // Pestaña Salida - Botón Formulario de Salida
-                    IconButton(
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'ID: ${lote.id.substring(0, 8).toUpperCase()}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                            Text(
+                              statusText,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: statusColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Botones de acción según la pestaña
+                      if (_tabController.index == 0) ...[
+                        // Pestaña Salida - Botón Formulario de Salida
+                        IconButton(
                       icon: Icon(
                         Icons.assignment_outlined,
                         color: BioWayColors.ecoceGreen,
                       ),
                       onPressed: () => _openFormularioSalida(lote),
                       tooltip: 'Formulario de salida',
-                    ),
-                  ] else if (_tabController.index == 1) ...[
-                    // Pestaña Completados
-                    // Botón QR (solo si está en reciclador y tiene firma de salida)
-                    if (lote.datosGenerales.procesoActual == 'reciclador' && isCompleted)
-                      IconButton(
+                        ),
+                      ] else if (_tabController.index == 1) ...[
+                        // Pestaña Completados
+                        // Botón QR (solo si está en reciclador y tiene firma de salida)
+                        if (lote.datosGenerales.procesoActual == 'reciclador' && isCompleted)
+                          IconButton(
                         icon: Icon(Icons.qr_code_2, color: BioWayColors.ecoceGreen),
                         onPressed: () => _showQRCode(lote),
                         tooltip: 'Ver código QR',
-                      ),
-                    // Botón Documentación (siempre visible en completados)
-                    IconButton(
+                          ),
+                        // Botón Documentación (siempre visible en completados)
+                        IconButton(
                       icon: Icon(
                         hasAllDocs ? Icons.check_circle : Icons.upload_file,
                         color: hasAllDocs ? Colors.green : Colors.orange,
                       ),
-                      onPressed: () => _uploadDocuments(lote),
+                      onPressed: hasAllDocs ? null : () => _uploadDocuments(lote),
                       tooltip: hasAllDocs ? 'Documentación completa' : 'Subir documentación',
-                    ),
-                  ],
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Información principal
-              Row(
-                children: [
-                  Expanded(
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Información principal
+                  Row(
+                    children: [
+                      Expanded(
                     child: _buildInfoItem(
                       icon: Icons.category,
                       label: 'Material',
                       value: lote.datosGenerales.tipoMaterial,
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
                     child: _buildInfoItem(
                       icon: Icons.scale,
                       label: lote.tieneAnalisisLaboratorio ? 'Peso Actual' : 'Peso Entrada',
                       value: '${lote.pesoActual.toStringAsFixed(2)} kg',
                       color: lote.tieneAnalisisLaboratorio ? Colors.blue : null,
                     ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              // Información secundaria
-              Row(
-                children: [
-                  Expanded(
+                  const SizedBox(height: 12),
+                  // Información secundaria
+                  Row(
+                    children: [
+                      Expanded(
                     child: _buildInfoItem(
                       icon: Icons.calendar_today,
                       label: 'Entrada',
                       value: FormatUtils.formatDate(reciclador.fechaEntrada),
                       fontSize: 12,
                     ),
-                  ),
-                  if (lote.tieneAnalisisLaboratorio)
-                    Expanded(
+                      ),
+                      if (lote.tieneAnalisisLaboratorio)
+                        Expanded(
                       child: _buildInfoItem(
                         icon: Icons.science,
                         label: 'Muestras Lab',
@@ -935,9 +822,9 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
                         fontSize: 12,
                         color: BioWayColors.ppPurple,
                       ),
-                    )
-                  else if (reciclador.pesoProcesado != null)
-                    Expanded(
+                        )
+                      else if (reciclador.pesoProcesado != null)
+                        Expanded(
                       child: _buildInfoItem(
                         icon: Icons.trending_down,
                         label: 'Merma',
@@ -945,14 +832,14 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
                         fontSize: 12,
                         color: Colors.orange,
                       ),
-                    ),
+                        ),
+                    ],
+                  ),
                 ],
-              ),
-                ],
-              ),
-            ),
           ),
-        );
+        ),
+      ),
+    );
       },
     );
   }
@@ -1000,6 +887,9 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
     // Usar el peso actual que ya considera las muestras del laboratorio
     final pesoActual = lote.pesoActual;
     
+    // Calcular el peso de las muestras del laboratorio
+    final pesoMuestras = lote.pesoTotalMuestras;
+    
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -1012,6 +902,7 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
           origen: 'Reciclador',
           fechaEntrada: reciclador.fechaEntrada,
           fechaSalida: reciclador.fechaSalida,
+          pesoMuestrasLaboratorio: pesoMuestras > 0 ? pesoMuestras : null,
         ),
       ),
     );
@@ -1024,18 +915,11 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
     if (hasAllDocs) {
       // Mostrar alerta de que la documentación ya está completa
       if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Documentación Completa'),
-          content: const Text('La documentación para este lote ya ha sido enviada correctamente.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Entendido'),
-            ),
-          ],
-        ),
+      DialogUtils.showInfoDialog(
+        context,
+        title: 'Documentación Completa',
+        message: 'La documentación para este lote ya ha sido enviada correctamente.\n\n'
+                'No es necesario volver a cargar documentos.',
       );
     } else {
       // Navegar a la pantalla de documentación
@@ -1098,7 +982,7 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
       }
       return false;
     } catch (e) {
-      print('Error verificando documentación: $e');
+      debugPrint('Error verificando documentación: $e');
       return false;
     }
   }
@@ -1125,9 +1009,9 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
     
     String materialMasComun = '';
     int maxConteo = 0;
-    conteo.forEach((material, count) {
-      if (count > maxConteo) {
-        maxConteo = count;
+    conteo.forEach((material, cantidad) {
+      if (cantidad > maxConteo) {
+        maxConteo = cantidad;
         materialMasComun = material;
       }
     });

@@ -5,8 +5,10 @@ import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/lote_service.dart';
+import '../../../services/lote_unificado_service.dart';
 import '../../../models/ecoce/ecoce_profile_model.dart';
 import '../../../models/lotes/lote_reciclador_model.dart';
+import '../../../models/lotes/lote_unificado_model.dart';
 import 'reciclador_formulario_salida.dart';
 import 'reciclador_documentacion.dart';
 import 'reciclador_lote_qr_screen.dart';
@@ -25,28 +27,31 @@ class RecicladorInicio extends StatefulWidget {
 class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBindingObserver {
   final UserSessionService _sessionService = UserSessionService();
   final LoteService _loteService = LoteService();
+  final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
   
   EcoceProfileModel? _userProfile;
-  bool _isLoading = true;
   
   // Índice para la navegación del bottom bar
   final int _selectedIndex = 0;
 
-  // Estadísticas reales
+  // Estadísticas reales (valores iniciales)
   int _lotesRecibidos = 0;
   int _lotesCreados = 0;
   double _pesoProcesado = 0.0; // en kg
   
   // Stream para lotes
   Stream<List<LoteRecicladorModel>>? _lotesStream;
+  Stream<List<dynamic>>? _lotesUnificadosStream;
+  
+  // Stream para estadísticas
+  Stream<Map<String, dynamic>>? _estadisticasStream;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _loadUserProfile();
-    _loadStatistics();
-    _setupLotesStream();
+    _setupStreams();
   }
   
   @override
@@ -60,7 +65,6 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
     if (state == AppLifecycleState.resumed) {
       // Refresh data when app returns to foreground
       _loadUserProfile();
-      _loadStatistics();
     }
   }
 
@@ -73,41 +77,32 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
         });
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      // Error ya manejado
     }
   }
   
-  void _setupLotesStream() {
+  void _setupStreams() {
     _lotesStream = _loteService.getLotesReciclador();
+    _lotesUnificadosStream = _loteUnificadoService.obtenerLotesRecicladorConPendientes();
+    _estadisticasStream = _loteUnificadoService.streamEstadisticasReciclador();
+    
+    // Cargar estadísticas iniciales
+    _loadInitialStatistics();
   }
   
-  Future<void> _loadStatistics() async {
+  Future<void> _loadInitialStatistics() async {
     try {
-      // Obtener todos los lotes del reciclador
-      final lotes = await _loteService.getLotesReciclador().first;
-      
-      // Obtener el total de lotes recibidos del perfil
-      final profile = await _sessionService.getCurrentUserProfile();
-      final lotesRecibidosTotal = profile?.ecoceLotesTotalesRecibidos ?? 0;
+      final stats = await _loteUnificadoService.obtenerEstadisticasReciclador();
       
       if (mounted) {
         setState(() {
-          _lotesRecibidos = lotesRecibidosTotal;
-          _lotesCreados = lotes.where((l) => l.estado == 'finalizado').length;
-          _pesoProcesado = lotes.fold(0.0, (sum, lote) => sum + (lote.pesoResultante ?? lote.pesoNeto ?? lote.pesoBruto ?? 0.0));
-          _isLoading = false;
+          _lotesRecibidos = stats['lotesRecibidos'] ?? 0;
+          _lotesCreados = stats['lotesCreados'] ?? 0;
+          _pesoProcesado = stats['materialProcesado'] ?? 0.0;
         });
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      // Error ya manejado con valores por defecto
     }
   }
 
@@ -131,6 +126,45 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
       'estado': lote.estado,
     };
   }
+  
+  // Convertir lote unificado a Map
+  Map<String, dynamic> _loteUnificadoToMap(LoteUnificadoModel lote) {
+    final reciclador = lote.reciclador;
+    
+    // Determinar el estado basado en los datos del lote
+    String estado = 'recibido';
+    bool tieneDocumentacion = false;
+    
+    if (lote.datosGenerales.procesoActual != 'reciclador') {
+      estado = 'finalizado';
+    } else if (reciclador?.fechaSalida != null) {
+      // Verificar si tiene documentación
+      if (reciclador!.evidenciasFoto.isNotEmpty) {
+        estado = 'finalizado';
+        tieneDocumentacion = true;
+      } else {
+        estado = 'enviado'; // Procesado pero sin documentación
+      }
+    }
+    
+    return {
+      'id': lote.id,
+      'fecha': FormatUtils.formatDate(reciclador?.fechaEntrada ?? lote.datosGenerales.fechaCreacion),
+      'peso': lote.pesoActual,
+      'pesoEntrada': reciclador?.pesoEntrada ?? lote.pesoActual,
+      'pesoSalida': lote.pesoActual, // Ya considera las muestras del laboratorio
+      'material': lote.datosGenerales.tipoMaterial,
+      'origen': lote.origen?.usuarioFolio ?? 'Sin origen',
+      'presentacion': lote.datosGenerales.materialPresentacion ?? 'Sin especificar',
+      'estado': estado,
+      'reciclador': reciclador,
+      'fechaEntrada': reciclador?.fechaEntrada ?? lote.datosGenerales.fechaCreacion,
+      'fechaSalida': reciclador?.fechaSalida,
+      'tieneDocumentacion': tieneDocumentacion,
+      'documentos': reciclador?.evidenciasFoto ?? [],
+      'pesoMuestrasLaboratorio': lote.pesoTotalMuestras,
+    };
+  }
 
   void _navigateToNewLot() async {
     HapticFeedback.lightImpact();
@@ -145,7 +179,6 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
     );
     // Refresh statistics when returning from scanning
     _loadUserProfile();
-    _loadStatistics();
   }
 
   void _navigateToLotControl() {
@@ -220,12 +253,15 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
       case 'salida':
       case 'procesado':
         // Navegar a formulario de salida
+        final reciclador = lote['reciclador'] as ProcesoRecicladorData?;
+        final pesoOriginal = reciclador?.pesoEntrada ?? lote['peso'].toDouble();
+        
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => RecicladorFormularioSalida(
               loteId: lote['id'],
-              pesoOriginal: lote['peso'].toDouble(),
+              pesoOriginal: pesoOriginal,
             ),
           ),
         );
@@ -243,19 +279,32 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
         break;
       case 'finalizado':
         // Navegar a vista de QR
+        final reciclador = lote['reciclador'] as ProcesoRecicladorData?;
+        final fechaEntrada = lote['fechaEntrada'] as DateTime;
+        final fechaSalida = lote['fechaSalida'] as DateTime?;
+        
+        // Obtener nombres de documentos cargados
+        List<String> documentosCargados = [];
+        if (lote['tieneDocumentacion'] == true) {
+          documentosCargados = ['Documentación completa'];
+        }
+        
+        final pesoMuestras = lote['pesoMuestrasLaboratorio'] as double?;
+        
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => RecicladorLoteQRScreen(
               loteId: lote['id'],
               material: lote['material'],
-              pesoOriginal: lote['peso'].toDouble(),
-              pesoFinal: lote['peso'].toDouble(), // TODO: Obtener de la BD
+              pesoOriginal: lote['pesoEntrada'].toDouble(),
+              pesoFinal: lote['pesoSalida'].toDouble(),
               presentacion: lote['presentacion'],
               origen: lote['origen'],
-              fechaEntrada: DateTime.now().subtract(const Duration(days: 5)), // TODO: Obtener de la BD
-              fechaSalida: DateTime.now(),
-              documentosCargados: ['Ficha Técnica', 'Reporte de Reciclaje'], // TODO: Obtener de la BD
+              fechaEntrada: fechaEntrada,
+              fechaSalida: fechaSalida ?? DateTime.now(),
+              documentosCargados: documentosCargados,
+              pesoMuestrasLaboratorio: pesoMuestras,
             ),
           ),
         );
@@ -426,50 +475,69 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                             ],
                           ),
                           const SizedBox(height: 16),
-                          // Estadísticas con UnifiedStatCard
-                          Row(
-                            children: [
-                              // Estadística de Lotes Recibidos
-                              Expanded(
-                                child: UnifiedStatCard.horizontal(
-                                  title: 'Lotes recibidos',
-                                  value: _lotesRecibidos.toString(),
-                                  icon: Icons.inbox,
-                                  color: BioWayColors.petBlue,
-                                  height: 70,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              // Estadística de Lotes Creados
-                              Expanded(
-                                child: UnifiedStatCard.horizontal(
-                                  title: 'Lotes creados',
-                                  value: _lotesCreados.toString(),
-                                  icon: Icons.add_box,
-                                  color: BioWayColors.ppPurple,
-                                  height: 70,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          // Segunda fila con Material Procesado centrado
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              // Estadística de Material Procesado
-                              SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.45,
-                                child: UnifiedStatCard.horizontal(
-                                  title: 'Material procesado',
-                                  value: (_pesoProcesado / 1000).toStringAsFixed(1),
-                                  unit: 'ton',
-                                  icon: Icons.scale,
-                                  color: BioWayColors.ecoceGreen,
-                                  height: 70,
-                                ),
-                              ),
-                            ],
+                          // Estadísticas con UnifiedStatCard y Stream
+                          StreamBuilder<Map<String, dynamic>>(
+                            stream: _estadisticasStream,
+                            initialData: {
+                              'lotesRecibidos': _lotesRecibidos,
+                              'lotesCreados': _lotesCreados,
+                              'materialProcesado': _pesoProcesado,
+                            },
+                            builder: (context, snapshot) {
+                              final stats = snapshot.data ?? {};
+                              final lotesRecibidos = stats['lotesRecibidos'] ?? 0;
+                              final lotesCreados = stats['lotesCreados'] ?? 0;
+                              final materialProcesado = (stats['materialProcesado'] ?? 0.0) as double;
+                              
+                              return Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      // Estadística de Lotes Recibidos
+                                      Expanded(
+                                        child: UnifiedStatCard.horizontal(
+                                          title: 'Lotes recibidos',
+                                          value: lotesRecibidos.toString(),
+                                          icon: Icons.inbox,
+                                          color: BioWayColors.petBlue,
+                                          height: 70,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      // Estadística de Lotes Creados
+                                      Expanded(
+                                        child: UnifiedStatCard.horizontal(
+                                          title: 'Lotes creados',
+                                          value: lotesCreados.toString(),
+                                          icon: Icons.add_box,
+                                          color: BioWayColors.ppPurple,
+                                          height: 70,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  // Segunda fila con Material Procesado centrado
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      // Estadística de Material Procesado
+                                      SizedBox(
+                                        width: MediaQuery.of(context).size.width * 0.45,
+                                        child: UnifiedStatCard.horizontal(
+                                          title: 'Material procesado',
+                                          value: (materialProcesado / 1000).toStringAsFixed(1),
+                                          unit: 'ton',
+                                          icon: Icons.scale,
+                                          color: BioWayColors.ecoceGreen,
+                                          height: 70,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -699,9 +767,9 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                       ),
                       const SizedBox(height: 16),
                       
-                      // Lista de lotes con Stream de datos reales
-                      StreamBuilder<List<LoteRecicladorModel>>(
-                        stream: _lotesStream,
+                      // Lista de lotes con Stream de datos reales del sistema unificado
+                      StreamBuilder<List<dynamic>>(
+                        stream: _lotesUnificadosStream,
                         builder: (context, snapshot) {
                           if (snapshot.connectionState == ConnectionState.waiting) {
                             return const Center(
@@ -741,7 +809,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                           
                           return Column(
                             children: lotes.map((loteModel) {
-                              final lote = _loteToMap(loteModel);
+                              final lote = _loteUnificadoToMap(loteModel as LoteUnificadoModel);
                               
                               // Para lotes finalizados, mostrar botón QR debajo
                               if (lote['estado'] == 'finalizado') {

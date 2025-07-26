@@ -2,23 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
-import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
-import '../../../services/lote_service.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/carga_transporte_service.dart';
-import '../../../models/lotes/lote_reciclador_model.dart';
 import '../shared/widgets/weight_input_widget.dart';
 import '../shared/widgets/signature_dialog.dart';
-import '../shared/widgets/form_widgets.dart';
 import '../shared/widgets/dialog_utils.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/required_field_label.dart';
+import '../shared/widgets/unified_container.dart';
+import '../shared/widgets/field_label.dart' as field_label;
+import '../shared/utils/shared_input_decorations.dart';
 
 /// Painter personalizado para dibujar la firma con el color definido
 class SignaturePainter extends CustomPainter {
@@ -64,7 +63,6 @@ class RecicladorFormularioRecepcion extends StatefulWidget {
 
 class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRecepcion> {
   final _formKey = GlobalKey<FormState>();
-  final LoteService _loteService = LoteService();
   final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
   final CargaTransporteService _cargaService = CargaTransporteService();
   final UserSessionService _userSession = UserSessionService();
@@ -80,6 +78,8 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
   final TextEditingController _pesoTotalOriginalController = TextEditingController();
   final TextEditingController _pesoRecibidoController = TextEditingController();
   final TextEditingController _mermaController = TextEditingController();
+  final TextEditingController _operadorController = TextEditingController();
+  final TextEditingController _comentariosController = TextEditingController();
   
   // Firma
   List<Offset?> _signaturePoints = [];
@@ -99,6 +99,8 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
 
   void _initializeForm() async {
     final userData = _userSession.getUserData();
+    // Pre-cargar nombre del operador actual
+    _operadorController.text = userData?['nombre'] ?? '';
     setState(() {
       _isLoading = false;
     });
@@ -127,6 +129,14 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
   void _calcularMerma() {
     final pesoOriginal = double.tryParse(_pesoTotalOriginalController.text) ?? 0;
     final pesoRecibido = double.tryParse(_pesoRecibidoController.text) ?? 0;
+    
+    // Validar que el peso recibido no sea mayor al peso bruto
+    if (pesoRecibido > pesoOriginal) {
+      _pesoRecibidoController.text = pesoOriginal.toString();
+      _mermaController.text = '0.0';
+      return;
+    }
+    
     final merma = pesoOriginal - pesoRecibido;
     _mermaController.text = merma.toStringAsFixed(1);
   }
@@ -202,10 +212,10 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
         final currentUserId = _authService.currentUser?.uid;
         final currentUserData = _userSession.getUserData();
         
-        print('=== DATOS DEL USUARIO RECICLADOR ===');
-        print('User ID: $currentUserId');
-        print('User Folio: ${currentUserData?['folio']}');
-        print('User Nombre: ${currentUserData?['nombre']}');
+        debugPrint('=== DATOS DEL USUARIO RECICLADOR ===');
+        debugPrint('User ID: $currentUserId');
+        debugPrint('User Folio: ${currentUserData?['folio']}');
+        debugPrint('User Nombre: ${currentUserData?['nombre']}');
         
         // Crear o actualizar el proceso reciclador con la información de recepción
         await _loteUnificadoService.crearOActualizarProceso(
@@ -221,7 +231,8 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
             'peso_neto': double.tryParse(_pesoRecibidoController.text) ?? lote['peso'], // Agregar peso_neto
             'merma_recepcion': double.tryParse(_mermaController.text) ?? 0,
             'firma_operador': _signatureUrl,
-            'operador_nombre': currentUserData?['nombre'] ?? 'Sin nombre', // Usar nombre del usuario actual
+            'operador_nombre': _operadorController.text.trim(), // Usar nombre ingresado en el formulario
+            'comentarios_recepcion': _comentariosController.text.trim(), // Agregar comentarios
             'recepcion_completada': true, // Marcar que el reciclador completó su parte
           },
         );
@@ -310,7 +321,7 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
         strokeWidth: 2.0,
       );
       
-      final size = const Size(300, 150);
+      final size = const Size(300, 120);
       
       // Fondo blanco
       canvas.drawRect(
@@ -344,7 +355,7 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
       
       return url;
     } catch (e) {
-      print('Error al subir firma: $e');
+      debugPrint('Error al subir firma: $e');
       return null;
     }
   }
@@ -364,7 +375,7 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: BioWayColors.primaryGreen.withOpacity(0.1),
+              color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -413,8 +424,11 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
       );
     }
 
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        
         // Mostrar la misma alerta al presionar el botón de retroceso
         final shouldLeave = await showDialog<bool>(
           context: context,
@@ -440,7 +454,9 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
           ),
         );
         
-        return shouldLeave ?? false;
+        if (shouldLeave == true && context.mounted) {
+          Navigator.of(context).pop();
+        }
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F5F5),
@@ -477,7 +493,7 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                 ),
               );
               
-              if (shouldLeave == true && mounted) {
+              if (shouldLeave == true && context.mounted) {
                 Navigator.pop(context);
               }
             },
@@ -507,7 +523,7 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -600,7 +616,7 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -632,10 +648,10 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: BioWayColors.primaryGreen.withOpacity(0.05),
+                          color: BioWayColors.primaryGreen.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: BioWayColors.primaryGreen.withOpacity(0.2),
+                            color: BioWayColors.primaryGreen.withValues(alpha: 0.2),
                           ),
                         ),
                         child: Row(
@@ -658,7 +674,7 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: BioWayColors.primaryGreen.withOpacity(0.1),
+                                color: BioWayColors.primaryGreen.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
@@ -683,7 +699,7 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
               
               const SizedBox(height: 16),
               
-              // Pesos y merma
+              // Sección de Control de Peso con tarjetas destacadas
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -691,7 +707,7 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -713,32 +729,67 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                       ],
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _pesoTotalOriginalController,
-                      enabled: false,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'Peso Total Declarado (kg)',
-                        prefixIcon: Icon(Icons.scale),
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    
+                    // Peso Bruto Recibido (antes Peso Total Declarado)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: BioWayColors.primaryGreen.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: BioWayColors.primaryGreen.withValues(alpha: 0.2),
+                          width: 1,
                         ),
-                        disabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
-                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.scale,
+                            color: BioWayColors.primaryGreen,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Peso Bruto Recibido',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: BioWayColors.textGrey,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${_pesoTotalOriginalController.text} kg',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: BioWayColors.darkGreen,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    
                     const SizedBox(height: 16),
-                    TextFormField(
+                    
+                    // Peso Neto Aprovechable con WeightInputWidget
+                    const field_label.FieldLabel(
+                      text: 'Peso Neto Aprovechable',
+                      isRequired: true,
+                    ),
+                    const SizedBox(height: 8),
+                    WeightInputWidget(
                       controller: _pesoRecibidoController,
-                      keyboardType: TextInputType.number,
-                      decoration: 'Peso Recibido Real (kg)'.toRequiredInputDecoration(
-                        hint: 'Ingrese el peso real que usted recibió',
-                        prefixIcon: Icon(Icons.scale),
-                      ),
+                      label: 'Ingrese el peso real recibido',
+                      primaryColor: BioWayColors.primaryGreen,
+                      onChanged: (value) => _calcularMerma(),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Por favor ingrese el peso recibido';
@@ -747,29 +798,68 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                         if (peso == null || peso <= 0) {
                           return 'Ingrese un peso válido';
                         }
+                        final pesoOriginal = double.tryParse(_pesoTotalOriginalController.text) ?? 0;
+                        if (peso > pesoOriginal) {
+                          return 'El peso no puede ser mayor al peso bruto recibido';
+                        }
                         return null;
                       },
-                      onChanged: (value) => _calcularMerma(),
                     ),
+                    
                     const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _mermaController,
-                      enabled: false,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'Merma Calculada (kg)',
-                        prefixIcon: Icon(Icons.trending_down),
-                        helperText: 'Diferencia entre peso declarado y recibido',
-                        helperStyle: TextStyle(fontSize: 12),
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    
+                    // Merma Calculada con tarjeta destacada
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: BioWayColors.warning.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: BioWayColors.warning.withValues(alpha: 0.2),
+                          width: 1,
                         ),
-                        disabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
-                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.trending_down,
+                            color: BioWayColors.warning,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Merma Calculada',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: BioWayColors.textGrey,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${_mermaController.text} kg',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: BioWayColors.warning,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Diferencia entre peso bruto y neto',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -778,37 +868,42 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
               
               const SizedBox(height: 16),
               
-              // Firma
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+              // Sección: Datos del Responsable
+              SectionCard(
+                icon: '👤',
+                title: 'Datos del Responsable',
+                isRequired: true,
+                children: [
+                  // Nombre del Operador
+                  const field_label.FieldLabel(text: 'Nombre del Operador', isRequired: true),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _operadorController,
+                    maxLength: 50,
+                    keyboardType: TextInputType.name,
+                    textInputAction: TextInputAction.next,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    decoration: SharedInputDecorations.ecoceStyle(
+                      hintText: 'Ingresa el nombre completo',
+                      primaryColor: BioWayColors.primaryGreen,
                     ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.draw,
-                          color: BioWayColors.primaryGreen,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        const RequiredFieldLabel(
-                          label: 'Firma del Operador',
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Ingresa el nombre del operador';
+                      }
+                      if (value.length < 3) {
+                        return 'El nombre debe tener al menos 3 caracteres';
+                      }
+                      return null;
+                    },
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // Firma del Operador
+                  const field_label.FieldLabel(text: 'Firma del Operador', isRequired: true),
+                  const SizedBox(height: 8),
                     GestureDetector(
                       onTap: _signaturePoints.isEmpty ? _captureSignature : null,
                       child: AnimatedContainer(
@@ -817,7 +912,7 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                         width: double.infinity,
                         decoration: BoxDecoration(
                           color: _signaturePoints.isNotEmpty 
-                              ? BioWayColors.primaryGreen.withOpacity(0.05)
+                              ? BioWayColors.primaryGreen.withValues(alpha: 0.05)
                               : Colors.grey[50],
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
@@ -853,44 +948,36 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                                   Container(
                                     padding: const EdgeInsets.all(12),
                                     child: Center(
-                                      child: _signaturePoints.isNotEmpty
-                                          ? AspectRatio(
-                                              aspectRatio: 2.5,
-                                              child: Container(
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white,
-                                                  borderRadius: BorderRadius.circular(8),
-                                                  border: Border.all(
-                                                    color: Colors.grey[200]!,
-                                                    width: 1,
+                                      child: AspectRatio(
+                                        aspectRatio: 2.5,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: Colors.grey[200]!,
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(7),
+                                            child: FittedBox(
+                                              fit: BoxFit.contain,
+                                              child: SizedBox(
+                                                width: 300,
+                                                height: 120,
+                                                child: CustomPaint(
+                                                  size: const Size(300, 120),
+                                                  painter: SignaturePainter(
+                                                    points: _signaturePoints,
+                                                    strokeWidth: 2.0,
                                                   ),
                                                 ),
-                                                child: ClipRRect(
-                                                  borderRadius: BorderRadius.circular(7),
-                                                  child: FittedBox(
-                                                    fit: BoxFit.contain,
-                                                    child: SizedBox(
-                                                      width: 300,
-                                                      height: 120,
-                                                      child: CustomPaint(
-                                                        size: const Size(300, 120),
-                                                        painter: SignaturePainter(
-                                                          points: _signaturePoints,
-                                                          strokeWidth: 2.0,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            )
-                                          : const Text(
-                                              'Firma capturada',
-                                              style: TextStyle(
-                                                color: Colors.green,
-                                                fontWeight: FontWeight.w600,
                                               ),
                                             ),
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                   Positioned(
@@ -905,7 +992,7 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                                             shape: BoxShape.circle,
                                             boxShadow: [
                                               BoxShadow(
-                                                color: Colors.black.withOpacity(0.1),
+                                                color: Colors.black.withValues(alpha: 0.1),
                                                 blurRadius: 4,
                                               ),
                                             ],
@@ -931,7 +1018,7 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                                             shape: BoxShape.circle,
                                             boxShadow: [
                                               BoxShadow(
-                                                color: Colors.black.withOpacity(0.1),
+                                                color: Colors.black.withValues(alpha: 0.1),
                                                 blurRadius: 4,
                                               ),
                                             ],
@@ -959,6 +1046,75 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                                   ),
                                 ],
                               ),
+                      ),
+                    ),
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Sección de Comentarios
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          '💬',
+                          style: TextStyle(fontSize: 24),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Comentarios',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: BioWayColors.darkGreen,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: _comentariosController,
+                      maxLines: 4,
+                      decoration: InputDecoration(
+                        hintText: 'Comentarios adicionales (opcional)',
+                        hintStyle: TextStyle(color: const Color(0xFF9A9A9A)),
+                        filled: true,
+                        fillColor: BioWayColors.backgroundGrey,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: BioWayColors.primaryGreen.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: BioWayColors.primaryGreen,
+                            width: 2,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -1048,7 +1204,7 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
             ),
           );
           
-          if (shouldLeave == true) {
+          if (shouldLeave == true && context.mounted) {
             switch (index) {
               case 0:
                 Navigator.pushReplacementNamed(context, '/reciclador_inicio');
@@ -1078,6 +1234,8 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
     _pesoTotalOriginalController.dispose();
     _pesoRecibidoController.dispose();
     _mermaController.dispose();
+    _operadorController.dispose();
+    _comentariosController.dispose();
     super.dispose();
   }
 }

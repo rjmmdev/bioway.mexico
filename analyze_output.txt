@@ -1,0 +1,769 @@
+/usr/bin/bash: Files\Git\bin\bash.exe: No such file or directory
+Analyzing bioway.mexico...                                      
+
+   info - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion - lib\models\bioway\material_reciclable.dart:115:22 - deprecated_member_use
+   info - Unnecessary braces in a string interpolation - lib\models\ecoce\ecoce_profile_model.dart:334:33 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\models\ecoce\ecoce_profile_model.dart:334:47 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\models\ecoce\ecoce_profile_model.dart:334:185 - unnecessary_brace_in_string_interps
+   info - The parameter name 'sum' matches a visible type name - lib\models\lotes\lote_unificado_model.dart:121:10 - avoid_types_as_parameter_names
+   info - Function literals shouldn't be passed to 'forEach' - lib\models\lotes\lote_unificado_model.dart:141:28 - avoid_function_literals_in_foreach_calls
+   info - The parameter name 'sum' matches a visible type name - lib\models\lotes\lote_unificado_model.dart:186:8 - avoid_types_as_parameter_names
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:158:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:198:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:206:56 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:407:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:588:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:607:60 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:789:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:806:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:807:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:950:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:964:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:965:51 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:1166:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:1167:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:1244:56 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:1245:56 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:1280:61 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:1281:61 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:1322:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:1323:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:1327:51 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:1328:52 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:1370:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:1452:54 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_comercio_local_screen.dart:1467:52 - deprecated_member_use
+warning - Unused import: 'package:flutter_svg/flutter_svg.dart' - lib\screens\bioway\brindador\brindador_dashboard_screen.dart:4:8 - unused_import
+   info - The private field _bioCoins could be 'final' - lib\screens\bioway\brindador\brindador_dashboard_screen.dart:24:7 - prefer_final_fields
+warning - The value of the field '_userStatus' isn't used - lib\screens\bioway\brindador\brindador_dashboard_screen.dart:25:7 - unused_field
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_dashboard_screen.dart:129:48 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_dashboard_screen.dart:165:71 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_dashboard_screen.dart:174:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_dashboard_screen.dart:175:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_dashboard_screen.dart:201:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_dashboard_screen.dart:286:51 - deprecated_member_use
+   info - Use a 'SizedBox' to add whitespace to a layout - lib\screens\bioway\brindador\brindador_dashboard_screen.dart:371:11 - sized_box_for_whitespace
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_dashboard_screen.dart:417:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_dashboard_screen.dart:418:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_dashboard_screen.dart:442:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_dashboard_screen.dart:443:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_dashboard_screen.dart:470:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_dashboard_screen.dart:484:52 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_dashboard_screen.dart:655:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_dashboard_screen.dart:666:28 - deprecated_member_use
+warning - Unused import: '../../../utils/colors.dart' - lib\screens\bioway\brindador\brindador_main_screen.dart:3:8 - unused_import
+warning - Unused import: '../../../widgets/bioway/bio_motivational_popup.dart' - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:9:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:266:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:334:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:342:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:362:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:376:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:402:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:445:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:461:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:477:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:520:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:557:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:560:24 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:580:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:598:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:630:67 - deprecated_member_use
+   info - Unnecessary use of 'toList' in a spread - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:684:14 - unnecessary_to_list_in_spreads
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:752:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:775:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:787:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:794:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:825:56 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:971:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:978:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\brindador_perfil_competencias_screen.dart:1029:47 - deprecated_member_use
+   info - Unnecessary use of 'toList' in a spread - lib\screens\bioway\brindador\brindador_residuos_grid_screen.dart:361:18 - unnecessary_to_list_in_spreads
+   info - The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\screens\bioway\brindador\brindador_tirar_screen.dart:2:8 - unnecessary_import
+   info - Unnecessary use of 'toList' in a spread - lib\screens\bioway\brindador\brindador_tirar_screen.dart:389:22 - unnecessary_to_list_in_spreads
+   info - Parameter 'key' could be a super parameter - lib\screens\bioway\brindador\widgets\brindador_bottom_navigation_bar.dart:9:9 - use_super_parameters
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\widgets\brindador_bottom_navigation_bar.dart:22:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\brindador\widgets\brindador_bottom_navigation_bar.dart:77:59 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\bioway\centro_acopio\centro_acopio_home_screen.dart:285:19 - use_build_context_synchronously
+   info - Parameter 'key' could be a super parameter - lib\screens\bioway\centro_acopio\inventario_screen.dart:7:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - lib\screens\bioway\centro_acopio\prepago_screen.dart:8:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - lib\screens\bioway\centro_acopio\recepcion_material_screen.dart:9:9 - use_super_parameters
+   info - Don't use 'BuildContext's across async gaps - lib\screens\bioway\centro_acopio\recepcion_material_screen.dart:88:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\bioway\centro_acopio\recepcion_material_screen.dart:94:21 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\bioway\centro_acopio\recepcion_material_screen.dart:209:28 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\centro_acopio\recepcion_material_screen.dart:261:44 - deprecated_member_use
+   info - Unnecessary use of 'toList' in a spread - lib\screens\bioway\centro_acopio\recepcion_material_screen.dart:391:20 - unnecessary_to_list_in_spreads
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\centro_acopio\recepcion_material_screen.dart:399:54 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\centro_acopio\recepcion_material_screen.dart:402:56 - deprecated_member_use
+   info - Function literals shouldn't be passed to 'forEach' - lib\screens\bioway\centro_acopio\recepcion_material_screen.dart:461:33 - avoid_function_literals_in_foreach_calls
+   info - Parameter 'key' could be a super parameter - lib\screens\bioway\centro_acopio\reportes_screen.dart:7:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - lib\screens\bioway\maestro\configuracion\configuracion_screen.dart:5:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - lib\screens\bioway\maestro\disponibilidad\disponibilidad_screen.dart:5:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - lib\screens\bioway\maestro\horarios\horarios_screen.dart:5:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - lib\screens\bioway\maestro\maestro_home_screen.dart:13:9 - use_super_parameters
+   info - Don't use 'BuildContext's across async gaps - lib\screens\bioway\maestro\maestro_home_screen.dart:110:17 - use_build_context_synchronously
+   info - Parameter 'key' could be a super parameter - lib\screens\bioway\maestro\materiales\materiales_list_screen.dart:5:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - lib\screens\bioway\maestro\usuarios\usuarios_list_screen.dart:5:9 - use_super_parameters
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\recolector\recolector_main_screen.dart:62:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\recolector\recolector_main_screen.dart:115:51 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\bioway\recolector\recolector_mapa_screen.dart:354:43 - deprecated_member_use
+   info - Use a 'SizedBox' to add whitespace to a layout - lib\screens\bioway\recolector\recolector_mapa_screen.dart:580:24 - sized_box_for_whitespace
+   info - Unnecessary use of 'toList' in a spread - lib\screens\bioway\recolector\recolector_mapa_screen.dart:709:26 - unnecessary_to_list_in_spreads
+   info - The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\screens\bioway\recolector\recolector_perfil_screen.dart:2:8 - unnecessary_import
+   info - Parameter 'key' could be a super parameter - lib\screens\bioway\shared\widgets\custom_bottom_navigation_bar.dart:9:9 - use_super_parameters
+warning - The operand can't be 'null', so the condition is always 'true' - lib\screens\ecoce\laboratorio\laboratorio_documentacion.dart:25:22 - unnecessary_null_comparison
+warning - The '!' will have no effect because the receiver can't be null - lib\screens\ecoce\laboratorio\laboratorio_documentacion.dart:27:21 - unnecessary_non_null_assertion
+   info - Don't use 'BuildContext's across async gaps - lib\screens\ecoce\laboratorio\laboratorio_documentacion.dart:48:9 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\ecoce\laboratorio\laboratorio_documentacion.dart:111:28 - use_build_context_synchronously
+warning - Unused import: 'dart:typed_data' - lib\screens\ecoce\laboratorio\laboratorio_formulario_recepcion.dart:5:8 - unused_import
+warning - Unused import: '../shared/widgets/weight_input_widget.dart' - lib\screens\ecoce\laboratorio\laboratorio_formulario_recepcion.dart:16:8 - unused_import
+warning - Unused import: '../shared/widgets/form_widgets.dart' - lib\screens\ecoce\laboratorio\laboratorio_formulario_recepcion.dart:18:8 - unused_import
+   info - The private field _analisisSeleccionados could be 'final' - lib\screens\ecoce\laboratorio\laboratorio_formulario_recepcion.dart:71:16 - prefer_final_fields
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\laboratorio\laboratorio_formulario_recepcion.dart:276:7 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\laboratorio\laboratorio_formulario_recepcion.dart:296:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\laboratorio\laboratorio_formulario_recepcion.dart:382:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\laboratorio\laboratorio_formulario_recepcion.dart:434:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\laboratorio\laboratorio_formulario_recepcion.dart:476:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\laboratorio\laboratorio_formulario_recepcion.dart:569:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\laboratorio\laboratorio_formulario_recepcion.dart:614:63 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\laboratorio\laboratorio_formulario_recepcion.dart:637:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\laboratorio\laboratorio_formulario_recepcion.dart:689:43 - deprecated_member_use
+warning - Unused import: 'widgets/laboratorio_muestra_card.dart' - lib\screens\ecoce\laboratorio\laboratorio_gestion_muestras.dart:10:8 - unused_import
+warning - The declaration '_getActionButtonText' isn't referenced - lib\screens\ecoce\laboratorio\laboratorio_gestion_muestras.dart:207:10 - unused_element
+warning - The declaration '_getActionButtonColor' isn't referenced - lib\screens\ecoce\laboratorio\laboratorio_gestion_muestras.dart:221:9 - unused_element
+warning - The value of the local variable 'muestraMap' isn't used - lib\screens\ecoce\laboratorio\laboratorio_gestion_muestras.dart:638:27 - unused_local_variable
+warning - The left operand can't be null, so the right operand is never executed - lib\screens\ecoce\laboratorio\laboratorio_gestion_muestras.dart:925:61 - dead_null_aware_expression
+warning - Unused import: '../../../models/ecoce/ecoce_profile_model.dart' - lib\screens\ecoce\laboratorio\laboratorio_inicio.dart:12:8 - unused_import
+warning - The value of the field '_userSession' isn't used - lib\screens\ecoce\laboratorio\laboratorio_inicio.dart:39:28 - unused_field
+warning - The left operand can't be null, so the right operand is never executed - lib\screens\ecoce\laboratorio\laboratorio_inicio.dart:85:57 - dead_null_aware_expression
+warning - The left operand can't be null, so the right operand is never executed - lib\screens\ecoce\laboratorio\laboratorio_inicio.dart:86:55 - dead_null_aware_expression
+   info - 'WillPopScope' is deprecated and shouldn't be used. Use PopScope instead. The Android predictive back feature will not work with WillPopScope. This feature was deprecated after v3.12.0-1.0.pre - lib\screens\ecoce\laboratorio\laboratorio_inicio.dart:225:12 - deprecated_member_use
+warning - Unused import: 'package:firebase_auth/firebase_auth.dart' - lib\screens\ecoce\laboratorio\laboratorio_registro_muestras.dart:3:8 - unused_import
+warning - Unused import: '../../../utils/format_utils.dart' - lib\screens\ecoce\laboratorio\laboratorio_registro_muestras.dart:5:8 - unused_import
+warning - Unused import: '../../../models/lotes/lote_laboratorio_model.dart' - lib\screens\ecoce\laboratorio\laboratorio_registro_muestras.dart:10:8 - unused_import
+warning - Unused import: '../../../models/lotes/lote_unificado_model.dart' - lib\screens\ecoce\laboratorio\laboratorio_registro_muestras.dart:11:8 - unused_import
+warning - Unused import: 'laboratorio_gestion_muestras.dart' - lib\screens\ecoce\laboratorio\laboratorio_registro_muestras.dart:14:8 - unused_import
+warning - Unused import: 'laboratorio_formulario.dart' - lib\screens\ecoce\laboratorio\laboratorio_registro_muestras.dart:15:8 - unused_import
+warning - The value of the local variable 'origen' isn't used - lib\screens\ecoce\laboratorio\laboratorio_registro_muestras.dart:123:16 - unused_local_variable
+   info - Don't use 'BuildContext's across async gaps - lib\screens\ecoce\laboratorio\laboratorio_registro_muestras.dart:273:13 - use_build_context_synchronously
+warning - Unused import: 'dart:io' - lib\screens\ecoce\laboratorio\laboratorio_toma_muestra_screen.dart:4:8 - unused_import
+   info - The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\screens\ecoce\laboratorio\widgets\laboratorio_muestra_card.dart:2:8 - unnecessary_import
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\maestro\maestro_unified_screen.dart:330:9 - avoid_print
+   info - Don't use 'BuildContext's across async gaps - lib\screens\ecoce\maestro\maestro_unified_screen.dart:338:7 - use_build_context_synchronously
+   info - 'WillPopScope' is deprecated and shouldn't be used. Use PopScope instead. The Android predictive back feature will not work with WillPopScope. This feature was deprecated after v3.12.0-1.0.pre - lib\screens\ecoce\maestro\maestro_unified_screen.dart:496:12 - deprecated_member_use
+warning - Unused import: '../shared/widgets/common_widgets.dart' - lib\screens\ecoce\maestro\maestro_utilities_screen.dart:4:8 - unused_import
+warning - The declaration 'show' isn't referenced - lib\screens\ecoce\maestro\widgets\document_viewer_dialog.dart:307:15 - unused_element
+   info - Unnecessary use of 'toList' in a spread - lib\screens\ecoce\maestro\widgets\maestro_user_card.dart:154:26 - unnecessary_to_list_in_spreads
+   info - The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\screens\ecoce\origen\origen_confirmar_lote_screen.dart:2:8 - unnecessary_import
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\origen\origen_confirmar_lote_screen.dart:106:7 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\origen\origen_confirmar_lote_screen.dart:146:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\origen\origen_confirmar_lote_screen.dart:149:49 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\origen\origen_confirmar_lote_screen.dart:282:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\origen\origen_confirmar_lote_screen.dart:283:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\origen\origen_confirmar_lote_screen.dart:284:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\origen\origen_confirmar_lote_screen.dart:285:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\origen\origen_confirmar_lote_screen.dart:286:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\origen\origen_confirmar_lote_screen.dart:328:7 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\origen\origen_confirmar_lote_screen.dart:500:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\origen\origen_confirmar_lote_screen.dart:549:33 - deprecated_member_use
+warning - Unused import: 'dart:typed_data' - lib\screens\ecoce\origen\origen_crear_lote_screen.dart:7:8 - unused_import
+warning - Unused import: 'origen_lote_detalle_screen.dart' - lib\screens\ecoce\origen\origen_crear_lote_screen.dart:18:8 - unused_import
+warning - Unused import: '../../../models/lotes/lote_unificado_model.dart' - lib\screens\ecoce\origen\origen_crear_lote_screen.dart:20:8 - unused_import
+warning - Unused import: '../shared/widgets/required_field_label.dart' - lib\screens\ecoce\origen\origen_crear_lote_screen.dart:27:8 - unused_import
+warning - The value of the field '_loteUnificadoService' isn't used - lib\screens\ecoce\origen\origen_crear_lote_screen.dart:37:30 - unused_field
+warning - The value of the field '_storageService' isn't used - lib\screens\ecoce\origen\origen_crear_lote_screen.dart:38:32 - unused_field
+warning - The value of the field '_userSession' isn't used - lib\screens\ecoce\origen\origen_crear_lote_screen.dart:39:28 - unused_field
+warning - The value of the field '_authService' isn't used - lib\screens\ecoce\origen\origen_crear_lote_screen.dart:40:21 - unused_field
+warning - The value of the field '_profileService' isn't used - lib\screens\ecoce\origen\origen_crear_lote_screen.dart:41:29 - unused_field
+warning - The value of the field '_screenshotController' isn't used - lib\screens\ecoce\origen\origen_crear_lote_screen.dart:42:30 - unused_field
+   info - The private field _isLoading could be 'final' - lib\screens\ecoce\origen\origen_crear_lote_screen.dart:43:8 - prefer_final_fields
+warning - The value of the field '_signatureUrl' isn't used - lib\screens\ecoce\origen\origen_crear_lote_screen.dart:91:11 - unused_field
+   info - The private field _photoUrls could be 'final' - lib\screens\ecoce\origen\origen_crear_lote_screen.dart:95:16 - prefer_final_fields
+warning - The value of the field '_photoUrls' isn't used - lib\screens\ecoce\origen\origen_crear_lote_screen.dart:95:16 - unused_field
+warning - The declaration '_captureSignature' isn't referenced - lib\screens\ecoce\origen\origen_crear_lote_screen.dart:241:17 - unused_element
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\origen\origen_crear_lote_screen.dart:282:7 - avoid_print
+warning - Unused import: '../shared/ecoce_ayuda_screen.dart' - lib\screens\ecoce\origen\origen_inicio_screen.dart:12:8 - unused_import
+warning - Unused import: '../shared/ecoce_perfil_screen.dart' - lib\screens\ecoce\origen\origen_inicio_screen.dart:13:8 - unused_import
+warning - The value of the field '_totalLotes' isn't used - lib\screens\ecoce\origen\origen_inicio_screen.dart:40:7 - unused_field
+warning - The value of the field '_totalPeso' isn't used - lib\screens\ecoce\origen\origen_inicio_screen.dart:41:10 - unused_field
+   info - 'WillPopScope' is deprecated and shouldn't be used. Use PopScope instead. The Android predictive back feature will not work with WillPopScope. This feature was deprecated after v3.12.0-1.0.pre - lib\screens\ecoce\origen\origen_inicio_screen.dart:237:12 - deprecated_member_use
+warning - Unused import: '../shared/widgets/loading_indicator.dart' - lib\screens\ecoce\origen\origen_lote_detalle_screen.dart:7:8 - unused_import
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\origen\origen_lote_detalle_screen.dart:84:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\origen\origen_lote_detalle_screen.dart:85:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\origen\origen_lote_detalle_screen.dart:90:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\origen\origen_lote_detalle_screen.dart:91:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\origen\origen_lote_detalle_screen.dart:94:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\origen\origen_lote_detalle_screen.dart:95:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\origen\origen_lote_detalle_screen.dart:96:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\origen\origen_lote_detalle_screen.dart:97:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\origen\origen_lote_detalle_screen.dart:98:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\origen\origen_lote_detalle_screen.dart:100:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\origen\origen_lote_detalle_screen.dart:103:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\origen\origen_lote_detalle_screen.dart:113:7 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\origen\origen_lote_detalle_screen.dart:346:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\origen\origen_lote_detalle_screen.dart:349:48 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\origen\origen_lote_detalle_screen.dart:376:58 - deprecated_member_use
+warning - Unused import: '../../../models/lotes/lote_origen_model.dart' - lib\screens\ecoce\origen\origen_lotes_screen.dart:4:8 - unused_import
+warning - Unused import: 'origen_inicio_screen.dart' - lib\screens\ecoce\origen\origen_lotes_screen.dart:8:8 - unused_import
+warning - Unused import: '../shared/ecoce_ayuda_screen.dart' - lib\screens\ecoce\origen\origen_lotes_screen.dart:11:8 - unused_import
+warning - Unused import: '../shared/ecoce_perfil_screen.dart' - lib\screens\ecoce\origen\origen_lotes_screen.dart:12:8 - unused_import
+warning - Unused import: 'widgets/origen_lote_card.dart' - lib\screens\ecoce\origen\origen_lotes_screen.dart:13:8 - unused_import
+warning - The value of the field '_loteService' isn't used - lib\screens\ecoce\origen\origen_lotes_screen.dart:30:21 - unused_field
+   info - 'WillPopScope' is deprecated and shouldn't be used. Use PopScope instead. The Android predictive back feature will not work with WillPopScope. This feature was deprecated after v3.12.0-1.0.pre - lib\screens\ecoce\origen\origen_lotes_screen.dart:170:12 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\origen\widgets\origen_lote_unificado_card.dart:41:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\origen\widgets\origen_lote_unificado_card.dart:98:84 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\origen\widgets\origen_lote_unificado_card.dart:166:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\origen\widgets\origen_lote_unificado_card.dart:266:46 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\reciclador\reciclador_administracion_lotes.dart:78:7 - avoid_print
+warning - The declaration '_navigateToNewLot' isn't referenced - lib\screens\ecoce\reciclador\reciclador_administracion_lotes.dart:250:8 - unused_element
+   info - 'WillPopScope' is deprecated and shouldn't be used. Use PopScope instead. The Android predictive back feature will not work with WillPopScope. This feature was deprecated after v3.12.0-1.0.pre - lib\screens\ecoce\reciclador\reciclador_administracion_lotes.dart:257:12 - deprecated_member_use
+warning - The operand can't be 'null', so the condition is always 'true' - lib\screens\ecoce\reciclador\reciclador_documentacion.dart:79:30 - unnecessary_null_comparison
+warning - The '!' will have no effect because the receiver can't be null - lib\screens\ecoce\reciclador\reciclador_documentacion.dart:81:29 - unnecessary_non_null_assertion
+warning - The value of the local variable 'material' isn't used - lib\screens\ecoce\reciclador\reciclador_documentacion.dart:150:28 - unused_local_variable
+   info - 'WillPopScope' is deprecated and shouldn't be used. Use PopScope instead. The Android predictive back feature will not work with WillPopScope. This feature was deprecated after v3.12.0-1.0.pre - lib\screens\ecoce\reciclador\reciclador_documentacion.dart:206:12 - deprecated_member_use
+warning - Unused import: 'dart:typed_data' - lib\screens\ecoce\reciclador\reciclador_formulario_salida.dart:5:8 - unused_import
+warning - Unused import: '../shared/widgets/signature_painter.dart' - lib\screens\ecoce\reciclador\reciclador_formulario_salida.dart:19:8 - unused_import
+warning - The value of the field '_loteService' isn't used - lib\screens\ecoce\reciclador\reciclador_formulario_salida.dart:37:21 - unused_field
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\reciclador\reciclador_formulario_salida.dart:95:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\reciclador\reciclador_formulario_salida.dart:187:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\reciclador\reciclador_formulario_salida.dart:1357:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\reciclador\reciclador_lotes_registro.dart:79:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\reciclador\reciclador_lotes_registro.dart:80:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\reciclador\reciclador_lotes_registro.dart:81:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\reciclador\reciclador_lotes_registro.dart:82:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\reciclador\reciclador_lotes_registro.dart:83:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\reciclador\reciclador_lotes_registro.dart:132:11 - avoid_print
+warning - The declaration '_getMaterialForDemo' isn't referenced - lib\screens\ecoce\reciclador\reciclador_lotes_registro.dart:166:10 - unused_element
+warning - The declaration '_getWeightForDemo' isn't referenced - lib\screens\ecoce\reciclador\reciclador_lotes_registro.dart:171:10 - unused_element
+warning - The declaration '_getFormatForDemo' isn't referenced - lib\screens\ecoce\reciclador\reciclador_lotes_registro.dart:175:10 - unused_element
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\repositorio\lote_trazabilidad_screen.dart:146:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\repositorio\lote_trazabilidad_screen.dart:178:78 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\repositorio\lote_trazabilidad_screen.dart:265:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\repositorio\lote_trazabilidad_screen.dart:346:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\repositorio\lote_trazabilidad_screen.dart:387:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\repositorio\lote_trazabilidad_screen.dart:470:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\repositorio\lote_trazabilidad_screen.dart:475:31 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\repositorio\lote_trazabilidad_screen.dart:476:91 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\repositorio\lote_trazabilidad_screen.dart:486:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\repositorio\lote_trazabilidad_screen.dart:521:43 - deprecated_member_use
+   info - Unnecessary use of 'toList' in a spread - lib\screens\ecoce\repositorio\lote_trazabilidad_screen.dart:596:14 - unnecessary_to_list_in_spreads
+warning - The left operand can't be null, so the right operand is never executed - lib\screens\ecoce\repositorio\lote_trazabilidad_screen.dart:620:52 - dead_null_aware_expression
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\repositorio\lote_trazabilidad_screen.dart:881:52 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\repositorio\lote_trazabilidad_screen.dart:884:56 - deprecated_member_use
+warning - The left operand can't be null, so the right operand is never executed - lib\screens\ecoce\repositorio\lote_trazabilidad_screen.dart:1009:61 - dead_null_aware_expression
+warning - The left operand can't be null, so the right operand is never executed - lib\screens\ecoce\repositorio\lote_trazabilidad_screen.dart:1045:48 - dead_null_aware_expression
+warning - Unused import: 'package:cloud_firestore/cloud_firestore.dart' - lib\screens\ecoce\repositorio\repositorio_inicio_screen.dart:3:8 - unused_import
+warning - The value of the field '_headerAnimation' isn't used - lib\screens\ecoce\repositorio\repositorio_inicio_screen.dart:33:26 - unused_field
+warning - The declaration '_scanQR' isn't referenced - lib\screens\ecoce\repositorio\repositorio_inicio_screen.dart:83:8 - unused_element
+   info - 'WillPopScope' is deprecated and shouldn't be used. Use PopScope instead. The Android predictive back feature will not work with WillPopScope. This feature was deprecated after v3.12.0-1.0.pre - lib\screens\ecoce\repositorio\repositorio_inicio_screen.dart:159:12 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\repositorio\repositorio_inicio_screen.dart:210:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\repositorio\repositorio_inicio_screen.dart:224:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\repositorio\repositorio_inicio_screen.dart:254:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\repositorio\repositorio_inicio_screen.dart:530:31 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\repositorio\repositorio_inicio_screen.dart:531:31 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\repositorio\repositorio_inicio_screen.dart:546:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\repositorio\repositorio_inicio_screen.dart:747:59 - deprecated_member_use
+warning - The value of the field '_currentTabIndex' isn't used - lib\screens\ecoce\repositorio\repositorio_lotes_screen.dart:48:7 - unused_field
+warning - The left operand can't be null, so the right operand is never executed - lib\screens\ecoce\repositorio\repositorio_lotes_screen.dart:105:59 - dead_null_aware_expression
+warning - The left operand can't be null, so the right operand is never executed - lib\screens\ecoce\repositorio\repositorio_lotes_screen.dart:109:57 - dead_null_aware_expression
+warning - The left operand can't be null, so the right operand is never executed - lib\screens\ecoce\repositorio\repositorio_lotes_screen.dart:110:67 - dead_null_aware_expression
+   info - Don't use 'BuildContext's across async gaps - lib\screens\ecoce\repositorio\repositorio_lotes_screen.dart:176:21 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\ecoce\repositorio\repositorio_lotes_screen.dart:205:11 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\ecoce\repositorio\repositorio_lotes_screen.dart:214:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\ecoce\repositorio\repositorio_lotes_screen.dart:223:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\ecoce\repositorio\repositorio_lotes_screen.dart:224:23 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\ecoce\repositorio\repositorio_lotes_screen.dart:227:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\ecoce\repositorio\repositorio_lotes_screen.dart:291:21 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\ecoce\repositorio\repositorio_lotes_screen.dart:295:9 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\ecoce\repositorio\repositorio_lotes_screen.dart:303:21 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\ecoce\repositorio\repositorio_lotes_screen.dart:305:28 - use_build_context_synchronously
+   info - Unnecessary use of string interpolation - lib\screens\ecoce\repositorio\widgets\dashboard_stats.dart:72:26 - unnecessary_string_interpolations
+   info - 'WillPopScope' is deprecated and shouldn't be used. Use PopScope instead. The Android predictive back feature will not work with WillPopScope. This feature was deprecated after v3.12.0-1.0.pre - lib\screens\ecoce\shared\ecoce_ayuda_screen.dart:193:14 - deprecated_member_use
+   info - The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\screens\ecoce\shared\ecoce_perfil_screen.dart:2:8 - unnecessary_import
+warning - Unused import: 'package:url_launcher/url_launcher.dart' - lib\screens\ecoce\shared\ecoce_perfil_screen.dart:3:8 - unused_import
+   info - 'WillPopScope' is deprecated and shouldn't be used. Use PopScope instead. The Android predictive back feature will not work with WillPopScope. This feature was deprecated after v3.12.0-1.0.pre - lib\screens\ecoce\shared\ecoce_perfil_screen.dart:155:14 - deprecated_member_use
+   info - 'WillPopScope' is deprecated and shouldn't be used. Use PopScope instead. The Android predictive back feature will not work with WillPopScope. This feature was deprecated after v3.12.0-1.0.pre - lib\screens\ecoce\shared\pending_approval_screen.dart:21:12 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\screens\ecoce\shared\pending_approval_screen.dart:267:20 - use_build_context_synchronously
+warning - Unused import: '../utils/dialog_utils.dart' - lib\screens\ecoce\shared\screens\receptor_escanear_entrega_screen.dart:8:8 - unused_import
+warning - The value of the local variable 'entregaId' isn't used - lib\screens\ecoce\shared\screens\receptor_escanear_entrega_screen.dart:64:13 - unused_local_variable
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\shared\screens\receptor_escanear_entrega_screen.dart:111:7 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\receptor_escanear_entrega_screen.dart:248:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\receptor_escanear_entrega_screen.dart:256:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\receptor_escanear_entrega_screen.dart:294:41 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\screens\ecoce\shared\screens\receptor_recepcion_pasos_screen.dart:217:9 - use_build_context_synchronously
+   info - 'WillPopScope' is deprecated and shouldn't be used. Use PopScope instead. The Android predictive back feature will not work with WillPopScope. This feature was deprecated after v3.12.0-1.0.pre - lib\screens\ecoce\shared\screens\receptor_recepcion_pasos_screen.dart:264:12 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\receptor_recepcion_pasos_screen.dart:470:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\receptor_recepcion_pasos_screen.dart:497:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\receptor_recepcion_pasos_screen.dart:522:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\receptor_recepcion_pasos_screen.dart:525:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\receptor_recepcion_pasos_screen.dart:535:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\receptor_recepcion_pasos_screen.dart:543:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\receptor_recepcion_pasos_screen.dart:590:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\receptor_recepcion_pasos_screen.dart:731:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\receptor_recepcion_pasos_screen.dart:789:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\receptor_recepcion_pasos_screen.dart:829:48 - deprecated_member_use
+   info - Unnecessary use of 'toList' in a spread - lib\screens\ecoce\shared\screens\receptor_recepcion_pasos_screen.dart:843:20 - unnecessary_to_list_in_spreads
+warning - Unused import: 'dart:async' - lib\screens\ecoce\shared\screens\usuario_qr_screen.dart:4:8 - unused_import
+warning - Unused import: '../../../../utils/format_utils.dart' - lib\screens\ecoce\shared\screens\usuario_qr_screen.dart:6:8 - unused_import
+warning - The value of the local variable 'userProfile' isn't used - lib\screens\ecoce\shared\screens\usuario_qr_screen.dart:40:11 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\usuario_qr_screen.dart:139:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\usuario_qr_screen.dart:145:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\usuario_qr_screen.dart:157:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\usuario_qr_screen.dart:180:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\usuario_qr_screen.dart:229:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\usuario_qr_screen.dart:257:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\usuario_qr_screen.dart:290:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\usuario_qr_screen.dart:293:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\screens\usuario_qr_screen.dart:310:50 - deprecated_member_use
+   info - 'WillPopScope' is deprecated and shouldn't be used. Use PopScope instead. The Android predictive back feature will not work with WillPopScope. This feature was deprecated after v3.12.0-1.0.pre - lib\screens\ecoce\shared\utils\dialog_utils.dart:244:16 - deprecated_member_use
+warning - Unnecessary cast - lib\screens\ecoce\shared\utils\shared_input_decorations.dart:25:18 - unnecessary_cast
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\widgets\dialogs\signature_dialog.dart:128:46 - deprecated_member_use
+   info - Unnecessary use of 'toList' in a spread - lib\screens\ecoce\shared\widgets\document_upload_per_requirement_widget.dart:254:22 - unnecessary_to_list_in_spreads
+   info - The private field _uploadedDocuments could be 'final' - lib\screens\ecoce\shared\widgets\document_upload_widget.dart:51:22 - prefer_final_fields
+   info - Unnecessary use of 'toList' in a spread - lib\screens\ecoce\shared\widgets\document_upload_widget.dart:353:14 - unnecessary_to_list_in_spreads
+   info - Unnecessary use of 'toList' in a spread - lib\screens\ecoce\shared\widgets\document_upload_widget.dart:514:16 - unnecessary_to_list_in_spreads
+warning - Unused import: '../utils/dialog_utils.dart' - lib\screens\ecoce\shared\widgets\document_viewer_dialog.dart:5:8 - unused_import
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\shared\widgets\document_viewer_dialog.dart:131:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\shared\widgets\document_viewer_dialog.dart:149:7 - avoid_print
+warning - The value of the local variable 'viewPadding' isn't used - lib\screens\ecoce\shared\widgets\ecoce_bottom_navigation.dart:53:11 - unused_local_variable
+   info - The 'child' argument should be last in widget constructor invocations - lib\screens\ecoce\shared\widgets\ecoce_bottom_navigation.dart:303:9 - sort_child_properties_last
+warning - The value of the local variable 'screenWidth' isn't used - lib\screens\ecoce\shared\widgets\field_label.dart:20:11 - unused_local_variable
+warning - Unused import: '../utils/input_decorations.dart' - lib\screens\ecoce\shared\widgets\form_widgets.dart:4:8 - unused_import
+warning - Unused import: 'unified_container.dart' - lib\screens\ecoce\shared\widgets\form_widgets.dart:7:8 - unused_import
+   info - Parameter 'key' could be a super parameter - lib\screens\ecoce\shared\widgets\material_filter_bar.dart:12:9 - use_super_parameters
+   info - The private field _photos could be 'final' - lib\screens\ecoce\shared\widgets\photo_evidence_widget.dart:42:14 - prefer_final_fields
+   info - The import of 'package:flutter/rendering.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\screens\ecoce\shared\widgets\qr_code_display_widget.dart:3:8 - unnecessary_import
+   info - The import of 'dart:typed_data' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/services.dart' - lib\screens\ecoce\shared\widgets\qr_code_display_widget.dart:5:8 - unnecessary_import
+warning - Unused import: 'dart:ui' - lib\screens\ecoce\shared\widgets\qr_code_display_widget.dart:6:8 - unused_import
+warning - Unused import: 'package:url_launcher/url_launcher.dart' - lib\screens\ecoce\shared\widgets\qr_code_display_widget.dart:11:8 - unused_import
+   info - The imported package 'pdf' isn't a dependency of the importing package - lib\screens\ecoce\shared\widgets\qr_code_display_widget.dart:15:8 - depend_on_referenced_packages
+   info - The imported package 'pdf' isn't a dependency of the importing package - lib\screens\ecoce\shared\widgets\qr_code_display_widget.dart:16:8 - depend_on_referenced_packages
+warning - Duplicate import - lib\screens\ecoce\shared\widgets\qr_code_display_widget.dart:17:8 - duplicate_import
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\shared\widgets\qr_code_display_widget.dart:181:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\shared\widgets\qr_code_display_widget.dart:224:19 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\shared\widgets\qr_code_display_widget.dart:232:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\shared\widgets\qr_code_display_widget.dart:243:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\shared\widgets\qr_code_display_widget.dart:248:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\shared\widgets\qr_code_display_widget.dart:255:5 - avoid_print
+warning - The declaration '_getAppName' isn't referenced - lib\screens\ecoce\shared\widgets\qr_code_display_widget.dart:258:18 - unused_element
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\shared\widgets\qr_code_display_widget.dart:307:21 - avoid_print
+   info - Parameter 'key' could be a super parameter - lib\screens\ecoce\shared\widgets\quick_action_button.dart:13:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - lib\screens\ecoce\shared\widgets\required_field_label.dart:8:9 - use_super_parameters
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\shared\widgets\shared_qr_scanner_screen.dart:109:34 - deprecated_member_use
+   info - Parameter 'key' could be a super parameter - lib\screens\ecoce\shared\widgets\statistic_card.dart:13:9 - use_super_parameters
+   info - The 'child' argument should be last in widget constructor invocations - lib\screens\ecoce\shared\widgets\unified_container.dart:79:7 - sort_child_properties_last
+   info - The 'child' argument should be last in widget constructor invocations - lib\screens\ecoce\shared\widgets\unified_container.dart:105:7 - sort_child_properties_last
+   info - The 'children' argument should be last in widget constructor invocations - lib\screens\ecoce\shared\widgets\unified_container.dart:125:7 - sort_child_properties_last
+   info - The 'child' argument should be last in widget constructor invocations - lib\screens\ecoce\shared\widgets\unified_container.dart:420:7 - sort_child_properties_last
+   info - The 'child' argument should be last in widget constructor invocations - lib\screens\ecoce\shared\widgets\unified_container.dart:462:7 - sort_child_properties_last
+   info - The 'children' argument should be last in widget constructor invocations - lib\screens\ecoce\shared\widgets\unified_container.dart:494:7 - sort_child_properties_last
+warning - Unused import: 'package:cloud_firestore/cloud_firestore.dart' - lib\screens\ecoce\transformador\transformador_documentacion_screen.dart:5:8 - unused_import
+warning - Unused import: 'dart:typed_data' - lib\screens\ecoce\transformador\transformador_formulario_recepcion.dart:5:8 - unused_import
+warning - Unused import: '../../../models/lotes/lote_transformador_model.dart' - lib\screens\ecoce\transformador\transformador_formulario_recepcion.dart:15:8 - unused_import
+warning - Unused import: '../shared/widgets/weight_input_widget.dart' - lib\screens\ecoce\transformador\transformador_formulario_recepcion.dart:16:8 - unused_import
+warning - Unused import: '../shared/widgets/form_widgets.dart' - lib\screens\ecoce\transformador\transformador_formulario_recepcion.dart:18:8 - unused_import
+warning - The value of the field '_loteService' isn't used - lib\screens\ecoce\transformador\transformador_formulario_recepcion.dart:39:21 - unused_field
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\transformador\transformador_formulario_recepcion.dart:256:7 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transformador\transformador_formulario_recepcion.dart:276:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transformador\transformador_formulario_recepcion.dart:362:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transformador\transformador_formulario_recepcion.dart:414:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transformador\transformador_formulario_recepcion.dart:456:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transformador\transformador_formulario_recepcion.dart:507:66 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transformador\transformador_formulario_recepcion.dart:529:66 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transformador\transformador_formulario_recepcion.dart:551:66 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transformador\transformador_formulario_recepcion.dart:635:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transformador\transformador_formulario_recepcion.dart:687:43 - deprecated_member_use
+   info - The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\screens\ecoce\transformador\transformador_formulario_salida.dart:2:8 - unnecessary_import
+warning - Unused import: 'package:cloud_firestore/cloud_firestore.dart' - lib\screens\ecoce\transformador\transformador_formulario_salida.dart:7:8 - unused_import
+warning - The value of the field '_loteService' isn't used - lib\screens\ecoce\transformador\transformador_formulario_salida.dart:47:21 - unused_field
+warning - Unused import: '../shared/screens/usuario_qr_screen.dart' - lib\screens\ecoce\transformador\transformador_inicio_screen.dart:15:8 - unused_import
+warning - The value of the field '_isLoading' isn't used - lib\screens\ecoce\transformador\transformador_inicio_screen.dart:31:8 - unused_field
+warning - The declaration '_getProductoIcon' isn't referenced - lib\screens\ecoce\transformador\transformador_inicio_screen.dart:501:12 - unused_element
+   info - 'WillPopScope' is deprecated and shouldn't be used. Use PopScope instead. The Android predictive back feature will not work with WillPopScope. This feature was deprecated after v3.12.0-1.0.pre - lib\screens\ecoce\transformador\transformador_inicio_screen.dart:576:12 - deprecated_member_use
+   info - The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\screens\ecoce\transformador\transformador_lote_detalle_screen.dart:2:8 - unnecessary_import
+warning - The value of the field '_isLoading' isn't used - lib\screens\ecoce\transformador\transformador_lotes_registro_screen.dart:42:8 - unused_field
+warning - The left operand can't be null, so the right operand is never executed - lib\screens\ecoce\transformador\transformador_produccion_screen.dart:752:83 - dead_null_aware_expression
+warning - The left operand can't be null, so the right operand is never executed - lib\screens\ecoce\transformador\transformador_produccion_screen.dart:756:59 - dead_null_aware_expression
+warning - The left operand can't be null, so the right operand is never executed - lib\screens\ecoce\transformador\transformador_produccion_screen.dart:760:85 - dead_null_aware_expression
+warning - Unused import: 'transporte_qr_entrega_screen.dart' - lib\screens\ecoce\transporte\transporte_entrega_pasos_screen.dart:12:8 - unused_import
+warning - The value of the field '_authService' isn't used - lib\screens\ecoce\transporte\transporte_entrega_pasos_screen.dart:29:21 - unused_field
+   info - The 'if' statement could be replaced by a null-aware assignment - lib\screens\ecoce\transporte\transporte_entrega_pasos_screen.dart:231:11 - prefer_conditional_assignment
+   info - Don't use 'BuildContext's across async gaps - lib\screens\ecoce\transporte\transporte_entrega_pasos_screen.dart:259:9 - use_build_context_synchronously
+   info - 'WillPopScope' is deprecated and shouldn't be used. Use PopScope instead. The Android predictive back feature will not work with WillPopScope. This feature was deprecated after v3.12.0-1.0.pre - lib\screens\ecoce\transporte\transporte_entrega_pasos_screen.dart:272:12 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transporte\transporte_entrega_pasos_screen.dart:439:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transporte\transporte_entrega_pasos_screen.dart:496:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transporte\transporte_entrega_pasos_screen.dart:612:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transporte\transporte_entrega_pasos_screen.dart:669:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transporte\transporte_entrega_pasos_screen.dart:811:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transporte\transporte_entrega_pasos_screen.dart:850:52 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transporte\transporte_entrega_pasos_screen.dart:877:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transporte\transporte_entrega_pasos_screen.dart:880:52 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transporte\transporte_entrega_pasos_screen.dart:1068:26 - deprecated_member_use
+warning - Unused import: 'transporte_escanear_carga_screen.dart' - lib\screens\ecoce\transporte\transporte_entregar_screen.dart:6:8 - unused_import
+warning - Unused import: '../shared/utils/dialog_utils.dart' - lib\screens\ecoce\transporte\transporte_escanear_carga_screen.dart:12:8 - unused_import
+warning - The value of the field '_userSession' isn't used - lib\screens\ecoce\transporte\transporte_escanear_carga_screen.dart:24:28 - unused_field
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\transporte\transporte_escanear_carga_screen.dart:147:7 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transporte\transporte_escanear_carga_screen.dart:329:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transporte\transporte_escanear_carga_screen.dart:337:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transporte\transporte_escanear_carga_screen.dart:473:76 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transporte\transporte_escanear_carga_screen.dart:521:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transporte\transporte_escanear_receptor_screen.dart:244:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transporte\transporte_escanear_receptor_screen.dart:368:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transporte\transporte_escanear_receptor_screen.dart:372:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\ecoce\transporte\transporte_escanear_receptor_screen.dart:457:35 - deprecated_member_use
+warning - Unused import: 'dart:typed_data' - lib\screens\ecoce\transporte\transporte_formulario_carga_screen.dart:5:8 - unused_import
+warning - Unused import: 'package:firebase_auth/firebase_auth.dart' - lib\screens\ecoce\transporte\transporte_formulario_carga_screen.dart:7:8 - unused_import
+warning - Unused import: 'package:cloud_firestore/cloud_firestore.dart' - lib\screens\ecoce\transporte\transporte_formulario_carga_screen.dart:8:8 - unused_import
+warning - Unused import: '../../../services/image_service.dart' - lib\screens\ecoce\transporte\transporte_formulario_carga_screen.dart:11:8 - unused_import
+warning - Unused import: '../shared/widgets/form_widgets.dart' - lib\screens\ecoce\transporte\transporte_formulario_carga_screen.dart:16:8 - unused_import
+   info - The parameter name 'sum' matches a visible type name - lib\screens\ecoce\transporte\transporte_formulario_carga_screen.dart:70:48 - avoid_types_as_parameter_names
+warning - Unused import: '../../../services/image_service.dart' - lib\screens\ecoce\transporte\transporte_formulario_entrega_screen.dart:12:8 - unused_import
+   info - Use interpolation to compose strings and values - lib\screens\ecoce\transporte\transporte_formulario_entrega_screen.dart:138:52 - prefer_interpolation_to_compose_strings
+   info - Don't use 'BuildContext's across async gaps - lib\screens\ecoce\transporte\transporte_formulario_entrega_screen.dart:472:28 - use_build_context_synchronously
+   info - 'WillPopScope' is deprecated and shouldn't be used. Use PopScope instead. The Android predictive back feature will not work with WillPopScope. This feature was deprecated after v3.12.0-1.0.pre - lib\screens\ecoce\transporte\transporte_formulario_entrega_screen.dart:533:12 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\ecoce\transporte\transporte_formulario_entrega_screen.dart:598:31 - use_build_context_synchronously
+   info - The 'child' argument should be last in widget constructor invocations - lib\screens\ecoce\transporte\transporte_formulario_entrega_screen.dart:1244:25 - sort_child_properties_last
+warning - The declaration '_buildSection' isn't referenced - lib\screens\ecoce\transporte\transporte_formulario_entrega_screen.dart:1304:10 - unused_element
+warning - Unused import: '../shared/utils/dialog_utils.dart' - lib\screens\ecoce\transporte\transporte_inicio_screen.dart:13:8 - unused_import
+warning - The value of the field '_loteService' isn't used - lib\screens\ecoce\transporte\transporte_inicio_screen.dart:26:21 - unused_field
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\transporte\transporte_inicio_screen.dart:98:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\transporte\transporte_inicio_screen.dart:119:7 - avoid_print
+   info - 'WillPopScope' is deprecated and shouldn't be used. Use PopScope instead. The Android predictive back feature will not work with WillPopScope. This feature was deprecated after v3.12.0-1.0.pre - lib\screens\ecoce\transporte\transporte_inicio_screen.dart:167:12 - deprecated_member_use
+warning - Unused import: 'dart:convert' - lib\screens\ecoce\transporte\transporte_qr_entrega_screen.dart:5:8 - unused_import
+   info - The import of 'dart:typed_data' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/services.dart' - lib\screens\ecoce\transporte\transporte_qr_entrega_screen.dart:7:8 - unnecessary_import
+   info - The imported package 'pdf' isn't a dependency of the importing package - lib\screens\ecoce\transporte\transporte_qr_entrega_screen.dart:11:8 - depend_on_referenced_packages
+   info - The imported package 'pdf' isn't a dependency of the importing package - lib\screens\ecoce\transporte\transporte_qr_entrega_screen.dart:12:8 - depend_on_referenced_packages
+warning - Unused import: 'package:firebase_auth/firebase_auth.dart' - lib\screens\ecoce\transporte\transporte_qr_entrega_screen.dart:15:8 - unused_import
+warning - The value of the field '_authService' isn't used - lib\screens\ecoce\transporte\transporte_qr_entrega_screen.dart:42:21 - unused_field
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\transporte\transporte_qr_entrega_screen.dart:68:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\transporte\transporte_qr_entrega_screen.dart:69:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\transporte\transporte_qr_entrega_screen.dart:70:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\transporte\transporte_qr_entrega_screen.dart:77:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\transporte\transporte_qr_entrega_screen.dart:84:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\transporte\transporte_qr_entrega_screen.dart:88:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\transporte\transporte_qr_entrega_screen.dart:91:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\transporte\transporte_qr_entrega_screen.dart:102:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\transporte\transporte_qr_entrega_screen.dart:105:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\transporte\transporte_qr_entrega_screen.dart:111:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\ecoce\transporte\transporte_qr_entrega_screen.dart:112:9 - avoid_print
+warning - The value of the field '_fadeAnimation' isn't used - lib\screens\login\bioway\bioway_register_screen.dart:22:26 - unused_field
+   info - The private field _totalPages could be 'final' - lib\screens\login\bioway\bioway_register_screen.dart:26:7 - prefer_final_fields
+warning - The value of the field '_formKeyStep1' isn't used - lib\screens\login\bioway\bioway_register_screen.dart:29:9 - unused_field
+   info - Don't invoke 'print' in production code - lib\screens\login\bioway\bioway_register_screen.dart:299:7 - avoid_print
+   info - Unnecessary use of 'toList' in a spread - lib\screens\login\bioway\bioway_register_screen.dart:454:28 - unnecessary_to_list_in_spreads
+   info - Don't invoke 'print' in production code - lib\screens\login\ecoce\ecoce_login_dev.dart:30:7 - avoid_print
+   info - Don't use 'BuildContext's across async gaps - lib\screens\login\ecoce\ecoce_login_dev.dart:47:9 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\login\ecoce\ecoce_login_dev.dart:53:28 - use_build_context_synchronously
+warning - Unused import: 'package:cloud_firestore/cloud_firestore.dart' - lib\screens\login\ecoce\ecoce_login_screen.dart:4:8 - unused_import
+   info - Don't use 'BuildContext's across async gaps - lib\screens\login\ecoce\ecoce_login_screen.dart:254:19 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\login\ecoce\ecoce_login_screen.dart:298:17 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\login\ecoce\ecoce_login_screen.dart:310:34 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\login\ecoce\ecoce_login_screen.dart:331:28 - use_build_context_synchronously
+warning - The declaration '_showPendingApprovalDialog' isn't referenced - lib\screens\login\ecoce\ecoce_login_screen.dart:547:8 - unused_element
+warning - The declaration '_showTemporarySuccessDialog' isn't referenced - lib\screens\login\ecoce\ecoce_login_screen.dart:608:8 - unused_element
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\login\ecoce\ecoce_login_screen.dart:899:71 - deprecated_member_use
+warning - Unused import: '../../../widgets/common/gradient_background.dart' - lib\screens\login\ecoce\ecoce_tipo_proveedor_selector.dart:4:8 - unused_import
+   info - Don't invoke 'print' in production code - lib\screens\login\ecoce\maestro_register_screen.dart:43:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\login\ecoce\maestro_register_screen.dart:45:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\login\ecoce\maestro_register_screen.dart:87:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\login\ecoce\maestro_register_screen.dart:88:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\login\ecoce\maestro_register_screen.dart:101:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\login\ecoce\maestro_register_screen.dart:104:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\login\ecoce\maestro_register_screen.dart:105:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\login\ecoce\maestro_register_screen.dart:106:11 - avoid_print
+   info - The private field _isUploadingDocuments could be 'final' - lib\screens\login\ecoce\providers\base_provider_register_screen.dart:75:8 - prefer_final_fields
+   info - Empty catch block - lib\screens\login\ecoce\providers\base_provider_register_screen.dart:109:17 - empty_catches
+   info - Don't invoke 'print' in production code - lib\screens\login\ecoce\providers\base_provider_register_screen.dart:180:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\login\ecoce\providers\base_provider_register_screen.dart:182:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\login\ecoce\providers\base_provider_register_screen.dart:253:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\login\ecoce\providers\base_provider_register_screen.dart:254:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\login\ecoce\providers\base_provider_register_screen.dart:260:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\login\ecoce\providers\base_provider_register_screen.dart:272:15 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\login\ecoce\providers\base_provider_register_screen.dart:274:15 - avoid_print
+warning - The declaration '_buildStep' isn't referenced - lib\screens\login\ecoce\providers\base_provider_register_screen.dart:617:10 - unused_element
+   info - Function literals shouldn't be passed to 'forEach' - lib\screens\login\ecoce\widgets\common_fields_form.dart:262:25 - avoid_function_literals_in_foreach_calls
+   info - The private field _uploadingStates could be 'final' - lib\screens\login\ecoce\widgets\document_uploader.dart:27:21 - prefer_final_fields
+   info - Unnecessary use of 'toList' in a spread - lib\screens\login\ecoce\widgets\document_uploader.dart:125:14 - unnecessary_to_list_in_spreads
+warning - The value of the field '_hasInteracted' isn't used - lib\screens\login\ecoce\widgets\step_widgets.dart:260:8 - unused_field
+   info - The private field _hasAttemptedToContinue could be 'final' - lib\screens\login\ecoce\widgets\step_widgets.dart:647:8 - prefer_final_fields
+warning - The value of the field '_hasAttemptedToContinue' isn't used - lib\screens\login\ecoce\widgets\step_widgets.dart:647:8 - unused_field
+warning - The declaration '_hasTriedToContinue' isn't referenced - lib\screens\login\ecoce\widgets\step_widgets.dart:660:8 - unused_element
+   info - Unnecessary braces in a string interpolation - lib\screens\login\ecoce\widgets\step_widgets.dart:1894:80 - unnecessary_brace_in_string_interps
+   info - Use interpolation to compose strings and values - lib\screens\login\ecoce\widgets\step_widgets.dart:2578:17 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code - lib\services\bioway\bioway_auth_service.dart:119:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\bioway\bioway_auth_service.dart:120:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\bioway\bioway_auth_service.dart:121:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\bioway\bioway_auth_service.dart:122:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\bioway\bioway_auth_service.dart:123:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\bioway\bioway_auth_service.dart:157:11 - avoid_print
+   info - Use 'rethrow' to rethrow a caught exception - lib\services\bioway\bioway_auth_service.dart:160:9 - use_rethrow_when_possible
+   info - Don't invoke 'print' in production code - lib\services\bioway\bioway_auth_service.dart:176:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\bioway\bioway_auth_service.dart:177:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\bioway\bioway_auth_service.dart:178:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\bioway\bioway_auth_service.dart:207:11 - avoid_print
+   info - Use 'rethrow' to rethrow a caught exception - lib\services\bioway\bioway_auth_service.dart:210:9 - use_rethrow_when_possible
+   info - Don't invoke 'print' in production code - lib\services\bioway\bioway_auth_service.dart:222:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\bioway\bioway_auth_service.dart:242:9 - avoid_print
+   info - The parameter name 'sum' matches a visible type name - lib\services\bioway\bioway_recycling_service.dart:41:52 - avoid_types_as_parameter_names
+   info - The parameter name 'sum' matches a visible type name - lib\services\bioway\bioway_recycling_service.dart:74:56 - avoid_types_as_parameter_names
+   info - The parameter name 'sum' matches a visible type name - lib\services\bioway\bioway_recycling_service.dart:95:72 - avoid_types_as_parameter_names
+   info - The parameter name 'sum' matches a visible type name - lib\services\bioway\bioway_recycling_service.dart:112:53 - avoid_types_as_parameter_names
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:37:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:39:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:45:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:53:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:75:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:96:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:99:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:100:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:102:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:227:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:228:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:244:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:250:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:252:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:253:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:271:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:283:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:314:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:315:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:319:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:325:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:348:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:349:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:353:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:361:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:362:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:370:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:375:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:376:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:385:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:406:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:407:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:411:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:418:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:420:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:422:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:424:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:476:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:494:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:580:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:592:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:664:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:671:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:672:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:683:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:685:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:697:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:709:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:733:15 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:737:15 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:740:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:743:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:753:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:785:17 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:789:17 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:794:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:798:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:800:7 - avoid_print
+warning - The declaration '_ejecutarLimpiezaAutomatica' isn't referenced - lib\services\carga_transporte_service.dart:805:16 - unused_element
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:817:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:821:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:864:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:900:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\carga_transporte_service.dart:933:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:14:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:15:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:20:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:75:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:96:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:111:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:139:9 - avoid_print
+   info - Unnecessary braces in a string interpolation - lib\services\document_service.dart:139:118 - unnecessary_brace_in_string_interps
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:177:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:181:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:194:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:195:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:196:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:197:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:198:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:199:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:200:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:201:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:202:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:219:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:225:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:227:11 - avoid_print
+   info - Unnecessary braces in a string interpolation - lib\services\document_service.dart:234:84 - unnecessary_brace_in_string_interps
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:238:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:243:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:270:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:275:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:280:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:281:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:282:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:287:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:288:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:289:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:290:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:300:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:309:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:379:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:397:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:399:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:402:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:433:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:435:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:446:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:462:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:473:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:474:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:475:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:479:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:489:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:497:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:528:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:529:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:532:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:539:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\document_service.dart:540:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:268:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:273:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:358:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:360:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:415:7 - avoid_print
+   info - Function literals shouldn't be passed to 'forEach' - lib\services\firebase\ecoce_profile_service.dart:418:102 - avoid_function_literals_in_foreach_calls
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:419:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:541:7 - avoid_print
+   info - Function literals shouldn't be passed to 'forEach' - lib\services\firebase\ecoce_profile_service.dart:543:102 - avoid_function_literals_in_foreach_calls
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:544:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:573:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:582:9 - avoid_print
+warning - The value of the local variable 'profileDoc' isn't used - lib\services\firebase\ecoce_profile_service.dart:943:25 - unused_local_variable
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1026:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1085:9 - avoid_print
+warning - The value of the local variable 'data' isn't used - lib\services\firebase\ecoce_profile_service.dart:1157:15 - unused_local_variable
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1188:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1213:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1215:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1647:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1687:17 - avoid_print
+   info - Unnecessary braces in a string interpolation - lib\services\firebase\ecoce_profile_service.dart:1687:85 - unnecessary_brace_in_string_interps
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1699:15 - avoid_print
+   info - Use interpolation to compose strings and values - lib\services\firebase\ecoce_profile_service.dart:1715:23 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1731:13 - avoid_print
+   info - Unnecessary braces in a string interpolation - lib\services\firebase\ecoce_profile_service.dart:1731:89 - unnecessary_brace_in_string_interps
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1737:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1742:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1744:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1752:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1787:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1841:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1842:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1843:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1844:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1845:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1846:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1847:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1851:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1854:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1855:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1861:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1864:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1865:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1872:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1880:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1896:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1905:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1908:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1912:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1920:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1929:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1952:15 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1956:15 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1957:15 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1958:15 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1989:21 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1992:19 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:1997:17 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:2006:15 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:2010:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:2015:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:2016:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:2017:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:2018:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:2019:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:2020:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\ecoce_profile_service.dart:2030:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:15:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:18:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:25:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:26:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:27:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:28:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:33:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:37:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:42:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:47:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:52:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:53:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:57:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:58:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:83:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:112:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:124:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:135:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:158:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:166:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:181:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:188:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:192:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:198:15 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:201:15 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:205:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:221:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:227:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:256:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:264:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:265:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:275:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:279:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:284:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:289:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:290:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:294:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\firebase\firebase_storage_service.dart:295:7 - avoid_print
+   info - The constant name 'LOTES_ORIGEN' isn't a lowerCamelCase identifier - lib\services\lote_service.dart:27:23 - constant_identifier_names
+   info - The constant name 'LOTES_TRANSPORTISTA' isn't a lowerCamelCase identifier - lib\services\lote_service.dart:28:23 - constant_identifier_names
+   info - The constant name 'LOTES_RECICLADOR' isn't a lowerCamelCase identifier - lib\services\lote_service.dart:29:23 - constant_identifier_names
+   info - The constant name 'LOTES_LABORATORIO' isn't a lowerCamelCase identifier - lib\services\lote_service.dart:30:23 - constant_identifier_names
+   info - The constant name 'LOTES_TRANSFORMADOR' isn't a lowerCamelCase identifier - lib\services\lote_service.dart:31:23 - constant_identifier_names
+   info - The constant name 'LOTES' isn't a lowerCamelCase identifier - lib\services\lote_service.dart:34:23 - constant_identifier_names
+   info - Don't invoke 'print' in production code - lib\services\lote_service.dart:390:11 - avoid_print
+   info - The constant name 'COLECCION_LOTES' isn't a lowerCamelCase identifier - lib\services\lote_unificado_service.dart:38:23 - constant_identifier_names
+   info - The constant name 'DATOS_GENERALES' isn't a lowerCamelCase identifier - lib\services\lote_unificado_service.dart:41:23 - constant_identifier_names
+   info - The constant name 'PROCESO_ORIGEN' isn't a lowerCamelCase identifier - lib\services\lote_unificado_service.dart:42:23 - constant_identifier_names
+   info - The constant name 'PROCESO_TRANSPORTE' isn't a lowerCamelCase identifier - lib\services\lote_unificado_service.dart:43:23 - constant_identifier_names
+   info - The constant name 'PROCESO_RECICLADOR' isn't a lowerCamelCase identifier - lib\services\lote_unificado_service.dart:44:23 - constant_identifier_names
+   info - The constant name 'PROCESO_LABORATORIO' isn't a lowerCamelCase identifier - lib\services\lote_unificado_service.dart:45:23 - constant_identifier_names
+   info - The constant name 'PROCESO_TRANSFORMADOR' isn't a lowerCamelCase identifier - lib\services\lote_unificado_service.dart:46:23 - constant_identifier_names
+warning - The operand can't be 'null', so the condition is always 'true' - lib\services\lote_unificado_service.dart:1439:58 - unnecessary_null_comparison
+warning - The '!' will have no effect because the receiver can't be null - lib\services\lote_unificado_service.dart:1439:101 - unnecessary_non_null_assertion
+warning - The value of the local variable 'loteId' isn't used - lib\services\lote_unificado_service.dart:1586:19 - unused_local_variable
+warning - Unused import: 'dart:ui' - lib\services\qr_service.dart:2:8 - unused_import
+   info - The import of 'package:flutter/rendering.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\services\qr_service.dart:4:8 - unnecessary_import
+   info - 'foregroundColor' is deprecated and shouldn't be used. use colors in eyeStyle and dataModuleStyle instead - lib\services\qr_service.dart:42:15 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\services\qr_service.dart:84:7 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\services\qr_service.dart:105:33 - deprecated_member_use
+   info - 'foregroundColor' is deprecated and shouldn't be used. use colors in eyeStyle and dataModuleStyle instead - lib\services\qr_service.dart:130:13 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\services\qr_service.dart:148:56 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\services\qr_service.dart:166:58 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\services\qr_service.dart:210:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\utils\document_utils.dart:44:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\utils\document_utils.dart:75:7 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\utils\document_utils.dart:188:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\utils\document_utils.dart:190:65 - deprecated_member_use
+   info - Parameter 'key' could be a super parameter - lib\widgets\bioway\bio_celebration_widget.dart:9:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - lib\widgets\bioway\bio_motivational_popup.dart:10:9 - use_super_parameters
+   info - The 'children' argument should be last in widget constructor invocations - lib\widgets\login\animated_logo.dart:145:21 - sort_child_properties_last
+
+764 issues found. (ran in 3.8s)

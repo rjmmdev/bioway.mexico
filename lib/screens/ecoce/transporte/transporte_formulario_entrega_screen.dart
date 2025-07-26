@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -8,8 +7,6 @@ import 'package:path_provider/path_provider.dart';
 import '../../../utils/colors.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
-import '../../../services/firebase/auth_service.dart';
-import '../../../services/lote_service.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
 import '../../../services/image_service.dart';
@@ -19,6 +16,9 @@ import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/form_widgets.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
 import '../shared/widgets/required_field_label.dart';
+import '../shared/widgets/unified_container.dart';
+import '../shared/widgets/field_label.dart' as field_label;
+import '../shared/utils/shared_input_decorations.dart';
 
 class TransporteFormularioEntregaScreen extends StatefulWidget {
   final List<Map<String, dynamic>> lotes;
@@ -42,8 +42,6 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
   final _formKey = GlobalKey<FormState>();
   final UserSessionService _userSession = UserSessionService();
   final FirebaseManager _firebaseManager = FirebaseManager();
-  final AuthService _authService = AuthService();
-  final LoteService _loteService = LoteService();
   final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
   final FirebaseStorageService _storageService = FirebaseStorageService();
   final CargaTransporteService _cargaService = CargaTransporteService();
@@ -51,6 +49,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
   // Controladores
   final TextEditingController _idDestinoController = TextEditingController();
   final TextEditingController _comentariosController = TextEditingController();
+  final TextEditingController _operadorController = TextEditingController();
   
   // Estados
   bool _isLoading = false;
@@ -109,6 +108,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
     _idDestinoController.removeListener(_onFolioChanged);
     _idDestinoController.dispose();
     _comentariosController.dispose();
+    _operadorController.dispose();
     super.dispose();
   }
   
@@ -181,7 +181,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
         _showSuggestions = suggestions.isNotEmpty;
       });
     } catch (e) {
-      print('Error buscando usuarios: $e');
+      debugPrint('Error buscando usuarios: $e');
     }
   }
   
@@ -288,37 +288,10 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
     return parts.isEmpty ? 'Sin dirección registrada' : parts.join(', ');
   }
   
-  Future<void> _pickImage() async {
-    try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? photo = await picker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 80,
-      );
-      
-      if (photo != null) {
-        final compressedImage = await ImageService.optimizeImageForDatabase(File(photo.path));
-        
-        setState(() {
-          _evidenciaFoto = compressedImage;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al capturar imagen: $e'),
-            backgroundColor: BioWayColors.error,
-          ),
-        );
-      }
-    }
-  }
-  
   void _showSignatureDialog() {
     SignatureDialog.show(
       context: context,
-      title: 'Firma del Receptor',
+      title: 'Firma del Operador',
       initialSignature: _firmaRecibe,
       onSignatureSaved: (signature) {
         setState(() {
@@ -354,10 +327,20 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
       return;
     }
     
+    if (_operadorController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor ingrese el nombre del operador'),
+          backgroundColor: BioWayColors.error,
+        ),
+      );
+      return;
+    }
+    
     if (_firmaRecibe.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Por favor capture la firma del receptor'),
+          content: Text('Por favor capture la firma del operador'),
           backgroundColor: BioWayColors.error,
         ),
       );
@@ -420,6 +403,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
           datos: {
             'fecha_salida': FieldValue.serverTimestamp(),
             'destino_entrega': _destinatarioInfo!['folio'],
+            'nombre_operador_entrega': _operadorController.text.trim(),
             'firma_entrega': firmaUrl,
             'evidencias_foto_entrega': photoUrls,
             'comentarios_entrega': _comentariosController.text.trim(),
@@ -526,7 +510,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
       ),
     );
     
-    if (shouldLeave == true) {
+    if (shouldLeave == true && mounted) {
       switch (index) {
         case 0:
           Navigator.pushReplacementNamed(context, '/transporte_inicio');
@@ -767,9 +751,9 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
-                                color: BioWayColors.info.withOpacity(0.1),
+                                color: BioWayColors.info.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: BioWayColors.info.withOpacity(0.3)),
+                                border: Border.all(color: BioWayColors.info.withValues(alpha: 0.3)),
                               ),
                               child: Row(
                                 children: [
@@ -1010,42 +994,42 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                   
                   const SizedBox(height: 24),
                   
-                  // Firma del Receptor
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
+                  // Sección: Datos del Responsable
+                  SectionCard(
+                    icon: '👤',
+                    title: 'Datos del Responsable',
+                    isRequired: true,
+                    children: [
+                      // Nombre del Operador
+                      const field_label.FieldLabel(text: 'Nombre del Operador', isRequired: true),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _operadorController,
+                        maxLength: 50,
+                        keyboardType: TextInputType.name,
+                        textInputAction: TextInputAction.next,
+                        autocorrect: false,
+                        enableSuggestions: false,
+                        decoration: SharedInputDecorations.ecoceStyle(
+                          hintText: 'Ingresa el nombre completo',
+                          primaryColor: const Color(0xFF1490EE),
                         ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Text(
-                              '✍️',
-                              style: TextStyle(fontSize: 24),
-                            ),
-                            const SizedBox(width: 10),
-                            RequiredFieldLabel(
-                              label: 'Firma del Receptor',
-                              labelStyle: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: BioWayColors.darkGreen,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Ingresa el nombre del operador';
+                          }
+                          if (value.length < 3) {
+                            return 'El nombre debe tener al menos 3 caracteres';
+                          }
+                          return null;
+                        },
+                      ),
+                      
+                      const SizedBox(height: 20),
+                      
+                      // Firma del Operador
+                      const field_label.FieldLabel(text: 'Firma del Operador', isRequired: true),
+                      const SizedBox(height: 8),
                         GestureDetector(
                           onTap: _firmaRecibe.isEmpty ? _showSignatureDialog : null,
                           child: AnimatedContainer(
@@ -1186,8 +1170,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                   ),
                           ),
                         ),
-                      ],
-                    ),
+                    ],
                   ),
                   
                   const SizedBox(height: 24),
@@ -1411,7 +1394,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
       
       return null;
     } catch (e) {
-      print('Error al capturar firma: $e');
+      debugPrint('Error al capturar firma: $e');
       return null;
     }
   }
