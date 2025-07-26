@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
 import '../../../services/lote_unificado_service.dart';
-import '../../../services/user_session_service.dart';
 import '../../../models/lotes/lote_unificado_model.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/dialog_utils.dart';
+import 'reciclador_lote_qr_screen.dart';
+import 'reciclador_documentacion.dart';
+import 'reciclador_formulario_salida.dart';
+import '../shared/screens/receptor_recepcion_pasos_screen.dart';
 
 /// Pantalla de administración de lotes del reciclador usando el sistema unificado
 class RecicladorAdministracionLotesV2 extends StatefulWidget {
@@ -29,21 +33,25 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
   
   // Servicios
   final LoteUnificadoService _loteService = LoteUnificadoService();
-  final UserSessionService _userSession = UserSessionService();
   
   // Estados
   Stream<List<LoteUnificadoModel>>? _lotesStream;
   String _selectedMaterial = 'Todos';
   String _selectedTime = 'Todos';
+  String _selectedDocFilter = 'Todos'; // Nuevo filtro para documentación
+  String _selectedPresentacion = 'Todos'; // Filtro de presentación
   int _selectedIndex = 1; // Bottom nav index
+  
+  // Lista local para cálculos
+  List<LoteUnificadoModel> _todosLotes = [];
   
   @override
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 3,
+      length: 2, // Reducido de 3 a 2 pestañas
       vsync: this,
-      initialIndex: widget.initialTab,
+      initialIndex: widget.initialTab > 1 ? 1 : widget.initialTab,
     );
     _tabController.addListener(() {
       if (_tabController.indexIsChanging || _tabController.index != _tabController.previousIndex) {
@@ -55,41 +63,92 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
   
   void _loadLotes() {
     setState(() {
-      _lotesStream = _loteService.obtenerLotesPorProceso('reciclador');
+      _lotesStream = _loteService.obtenerLotesRecicladorConPendientes();
+    });
+    
+    // También cargar lista local para cálculos
+    _loteService.obtenerLotesRecicladorConPendientes().listen((lotes) {
+      if (mounted) {
+        setState(() {
+          _todosLotes = lotes;
+        });
+      }
     });
   }
   
   void _filterLotes() {
     setState(() {
-      _lotesStream = _loteService.buscarLotes(
-        query: _searchController.text.isEmpty ? null : _searchController.text,
-        proceso: 'reciclador',
-        tipoMaterial: _selectedMaterial == 'Todos' ? null : _selectedMaterial,
-      );
+      // Por ahora recargar todos y filtrar localmente
+      // TODO: Implementar filtros en el servicio si es necesario para optimización
+      _loadLotes();
     });
   }
   
   List<LoteUnificadoModel> _filterByTab(List<LoteUnificadoModel> lotes) {
-    switch (_tabController.index) {
-      case 0: // En proceso
-        return lotes.where((lote) {
-          final reciclador = lote.reciclador;
-          return reciclador != null && reciclador.fechaSalida == null;
-        }).toList();
+    // Primero aplicar filtros generales
+    var filteredLotes = lotes.where((lote) {
+      // Filtro por material
+      if (_selectedMaterial != 'Todos' && lote.datosGenerales.tipoMaterial != _selectedMaterial) {
+        return false;
+      }
+      
+      // Filtro por presentación
+      if (_selectedPresentacion != 'Todos' && lote.datosGenerales.materialPresentacion != _selectedPresentacion) {
+        return false;
+      }
+      
+      // Filtro por tiempo
+      if (_selectedTime != 'Todos' && lote.reciclador != null) {
+        final now = DateTime.now();
+        final fechaEntrada = lote.reciclador!.fechaEntrada;
         
-      case 1: // Pendientes de salida
-        return lotes.where((lote) {
+        switch (_selectedTime) {
+          case 'Hoy':
+            return fechaEntrada.day == now.day && 
+                   fechaEntrada.month == now.month && 
+                   fechaEntrada.year == now.year;
+          case 'Esta semana':
+            final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+            return fechaEntrada.isAfter(startOfWeek);
+          case 'Este mes':
+            return fechaEntrada.month == now.month && fechaEntrada.year == now.year;
+        }
+      }
+      
+      return true;
+    }).toList();
+    
+    // Luego aplicar filtros específicos de la pestaña
+    switch (_tabController.index) {
+      case 0: // Salida
+        return filteredLotes.where((lote) {
           final reciclador = lote.reciclador;
-          return reciclador != null && 
-                 reciclador.pesoProcesado != null && 
+          // Solo mostrar lotes que están en proceso reciclador y no tienen fecha de salida
+          return lote.datosGenerales.procesoActual == 'reciclador' &&
+                 reciclador != null && 
                  reciclador.fechaSalida == null;
         }).toList();
         
-      case 2: // Completados
-        return lotes.where((lote) {
+      case 1: // Completados
+        var completados = filteredLotes.where((lote) {
           final reciclador = lote.reciclador;
-          return reciclador != null && reciclador.fechaSalida != null;
+          // Mostrar lotes con fecha de salida (en reciclador) o transferidos sin documentación
+          return reciclador != null && (
+            (lote.datosGenerales.procesoActual == 'reciclador' && reciclador.fechaSalida != null) ||
+            (lote.datosGenerales.procesoActual != 'reciclador')
+          );
         }).toList();
+        
+        // Aplicar filtro de documentación si está activo
+        if (_selectedDocFilter == 'Pendientes') {
+          completados = completados.where((lote) {
+            // Por ahora, consideramos que todos los lotes transferidos necesitan documentación
+            // Esta lógica se puede refinar cuando se tenga acceso a los campos de documentación
+            return lote.datosGenerales.procesoActual != 'reciclador';
+          }).toList();
+        }
+        
+        return completados;
         
       default:
         return [];
@@ -98,6 +157,17 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
   
   void _handleSearch(String value) {
     _filterLotes();
+  }
+  
+  Color _getTabColor() {
+    switch (_tabController.index) {
+      case 0:
+        return BioWayColors.error; // Rojo para Salida
+      case 1:
+        return BioWayColors.success; // Verde para Completados
+      default:
+        return BioWayColors.ecoceGreen;
+    }
   }
   
   void _showFilterDialog() {
@@ -147,6 +217,48 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
                 });
               },
             ),
+            const SizedBox(height: 16),
+            // Filtro por presentación
+            DropdownButtonFormField<String>(
+              value: _selectedPresentacion,
+              decoration: const InputDecoration(
+                labelText: 'Presentación',
+                border: OutlineInputBorder(),
+              ),
+              items: ['Todos', 'Pacas', 'Costales', 'Separados']
+                  .map((pres) => DropdownMenuItem(
+                        value: pres,
+                        child: Text(pres),
+                      ))
+                  .toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedPresentacion = value!;
+                });
+              },
+            ),
+            // Filtro por documentación (solo visible en pestaña Completados)
+            if (_tabController.index == 1) ...[
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: _selectedDocFilter,
+                decoration: const InputDecoration(
+                  labelText: 'Documentación',
+                  border: OutlineInputBorder(),
+                ),
+                items: ['Todos', 'Pendientes']
+                    .map((doc) => DropdownMenuItem(
+                          value: doc,
+                          child: Text(doc),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedDocFilter = value!;
+                  });
+                },
+              ),
+            ],
           ],
         ),
         actions: [
@@ -155,6 +267,8 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
               setState(() {
                 _selectedMaterial = 'Todos';
                 _selectedTime = 'Todos';
+                _selectedPresentacion = 'Todos';
+                _selectedDocFilter = 'Todos';
               });
               _loadLotes();
               Navigator.pop(context);
@@ -204,13 +318,12 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
             color: Colors.white,
             child: TabBar(
               controller: _tabController,
-              labelColor: BioWayColors.primaryGreen,
+              labelColor: _getTabColor(),
               unselectedLabelColor: Colors.grey,
-              indicatorColor: BioWayColors.primaryGreen,
+              indicatorColor: _getTabColor(),
               indicatorWeight: 3,
               tabs: const [
-                Tab(text: 'En Proceso'),
-                Tab(text: 'Pendientes'),
+                Tab(text: 'Salida'),
                 Tab(text: 'Completados'),
               ],
             ),
@@ -219,40 +332,7 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
       ),
       body: Column(
         children: [
-          // Barra de búsqueda y filtros
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: _handleSearch,
-                    decoration: InputDecoration(
-                      hintText: 'Buscar por ID o material...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: _showFilterDialog,
-                  icon: Icon(
-                    Icons.filter_list,
-                    color: BioWayColors.primaryGreen,
-                  ),
-                  style: IconButton.styleFrom(
-                    backgroundColor: BioWayColors.primaryGreen.withOpacity(0.1),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Lista de lotes
+          // Lista de lotes con filtros y estadísticas
           Expanded(
             child: StreamBuilder<List<LoteUnificadoModel>>(
               stream: _lotesStream,
@@ -317,15 +397,8 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
                 
                 return TabBarView(
                   controller: _tabController,
-                  children: List.generate(3, (tabIndex) {
-                    return ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: filteredLotes.length,
-                      itemBuilder: (context, index) {
-                        final lote = filteredLotes[index];
-                        return _buildLoteCard(lote);
-                      },
-                    );
+                  children: List.generate(2, (tabIndex) {
+                    return _buildTabContent(filteredLotes);
                   }),
                 );
               },
@@ -354,44 +427,397 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
         },
         items: EcoceNavigationConfigs.recicladorItems,
         primaryColor: BioWayColors.ecoceGreen,
+        fabConfig: FabConfig(
+          icon: Icons.add,
+          onPressed: _navigateToScanner,
+          tooltip: 'Recibir lote',
+        ),
       ),
+      floatingActionButton: EcoceFloatingActionButton(
+        onPressed: _navigateToScanner,
+        icon: Icons.add,
+        backgroundColor: BioWayColors.ecoceGreen,
+        tooltip: 'Recibir lote',
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
   
-  Widget _buildLoteCard(LoteUnificadoModel lote) {
-    final reciclador = lote.reciclador!;
-    final isCompleted = reciclador.fechaSalida != null;
-    final isPending = reciclador.pesoProcesado != null && reciclador.fechaSalida == null;
+  Widget _buildTabContent(List<LoteUnificadoModel> lotes) {
+    final pesoTotal = _calcularPesoTotal(lotes);
+    final polimeroInfo = _calcularPolimeroMasComun(lotes);
+    final tabColor = _getTabColor();
     
-    Color statusColor;
-    String statusText;
-    IconData statusIcon;
-    
-    if (isCompleted) {
-      statusColor = Colors.green;
-      statusText = 'Completado';
-      statusIcon = Icons.check_circle;
-    } else if (isPending) {
-      statusColor = Colors.orange;
-      statusText = 'Pendiente de salida';
-      statusIcon = Icons.pending_actions;
-    } else {
-      statusColor = Colors.blue;
-      statusText = 'En proceso';
-      statusIcon = Icons.autorenew;
-    }
-    
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: InkWell(
-        onTap: () => _showLoteDetails(lote),
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
+    return Column(
+      children: [
+        // Filtros horizontales
+        Container(
+          color: Colors.white,
           padding: const EdgeInsets.all(16),
           child: Column(
+            children: [
+              // Filtro de materiales
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: ['Todos', 'PEBD', 'PP', 'Multilaminado'].map((material) {
+                    final isSelected = _selectedMaterial == material;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(material),
+                        selected: isSelected,
+                        selectedColor: tabColor.withValues(alpha: 0.2),
+                        labelStyle: TextStyle(
+                          color: isSelected ? tabColor : Colors.grey[700],
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                        onSelected: (_) {
+                          setState(() {
+                            _selectedMaterial = material;
+                            _filterLotes();
+                          });
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Filtros de tiempo y presentación
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildDropdownFilter(
+                      label: 'Tiempo',
+                      value: _selectedTime,
+                      items: ['Todos', 'Hoy', 'Esta semana', 'Este mes'],
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedTime = value!;
+                          _filterLotes();
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildDropdownFilter(
+                      label: 'Presentación',
+                      value: _selectedPresentacion,
+                      items: ['Todos', 'Pacas', 'Costales', 'Separados'],
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedPresentacion = value!;
+                          _filterLotes();
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        
+        // Tarjetas de estadísticas
+        Container(
+          margin: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  // Número de lotes
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: tabColor.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.inventory_2, color: tabColor, size: 22),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  lotes.length.toString(),
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                Text(
+                                  'Lotes',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Peso total
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.scale, color: Colors.orange, size: 22),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${pesoTotal.toStringAsFixed(1)} kg',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                Text(
+                                  'Peso Total',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Polímero más común
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: BioWayColors.ppPurple.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.polymer, color: BioWayColors.ppPurple, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${polimeroInfo['material']} (${polimeroInfo['porcentaje']}%)',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            'Polímero más común',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Lista de lotes
+        Expanded(
+          child: lotes.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.inventory_2_outlined,
+                        size: 80,
+                        color: Colors.grey[300],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No hay lotes en esta categoría',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: lotes.length,
+                  itemBuilder: (context, index) {
+                    final lote = lotes[index];
+                    return _buildLoteCard(lote);
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildDropdownFilter({
+    required String label,
+    required String value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: BioWayColors.backgroundGrey,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          isDense: true,
+          isExpanded: true,
+          icon: Icon(Icons.arrow_drop_down, color: BioWayColors.darkGreen),
+          items: items.map((item) {
+            return DropdownMenuItem(
+              value: item,
+              child: Text(
+                item,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: BioWayColors.darkGreen,
+                ),
+              ),
+            );
+          }).toList(),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoteCard(LoteUnificadoModel lote) {
+    final reciclador = lote.reciclador!;
+    final isTransferred = lote.datosGenerales.procesoActual != 'reciclador';
+    // Verificaremos el estado de documentación de forma asíncrona
+    final isCompleted = reciclador.fechaSalida != null;
+    
+    return FutureBuilder<bool>(
+      future: _checkHasDocumentation(lote.id),
+      builder: (context, snapshot) {
+        final hasAllDocs = snapshot.data ?? false;
+        
+        Color statusColor;
+        String statusText;
+        IconData statusIcon;
+        
+        if (isTransferred) {
+          if (hasAllDocs) {
+            // Este caso no debería mostrarse según la lógica, pero por si acaso
+            statusColor = Colors.grey;
+            statusText = 'Transferido';
+            statusIcon = Icons.done_all;
+          } else {
+            statusColor = Colors.orange;
+            statusText = 'Transferido - Documentación pendiente';
+            statusIcon = Icons.upload_file;
+          }
+        } else if (isCompleted) {
+          if (hasAllDocs) {
+            statusColor = Colors.green;
+            statusText = 'Listo para transferir';
+            statusIcon = Icons.check_circle;
+          } else {
+            statusColor = Colors.blue;
+            statusText = 'Completado - Falta documentación';
+            statusIcon = Icons.description;
+          }
+        } else {
+          statusColor = Colors.blue;
+          statusText = 'En proceso';
+          statusIcon = Icons.autorenew;
+        }
+    
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: InkWell(
+            onTap: () => _showLoteDetails(lote),
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header
@@ -401,7 +827,7 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
+                      color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -434,11 +860,36 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
                       ],
                     ),
                   ),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: Colors.grey[400],
-                  ),
+                  // Botones de acción según la pestaña
+                  if (_tabController.index == 0) ...[
+                    // Pestaña Salida - Botón Formulario de Salida
+                    IconButton(
+                      icon: Icon(
+                        Icons.assignment_outlined,
+                        color: BioWayColors.ecoceGreen,
+                      ),
+                      onPressed: () => _openFormularioSalida(lote),
+                      tooltip: 'Formulario de salida',
+                    ),
+                  ] else if (_tabController.index == 1) ...[
+                    // Pestaña Completados
+                    // Botón QR (solo si está en reciclador y tiene firma de salida)
+                    if (lote.datosGenerales.procesoActual == 'reciclador' && isCompleted)
+                      IconButton(
+                        icon: Icon(Icons.qr_code_2, color: BioWayColors.ecoceGreen),
+                        onPressed: () => _showQRCode(lote),
+                        tooltip: 'Ver código QR',
+                      ),
+                    // Botón Documentación (siempre visible en completados)
+                    IconButton(
+                      icon: Icon(
+                        hasAllDocs ? Icons.check_circle : Icons.upload_file,
+                        color: hasAllDocs ? Colors.green : Colors.orange,
+                      ),
+                      onPressed: () => _uploadDocuments(lote),
+                      tooltip: hasAllDocs ? 'Documentación completa' : 'Subir documentación',
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 16),
@@ -456,8 +907,9 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
                   Expanded(
                     child: _buildInfoItem(
                       icon: Icons.scale,
-                      label: 'Peso Entrada',
-                      value: '${reciclador.pesoEntrada} kg',
+                      label: lote.tieneAnalisisLaboratorio ? 'Peso Actual' : 'Peso Entrada',
+                      value: '${lote.pesoActual.toStringAsFixed(2)} kg',
+                      color: lote.tieneAnalisisLaboratorio ? Colors.blue : null,
                     ),
                   ),
                 ],
@@ -474,7 +926,17 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
                       fontSize: 12,
                     ),
                   ),
-                  if (reciclador.pesoProcesado != null)
+                  if (lote.tieneAnalisisLaboratorio)
+                    Expanded(
+                      child: _buildInfoItem(
+                        icon: Icons.science,
+                        label: 'Muestras Lab',
+                        value: '${lote.pesoTotalMuestras.toStringAsFixed(2)} kg',
+                        fontSize: 12,
+                        color: BioWayColors.ppPurple,
+                      ),
+                    )
+                  else if (reciclador.pesoProcesado != null)
                     Expanded(
                       child: _buildInfoItem(
                         icon: Icons.trending_down,
@@ -486,10 +948,12 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
                     ),
                 ],
               ),
-            ],
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
   
@@ -531,6 +995,147 @@ class _RecicladorAdministracionLotesV2State extends State<RecicladorAdministraci
     );
   }
   
+  void _showQRCode(LoteUnificadoModel lote) {
+    final reciclador = lote.reciclador!;
+    // Usar el peso actual que ya considera las muestras del laboratorio
+    final pesoActual = lote.pesoActual;
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RecicladorLoteQRScreen(
+          loteId: lote.id,
+          material: lote.datosGenerales.tipoMaterial,
+          pesoOriginal: reciclador.pesoEntrada,
+          pesoFinal: pesoActual, // Peso con muestras de laboratorio descontadas
+          presentacion: lote.datosGenerales.materialPresentacion ?? 'Pacas',
+          origen: 'Reciclador',
+          fechaEntrada: reciclador.fechaEntrada,
+          fechaSalida: reciclador.fechaSalida,
+        ),
+      ),
+    );
+  }
+  
+  void _uploadDocuments(LoteUnificadoModel lote) async {
+    // Verificar si ya tiene documentación completa
+    final hasAllDocs = await _checkHasDocumentation(lote.id);
+    
+    if (hasAllDocs) {
+      // Mostrar alerta de que la documentación ya está completa
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Documentación Completa'),
+          content: const Text('La documentación para este lote ya ha sido enviada correctamente.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Entendido'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Navegar a la pantalla de documentación
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => RecicladorDocumentacion(
+            lotId: lote.id,
+          ),
+        ),
+      ).then((_) {
+        // Recargar los lotes después de subir documentación
+        _loadLotes();
+      });
+    }
+  }
+
+  void _openFormularioSalida(LoteUnificadoModel lote) {
+    final reciclador = lote.reciclador!;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RecicladorFormularioSalida(
+          loteId: lote.id,
+          pesoOriginal: reciclador.pesoEntrada,
+        ),
+      ),
+    ).then((_) {
+      // Recargar los lotes después del formulario
+      _loadLotes();
+    });
+  }
+
+  /// Navegar a la pantalla de recepción de lotes
+  void _navigateToScanner() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ReceptorRecepcionPasosScreen(
+          userType: 'reciclador',
+        ),
+      ),
+    );
+  }
+
+  /// Verificar si el lote tiene documentación completa
+  Future<bool> _checkHasDocumentation(String loteId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('lotes')
+          .doc(loteId)
+          .collection('reciclador')
+          .doc('data')
+          .get();
+      
+      if (doc.exists) {
+        final data = doc.data() ?? {};
+        return data['f_tecnica_pellet'] != null && data['rep_result_reci'] != null;
+      }
+      return false;
+    } catch (e) {
+      print('Error verificando documentación: $e');
+      return false;
+    }
+  }
+
+  // Calcular peso total de lotes filtrados
+  double _calcularPesoTotal(List<LoteUnificadoModel> lotes) {
+    double total = 0.0;
+    for (final lote in lotes) {
+      // Usar pesoActual que ya considera las muestras del laboratorio
+      total += lote.pesoActual;
+    }
+    return total;
+  }
+  
+  // Calcular polímero más común
+  Map<String, dynamic> _calcularPolimeroMasComun(List<LoteUnificadoModel> lotes) {
+    if (lotes.isEmpty) return {'material': 'N/A', 'porcentaje': 0};
+    
+    final Map<String, int> conteo = {};
+    for (final lote in lotes) {
+      final material = lote.datosGenerales.tipoMaterial;
+      conteo[material] = (conteo[material] ?? 0) + 1;
+    }
+    
+    String materialMasComun = '';
+    int maxConteo = 0;
+    conteo.forEach((material, count) {
+      if (count > maxConteo) {
+        maxConteo = count;
+        materialMasComun = material;
+      }
+    });
+    
+    final porcentaje = (maxConteo / lotes.length * 100).toInt();
+    return {'material': materialMasComun, 'porcentaje': porcentaje};
+  }
+
   @override
   void dispose() {
     _tabController.dispose();

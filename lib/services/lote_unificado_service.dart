@@ -12,6 +12,15 @@ class LoteUnificadoService {
   final AuthService _authService = AuthService();
   final FirebaseStorageService _storageService = FirebaseStorageService();
   
+  // Debug flag - set to false in production
+  static const bool _debugMode = false;
+  
+  void _debugPrint(String message) {
+    if (_debugMode) {
+      debugPrint('[LoteUnificado] $message');
+    }
+  }
+  
   // Obtener Firestore de la instancia correcta
   FirebaseFirestore get _firestore {
     final app = _firebaseManager.currentApp;
@@ -107,10 +116,10 @@ class LoteUnificadoService {
       };
       
       // Debug: Verificar datos antes de guardar
-      print('=== DATOS A GUARDAR EN ORIGEN ===');
-      print('Firma: $firmaOperador');
-      print('Evidencias: ${evidenciasFoto.length} fotos');
-      print('================================');
+      _debugPrint('=== DATOS A GUARDAR EN ORIGEN ===');
+      _debugPrint('Firma: $firmaOperador');
+      _debugPrint('Evidencias: ${evidenciasFoto.length} fotos');
+      _debugPrint('================================');
       
       batch.set(
         loteRef.collection(PROCESO_ORIGEN).doc('data'),
@@ -160,10 +169,10 @@ class LoteUnificadoService {
     required String procesoDestino,
   }) async {
     try {
-      print('=== VERIFICANDO TRANSFERENCIA COMPLETA ===');
-      print('Lote ID: $loteId');
-      print('Proceso Origen: $procesoOrigen');
-      print('Proceso Destino: $procesoDestino');
+      _debugPrint('=== VERIFICANDO TRANSFERENCIA COMPLETA ===');
+      _debugPrint('Lote ID: $loteId');
+      _debugPrint('Proceso Origen: $procesoOrigen');
+      _debugPrint('Proceso Destino: $procesoDestino');
       
       final loteRef = _firestore.collection(COLECCION_LOTES).doc(loteId);
       
@@ -196,8 +205,8 @@ class LoteUnificadoService {
       if (origenDoc != null && origenDoc.exists) {
         origenExiste = true;
         final datosOrigen = origenDoc.data() as Map<String, dynamic>;
-        print('VERIFICACIÓN ORIGEN ($procesoOrigen):');
-        print('  Campos relevantes: ${datosOrigen.keys.toList()}');
+        _debugPrint('VERIFICACIÓN ORIGEN ($procesoOrigen):');
+        _debugPrint('  Campos relevantes: ${datosOrigen.keys.toList()}');
         
         // Verificar si el origen ha completado su parte
         tieneEntrega = datosOrigen['entrega_completada'] == true || 
@@ -205,16 +214,16 @@ class LoteUnificadoService {
                       datosOrigen['firma_entrega'] != null ||
                       datosOrigen['firma_salida'] != null ||  // Agregar verificación de firma_salida
                       datosOrigen['firma_conductor'] != null; // Para transportista
-        print('  - Origen existe: $origenExiste');
-        print('  - Tiene Entrega: $tieneEntrega');
-        print('  - entrega_completada: ${datosOrigen['entrega_completada']}');
-        print('  - fecha_salida: ${datosOrigen['fecha_salida']}');
-        print('  - firma_entrega: ${datosOrigen['firma_entrega']}');
-        print('  - firma_salida: ${datosOrigen['firma_salida']}');
-        print('  - firma_conductor: ${datosOrigen['firma_conductor']}');
-        print('  - entregado_a: ${datosOrigen['entregado_a']}');
+        _debugPrint('  - Origen existe: $origenExiste');
+        _debugPrint('  - Tiene Entrega: $tieneEntrega');
+        _debugPrint('  - entrega_completada: ${datosOrigen['entrega_completada']}');
+        _debugPrint('  - fecha_salida: ${datosOrigen['fecha_salida']}');
+        _debugPrint('  - firma_entrega: ${datosOrigen['firma_entrega']}');
+        _debugPrint('  - firma_salida: ${datosOrigen['firma_salida']}');
+        _debugPrint('  - firma_conductor: ${datosOrigen['firma_conductor']}');
+        _debugPrint('  - entregado_a: ${datosOrigen['entregado_a']}');
       } else {
-        print('ADVERTENCIA: Documento origen ($procesoOrigen) no existe');
+        _debugPrint('ADVERTENCIA: Documento origen ($procesoOrigen) no existe');
       }
       
       // Verificar proceso destino (reciclador/transformador/transporte)
@@ -231,11 +240,11 @@ class LoteUnificadoService {
         destinoDoc = await loteRef.collection(procesoDestino).doc('data').get();
       }
       
-      if (destinoDoc != null && destinoDoc.exists) {
+      if (destinoDoc.exists) {
         destinoExiste = true;
         final datosDestino = destinoDoc.data() as Map<String, dynamic>;
-        print('VERIFICACIÓN DESTINO ($procesoDestino):');
-        print('  Campos relevantes: ${datosDestino.keys.toList()}');
+        _debugPrint('VERIFICACIÓN DESTINO ($procesoDestino):');
+        _debugPrint('  Campos relevantes: ${datosDestino.keys.toList()}');
         
         // Verificar si el destino ha completado su parte
         tieneRecepcion = datosDestino['recepcion_completada'] == true ||
@@ -244,16 +253,16 @@ class LoteUnificadoService {
                         datosDestino['peso_recibido'] != null ||
                         datosDestino['peso_entrada'] != null ||
                         datosDestino['fecha_entrada'] != null;  // Agregar verificación de fecha_entrada
-        print('  - Destino existe: $destinoExiste');
-        print('  - Tiene Recepción: $tieneRecepcion');
-        print('  - recepcion_completada: ${datosDestino['recepcion_completada']}');
-        print('  - firma_operador: ${datosDestino['firma_operador']}');
-        print('  - firma_recepcion: ${datosDestino['firma_recepcion']}');
-        print('  - peso_recibido: ${datosDestino['peso_recibido']}');
-        print('  - peso_entrada: ${datosDestino['peso_entrada']}');
-        print('  - fecha_entrada: ${datosDestino['fecha_entrada']}');
+        _debugPrint('  - Destino existe: $destinoExiste');
+        _debugPrint('  - Tiene Recepción: $tieneRecepcion');
+        _debugPrint('  - recepcion_completada: ${datosDestino['recepcion_completada']}');
+        _debugPrint('  - firma_operador: ${datosDestino['firma_operador']}');
+        _debugPrint('  - firma_recepcion: ${datosDestino['firma_recepcion']}');
+        _debugPrint('  - peso_recibido: ${datosDestino['peso_recibido']}');
+        _debugPrint('  - peso_entrada: ${datosDestino['peso_entrada']}');
+        _debugPrint('  - fecha_entrada: ${datosDestino['fecha_entrada']}');
       } else {
-        print('ADVERTENCIA: Documento destino ($procesoDestino) no existe');
+        _debugPrint('ADVERTENCIA: Documento destino ($procesoDestino) no existe');
       }
       
       // La transferencia está completa si:
@@ -266,33 +275,33 @@ class LoteUnificadoService {
         // El reciclador ya autorizó la salida al generar el QR
         // Solo necesitamos que el transportista haya recibido
         resultado = destinoExiste && tieneRecepcion;
-        print('RESULTADO: Transferencia Reciclador->Transporte - Destino existe: $destinoExiste, Tiene recepción: $tieneRecepcion');
-        print('DEBUG - OrigenExiste: $origenExiste, TieneEntrega: $tieneEntrega');
-        print('DEBUG - Este caso ES unidireccional, resultado: $resultado');
+        _debugPrint('RESULTADO: Transferencia Reciclador->Transporte - Destino existe: $destinoExiste, Tiene recepción: $tieneRecepcion');
+        _debugPrint('DEBUG - OrigenExiste: $origenExiste, TieneEntrega: $tieneEntrega');
+        _debugPrint('DEBUG - Este caso ES unidireccional, resultado: $resultado');
       } else if (origenExiste && destinoExiste) {
         // Caso normal: ambos existen (para otros flujos)
         resultado = tieneEntrega && tieneRecepcion;
-        print('RESULTADO: Ambos existen - Entrega: $tieneEntrega, Recepción: $tieneRecepcion');
+        _debugPrint('RESULTADO: Ambos existen - Entrega: $tieneEntrega, Recepción: $tieneRecepcion');
       } else if (!origenExiste && destinoExiste && tieneRecepcion) {
         // Caso especial: solo el destino ha completado (recepción anticipada)
         // En este caso, esperamos a que el origen complete
         resultado = false;
-        print('RESULTADO: Solo destino existe con recepción - Esperando origen');
+        _debugPrint('RESULTADO: Solo destino existe con recepción - Esperando origen');
       } else if (origenExiste && !destinoExiste && tieneEntrega) {
         // Caso especial: solo el origen ha completado (entrega anticipada)
         // En este caso, esperamos a que el destino complete
         resultado = false;
-        print('RESULTADO: Solo origen existe con entrega - Esperando destino');
+        _debugPrint('RESULTADO: Solo origen existe con entrega - Esperando destino');
       } else {
-        print('RESULTADO: Ninguna condición cumplida');
+        _debugPrint('RESULTADO: Ninguna condición cumplida');
       }
       
-      print('Transferencia Completa: $resultado');
-      print('=====================================');
+      _debugPrint('Transferencia Completa: $resultado');
+      _debugPrint('=====================================');
       
       return resultado;
     } catch (e) {
-      print('Error verificando transferencia: $e');
+      _debugPrint('Error verificando transferencia: $e');
       return false;
     }
   }
@@ -305,10 +314,10 @@ class LoteUnificadoService {
     required Map<String, dynamic> datosIniciales,
   }) async {
     try {
-      print('=== INICIANDO TRANSFERIR LOTE ===');
-      print('Lote ID: $loteId');
-      print('Proceso Destino: $procesoDestino');
-      print('Usuario Destino: $usuarioDestinoFolio');
+      _debugPrint('=== INICIANDO TRANSFERIR LOTE ===');
+      _debugPrint('Lote ID: $loteId');
+      _debugPrint('Proceso Destino: $procesoDestino');
+      _debugPrint('Usuario Destino: $usuarioDestinoFolio');
       
       final batch = _firestore.batch();
       final loteRef = _firestore.collection(COLECCION_LOTES).doc(loteId);
@@ -321,10 +330,9 @@ class LoteUnificadoService {
       
       final datosGenerales = datosGeneralesDoc.data()!;
       final procesoActual = datosGenerales['proceso_actual'] as String;
-      print('Proceso Actual: $procesoActual');
+      _debugPrint('Proceso Actual: $procesoActual');
       
       // Determinar si es una fase de transporte
-      String procesoRealDestino = procesoDestino;
       String? faseTransporte;
       
       if (procesoDestino == PROCESO_TRANSPORTE) {
@@ -336,7 +344,7 @@ class LoteUnificadoService {
         } else {
           faseTransporte = 'fase_1'; // Por defecto
         }
-        print('Fase de transporte determinada: $faseTransporte');
+        _debugPrint('Fase de transporte determinada: $faseTransporte');
       }
       
       // 2. Crear o actualizar el proceso destino
@@ -373,7 +381,7 @@ class LoteUnificadoService {
       );
       
       if (esTransferenciaCompleta) {
-        print('TRANSFERENCIA COMPLETA DETECTADA - Actualizando proceso_actual a: $procesoDestino');
+        _debugPrint('TRANSFERENCIA COMPLETA DETECTADA - Actualizando proceso_actual a: $procesoDestino');
         
         // Marcar salida del proceso actual
         if (procesoActual == PROCESO_TRANSPORTE) {
@@ -428,13 +436,13 @@ class LoteUnificadoService {
         );
         
         await batch.commit();
-        print('BATCH COMMIT EXITOSO - Lote transferido a: $procesoDestino');
+        _debugPrint('BATCH COMMIT EXITOSO - Lote transferido a: $procesoDestino');
       } else {
-        print('TRANSFERENCIA PARCIAL - Esperando que la otra parte complete');
+        _debugPrint('TRANSFERENCIA PARCIAL - Esperando que la otra parte complete');
       }
-      print('=== FIN TRANSFERIR LOTE ===');
+      _debugPrint('=== FIN TRANSFERIR LOTE ===');
     } catch (e) {
-      print('ERROR en transferirLote: $e');
+      _debugPrint('ERROR en transferirLote: $e');
       throw Exception('Error al transferir lote: $e');
     }
   }
@@ -514,14 +522,14 @@ class LoteUnificadoService {
         }
       }
       
-      print('Actualizando transporte fase: $faseTransporte');
+      _debugPrint('Actualizando transporte fase: $faseTransporte');
       
       await loteRef
           .collection(PROCESO_TRANSPORTE)
           .doc(faseTransporte)
           .update(datos);
     } catch (e) {
-      print('Error al actualizar proceso transporte: $e');
+      _debugPrint('Error al actualizar proceso transporte: $e');
       throw Exception('Error al actualizar proceso transporte: $e');
     }
   }
@@ -545,7 +553,7 @@ class LoteUnificadoService {
         ...doc.data(),
       };
     } catch (e) {
-      print('Error al obtener transporte activo: $e');
+      _debugPrint('Error al obtener transporte activo: $e');
       return null;
     }
   }
@@ -557,8 +565,8 @@ class LoteUnificadoService {
     required String procesoDestino,
   }) async {
     try {
-      print('=== VERIFICANDO Y ACTUALIZANDO TRANSFERENCIA ===');
-      print('Lote: $loteId, Origen: $procesoOrigen, Destino: $procesoDestino');
+      _debugPrint('=== VERIFICANDO Y ACTUALIZANDO TRANSFERENCIA ===');
+      _debugPrint('Lote: $loteId, Origen: $procesoOrigen, Destino: $procesoDestino');
       
       // Primero verificar el estado actual del lote
       final datosGeneralesDoc = await _firestore
@@ -570,7 +578,7 @@ class LoteUnificadoService {
           
       if (datosGeneralesDoc.exists) {
         final procesoActualActual = datosGeneralesDoc.data()!['proceso_actual'];
-        print('Proceso actual en DB: $procesoActualActual');
+        _debugPrint('Proceso actual en DB: $procesoActualActual');
       }
       
       // Verificar si la transferencia está completa
@@ -581,7 +589,7 @@ class LoteUnificadoService {
       );
       
       if (esCompleta) {
-        print('Transferencia completa detectada, actualizando proceso_actual...');
+        _debugPrint('Transferencia completa detectada, actualizando proceso_actual...');
         
         // Actualizar proceso_actual y estado
         final batch = _firestore.batch();
@@ -592,7 +600,7 @@ class LoteUnificadoService {
         if (procesoDestino == PROCESO_TRANSPORTE) {
           String faseTransporte = procesoOrigen == PROCESO_ORIGEN ? 'fase_1' : 'fase_2';
           historialEntry = '${PROCESO_TRANSPORTE}_$faseTransporte';
-          print('Agregando al historial: $historialEntry');
+          _debugPrint('Agregando al historial: $historialEntry');
         }
         
         batch.update(
@@ -606,7 +614,7 @@ class LoteUnificadoService {
         );
         
         await batch.commit();
-        print('PROCESO ACTUALIZADO EXITOSAMENTE A: $procesoDestino');
+        _debugPrint('PROCESO ACTUALIZADO EXITOSAMENTE A: $procesoDestino');
         
         // Verificar que se actualizó correctamente
         final verificacion = await _firestore
@@ -617,14 +625,14 @@ class LoteUnificadoService {
             .get();
             
         if (verificacion.exists) {
-          print('Verificación - proceso_actual ahora es: ${verificacion.data()!['proceso_actual']}');
+          _debugPrint('Verificación - proceso_actual ahora es: ${verificacion.data()!['proceso_actual']}');
         }
       } else {
-        print('Transferencia aún no completa - Falta que una de las partes complete');
+        _debugPrint('Transferencia aún no completa - Falta que una de las partes complete');
       }
     } catch (e) {
-      print('ERROR verificando y actualizando transferencia: $e');
-      print('Stack trace: ${StackTrace.current}');
+      _debugPrint('ERROR verificando y actualizando transferencia: $e');
+      _debugPrint('Stack trace: ${StackTrace.current}');
     }
   }
   
@@ -643,7 +651,7 @@ class LoteUnificadoService {
         ...doc.data(),
       }).toList();
     } catch (e) {
-      print('Error al obtener historial de transportes: $e');
+      _debugPrint('Error al obtener historial de transportes: $e');
       return [];
     }
   }
@@ -651,8 +659,8 @@ class LoteUnificadoService {
   /// Obtener lote completo por ID
   Future<LoteUnificadoModel?> obtenerLotePorId(String loteId) async {
     try {
-      print('=== OBTENIENDO LOTE POR ID ===');
-      print('Lote ID: $loteId');
+      _debugPrint('=== OBTENIENDO LOTE POR ID ===');
+      _debugPrint('Lote ID: $loteId');
       
       final loteRef = _firestore.collection(COLECCION_LOTES).doc(loteId);
       
@@ -687,39 +695,39 @@ class LoteUnificadoService {
         loteRef.collection(PROCESO_TRANSFORMADOR).doc('data').get(),
       ]);
       
-      print('Resultados de las consultas:');
-      print('- Datos generales existe: ${futures[0]?.exists ?? false}');
-      print('- Origen existe: ${futures[1]?.exists ?? false}');
-      print('- Transporte fase_1 existe: ${transporteFases.containsKey('fase_1')}');
-      print('- Transporte fase_2 existe: ${transporteFases.containsKey('fase_2')}');
-      print('- Reciclador existe: ${futures[2]?.exists ?? false}');
-      print('- Análisis laboratorio: ${analisisLaboratorio.length} análisis');
-      print('- Transformador existe: ${futures[3]?.exists ?? false}');
+      _debugPrint('Resultados de las consultas:');
+      _debugPrint('- Datos generales existe: ${futures[0].exists}');
+      _debugPrint('- Origen existe: ${futures[1].exists}');
+      _debugPrint('- Transporte fase_1 existe: ${transporteFases.containsKey('fase_1')}');
+      _debugPrint('- Transporte fase_2 existe: ${transporteFases.containsKey('fase_2')}');
+      _debugPrint('- Reciclador existe: ${futures[2].exists}');
+      _debugPrint('- Análisis laboratorio: ${analisisLaboratorio.length} análisis');
+      _debugPrint('- Transformador existe: ${futures[3].exists}');
       
       // Verificar que existan datos generales
-      if (futures[0] == null || !futures[0]!.exists) {
-        print('ERROR: No existen datos generales para el lote');
+      if (!futures[0].exists) {
+        _debugPrint('ERROR: No existen datos generales para el lote');
         return null;
       }
       
-      if (futures[1] != null && futures[1]!.exists) {
-        final origenData = futures[1]!.data() as Map<String, dynamic>;
-        print('Datos de origen encontrados:');
-        print('- firma_operador: ${origenData['firma_operador']}');
-        print('- evidencias_foto: ${origenData['evidencias_foto']}');
+      if (futures[1].exists) {
+        final origenData = futures[1].data() as Map<String, dynamic>;
+        _debugPrint('Datos de origen encontrados:');
+        _debugPrint('- firma_operador: ${origenData['firma_operador']}');
+        _debugPrint('- evidencias_foto: ${origenData['evidencias_foto']}');
       }
       
       return LoteUnificadoModel.fromFirestore(
         id: loteId,
-        datosGenerales: futures[0]!,
-        origen: (futures[1] != null && futures[1]!.exists) ? futures[1] : null,
+        datosGenerales: futures[0],
+        origen: futures[1].exists ? futures[1] : null,
         transporteFases: transporteFases,
-        reciclador: (futures[2] != null && futures[2]!.exists) ? futures[2] : null,
+        reciclador: futures[2].exists ? futures[2] : null,
         analisisLaboratorio: analisisLaboratorio,
-        transformador: (futures[3] != null && futures[3]!.exists) ? futures[3] : null,
+        transformador: futures[3].exists ? futures[3] : null,
       );
     } catch (e) {
-      print('ERROR al obtener lote: $e');
+      _debugPrint('ERROR al obtener lote: $e');
       throw Exception('Error al obtener lote: $e');
     }
   }
@@ -740,6 +748,56 @@ class LoteUnificadoService {
         final lote = await obtenerLotePorId(loteId);
         if (lote != null) {
           lotes.add(lote);
+        }
+      }
+      
+      return lotes;
+    });
+  }
+  
+  /// Obtener lotes del reciclador incluyendo transferidos sin documentación
+  Stream<List<LoteUnificadoModel>> obtenerLotesRecicladorConPendientes() {
+    return _firestore
+        .collectionGroup(DATOS_GENERALES)
+        .where('proceso_actual', whereIn: ['reciclador', 'transporte', 'transformador'])
+        .orderBy('fecha_creacion', descending: true)
+        .snapshots()
+        .asyncMap((snapshot) async {
+      final lotes = <LoteUnificadoModel>[];
+      
+      for (final doc in snapshot.docs) {
+        final loteId = doc.reference.parent.parent!.id;
+        final lote = await obtenerLotePorId(loteId);
+        
+        if (lote != null && lote.reciclador != null) {
+          // Incluir si está en reciclador o si fue transferido pero le falta documentación
+          if (lote.datosGenerales.procesoActual == 'reciclador') {
+            lotes.add(lote);
+          } else if (lote.datosGenerales.procesoActual == 'transporte' || 
+                     lote.datosGenerales.procesoActual == 'transformador') {
+            // Verificar documentación directamente desde Firebase
+            try {
+              final recicladorDoc = await _firestore
+                  .collection(COLECCION_LOTES)
+                  .doc(loteId)
+                  .collection(PROCESO_RECICLADOR)
+                  .doc('data')
+                  .get();
+              
+              if (recicladorDoc.exists) {
+                final data = recicladorDoc.data() ?? {};
+                final fTecnicaPellet = data['f_tecnica_pellet'];
+                final repResultReci = data['rep_result_reci'];
+                
+                // Solo incluir si falta documentación
+                if (fTecnicaPellet == null || repResultReci == null) {
+                  lotes.add(lote);
+                }
+              }
+            } catch (e) {
+              _debugPrint('Error verificando documentación: $e');
+            }
+          }
         }
       }
       
@@ -790,7 +848,7 @@ class LoteUnificadoService {
             }
           }
         } catch (e) {
-          print('Error procesando lote en obtenerMisLotesPorProceso: $e');
+          _debugPrint('Error procesando lote en obtenerMisLotesPorProceso: $e');
         }
       }
       
@@ -884,7 +942,7 @@ class LoteUnificadoService {
       
       return lote;
     } catch (e) {
-      print('Error al buscar lote por código o ID: $e');
+      _debugPrint('Error al buscar lote por código o ID: $e');
       return null;
     }
   }
@@ -976,7 +1034,7 @@ class LoteUnificadoService {
         },
       );
     } catch (e) {
-      print('Error al procesar recepción en laboratorio: $e');
+      _debugPrint('Error al procesar recepción en laboratorio: $e');
       throw Exception('Error al procesar recepción: $e');
     }
   }
@@ -1102,20 +1160,20 @@ class LoteUnificadoService {
   /// Método de depuración para imprimir el estado completo de un lote
   Future<void> depurarEstadoLote(String loteId) async {
     try {
-      print('=== DEPURANDO ESTADO DEL LOTE $loteId ===');
+      _debugPrint('=== DEPURANDO ESTADO DEL LOTE $loteId ===');
       
       final loteRef = _firestore.collection(COLECCION_LOTES).doc(loteId);
       
       // Obtener datos generales
       final datosGeneralesDoc = await loteRef.collection(DATOS_GENERALES).doc('info').get();
       if (datosGeneralesDoc.exists) {
-        print('DATOS GENERALES:');
+        _debugPrint('DATOS GENERALES:');
         final datos = datosGeneralesDoc.data()!;
-        print('- proceso_actual: ${datos['proceso_actual']}');
-        print('- estado_actual: ${datos['estado_actual']}');
-        print('- historial_procesos: ${datos['historial_procesos']}');
+        _debugPrint('- proceso_actual: ${datos['proceso_actual']}');
+        _debugPrint('- estado_actual: ${datos['estado_actual']}');
+        _debugPrint('- historial_procesos: ${datos['historial_procesos']}');
       } else {
-        print('ERROR: No existen datos generales');
+        _debugPrint('ERROR: No existen datos generales');
       }
       
       // Verificar cada proceso
@@ -1123,18 +1181,18 @@ class LoteUnificadoService {
       for (final proceso in procesos) {
         final procesoDoc = await loteRef.collection(proceso).doc('data').get();
         if (procesoDoc.exists) {
-          print('\nPROCESO $proceso:');
+          _debugPrint('\nPROCESO $proceso:');
           final datos = procesoDoc.data()!;
-          print('- fecha_entrada: ${datos['fecha_entrada']}');
-          print('- fecha_salida: ${datos['fecha_salida']}');
-          print('- entrega_completada: ${datos['entrega_completada']}');
-          print('- recepcion_completada: ${datos['recepcion_completada']}');
+          _debugPrint('- fecha_entrada: ${datos['fecha_entrada']}');
+          _debugPrint('- fecha_salida: ${datos['fecha_salida']}');
+          _debugPrint('- entrega_completada: ${datos['entrega_completada']}');
+          _debugPrint('- recepcion_completada: ${datos['recepcion_completada']}');
         }
       }
       
-      print('=== FIN DEPURACIÓN ===');
+      _debugPrint('=== FIN DEPURACIÓN ===');
     } catch (e) {
-      print('Error en depuración: $e');
+      _debugPrint('Error en depuración: $e');
     }
   }
   
@@ -1166,10 +1224,10 @@ class LoteUnificadoService {
     List<String>? evidenciasFoto,
   }) async {
     try {
-      print('=== REGISTRANDO ANÁLISIS DE LABORATORIO ===');
-      print('Lote ID: $loteId');
-      print('Peso Muestra: $pesoMuestra kg');
-      print('Folio Laboratorio: $folioLaboratorio');
+      _debugPrint('=== REGISTRANDO ANÁLISIS DE LABORATORIO ===');
+      _debugPrint('Lote ID: $loteId');
+      _debugPrint('Peso Muestra: $pesoMuestra kg');
+      _debugPrint('Folio Laboratorio: $folioLaboratorio');
       
       final loteRef = _firestore.collection(COLECCION_LOTES).doc(loteId);
       final batch = _firestore.batch();
@@ -1205,25 +1263,20 @@ class LoteUnificadoService {
         analisisData,
       );
       
-      // Actualizar el peso en el proceso reciclador
+      // Verificar que existe el proceso reciclador
       final recicladorDoc = await loteRef.collection(PROCESO_RECICLADOR).doc('data').get();
-      if (recicladorDoc.exists) {
-        final pesoActual = recicladorDoc.data()!['peso_procesado'] ?? 
-                          recicladorDoc.data()!['peso_entrada'] ?? 0.0;
-        
-        // NO actualizamos el peso del reciclador aquí
-        // El peso se calculará dinámicamente en el modelo
-        // Esto mantiene la integridad de los datos originales
+      if (!recicladorDoc.exists) {
+        throw Exception('El lote no tiene datos de reciclador');
       }
       
       // Agregar al historial que se tomó muestra (opcional)
       // No modificamos proceso_actual porque el lote sigue con el reciclador
       
       await batch.commit();
-      print('=== ANÁLISIS REGISTRADO EXITOSAMENTE ===');
+      _debugPrint('=== ANÁLISIS REGISTRADO EXITOSAMENTE ===');
       
     } catch (e) {
-      print('ERROR al registrar análisis: $e');
+      _debugPrint('ERROR al registrar análisis: $e');
       throw Exception('Error al registrar análisis de laboratorio: $e');
     }
   }
@@ -1243,7 +1296,7 @@ class LoteUnificadoService {
         AnalisisLaboratorioData.fromMap(doc.data())
       ).toList();
     } catch (e) {
-      print('Error al obtener análisis: $e');
+      _debugPrint('Error al obtener análisis: $e');
       return [];
     }
   }
@@ -1252,19 +1305,19 @@ class LoteUnificadoService {
   Stream<List<LoteUnificadoModel>> obtenerLotesConAnalisisLaboratorio() {
     final userId = _currentUserId;
     if (userId == null) {
-      print('No hay usuario autenticado');
+      _debugPrint('No hay usuario autenticado');
       return Stream.value([]);
     }
     
-    print('=== OBTENIENDO LOTES CON ANÁLISIS DE LABORATORIO ===');
-    print('Usuario ID: $userId');
+    _debugPrint('=== OBTENIENDO LOTES CON ANÁLISIS DE LABORATORIO ===');
+    _debugPrint('Usuario ID: $userId');
     
     return _firestore
         .collectionGroup('analisis_laboratorio')
         .where('usuario_id', isEqualTo: userId)
         .snapshots()
         .asyncMap((snapshot) async {
-      print('Análisis encontrados: ${snapshot.docs.length}');
+      _debugPrint('Análisis encontrados: ${snapshot.docs.length}');
       
       // Obtener IDs únicos de lotes
       final loteIds = <String>{};
@@ -1276,7 +1329,7 @@ class LoteUnificadoService {
         }
       }
       
-      print('Lotes únicos con análisis: ${loteIds.length}');
+      _debugPrint('Lotes únicos con análisis: ${loteIds.length}');
       
       // Cargar los lotes completos
       final lotes = <LoteUnificadoModel>[];
@@ -1287,7 +1340,137 @@ class LoteUnificadoService {
         }
       }
       
-      print('Lotes cargados exitosamente: ${lotes.length}');
+      _debugPrint('Lotes cargados exitosamente: ${lotes.length}');
+      return lotes;
+    });
+  }
+  
+  /// Actualizar proceso de transformador
+  Future<void> actualizarProcesoTransformador({
+    required String loteId,
+    required Map<String, dynamic> datosTransformador,
+  }) async {
+    try {
+      _debugPrint('=== ACTUALIZANDO PROCESO TRANSFORMADOR ===');
+      _debugPrint('Lote ID: $loteId');
+      _debugPrint('Datos: $datosTransformador');
+      
+      final loteRef = _firestore.collection(COLECCION_LOTES).doc(loteId);
+      final batch = _firestore.batch();
+      
+      // Verificar que el lote existe
+      final datosGeneralesDoc = await loteRef.collection(DATOS_GENERALES).doc('info').get();
+      if (!datosGeneralesDoc.exists) {
+        throw Exception('Lote no encontrado');
+      }
+      
+      // Verificar que el lote está en proceso transformador
+      final procesoActual = datosGeneralesDoc.data()!['proceso_actual'];
+      if (procesoActual != PROCESO_TRANSFORMADOR) {
+        throw Exception('El lote debe estar en proceso transformador');
+      }
+      
+      // Verificar que existe el documento del transformador
+      final transformadorDoc = await loteRef.collection(PROCESO_TRANSFORMADOR).doc('data').get();
+      if (!transformadorDoc.exists) {
+        throw Exception('No se encontraron datos del proceso transformador');
+      }
+      
+      // Actualizar datos del transformador con los campos de salida
+      final transformadorData = transformadorDoc.data()!;
+      transformadorData.addAll(datosTransformador);
+      
+      batch.update(
+        loteRef.collection(PROCESO_TRANSFORMADOR).doc('data'),
+        transformadorData,
+      );
+      
+      // Si el estado cambia, actualizar también en datos generales
+      if (datosTransformador['estado'] != null) {
+        batch.update(
+          loteRef.collection(DATOS_GENERALES).doc('info'),
+          {
+            'estado': datosTransformador['estado'],
+            'fecha_actualizacion': FieldValue.serverTimestamp(),
+          },
+        );
+      }
+      
+      await batch.commit();
+      _debugPrint('=== PROCESO TRANSFORMADOR ACTUALIZADO EXITOSAMENTE ===');
+      
+    } catch (e) {
+      _debugPrint('ERROR al actualizar proceso transformador: $e');
+      throw Exception('Error al actualizar proceso de transformador: $e');
+    }
+  }
+  
+  /// Obtener todos los lotes completos para el repositorio
+  Stream<List<LoteUnificadoModel>> obtenerTodosLotesRepositorio({
+    String? searchQuery,
+    String? tipoMaterial,
+    String? procesoActual,
+    DateTime? fechaInicio,
+    DateTime? fechaFin,
+  }) {
+    _debugPrint('=== OBTENIENDO LOTES PARA REPOSITORIO ===');
+    _debugPrint('Filtros: searchQuery=$searchQuery, tipoMaterial=$tipoMaterial, procesoActual=$procesoActual');
+    
+    Query<Map<String, dynamic>> query = _firestore.collection(COLECCION_LOTES);
+    
+    // No aplicar filtros de Firebase para poder hacer búsquedas más complejas en memoria
+    
+    return query.snapshots().asyncMap((snapshot) async {
+      _debugPrint('Lotes encontrados: ${snapshot.docs.length}');
+      
+      final lotes = <LoteUnificadoModel>[];
+      
+      for (final doc in snapshot.docs) {
+        try {
+          final lote = await obtenerLotePorId(doc.id);
+          if (lote != null) {
+            // Aplicar filtros en memoria
+            bool incluir = true;
+            
+            // Filtro por búsqueda
+            if (searchQuery != null && searchQuery.isNotEmpty) {
+              final query = searchQuery.toLowerCase();
+              incluir = lote.id.toLowerCase().contains(query) ||
+                       (lote.datosGenerales.tipoMaterial?.toLowerCase().contains(query) ?? false);
+            }
+            
+            // Filtro por tipo de material
+            if (incluir && tipoMaterial != null && tipoMaterial != 'Todos') {
+              incluir = lote.datosGenerales.tipoMaterial == tipoMaterial;
+            }
+            
+            // Filtro por proceso actual
+            if (incluir && procesoActual != null && procesoActual != 'Todos') {
+              incluir = lote.datosGenerales.procesoActual == procesoActual;
+            }
+            
+            // Filtro por fecha
+            if (incluir && fechaInicio != null) {
+              incluir = lote.datosGenerales.fechaCreacion.isAfter(fechaInicio);
+            }
+            
+            if (incluir && fechaFin != null) {
+              incluir = lote.datosGenerales.fechaCreacion.isBefore(fechaFin);
+            }
+            
+            if (incluir) {
+              lotes.add(lote);
+            }
+          }
+        } catch (e) {
+          _debugPrint('Error al construir lote ${doc.id}: $e');
+        }
+      }
+      
+      // Ordenar por fecha de creación descendente
+      lotes.sort((a, b) => b.datosGenerales.fechaCreacion.compareTo(a.datosGenerales.fechaCreacion));
+      
+      _debugPrint('Lotes filtrados: ${lotes.length}');
       return lotes;
     });
   }

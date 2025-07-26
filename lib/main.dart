@@ -10,7 +10,7 @@ import 'screens/ecoce/origen/origen_crear_lote_screen.dart';
 
 // Screens - Reciclador
 import 'screens/ecoce/reciclador/reciclador_inicio.dart';
-import 'screens/ecoce/reciclador/reciclador_administracion_lotes.dart';
+import 'screens/ecoce/reciclador/reciclador_administracion_lotes_v2.dart';
 import 'screens/ecoce/reciclador/reciclador_escaneo_qr.dart';
 import 'screens/ecoce/reciclador/reciclador_documentacion.dart';
 import 'screens/ecoce/reciclador/reciclador_formulario_recepcion.dart';
@@ -28,7 +28,6 @@ import 'screens/ecoce/shared/ecoce_ayuda_screen.dart';
 // Screens - Transformador
 import 'screens/ecoce/transformador/transformador_inicio_screen.dart';
 import 'screens/ecoce/transformador/transformador_produccion_screen.dart';
-import 'screens/ecoce/transformador/transformador_recibir_lote_screen.dart';
 import 'screens/ecoce/transformador/transformador_documentacion_screen.dart';
 import 'screens/ecoce/transformador/transformador_formulario_recepcion.dart';
 
@@ -232,7 +231,7 @@ class BioWayApp extends StatelessWidget {
         '/reciclador_inicio': (context) => const RecicladorInicio(),
         '/reciclador_lotes': (context) {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-          return RecicladorAdministracionLotes(
+          return RecicladorAdministracionLotesV2(
             initialTab: args?['initialTab'] ?? 0,
           );
         },
@@ -267,7 +266,6 @@ class BioWayApp extends StatelessWidget {
         },
         '/transformador_ayuda': (context) => const EcoceAyudaScreen(),
         '/transformador_perfil': (context) => const EcocePerfilScreen(),
-        '/transformador_recibir_lote': (context) => const TransformadorRecibirLoteScreen(),
         '/transformador_formulario_recepcion': (context) {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
           return TransformadorFormularioRecepcion(

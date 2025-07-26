@@ -109,7 +109,7 @@ class _ReceptorRecepcionPasosScreenState extends State<ReceptorRecepcionPasosScr
       case 'laboratorio':
         return BioWayColors.petBlue;
       case 'transformador':
-        return BioWayColors.ppPurple;
+        return BioWayColors.ecoceGreen;
       default:
         return BioWayColors.primaryGreen;
     }

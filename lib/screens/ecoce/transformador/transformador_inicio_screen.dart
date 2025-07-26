@@ -13,6 +13,7 @@ import '../shared/utils/material_utils.dart';
 import '../shared/utils/user_type_helper.dart';
 import 'transformador_lote_detalle_screen.dart';
 import '../shared/screens/usuario_qr_screen.dart';
+import '../shared/screens/receptor_recepcion_pasos_screen.dart';
 
 class TransformadorInicioScreen extends StatefulWidget {
   const TransformadorInicioScreen({super.key});
@@ -39,7 +40,15 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
 
   void _navigateToRecibirLotes() {
     HapticFeedback.lightImpact();
-    Navigator.pushNamed(context, '/transformador_recibir_lote');
+    // Usar el flujo de recepción por pasos igual que el reciclador
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ReceptorRecepcionPasosScreen(
+          userType: 'transformador',
+        ),
+      ),
+    );
   }
 
   void _navigateToDocumentacion() {
@@ -52,17 +61,6 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
     );
   }
   
-  void _navigateToMyQR() {
-    HapticFeedback.lightImpact();
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const UsuarioQRScreen(
-          userType: 'transformador',
-        ),
-      ),
-    );
-  }
 
   void _actualizarDocumentacion(String loteId, LoteTransformadorModel lote) {
     HapticFeedback.lightImpact();
@@ -89,7 +87,15 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
 
   void _onAddPressed() {
     HapticFeedback.lightImpact();
-    Navigator.pushNamed(context, '/transformador_recibir_lote');
+    // Usar el flujo de recepción por pasos igual que el reciclador
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ReceptorRecepcionPasosScreen(
+          userType: 'transformador',
+        ),
+      ),
+    );
   }
 
   void _navigateToLoteDetalle(LoteTransformadorModel lote) {
@@ -870,88 +876,6 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                                   Icon(
                                     Icons.arrow_forward_ios,
                                     color: Colors.white.withValues(alpha: 0.8),
-                                    size: 18,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Segundo botón - Mi QR de Identificación
-                      Container(
-                        width: double.infinity,
-                        height: 70,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              BioWayColors.ppPurple,
-                              BioWayColors.ppPurple.withValues(alpha:0.8),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: BioWayColors.ppPurple.withValues(alpha:0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(16),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
-                            onTap: _navigateToMyQR,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha:0.2),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.qr_code_2,
-                                      color: Colors.white,
-                                      size: 24,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'Mi QR de Identificación',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        Text(
-                                          'Mostrar QR para recibir materiales',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: Colors.white.withValues(alpha:0.9),
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.arrow_forward_ios,
-                                    color: Colors.white.withValues(alpha:0.8),
                                     size: 18,
                                   ),
                                 ],

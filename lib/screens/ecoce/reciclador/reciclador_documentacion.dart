@@ -5,7 +5,7 @@ import '../../../services/lote_service.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
 import '../../../models/lotes/lote_reciclador_model.dart';
-import 'reciclador_lote_qr_screen.dart';
+import 'reciclador_administracion_lotes_v2.dart';
 import '../shared/widgets/document_upload_per_requirement_widget.dart';
 
 class RecicladorDocumentacion extends StatefulWidget {
@@ -154,21 +154,12 @@ class _RecicladorDocumentacionState extends State<RecicladorDocumentacion> {
                           .key;
                     }
                     
-                    // Navegar directamente a la pantalla de QR mostrando el éxito
+                    // Navegar a la pantalla de administración de lotes
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => RecicladorLoteQRScreen(
-                          loteId: widget.lotId,
-                          material: material,
-                          pesoOriginal: _loteReciclador!.pesoBruto ?? 0.0,
-                          pesoFinal: _loteReciclador!.pesoResultante ?? _loteReciclador!.pesoBruto ?? 0.0,
-                          presentacion: 'Pacas', // Default presentation for reciclador
-                          origen: 'Reciclador',
-                          fechaEntrada: DateTime.now(), // We don't have this field, using current date
-                          fechaSalida: DateTime.now(),
-                          documentosCargados: documents.values.map((doc) => doc.fileName).toList(),
-                          mostrarMensajeExito: true,
+                        builder: (context) => const RecicladorAdministracionLotesV2(
+                          initialTab: 1, // Pestaña Completados
                         ),
                       ),
                     );
@@ -214,18 +205,14 @@ class _RecicladorDocumentacionState extends State<RecicladorDocumentacion> {
     
     return WillPopScope(
       onWillPop: () async {
-        // Actualizar estado del lote a 'enviado' cuando se pospone la documentación
-        await _loteService.actualizarLoteReciclador(
-          widget.lotId,
-          {'estado': 'enviado'},
-        );
-        
-        // Navegar a la pantalla de administración de lotes en la pestaña de documentación
-        Navigator.pushNamedAndRemoveUntil(
+        // Navegar a la pantalla de administración de lotes en la pestaña Completados
+        Navigator.pushReplacement(
           context,
-          '/reciclador_lotes',
-          (route) => route.isFirst,
-          arguments: {'initialTab': 1}, // Pestaña de documentación
+          MaterialPageRoute(
+            builder: (context) => const RecicladorAdministracionLotesV2(
+              initialTab: 1, // Pestaña Completados
+            ),
+          ),
         );
         return false;
       },
@@ -236,19 +223,15 @@ class _RecicladorDocumentacionState extends State<RecicladorDocumentacion> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-            onPressed: () async {
-              // Actualizar estado del lote a 'enviado' cuando se pospone la documentación
-              await _loteService.actualizarLoteReciclador(
-                widget.lotId,
-                {'estado': 'enviado'},
-              );
-              
-              // Navegar a la pantalla de administración de lotes en la pestaña de documentación
-              Navigator.pushNamedAndRemoveUntil(
+            onPressed: () {
+              // Navegar a la pantalla de administración de lotes en la pestaña Completados
+              Navigator.pushReplacement(
                 context,
-                '/reciclador_lotes',
-                (route) => route.isFirst,
-                arguments: {'initialTab': 1}, // Pestaña de documentación
+                MaterialPageRoute(
+                  builder: (context) => const RecicladorAdministracionLotesV2(
+                    initialTab: 1, // Pestaña Completados
+                  ),
+                ),
               );
             },
           ),

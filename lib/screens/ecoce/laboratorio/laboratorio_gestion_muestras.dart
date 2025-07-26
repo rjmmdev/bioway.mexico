@@ -71,6 +71,80 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
       }
     });
   }
+  
+  void _handleSearch(String value) {
+    // Implementar búsqueda si es necesario
+    setState(() {});
+  }
+  
+  void _showFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Filtros'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Filtro por material
+            DropdownButtonFormField<String>(
+              value: _selectedMaterial,
+              decoration: const InputDecoration(
+                labelText: 'Tipo de Material',
+                border: OutlineInputBorder(),
+              ),
+              items: ['Todos', 'PEBD', 'PP', 'Multilaminado']
+                  .map((material) => DropdownMenuItem(
+                        value: material,
+                        child: Text(material),
+                      ))
+                  .toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedMaterial = value!;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            // Filtro por tiempo
+            DropdownButtonFormField<String>(
+              value: _selectedTiempo,
+              decoration: const InputDecoration(
+                labelText: 'Periodo',
+                border: OutlineInputBorder(),
+              ),
+              items: ['Esta Semana', 'Este Mes', 'Últimos tres meses', 'Este Año']
+                  .map((time) => DropdownMenuItem(
+                        value: time,
+                        child: Text(time),
+                      ))
+                  .toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedTiempo = value!;
+                });
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              setState(() {});
+            },
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              setState(() {});
+            },
+            child: const Text('Aplicar'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -195,118 +269,98 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
       canPop: false,
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F5F5),
-        body: SafeArea(
-          child: CustomScrollView(
-            slivers: [
-              // Header moderno con gradiente (igual que la pantalla de inicio)
-              SliverToBoxAdapter(
-                child: Container(
-                  height: 200,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xFF9333EA), // Purple para laboratorio
-                        const Color(0xFF9333EA).withValues(alpha: 0.8),
-                      ],
-                    ),
-                  ),
-                  child: Stack(
-                    children: [
-                      // Patrón de fondo
-                      Positioned(
-                        right: -50,
-                        top: -50,
-                        child: Container(
-                          width: 200,
-                          height: 200,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: 0.1),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        left: -30,
-                        bottom: -30,
-                        child: Container(
-                          width: 150,
-                          height: 150,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: 0.05),
-                          ),
-                        ),
-                      ),
-                      // Contenido
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Título
-                            const Text(
-                              'Gestión de Muestras',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            // Tabs
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: TabBar(
-                                controller: _tabController,
-                                indicatorColor: Colors.white,
-                                indicatorWeight: 3,
-                                labelColor: Colors.white,
-                                unselectedLabelColor: Colors.white60,
-                                indicator: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                ),
-                                tabs: const [
-                                  Tab(text: 'Análisis'),
-                                  Tab(text: 'Documentación'),
-                                  Tab(text: 'Finalizadas'),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              // Contenido principal
-              SliverFillRemaining(
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF5F5F5),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30),
-                    ),
-                  ),
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildTabContent(),
-                      _buildTabContent(),
-                      _buildTabContent(),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF9333EA), // Morado laboratorio
+          elevation: 0,
+          title: const Text(
+            'Gestión de Muestras',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.filter_list, color: Colors.white),
+              onPressed: _showFilterDialog,
+            ),
+          ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(48),
+            child: Container(
+              color: Colors.white,
+              child: TabBar(
+                controller: _tabController,
+                labelColor: const Color(0xFF9333EA), // Morado laboratorio
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: const Color(0xFF9333EA), // Morado laboratorio
+                indicatorWeight: 3,
+                tabs: const [
+                  Tab(text: 'Análisis'),
+                  Tab(text: 'Documentación'),
+                  Tab(text: 'Finalizadas'),
+                ],
+              ),
+            ),
+          ),
+        ),
+        body: Column(
+          children: [
+            // Barra de búsqueda y filtros
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F5F5),
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: TextField(
+                        onChanged: _handleSearch,
+                        decoration: InputDecoration(
+                          hintText: 'Buscar por ID de lote...',
+                          hintStyle: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 14,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: Colors.grey[500],
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Lista de muestras
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  _loadMuestras();
+                  await Future.delayed(const Duration(seconds: 1));
+                },
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildTabContent(),
+                    _buildTabContent(),
+                    _buildTabContent(),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       bottomNavigationBar: EcoceBottomNavigation(
         selectedIndex: _selectedIndex,
@@ -594,14 +648,7 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                       'tieneDocumentacion': ultimoAnalisis.evidenciasFoto.isNotEmpty,
                     };
                     
-                    return LaboratorioMuestraCard(
-                      muestra: muestraMap,
-                      onTap: () => _onMuestraTap(lote, ultimoAnalisis),
-                      showActionButton: true,
-                      actionButtonText: _getActionButtonText(estado),
-                      actionButtonColor: _getActionButtonColor(estado),
-                      onActionPressed: () => _onMuestraTap(lote, ultimoAnalisis),
-                    );
+                    return _buildMuestraCard(lote, ultimoAnalisis);
                   },
                 ),
         ),
@@ -745,5 +792,188 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+  
+  Widget _buildMuestraCard(LoteUnificadoModel lote, AnalisisLaboratorioData analisis) {
+    final estado = _determinarEstadoAnalisis(analisis);
+    final material = lote.datosGenerales.tipoMaterial;
+    
+    Color statusColor;
+    String statusText;
+    IconData statusIcon;
+    
+    switch (estado) {
+      case 'pendiente':
+        statusColor = Colors.orange;
+        statusText = 'Pendiente de análisis';
+        statusIcon = Icons.pending_actions;
+        break;
+      case 'analizado':
+        statusColor = Colors.blue;
+        statusText = 'Pendiente de documentación';
+        statusIcon = Icons.description;
+        break;
+      case 'finalizado':
+        statusColor = Colors.green;
+        statusText = 'Finalizado';
+        statusIcon = Icons.check_circle;
+        break;
+      default:
+        statusColor = Colors.grey;
+        statusText = 'Desconocido';
+        statusIcon = Icons.help_outline;
+    }
+    
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: InkWell(
+        onTap: () => _onMuestraTap(lote, analisis),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      statusIcon,
+                      color: statusColor,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'ID: ${lote.id.substring(0, 8).toUpperCase()}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                        Text(
+                          statusText,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: statusColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: Colors.grey[400],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Información principal
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildInfoItem(
+                      icon: Icons.category,
+                      label: 'Material',
+                      value: material,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildInfoItem(
+                      icon: Icons.scale,
+                      label: 'Peso Muestra',
+                      value: '${analisis.pesoMuestra} kg',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Información secundaria
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildInfoItem(
+                      icon: Icons.calendar_today,
+                      label: 'Fecha',
+                      value: _formatDate(analisis.fechaToma),
+                      fontSize: 12,
+                    ),
+                  ),
+                  if (lote.origen != null)
+                    Expanded(
+                      child: _buildInfoItem(
+                        icon: Icons.business,
+                        label: 'Origen',
+                        value: lote.origen!.usuarioFolio ?? 'Desconocido',
+                        fontSize: 12,
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildInfoItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    double fontSize = 14,
+    Color? color,
+  }) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: color ?? Colors.grey[600],
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.grey[500],
+                ),
+              ),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w500,
+                  color: color ?? Colors.black87,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }

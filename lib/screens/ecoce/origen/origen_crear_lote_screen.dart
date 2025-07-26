@@ -665,7 +665,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                     // Sección: Evidencia Fotográfica con múltiples fotos
                     PhotoEvidenceFormField(
                       title: 'Evidencia Fotográfica',
-                      maxPhotos: 5,
+                      maxPhotos: 3,
                       minPhotos: 1,
                       isRequired: true,
                       onPhotosChanged: _onPhotosChanged,

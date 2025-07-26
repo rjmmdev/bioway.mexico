@@ -12,7 +12,6 @@ import 'reciclador_documentacion.dart';
 import 'reciclador_lote_qr_screen.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/unified_stat_card.dart';
-import '../shared/widgets/quick_action_button.dart';
 import 'widgets/reciclador_lote_card.dart';
 import '../shared/screens/receptor_recepcion_pasos_screen.dart';
 
@@ -264,36 +263,11 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
     }
   }
 
-  Widget _buildQRButton(Map<String, dynamic> lote) {
-    return Container(
-      decoration: BoxDecoration(
-        color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: IconButton(
-        onPressed: () => _handleLoteTap(lote),
-        icon: Icon(
-          Icons.qr_code_2,
-          color: BioWayColors.ecoceGreen,
-          size: 22,
-        ),
-        padding: const EdgeInsets.all(8),
-        constraints: const BoxConstraints(
-          minWidth: 36,
-          minHeight: 36,
-        ),
-        tooltip: 'Ver QR',
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // Prevenir que el botón atrás cierre la sesión
-        return false;
-      },
+    return PopScope(
+      canPop: false, // Prevenir que el botón atrás cierre la sesión
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F5F5),
         body: SafeArea(
@@ -805,16 +779,27 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
             ),
           ],
         ),
-      ),
-      
-      // Bottom Navigation Bar sin FAB
-      bottomNavigationBar: EcoceBottomNavigation(
+        ),
+        
+        // Bottom Navigation Bar con FAB
+        bottomNavigationBar: EcoceBottomNavigation(
         selectedIndex: _selectedIndex,
         onItemTapped: _onBottomNavTapped,
         items: EcoceNavigationConfigs.recicladorItems,
         primaryColor: BioWayColors.ecoceGreen,
-        // Sin fabConfig para eliminar el espacio del FAB
+        fabConfig: FabConfig(
+          icon: Icons.add,
+          onPressed: _navigateToNewLot,
+          tooltip: 'Recibir lote',
+        ),
       ),
+      floatingActionButton: EcoceFloatingActionButton(
+        onPressed: _navigateToNewLot,
+        icon: Icons.add,
+        backgroundColor: BioWayColors.ecoceGreen,
+        tooltip: 'Recibir lote',
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
   }

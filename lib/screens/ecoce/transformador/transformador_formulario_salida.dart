@@ -3,66 +3,70 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
-import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../../utils/colors.dart';
 import '../../../services/lote_service.dart';
+import '../../../services/lote_unificado_service.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
-import '../../../services/firebase/auth_service.dart';
-import '../../../models/lotes/lote_transformador_model.dart';
 import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
 import '../shared/widgets/weight_input_widget.dart';
 import '../shared/widgets/unified_container.dart';
 import '../shared/widgets/field_label.dart';
-import 'transformador_lote_detalle_screen.dart';
-import 'transformador_escaneo_screen.dart';
+import 'transformador_documentacion_screen.dart';
 
-class TransformadorRecibirLoteScreen extends StatefulWidget {
-  final List<String>? lotIds;
-  final int? totalLotes;
+class TransformadorFormularioSalida extends StatefulWidget {
+  final String loteId;
+  final double peso;
+  final List<String> tiposAnalisis;
+  final String productoFabricado;
+  final String composicionMaterial;
+  final String? tipoPolimero;
   
-  const TransformadorRecibirLoteScreen({
+  const TransformadorFormularioSalida({
     super.key,
-    this.lotIds,
-    this.totalLotes,
+    required this.loteId,
+    required this.peso,
+    required this.tiposAnalisis,
+    required this.productoFabricado,
+    required this.composicionMaterial,
+    this.tipoPolimero,
   });
 
   @override
-  State<TransformadorRecibirLoteScreen> createState() => _TransformadorRecibirLoteScreenState();
+  State<TransformadorFormularioSalida> createState() => _TransformadorFormularioSalidaState();
 }
 
-class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLoteScreen> {
+class _TransformadorFormularioSalidaState extends State<TransformadorFormularioSalida> {
   final _formKey = GlobalKey<FormState>();
   final Color _primaryColor = BioWayColors.ecoceGreen;
   
   // Servicios
   final LoteService _loteService = LoteService();
+  final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
   final UserSessionService _userSession = UserSessionService();
   final FirebaseStorageService _storageService = FirebaseStorageService();
-  final AuthService _authService = AuthService();
   
   // Controladores
-  final TextEditingController _pesoController = TextEditingController();
+  final TextEditingController _pesoSalidaController = TextEditingController();
   final TextEditingController _operadorController = TextEditingController();
   final TextEditingController _comentariosController = TextEditingController();
-  final TextEditingController _productoFabricadoController = TextEditingController();
-  final TextEditingController _composicionMaterialController = TextEditingController();
+  final TextEditingController _productoGeneradoController = TextEditingController();
+  final TextEditingController _cantidadGeneradaController = TextEditingController();
   
   
-  // Variables para los tipos de análisis
-  final Map<String, bool> _tiposAnalisis = {
-    'Inyección': false,
-    'Rotomoldeo': false,
+  // Variables para los procesos aplicados
+  final Map<String, bool> _procesosAplicados = {
+    'Triturado': false,
+    'Lavado': false,
+    'Secado': false,
     'Extrusión': false,
-    'Termoformado': false,
-    'Pultrusión': false,
-    'Soplado': false,
-    'Laminado': false,
-    'Plástico corrugado': false,
+    'Pelletizado': false,
+    'Clasificación': false,
+    'Control de calidad': false,
+    'Empaquetado': false,
   };
   
   // Variables para la firma
@@ -79,7 +83,7 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
   final FocusNode _operadorFocus = FocusNode();
   final FocusNode _comentariosFocus = FocusNode();
   final FocusNode _productoFocus = FocusNode();
-  final FocusNode _composicionFocus = FocusNode();
+  final FocusNode _cantidadFocus = FocusNode();
   
   // Estado de carga
   bool _isLoading = false;
@@ -88,13 +92,7 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
   @override
   void initState() {
     super.initState();
-    
-    // Si no vienen con lotes, ir primero al escaneo
-    if (widget.lotIds == null || widget.lotIds!.isEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _navigateToScanning();
-      });
-    }
+    _initializeForm();
     
     // Listener para el campo de comentarios
     _comentariosFocus.addListener(() {
@@ -114,17 +112,24 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
 
   @override
   void dispose() {
-    _pesoController.dispose();
+    _pesoSalidaController.dispose();
     _operadorController.dispose();
     _comentariosController.dispose();
-    _productoFabricadoController.dispose();
-    _composicionMaterialController.dispose();
+    _productoGeneradoController.dispose();
+    _cantidadGeneradaController.dispose();
     _scrollController.dispose();
     _operadorFocus.dispose();
     _comentariosFocus.dispose();
     _productoFocus.dispose();
-    _composicionFocus.dispose();
+    _cantidadFocus.dispose();
     super.dispose();
+  }
+  
+  void _initializeForm() async {
+    final userData = _userSession.getUserData();
+    if (userData != null) {
+      _operadorController.text = userData['nombre'] ?? '';
+    }
   }
 
   void _showSignatureDialog() {
@@ -142,23 +147,23 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
     );
   }
 
-  void _generarLote() async {
+  void _procesarSalida() async {
     // Validar formulario
     if (!_formKey.currentState!.validate()) {
       return;
     }
     
     
-    // Validar que haya al menos un tipo de análisis seleccionado
-    final analisisSeleccionados = _tiposAnalisis.entries
+    // Validar que haya al menos un proceso aplicado seleccionado
+    final procesosSeleccionados = _procesosAplicados.entries
         .where((entry) => entry.value)
         .map((entry) => entry.key)
         .toList();
     
-    if (analisisSeleccionados.isEmpty) {
+    if (procesosSeleccionados.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Por favor seleccione al menos un tipo de análisis'),
+          content: const Text('Por favor seleccione al menos un proceso aplicado'),
           backgroundColor: BioWayColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -216,7 +221,7 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
         if (signatureImage != null) {
           _signatureUrl = await _storageService.uploadImage(
             signatureImage,
-            'lotes/transformador/firmas',
+            'lotes/transformador/salida/firmas',
           );
         }
       }
@@ -226,83 +231,72 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
       for (int i = 0; i < _photos.length; i++) {
         final url = await _storageService.uploadImage(
           _photos[i],
-          'lotes/transformador/evidencias',
+          'lotes/transformador/salida/evidencias',
         );
         if (url != null) {
           photoUrls.add(url);
         }
       }
       
-      // Calcular tipo de polímero predominante si hay lotes
-      String? tipoPolimero;
-      if (widget.lotIds != null && widget.lotIds!.isNotEmpty) {
-        final tiposPoli = await _loteService.calcularTipoPolimeroPredominante(widget.lotIds!);
-        if (tiposPoli.isNotEmpty) {
-          tipoPolimero = tiposPoli.entries.reduce((a, b) => a.value > b.value ? a : b).key;
-        }
-      }
-      
-      // Obtener el userId actual
-      final currentUser = _authService.currentUser;
-      if (currentUser == null) {
-        throw Exception('Usuario no autenticado');
-      }
-      
-      // Crear el lote de transformador
-      final loteTransformador = LoteTransformadorModel(
-        userId: currentUser.uid,
-        lotesRecibidos: widget.lotIds ?? [],
-        fechaCreacion: DateTime.now(),
-        proveedor: userProfile['ecoceNombre'] ?? 'Transformador',
-        pesoIngreso: double.parse(_pesoController.text),
-        tiposAnalisis: analisisSeleccionados,
-        productoFabricado: _productoFabricadoController.text.trim(),
-        composicionMaterial: _composicionMaterialController.text.trim(),
-        operadorRecibe: _operadorController.text.trim(),
-        firmaRecibe: _signatureUrl,
-        evidenciaFotografica: photoUrls,
-        procesosAplicados: [], // Se llenará después
-        comentarios: _comentariosController.text.trim(),
-        tipoPolimero: tipoPolimero,
-        estado: 'recibido',
+      // Actualizar el lote en el Sistema Unificado
+      await _loteUnificadoService.actualizarProcesoTransformador(
+        loteId: widget.loteId,
+        datosTransformador: {
+          'peso_salida': double.parse(_pesoSalidaController.text),
+          'producto_generado': _productoGeneradoController.text.trim(),
+          'cantidad_generada': _cantidadGeneradaController.text.trim(),
+          'procesos_aplicados': procesosSeleccionados,
+          'operador_salida': _operadorController.text.trim(),
+          'firma_salida': _signatureUrl,
+          'evidencias_salida': photoUrls,
+          'comentarios_salida': _comentariosController.text.trim(),
+          'fecha_salida': DateTime.now(),
+          'estado': 'documentacion',
+        },
       );
       
-      final loteId = await _loteService.crearLoteTransformador(loteTransformador);
-      
-      // Si venían de lotes de laboratorio, marcarlos como entregados
-      if (widget.lotIds != null) {
-        for (String lotId in widget.lotIds!) {
-          // Buscar el tipo de lote
-          final loteInfo = await _loteService.getLotesInfo([lotId]);
-          if (loteInfo.isNotEmpty && loteInfo.first['tipo_lote'] == 'lotes_laboratorio') {
-            await _loteService.actualizarLoteLaboratorio(
-              lotId,
-              {
-                'estado': 'entregado',
-                'fecha_entrega': Timestamp.fromDate(DateTime.now()),
-              },
-            );
-          }
-        }
-      }
-      
       if (mounted) {
-        // Navegar a la pantalla de detalle
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TransformadorLoteDetalleScreen(
-              firebaseId: loteId,
-              peso: double.parse(_pesoController.text),
-              tiposAnalisis: analisisSeleccionados,
-              productoFabricado: _productoFabricadoController.text,
-              composicionMaterial: _composicionMaterialController.text,
-              fechaCreacion: DateTime.now(),
-              mostrarMensajeExito: true,
-              tipoPolimero: tipoPolimero,
+        // Mostrar mensaje de éxito
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Proceso de salida registrado exitosamente'),
+            backgroundColor: BioWayColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
             ),
           ),
         );
+        
+        // Wait a moment for the database update to propagate
+        await Future.delayed(const Duration(milliseconds: 1000));
+        
+        // Navegar a la pantalla de documentación
+        if (mounted) {
+          final result = await Navigator.push<bool>(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TransformadorDocumentacionScreen(
+                loteId: widget.loteId,
+                material: widget.tipoPolimero ?? 'Material',
+                peso: widget.peso,
+              ),
+            ),
+          );
+          
+          // If documentation was completed or user pressed back, return to production
+          if (mounted) {
+            // Determine which tab to show based on whether documentation was completed
+            final tabIndex = result == true ? 2 : 1; // Completados if true, Documentación if false
+            
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/transformador_produccion',
+              (route) => false,
+              arguments: {'initialTab': tabIndex},
+            );
+          }
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -326,8 +320,8 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
     }
   }
 
-  Widget _buildTiposAnalisisGrid() {
-    final entries = _tiposAnalisis.entries.toList();
+  Widget _buildProcesosAplicadosGrid() {
+    final entries = _procesosAplicados.entries.toList();
     
     return GridView.builder(
       shrinkWrap: true,
@@ -347,7 +341,7 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
               value: entry.value,
               onChanged: (bool? value) {
                 setState(() {
-                  _tiposAnalisis[entry.key] = value ?? false;
+                  _procesosAplicados[entry.key] = value ?? false;
                 });
               },
               activeColor: _primaryColor,
@@ -364,14 +358,6 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
     );
   }
 
-  void _navigateToScanning() async {
-    await Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const TransformadorEscaneoScreen(),
-      ),
-    );
-  }
   
   Future<File?> _captureSignature() async {
     try {
@@ -414,7 +400,7 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
       
       return null;
     } catch (e) {
-      print('Error al capturar firma: $e');
+      debugPrint('Error al capturar firma: $e');
       return null;
     }
   }
@@ -425,11 +411,9 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
       appBar: AppBar(
         backgroundColor: _primaryColor,
         elevation: 0,
-        title: Text(
-          widget.totalLotes != null 
-              ? 'Recibir ${widget.totalLotes} Lote${widget.totalLotes! > 1 ? 's' : ''}'
-              : 'Crear Nuevo Lote',
-          style: const TextStyle(
+        title: const Text(
+          'Formulario de Salida',
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -448,71 +432,82 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
               controller: _scrollController,
               padding: const EdgeInsets.all(16),
               children: [
-            // Sección de lotes a procesar
-            if (widget.lotIds != null && widget.lotIds!.isNotEmpty)
-              SectionCard(
-                icon: '📦',
-                title: 'Lotes a Procesar',
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _primaryColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _primaryColor.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.qr_code_2,
-                              color: _primaryColor,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${widget.lotIds!.length} lote${widget.lotIds!.length > 1 ? 's' : ''} registrado${widget.lotIds!.length > 1 ? 's' : ''}',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: _primaryColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        ...widget.lotIds!.map((id) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 2),
-                          child: Text(
-                            '• $id',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                        )).toList(),
-                      ],
+            // Sección de información del lote
+            SectionCard(
+              icon: '📦',
+              title: 'Información del Lote',
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _primaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _primaryColor.withValues(alpha: 0.3),
                     ),
                   ),
-                ],
-              ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.qr_code_2,
+                            color: _primaryColor,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Lote: ${widget.loteId}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: _primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Producto: ${widget.productoFabricado}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      Text(
+                        'Peso inicial: ${widget.peso} kg',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      if (widget.tipoPolimero != null)
+                        Text(
+                          'Polímero: ${widget.tipoPolimero}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             
-            // Sección de peso
+            // Sección de peso de salida
             SectionCard(
               icon: '⚖️',
-              title: 'Peso Total del Material',
+              title: 'Peso de Salida',
               children: [
                 WeightInputWidget(
-                  controller: _pesoController,
-                  label: 'Peso en kilogramos',
+                  controller: _pesoSalidaController,
+                  label: 'Peso de salida en kilogramos',
                   primaryColor: _primaryColor,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Por favor ingrese el peso';
+                      return 'Por favor ingrese el peso de salida';
                     }
                     final peso = double.tryParse(value);
                     if (peso == null || peso <= 0) {
@@ -524,28 +519,28 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
               ],
             ),
             
-            // Sección de tipos de análisis
+            // Sección de procesos aplicados
             SectionCard(
               icon: '🔬',
-              title: 'Tipo de análisis realizado *',
+              title: 'Procesos Aplicados *',
               children: [
-                _buildTiposAnalisisGrid(),
+                _buildProcesosAplicadosGrid(),
               ],
             ),
             
-            // Sección de producto fabricado
+            // Sección de producto generado
             SectionCard(
               icon: '📦',
-              title: 'Producto fabricado',
+              title: 'Producto Generado',
               children: [
                 TextFormField(
-                  controller: _productoFabricadoController,
+                  controller: _productoGeneradoController,
                   focusNode: _productoFocus,
                   maxLength: 50,
                   decoration: InputDecoration(
-                    hintText: 'Ej: Botellas PET',
+                    hintText: 'Ej: Pellets de PET',
                     counter: Text(
-                      '${_productoFabricadoController.text.length}/50',
+                      '${_productoGeneradoController.text.length}/50',
                       style: const TextStyle(fontSize: 12),
                     ),
                     prefixIcon: Icon(
@@ -571,7 +566,7 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Por favor ingrese el producto fabricado';
+                      return 'Por favor ingrese el producto generado';
                     }
                     return null;
                   },
@@ -582,22 +577,20 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
               ],
             ),
             
-            // Sección de composición del material
+            // Sección de cantidad generada
             SectionCard(
               icon: '🧪',
-              title: 'Composición del material',
+              title: 'Cantidad Generada',
               children: [
                 TextFormField(
-                  controller: _composicionMaterialController,
-                  focusNode: _composicionFocus,
-                  maxLength: 100,
-                  maxLines: 3,
+                  controller: _cantidadGeneradaController,
+                  focusNode: _cantidadFocus,
+                  keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    hintText: 'Describa la composición del material al 67%',
-                    alignLabelWithHint: true,
-                    counter: Text(
-                      '${_composicionMaterialController.text.length}/100',
-                      style: const TextStyle(fontSize: 12),
+                    hintText: 'Ej: 500 unidades',
+                    prefixIcon: Icon(
+                      Icons.numbers,
+                      color: _primaryColor,
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -618,12 +611,9 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Por favor describa la composición del material';
+                      return 'Por favor ingrese la cantidad generada';
                     }
                     return null;
-                  },
-                  onChanged: (value) {
-                    setState(() {}); // Para actualizar el contador
                   },
                 ),
               ],
@@ -804,9 +794,9 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
             
             const SizedBox(height: 32),
             
-            // Botón de generar lote
+            // Botón de procesar salida
             ElevatedButton(
-              onPressed: _generarLote,
+              onPressed: _procesarSalida,
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
                 minimumSize: const Size(double.infinity, 56),
@@ -816,7 +806,7 @@ class _TransformadorRecibirLoteScreenState extends State<TransformadorRecibirLot
                 elevation: 3,
               ),
               child: const Text(
-                'Generar Lote y Código QR',
+                'Procesar Salida',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,

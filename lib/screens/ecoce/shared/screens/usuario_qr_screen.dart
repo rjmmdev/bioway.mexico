@@ -59,7 +59,7 @@ class _UsuarioQRScreenState extends State<UsuarioQRScreen> {
       case 'laboratorio':
         return BioWayColors.petBlue;
       case 'transformador':
-        return BioWayColors.ppPurple;
+        return BioWayColors.ecoceGreen;
       default:
         return BioWayColors.primaryGreen;
     }

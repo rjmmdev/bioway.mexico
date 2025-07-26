@@ -5,7 +5,6 @@ import '../../../services/lote_service.dart';
 import '../shared/utils/dialog_utils.dart';
 import '../shared/utils/material_utils.dart';
 import 'transformador_escaneo_screen.dart';
-import 'transformador_recibir_lote_screen.dart';
 
 // Modelo temporal para representar un lote
 class ScannedLot {
@@ -38,7 +37,7 @@ class TransformadorLotesRegistroScreen extends StatefulWidget {
 
 class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesRegistroScreen> {
   // Lista de lotes escaneados
-  List<ScannedLot> _scannedLots = [];
+  final List<ScannedLot> _scannedLots = [];
   final LoteService _loteService = LoteService();
   bool _isLoading = false;
 
@@ -150,20 +149,6 @@ class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesReg
     }
   }
 
-  // Métodos temporales para simular datos
-  String _getMaterialForDemo(String id) {
-    final materials = ['PEBD', 'PP', 'Multilaminado'];
-    return materials[id.length % materials.length];
-  }
-
-  double _getWeightForDemo() {
-    return 100 + (DateTime.now().millisecondsSinceEpoch % 200);
-  }
-
-  String _getOrigenForDemo() {
-    final origenes = ['RECICLADOR PLASTICOS DEL NORTE', 'PLANTA DE RECICLAJE INDUSTRIAL', 'CENTRO DE ACOPIO SUSTENTABLE'];
-    return origenes[DateTime.now().millisecondsSinceEpoch % origenes.length];
-  }
 
   void _removeLot(int index) {
     HapticFeedback.lightImpact();
@@ -219,13 +204,14 @@ class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesReg
 
     HapticFeedback.mediumImpact();
 
-    // Navegar al formulario con los lotes escaneados
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TransformadorRecibirLoteScreen(
-          lotIds: _scannedLots.map((lot) => lot.id).toList(),
-          totalLotes: _scannedLots.length,
+    // For now, just show a message since this screen is not being used in the current flow
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Esta funcionalidad está en desarrollo. Por favor use el flujo de recepción estándar.'),
+        backgroundColor: BioWayColors.info,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
         ),
       ),
     );
