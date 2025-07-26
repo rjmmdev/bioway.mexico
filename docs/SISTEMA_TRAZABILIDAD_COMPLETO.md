@@ -1,5 +1,9 @@
 # Sistema de Trazabilidad y Gestión de Lotes - BioWay México
 
+> **Última actualización**: 2025-01-26  
+> **Versión del sistema**: 1.0.0+1  
+> **Estado**: Producción (ECOCE) / Pendiente configuración (BioWay)
+
 ## Índice
 1. [Introducción](#introducción)
 2. [Arquitectura del Sistema](#arquitectura-del-sistema)
@@ -7,83 +11,237 @@
 4. [Flujos de Usuario](#flujos-de-usuario)
 5. [Sistema de Identificación por QR](#sistema-de-identificación-por-qr)
 6. [Implementación Técnica](#implementación-técnica)
-7. [Correcciones y Mejoras Realizadas](#correcciones-y-mejoras-realizadas)
-8. [Guía de Mantenimiento](#guía-de-mantenimiento)
+7. [Integración con Sistema Unificado](#integración-con-sistema-unificado)
+8. [Correcciones y Mejoras Realizadas](#correcciones-y-mejoras-realizadas)
+9. [Guía de Mantenimiento](#guía-de-mantenimiento)
+10. [Pruebas y Validación](#pruebas-y-validación)
 
 ## Introducción
 
-El sistema de trazabilidad de BioWay México es una aplicación Flutter que permite el seguimiento completo de materiales reciclables a través de toda la cadena de suministro. El sistema utiliza códigos QR para la identificación mutua de usuarios y el seguimiento de lotes, garantizando la trazabilidad completa desde el origen hasta la transformación final.
+El sistema de trazabilidad de BioWay México es una aplicación móvil Flutter en producción que proporciona seguimiento completo de materiales reciclables a través de toda la cadena de suministro. Implementa un modelo de datos unificado con transferencias automáticas mediante códigos QR, garantizando la trazabilidad e integridad de los datos desde el origen hasta la transformación final.
 
 ### Características Principales
-- **Trazabilidad completa**: Seguimiento de materiales desde origen hasta transformación
-- **Identificación por QR**: Sistema de identificación mutua entre usuarios
-- **Modelo unificado**: Un único ID de lote que persiste a través de todo el proceso
-- **Transferencias automáticas**: El escaneo del QR transfiere automáticamente el lote
-- **Inmutabilidad**: Los datos históricos nunca se modifican, solo se agregan nuevos
+
+#### Funcionales
+- **Trazabilidad completa**: Seguimiento en tiempo real desde origen hasta producto final
+- **Sistema QR multicapa**: 4 tipos de códigos para diferentes operaciones
+- **Modelo unificado**: ID inmutable que persiste durante todo el ciclo de vida
+- **Transferencias inteligentes**: Unidireccionales (pickup) y bidireccionales (entrega)
+- **Proceso paralelo**: Laboratorio opera sin transferir propiedad
+- **Cálculo dinámico**: Pesos se actualizan automáticamente según el proceso
+
+#### Técnicas
+- **Multi-tenant Firebase**: Aislamiento completo entre plataformas
+- **Offline-first**: Operaciones críticas funcionan sin conectividad
+- **Compresión automática**: Imágenes a 50KB, PDFs a 5MB máximo
+- **Seguridad integrada**: Autenticación, autorización y validación en cada operación
+- **Escalabilidad**: Arquitectura preparada para crecimiento
 
 ## Arquitectura del Sistema
 
-### Estructura de Firebase
+### Estructura de Base de Datos (Firestore)
 
+#### Colección Principal: `lotes/`
 ```
 lotes/
-└── {loteId}/                          # ID único generado automáticamente
-    ├── datos_generales/
-    │   └── info                       # Información general del lote
-    │       ├── id                     # ID del lote
-    │       ├── fecha_creacion         # Timestamp de creación
-    │       ├── creado_por             # UID del usuario origen
-    │       ├── proceso_actual         # "origen" | "transporte" | "reciclador" | etc.
-    │       ├── historial_procesos     # ["origen", "transporte", "reciclador"]
-    │       ├── qr_code               # Código QR único: "LOTE-{tipo}-{id}"
-    │       ├── material_tipo         # Tipo de polímero
-    │       ├── material_presentacion # Forma del material
-    │       ├── material_fuente       # Origen del material
-    │       └── peso                  # Peso actual del lote
+└── {loteId}/                             # ID único autogenerado (inmutable)
+    ├── datos_generales/                  # Información central del lote
+    │   └── info
+    │       ├── id: String                # Identificador único del lote
+    │       ├── fecha_creacion: Timestamp # Momento de creación
+    │       ├── creado_por: String        # UID del usuario origen
+    │       ├── creado_por_folio: String  # Folio del creador
+    │       ├── proceso_actual: String    # Estado actual: "origen"|"transporte"|"reciclador"|"transformador"
+    │       ├── estado_actual: String     # Estado general del lote
+    │       ├── historial_procesos: Array # ["origen", "transporte", "reciclador", ...]
+    │       ├── qr_code: String           # Formato: "LOTE-{MATERIAL}-{ID}"
+    │       ├── tipo_material: String     # PEBD, PP, MULTILAMINADO
+    │       ├── presentacion: String      # Forma física del material
+    │       ├── fuente: String            # Origen del material
+    │       └── peso_nace: double         # Peso inicial (nunca cambia)
     │
-    ├── origen/                       # Datos del proceso origen
-    │   └── data                      # Todos los datos del formulario origen
+    ├── origen/                           # Proceso inicial
+    │   └── data
+    │       ├── fecha_creacion: Timestamp
+    │       ├── operador: String
+    │       ├── ubicacion: GeoPoint
+    │       ├── evidencias_foto: Array<String>
+    │       └── observaciones: String
     │
-    ├── transporte/                   # Datos del proceso transporte
-    │   └── data                      # Todos los datos del formulario transporte
+    ├── transporte/                       # Fases de transporte (Map)
+    │   ├── fase_1/                       # Origen → Reciclador
+    │   │   ├── recogida/
+    │   │   │   ├── fecha_recogida: Timestamp
+    │   │   │   ├── transportista_id: String
+    │   │   │   ├── transportista_folio: String
+    │   │   │   ├── peso_recogido: double
+    │   │   │   └── origen_id: String
+    │   │   └── entrega/
+    │   │       ├── fecha_entrega: Timestamp
+    │   │       ├── peso_entregado: double
+    │   │       ├── destinatario_id: String
+    │   │       ├── destinatario_folio: String
+    │   │       ├── firma_receptor: String (URL)
+    │   │       ├── entrega_completada: boolean
+    │   │       └── recepcion_completada: boolean
+    │   └── fase_2/                       # Reciclador → Transformador
+    │       └── (misma estructura que fase_1)
     │
-    └── reciclador/                   # Datos del proceso reciclador
-        └── data                      # Todos los datos del formulario reciclador
+    ├── reciclador/                       # Procesamiento
+    │   └── data
+    │       ├── recepcion/
+    │       │   ├── fecha_recepcion: Timestamp
+    │       │   ├── peso_recibido: double
+    │       │   └── firma_receptor: String (URL)
+    │       └── salida/
+    │           ├── fecha_salida: Timestamp
+    │           ├── peso_procesado: double
+    │           ├── tipo_procesamiento: String
+    │           ├── firma_salida: String (URL)
+    │           └── evidencias_foto: Array<String>
+    │
+    ├── analisis_laboratorio/             # Análisis (proceso paralelo)
+    │   └── {analysisId}/
+    │       ├── id: String
+    │       ├── fecha_toma: Timestamp
+    │       ├── usuario_id: String
+    │       ├── folio_laboratorio: String
+    │       ├── peso_muestra: double     # Se resta automáticamente del peso disponible
+    │       ├── firma_operador: String (URL)
+    │       ├── evidencias_foto: Array<String>
+    │       └── certificado: String (URL) # Opcional, se sube después
+    │
+    └── transformador/                    # Producción final
+        └── data
+            ├── recepcion/
+            │   ├── fecha_recepcion: Timestamp
+            │   └── peso_recibido: double
+            ├── salida/
+            │   ├── fecha_salida: Timestamp
+            │   ├── peso_salida: double
+            │   ├── producto_fabricado: String
+            │   └── procesos_aplicados: Array<String>
+            └── especificaciones/
+                ├── estado: String        # "pendiente"|"documentacion"|"completado"
+                └── documentos: Map       # URLs de documentos subidos
 ```
 
-### Tipos de Usuario y Folios
+### Tipos de Usuario y Sistema de Folios
 
-- **A0000001**: Centro de Acopio (Origen)
-- **P0000001**: Planta de Separación (Origen)
-- **R0000001**: Reciclador
-- **T0000001**: Transformador
-- **V0000001**: Transporte
-- **L0000001**: Laboratorio
+#### Estructura de Folios
+Cada usuario tiene un folio único que sigue el patrón: `[PREFIJO][NÚMERO_SECUENCIAL]`
+
+| Tipo de Usuario | Prefijo | Ejemplo | Descripción | Permisos Principales |
+|----------------|---------|---------|-------------|---------------------|
+| **Centro de Acopio** | A | A0000001 | Origen - Recolecta material inicial | Crear lotes, generar QR |
+| **Planta de Separación** | P | P0000001 | Origen - Separa y clasifica | Crear lotes, generar QR |
+| **Reciclador** | R | R0000001 | Procesa material recibido | Recibir, procesar, entregar |
+| **Transformador** | T | T0000001 | Producción final | Recibir, transformar, documentar |
+| **Transporte** | V | V0000001 | Logística entre procesos | Recoger, transportar, entregar |
+| **Laboratorio** | L | L0000001 | Análisis de calidad | Tomar muestras, certificar |
+| **Maestro** | M | M0000001 | Administrador del sistema | Aprobar cuentas, gestión total |
+| **Repositorio** | RE | RE000001 | Visualización completa | Solo lectura, reportes |
+
+#### Asignación de Folios
+- Se asignan automáticamente al aprobar una cuenta
+- Son únicos e inmutables
+- Se usan para identificación en toda la aplicación
+- Aparecen en los códigos QR de usuario
 
 ## Modelo de Datos Unificado
 
-### LoteUnificadoModel
-
-El modelo central del sistema que representa un lote a través de toda su vida útil:
+### LoteUnificadoModel - Estructura Central
 
 ```dart
 class LoteUnificadoModel {
-  final String id;                      // ID único inmutable
+  // Identificación inmutable
+  final String id;                                    
+  
+  // Información general del lote
   final DatosGeneralesLote datosGenerales;
+  
+  // Datos por proceso (null si no ha pasado por ese proceso)
   final ProcesoOrigenData? origen;
-  final ProcesoTransporteData? transporte;
+  final Map<String, ProcesoTransporteData> transporteFases;  // fase_1, fase_2
   final ProcesoRecicladorData? reciclador;
-  final ProcesoLaboratorioData? laboratorio;
+  final List<AnalisisLaboratorioData> analisisLaboratorio;   // Múltiples análisis posibles
   final ProcesoTransformadorData? transformador;
+  
+  // Getters computados
+  double get pesoActual => _calcularPesoActual();
+  bool get tieneAnalisisLab => analisisLaboratorio.isNotEmpty;
+  String get estadoVisual => _determinarEstadoVisual();
 }
 ```
 
-### Características del Modelo
+### DatosGeneralesLote - Información Core
 
-1. **ID Único**: Cada lote tiene un ID que nunca cambia
-2. **Datos Inmutables**: Los datos de cada proceso se preservan
-3. **Trazabilidad Completa**: Acceso a toda la historia del lote
-4. **Peso Dinámico**: El peso se actualiza según el último proceso
+```dart
+class DatosGeneralesLote {
+  final String id;
+  final DateTime fechaCreacion;
+  final String creadoPor;              // UID del usuario
+  final String creadoPorFolio;         // Folio del usuario
+  final String procesoActual;          // Dónde está actualmente
+  final String estadoActual;           // Estado general
+  final List<String> historialProcesos;
+  final String qrCode;
+  final String tipoMaterial;           // PEBD, PP, MULTILAMINADO
+  final String presentacion;           // Forma física
+  final String fuente;                 // Origen del material
+  final double pesoNace;               // Peso inicial (inmutable)
+  final Map<String, dynamic>? metadata; // Datos adicionales
+}
+```
+
+### Características Avanzadas del Modelo
+
+#### 1. **Inmutabilidad de Datos**
+- El ID nunca cambia durante todo el ciclo
+- Los datos históricos se preservan siempre
+- Nuevos procesos agregan datos, no modifican anteriores
+
+#### 2. **Cálculo Dinámico de Peso**
+```dart
+double _calcularPesoActual() {
+  // Prioridad de peso según el proceso más reciente
+  if (transformador?.salida?.pesoSalida != null) {
+    return transformador!.salida!.pesoSalida!;
+  }
+  
+  // Verificar fases de transporte
+  final fase2Peso = transporteFases['fase_2']?.entrega?.pesoEntregado ??
+                    transporteFases['fase_2']?.recogida?.pesoRecogido;
+  if (fase2Peso != null) return fase2Peso;
+  
+  // Peso del reciclador menos muestras de laboratorio
+  if (reciclador?.salida?.pesoProcesado != null) {
+    final pesoBase = reciclador!.salida!.pesoProcesado!;
+    final pesoMuestras = analisisLaboratorio.fold(0.0, 
+      (sum, analisis) => sum + (analisis.pesoMuestra ?? 0));
+    return pesoBase - pesoMuestras;
+  }
+  
+  // Fase 1 de transporte
+  final fase1Peso = transporteFases['fase_1']?.entrega?.pesoEntregado ??
+                    transporteFases['fase_1']?.recogida?.pesoRecogido;
+  if (fase1Peso != null) return fase1Peso;
+  
+  // Peso inicial como fallback
+  return datosGenerales.pesoNace;
+}
+```
+
+#### 3. **Trazabilidad Completa**
+- Historial de procesos registrado
+- Timestamps en cada operación
+- Usuarios responsables identificados
+- Evidencias fotográficas preservadas
+
+#### 4. **Flexibilidad para Extensión**
+- Fácil agregar nuevos tipos de proceso
+- Metadata para datos específicos del negocio
+- Estructura preparada para análisis
 
 ## Flujos de Usuario
 
@@ -142,24 +300,105 @@ graph LR
 
 ## Sistema de Identificación por QR
 
-### Tipos de Códigos QR
+### Arquitectura del Sistema QR
 
-1. **QR de Usuario**: `USER-{tipo}-{userId}`
-   - Identifica únicamente al usuario
-   - Usado para identificación mutua
+El sistema implementa una arquitectura de códigos QR multicapa que garantiza seguridad, trazabilidad y eficiencia en las transferencias.
 
-2. **QR de Lote**: `LOTE-{tipo}-{loteId}`
-   - Identifica un lote específico
-   - Contiene toda la información del lote
+### Tipos de Códigos QR y Sus Formatos
 
-3. **QR de Carga**: `CARGA-{cargaId}`
-   - Agrupa múltiples lotes para transporte
-   - Usado internamente por transportistas
+#### 1. **QR de Usuario** 
+**Formato**: `USER-{TIPO}-{USER_ID}`  
+**Ejemplo**: `USER-RECICLADOR-abc123def456`  
+**Características**:
+- Identificación permanente del usuario
+- Contiene tipo y ID único de Firebase
+- Se genera al crear la cuenta
+- Usado para identificación mutua entre usuarios
+- No caduca
 
-4. **QR de Entrega**: `ENTREGA-{entregaId}`
-   - Código temporal para transferencia
-   - Válido por 15 minutos
-   - Contiene información de la entrega
+#### 2. **QR de Lote**
+**Formato**: `LOTE-{TIPO_MATERIAL}-{LOTE_ID}`  
+**Ejemplo**: `LOTE-PEBD-xyz789ghi012`  
+**Características**:
+- Identifica un lote único de material
+- El tipo de material está embebido en el código
+- Se genera automáticamente al crear el lote
+- Persiste durante todo el ciclo de vida
+- Permite trazabilidad completa
+
+#### 3. **QR de Carga**
+**Formato**: `CARGA-{CARGA_ID}`  
+**Ejemplo**: `CARGA-cargo456jkl789`  
+**Características**:
+- Agrupa múltiples lotes para transporte
+- Uso interno del transportista
+- Facilita manejo de múltiples lotes
+- Se genera al crear una carga
+
+#### 4. **QR de Entrega**
+**Formato**: `ENTREGA-{ENTREGA_ID}`  
+**Ejemplo**: `ENTREGA-del789mno012`  
+**Características**:
+- Código temporal para transferencias
+- **Validez**: 15 minutos desde generación
+- Contiene toda la información de la entrega
+- Auto-transfiere lotes al ser escaneado
+- Se elimina después de uso o expiración
+
+### Implementación del Scanner QR
+
+```dart
+// Scanner unificado para toda la aplicación
+class SharedQRScannerScreen extends StatefulWidget {
+  final bool isAddingMore;  // Para escaneo múltiple
+  
+  // Características:
+  // - Pantalla completa para mejor experiencia
+  // - Debounce de 1 segundo para evitar duplicados
+  // - Torch (linterna) disponible
+  // - Validación automática del formato QR
+  // - Navegación inteligente según tipo de QR
+}
+```
+
+### Utilidades QR (QRUtils)
+
+```dart
+class QRUtils {
+  // Generar QR de lote
+  static String generateLoteQR(String tipoMaterial, String loteId) {
+    return 'LOTE-$tipoMaterial-$loteId';
+  }
+  
+  // Extraer ID del QR
+  static String? extractLoteIdFromQR(String qrCode) {
+    final parts = qrCode.split('-');
+    if (parts.length >= 3 && parts[0] == 'LOTE') {
+      return parts.sublist(2).join('-');
+    }
+    return null;
+  }
+  
+  // Validar formato QR
+  static bool isValidQRFormat(String qrCode) {
+    final validPrefixes = ['USER', 'LOTE', 'CARGA', 'ENTREGA'];
+    final prefix = qrCode.split('-').first;
+    return validPrefixes.contains(prefix);
+  }
+  
+  // Determinar tipo de QR
+  static QRType getQRType(String qrCode) {
+    final prefix = qrCode.split('-').first;
+    switch (prefix) {
+      case 'USER': return QRType.user;
+      case 'LOTE': return QRType.lote;
+      case 'CARGA': return QRType.carga;
+      case 'ENTREGA': return QRType.entrega;
+      default: return QRType.unknown;
+    }
+  }
+}
+```
 
 ### Flujo de Identificación Mutua
 
@@ -182,52 +421,181 @@ sequenceDiagram
 
 ## Implementación Técnica
 
-### Servicios Principales
+### Servicios Principales del Sistema
 
-#### 1. LoteUnificadoService
-Maneja todas las operaciones relacionadas con el modelo unificado de lotes.
+#### 1. LoteUnificadoService - Servicio Core
 
 ```dart
 class LoteUnificadoService {
-  // Crear lote desde origen
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  
+  // ========== CREACIÓN ==========
+  
+  /// Crea un nuevo lote desde origen con ID único
   Future<String> crearLoteDesdeOrigen({
     required String tipoMaterial,
     required double pesoInicial,
+    required String presentacion,
     required String fuente,
-    // ... más parámetros
-  });
-
-  // Transferir lote entre procesos
-  Future<void> transferirLote({
+    required String operador,
+    required List<String> fotosUrls,
+    String? observaciones,
+    Map<String, double>? ubicacion,
+  }) async {
+    final loteId = _firestore.collection('lotes').doc().id;
+    // Implementación completa con transacción
+  }
+  
+  // ========== TRANSFERENCIAS ==========
+  
+  /// Actualiza proceso actual (transferencia unidireccional)
+  Future<void> actualizarProcesoActual({
     required String loteId,
+    required String nuevoProceso,
+  }) async {
+    // Usado para pickup inmediato por transporte
+  }
+  
+  /// Verifica y completa transferencias bidireccionales
+  Future<void> verificarYActualizarTransferencia({
+    required String loteId,
+    required String procesoOrigen,
     required String procesoDestino,
-    required Map<String, dynamic> datosIniciales,
-  });
-
-  // Obtener lote completo
-  Future<LoteUnificadoModel?> obtenerLotePorId(String loteId);
+  }) async {
+    // Verifica entrega_completada y recepcion_completada
+  }
+  
+  // ========== PROCESOS ESPECÍFICOS ==========
+  
+  /// Registra análisis de laboratorio (proceso paralelo)
+  Future<String> registrarAnalisisLaboratorio({
+    required String loteId,
+    required double pesoMuestra,
+    required String folioLaboratorio,
+    required String firmaOperador,
+    required List<String> evidenciasFoto,
+  }) async {
+    // No cambia proceso_actual, resta peso automáticamente
+  }
+  
+  /// Actualiza proceso del transformador
+  Future<void> actualizarProcesoTransformador({
+    required String loteId,
+    required Map<String, dynamic> datosTransformador,
+  }) async {
+    // Maneja estados: pendiente → documentacion → completado
+  }
+  
+  // ========== CONSULTAS ==========
+  
+  /// Obtiene lotes por proceso actual
+  Stream<List<LoteUnificadoModel>> obtenerLotesPorProceso(
+    String proceso, {
+    String? userId,
+    String? estado,
+  }) {
+    // Query con filtros opcionales
+  }
+  
+  /// Obtiene lotes con análisis de laboratorio
+  Stream<List<LoteUnificadoModel>> obtenerLotesConAnalisisLaboratorio() {
+    // Para usuario laboratorio actual
+  }
+  
+  /// Obtiene todos los lotes (repositorio)
+  Stream<List<LoteUnificadoModel>> obtenerTodosLotesRepositorio({
+    String? searchQuery,
+    String? tipoMaterial,
+    String? procesoActual,
+    DateTime? fechaInicio,
+    DateTime? fechaFin,
+  }) {
+    // Vista completa con filtros
+  }
 }
 ```
 
-#### 2. CargaTransporteService
-Gestiona las cargas y entregas del transportista.
+#### 2. CargaTransporteService - Gestión de Logística
 
 ```dart
 class CargaTransporteService {
-  // Crear carga con lotes escaneados
+  
+  /// Crea carga agrupando lotes
   Future<String> crearCarga({
     required List<String> lotesIds,
+    required String transportistaId,
     required String transportistaFolio,
-    // ... más parámetros
-  });
-
-  // Crear entrega para receptor
+    required String origenId,
+    required String origenFolio,
+    required double pesoTotal,
+  }) async {
+    // Actualiza proceso_actual a 'transporte'
+    // Genera QR de carga
+  }
+  
+  /// Crea entrega temporal (15 min)
   Future<String> crearEntrega({
     required List<String> lotesIds,
     required String destinatarioId,
+    required String destinatarioFolio,
     required double pesoTotalEntregado,
-    // ... más parámetros
+    required Map<String, dynamic> datosTransporte,
+  }) async {
+    // Crea documento en 'entregas/'
+    // Establece validez de 15 minutos
+    // Retorna ID para generar QR
+  }
+  
+  /// Procesa escaneo de QR de entrega
+  Future<Map<String, dynamic>> procesarEntregaQR(
+    String entregaId
+  ) async {
+    // Valida vigencia
+    // Retorna datos de la entrega
+    // Prepara para transferencia
+  }
+}
+```
+
+#### 3. Servicios de Soporte
+
+```dart
+// UserSessionService - Gestión de sesión
+class UserSessionService {
+  Map<String, dynamic>? getUserData();
+  String? getCurrentUserFolio();
+  String? getCurrentUserId();
+  Future<void> clearSession();
+}
+
+// ImageService - Compresión de imágenes
+class ImageService {
+  static Future<String?> optimizeImageForDatabase(
+    File imageFile, {
+    int targetSizeKB = 50,
   });
+}
+
+// DocumentService - Gestión de documentos
+class DocumentService {
+  Future<String?> uploadDocument(
+    File file,
+    String path, {
+    int maxSizeMB = 5,
+  });
+}
+
+// FirebaseStorageService - Almacenamiento
+class FirebaseStorageService {
+  Future<String?> uploadBase64Image(
+    String base64String,
+    String fileName,
+  );
+  
+  Future<String?> uploadFile(
+    File file,
+    String path,
+  );
 }
 ```
 
@@ -286,6 +654,60 @@ Todos los formularios ahora incluyen:
 3. **Indicador Visual**
    - Mensaje informativo indicando identificación por QR
    - Información del usuario mostrada automáticamente
+
+## Integración con Sistema Unificado
+
+### Migración Completa (2025-01-26)
+
+Todos los usuarios ahora operan con el modelo unificado `LoteUnificadoModel`, garantizando consistencia y trazabilidad completa.
+
+#### Cambios en Propiedades
+```dart
+// ANTES                    // DESPUÉS
+lote.datosGenerales.tipoPoli → lote.datosGenerales.tipoMaterial
+lote.estado                  → lote.datosGenerales.estadoActual
+lote.transformador.estado    → lote.transformador.especificaciones['estado']
+```
+
+#### Usuarios Migrados
+
+1. **Origen** ✅
+   - Creación de lotes con sistema unificado
+   - Estadísticas usando campo `creado_por`
+   - Límite de fotos: 3 (antes 5)
+
+2. **Transportista** ✅
+   - Manejo de fases automático
+   - Pickup unidireccional
+   - Entrega bidireccional
+
+3. **Reciclador** ✅
+   - Recepción y procesamiento
+   - Integración con laboratorio
+   - Cálculo de peso dinámico
+
+4. **Laboratorio** ✅
+   - Proceso paralelo sin cambio de ownership
+   - Múltiples análisis por lote
+   - Peso automáticamente restado
+
+5. **Transformador** ✅
+   - UI actualizada estilo laboratorio
+   - Estados: pendiente → documentación → completado
+   - Pestañas reordenadas
+
+6. **Repositorio** ✅
+   - Vista completa del sistema
+   - Filtros avanzados
+   - Solo lectura
+
+### Beneficios de la Integración
+
+- **Consistencia**: Un solo modelo para todos
+- **Trazabilidad**: Historia completa preservada
+- **Escalabilidad**: Fácil agregar nuevos procesos
+- **Mantenibilidad**: Código más limpio y organizado
+- **Performance**: Queries optimizadas
 
 ## Correcciones y Mejoras Realizadas
 
@@ -353,6 +775,27 @@ Future<String?> uploadBase64Image(String base64String, String fileName) async {
 
 ## Guía de Mantenimiento
 
+### Checklist de Mantenimiento Regular
+
+#### Diario
+- [ ] Verificar logs de errores en Firebase Console
+- [ ] Monitorear uso de Storage y Firestore
+- [ ] Revisar entregas expiradas (limpiar después de 24h)
+
+#### Semanal
+- [ ] Backup de base de datos
+- [ ] Revisar solicitudes de cuenta pendientes
+- [ ] Validar integridad de transferencias
+- [ ] Limpiar archivos temporales en Storage
+
+#### Mensual
+- [ ] Auditoría de seguridad
+- [ ] Optimización de índices Firestore
+- [ ] Revisión de reglas de seguridad
+- [ ] Análisis de performance
+
+### Procedimientos Comunes
+
 ### Agregar Nuevo Tipo de Usuario
 
 1. **Actualizar el modelo de datos**
@@ -413,13 +856,95 @@ Future<String?> uploadBase64Image(String base64String, String fileName) async {
    - Transferencias de lotes
    - Actualizaciones de estado
 
+## Pruebas y Validación
+
+### Suite de Pruebas Recomendada
+
+#### 1. Pruebas de Flujo Completo
+```bash
+# Flujo origen → transformador
+1. Crear lote en Origen (A0000001)
+2. Transportista recoge (V0000001)
+3. Entrega a Reciclador (R0000001)
+4. Laboratorio toma muestra (L0000001)
+5. Reciclador procesa
+6. Transportista recoge fase 2
+7. Entrega a Transformador (T0000001)
+8. Transformador completa proceso
+9. Verificar en Repositorio
+```
+
+#### 2. Pruebas de Peso
+- Crear lote con 100kg
+- Verificar peso en cada transferencia
+- Tomar muestra de 5kg en laboratorio
+- Confirmar peso final = 95kg
+
+#### 3. Pruebas de QR
+- Escanear cada tipo de QR
+- Verificar timeouts de entrega (15 min)
+- Probar QR inválidos/expirados
+- Validar debounce de 1 segundo
+
+#### 4. Pruebas de Estado
+- Verificar `proceso_actual` en cada etapa
+- Confirmar visibilidad por usuario
+- Validar estados del transformador
+- Revisar historial de procesos
+
+### Herramientas de Testing
+
+```dart
+// Test unitarios
+flutter test
+
+// Test de integración
+flutter drive --target=test_driver/app.dart
+
+// Coverage
+flutter test --coverage
+genhtml coverage/lcov.info -o coverage/html
+```
+
+### Validación en Producción
+
+1. **Monitoreo en Tiempo Real**
+   - Firebase Performance Monitoring
+   - Crashlytics para errores
+   - Analytics para uso
+
+2. **Métricas Clave**
+   - Tiempo promedio de transferencia
+   - Tasa de éxito de escaneos QR
+   - Cantidad de lotes activos
+   - Usuarios concurrentes
+
+3. **Alertas Configuradas**
+   - Errores de autenticación > 10/hora
+   - Transferencias fallidas > 5%
+   - Latencia de queries > 2s
+   - Storage > 80% capacidad
+
 ## Conclusión
 
-El sistema de trazabilidad implementado proporciona:
-- **Trazabilidad completa** de materiales reciclables
-- **Identificación segura** mediante códigos QR
-- **Transferencias automáticas** que garantizan integridad
-- **Experiencia de usuario optimizada** con flujos simplificados
-- **Datos inmutables** que preservan la historia completa
+El sistema de trazabilidad de BioWay México representa una solución completa y robusta para el seguimiento de materiales reciclables. Con su arquitectura basada en un modelo unificado, transferencias inteligentes mediante QR, y procesos bien definidos para cada tipo de usuario, el sistema proporciona:
 
-El sistema está diseñado para ser escalable, mantenible y proporcionar valor real a todos los usuarios de la cadena de suministro de reciclaje.
+- **Trazabilidad completa** desde origen hasta producto final
+- **Integridad de datos** mediante immutabilidad y validaciones
+- **Escalabilidad** para crecimiento futuro
+- **Experiencia de usuario** optimizada para cada rol
+- **Seguridad** en cada nivel de la aplicación
+
+El sistema está en producción para la plataforma ECOCE y listo para expandirse a BioWay, demostrando su flexibilidad y diseño multi-tenant. La documentación completa, las pruebas exhaustivas y los procedimientos de mantenimiento garantizan la sostenibilidad a largo plazo del proyecto.
+
+### Próximos Pasos
+1. Configurar proyecto Firebase para BioWay
+2. Implementar paginación para listas grandes
+3. Agregar dashboard de analytics
+4. Desarrollar versión iOS
+5. Implementar notificaciones push
+
+---
+
+*Documentación actualizada al 2025-01-26*  
+*Versión del sistema: 1.0.0+1*

@@ -113,6 +113,7 @@ class CargaTransporteService {
     required String origenUsuarioTipo,
     required String vehiculoPlacas,
     required String nombreConductor,
+    required String nombreOperador,
     required double pesoTotalRecogido,
     String? firmaRecogida,
     required List<String> evidenciasFotoRecogida,
@@ -149,6 +150,7 @@ class CargaTransporteService {
         fechaRecogida: DateTime.now(),
         vehiculoPlacas: vehiculoPlacas,
         nombreConductor: nombreConductor,
+        nombreOperador: nombreOperador,
         pesoTotalRecogido: pesoTotalRecogido,
         firmaRecogida: firmaRecogida,
         evidenciasFotoRecogida: evidenciasFotoRecogida,
@@ -199,6 +201,7 @@ class CargaTransporteService {
             'origen_recogida': origenUsuarioFolio,
             'vehiculo_placas': vehiculoPlacas,
             'nombre_conductor': nombreConductor,
+            'nombre_operador': nombreOperador, // Agregar el nombre del operador
             'peso_recogido': pesoActualLote, // Usar el peso actual del lote
             'firma_recogida': firmaRecogida,
             'evidencias_foto_recogida': evidenciasFotoRecogida,
@@ -896,6 +899,39 @@ class CargaTransporteService {
     } catch (e) {
       print('Error verificando documentos pendientes: $e');
       return false;
+    }
+  }
+  
+  /// Obtener el número de lotes entregados por el transportista
+  Future<int> obtenerNumeroLotesEntregados() async {
+    try {
+      // Obtener todas las cargas del transportista
+      final cargasSnapshot = await _firestore
+          .collection('cargas_transporte')
+          .where('transportista_id', isEqualTo: _currentUserId)
+          .get();
+      
+      int totalLotesEntregados = 0;
+      
+      // Para cada carga, verificar cuántos lotes ya no están en transporte
+      for (final cargaDoc in cargasSnapshot.docs) {
+        final carga = CargaTransporteModel.fromFirestore(cargaDoc);
+        
+        // Verificar cada lote de la carga
+        for (final loteId in carga.lotesIds) {
+          final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
+          
+          // Si el lote ya no está en transporte, significa que fue entregado
+          if (lote != null && lote.datosGenerales.procesoActual != 'transporte') {
+            totalLotesEntregados++;
+          }
+        }
+      }
+      
+      return totalLotesEntregados;
+    } catch (e) {
+      print('Error obteniendo lotes entregados: $e');
+      return 0;
     }
   }
 }

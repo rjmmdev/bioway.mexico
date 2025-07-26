@@ -46,6 +46,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
   final TextEditingController _placasController = TextEditingController();
   final TextEditingController _pesoController = TextEditingController();
   final TextEditingController _comentariosController = TextEditingController();
+  final TextEditingController _operadorController = TextEditingController();
   
   // Estados
   bool _isLoading = false;
@@ -76,6 +77,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
     _placasController.dispose();
     _pesoController.dispose();
     _comentariosController.dispose();
+    _operadorController.dispose();
     super.dispose();
   }
   
@@ -192,6 +194,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
         origenUsuarioTipo: widget.datosOrigen['tipo'],
         vehiculoPlacas: _placasController.text.trim(),
         nombreConductor: _nombreController.text.trim(),
+        nombreOperador: _operadorController.text.trim(),
         pesoTotalRecogido: double.parse(_pesoController.text),
         firmaRecogida: _signatureUrl,
         evidenciasFotoRecogida: photoUrls,
@@ -490,7 +493,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                   
                   const SizedBox(height: 24),
                   
-                  // Firma del Responsable
+                  // Información del Operador (nombre y firma unificados)
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
@@ -511,30 +514,61 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                         Row(
                           children: [
                             const Text(
-                              '✍️',
+                              '👷',
                               style: TextStyle(fontSize: 24),
                             ),
                             const SizedBox(width: 10),
                             Text(
-                              'Firma del Responsable',
+                              'Información del Operador',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: BioWayColors.darkGreen,
                               ),
                             ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        
+                        // Campo de nombre del operador
+                        _buildTextField(
+                          controller: _operadorController,
+                          label: 'Nombre del Operador',
+                          hint: 'Ingrese el nombre completo del operador',
+                          keyId: 'input_nombre_operador',
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Este campo es obligatorio';
+                            }
+                            return null;
+                          },
+                        ),
+                        
+                        const SizedBox(height: 24),
+                        
+                        // Sección de firma
+                        Row(
+                          children: [
+                            Text(
+                              'Firma del Operador',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: BioWayColors.textGrey,
+                              ),
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               '*',
                               style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
                                 color: BioWayColors.error,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 8),
                         GestureDetector(
                           onTap: _firma.isEmpty ? _showSignatureDialog : null,
                           child: AnimatedContainer(

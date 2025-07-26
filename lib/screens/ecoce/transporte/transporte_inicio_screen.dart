@@ -29,10 +29,8 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
   EcoceProfileModel? _userProfile;
   
   // Estadísticas del transportista
-  int _viajesRealizados = 0;
-  int _lotesTransportados = 0;  // Ahora mostrará el número de lotes en tránsito
-  double _kilometrosRecorridos = 0.0;
-  int _entregas = 0;
+  int _lotesEnTransitoCount = 0;  // Número de lotes en tránsito
+  int _entregasRealizadas = 0;  // Número de lotes entregados
 
   // Lotes en tránsito (se cargarán de Firebase)
   List<Map<String, dynamic>> _lotesEnTransito = [];
@@ -92,8 +90,8 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
         setState(() {
           _lotesEnTransito = lotesFormateados;
           _isLoadingLotes = false;
-          // Actualizar la estadística de lotes transportados con el conteo actual
-          _lotesTransportados = lotesFormateados.length;
+          // Actualizar la estadística de lotes en tránsito con el conteo actual
+          _lotesEnTransitoCount = lotesFormateados.length;
         });
       }
     } catch (e) {
@@ -108,38 +106,13 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
 
   Future<void> _loadEstadisticas() async {
     try {
-      // Obtener el userId del transportista actual
-      final userData = _sessionService.getUserData();
-      final userId = userData?['uid'] ?? '';
+      // Obtener el número de lotes entregados por el transportista
+      final lotesEntregados = await _cargaService.obtenerNumeroLotesEntregados();
       
-      if (userId.isEmpty) {
-        return;
-      }
-      
-      // Obtener todos los lotes del transportista actual
-      final todosLotesStream = _loteService.getLotesTransportistaByUserId(
-        userId: userId,
-      );
-      final todosLotes = await todosLotesStream.first;
-
-      int viajes = 0;
-      int entregas = 0;
-      
-      for (final lote in todosLotes) {
-        viajes++;
-        
-        // Contar entregas completadas
-        if (lote.estado == 'entregado') {
-          entregas++;
-        }
-      }
-
       if (mounted) {
         setState(() {
-          _viajesRealizados = viajes;
-          _entregas = entregas;
-          // _lotesTransportados se actualiza en _loadLotesEnTransito()
-          // _kilometrosRecorridos se mantiene en 0 por ahora
+          _entregasRealizadas = lotesEntregados;
+          // _lotesEnTransitoCount se actualiza en _loadLotesEnTransito()
         });
       }
     } catch (e) {
@@ -202,7 +175,7 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
             // Header moderno con gradiente
             SliverToBoxAdapter(
               child: Container(
-                height: 320,
+                height: 250,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -352,44 +325,26 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          // Estadísticas con UnifiedStatCard
+                          // Estadísticas con UnifiedStatCard en una sola fila
                           Row(
                             children: [
-                              // Estadística de Viajes Realizados
+                              // Estadística de Lotes en Tránsito
                               Expanded(
                                 child: UnifiedStatCard.horizontal(
-                                  title: 'Viajes realizados',
-                                  value: _viajesRealizados.toString(),
-                                  icon: Icons.route,
-                                  color: BioWayColors.petBlue,
+                                  title: 'Lotes en tránsito',
+                                  value: _lotesEnTransitoCount.toString(),
+                                  icon: Icons.inventory_2,
+                                  color: BioWayColors.warning,
                                   height: 70,
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              // Estadística de Lotes en Tránsito (disponibles para entregar)
+                              // Estadística de Entregas Realizadas
                               Expanded(
                                 child: UnifiedStatCard.horizontal(
-                                  title: 'Lotes en tránsito',
-                                  value: _lotesEnTransito.length.toString(),
-                                  icon: Icons.inventory_2,
-                                  color: BioWayColors.ppPurple,
-                                  height: 70,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          // Segunda fila con Entregas realizadas centrado
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              // Estadística de Entregas
-                              SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.45,
-                                child: UnifiedStatCard.horizontal(
                                   title: 'Entregas realizadas',
-                                  value: _entregas.toString(),
-                                  icon: Icons.local_shipping,
+                                  value: _entregasRealizadas.toString(),
+                                  icon: Icons.check_circle,
                                   color: BioWayColors.primaryGreen,
                                   height: 70,
                                 ),

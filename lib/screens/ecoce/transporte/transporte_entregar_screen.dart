@@ -3,9 +3,7 @@ import '../../../utils/colors.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/carga_transporte_service.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
-import 'transporte_qr_entrega_screen.dart';
 import 'transporte_escanear_carga_screen.dart';
-import 'transporte_escanear_receptor_screen.dart';
 import 'transporte_entrega_pasos_screen.dart';
 
 class TransporteEntregarScreen extends StatefulWidget {
@@ -20,7 +18,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
   final CargaTransporteService _cargaService = CargaTransporteService();
   bool _isLoading = true;
   List<Map<String, dynamic>> _lotesEnTransito = [];
-  Map<String, List<Map<String, dynamic>>> _lotesPorCarga = {};
+  Map<String, List<Map<String, dynamic>>> _lotesPorOrigen = {};
   final Set<String> _selectedLotes = {};
   
   @override
@@ -54,19 +52,28 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
           'origen_nombre': lote['origen_nombre'],
           'origen_folio': lote['origen_folio'],
           'fecha_recogida': lote['fecha_recogida'],
+          'tiene_muestras_lab': lote['tiene_muestras_lab'],
+          'peso_muestras': lote['peso_muestras'],
         };
         
         lotesFormateados.add(loteFormateado);
         
-        // Agrupar por carga (para mostrar qué lotes viajan juntos)
-        final cargaId = lote['carga_id'] as String;
-        grouped.putIfAbsent(cargaId, () => []);
-        grouped[cargaId]!.add(loteFormateado);
+        // Agrupar por origen (nombre del lugar)
+        final origenKey = '${lote['origen_nombre']} (${lote['origen_folio']})';
+        grouped.putIfAbsent(origenKey, () => []);
+        grouped[origenKey]!.add(loteFormateado);
+      }
+      
+      // Ordenar los grupos alfabéticamente por nombre de origen
+      final sortedKeys = grouped.keys.toList()..sort();
+      final sortedGrouped = <String, List<Map<String, dynamic>>>{};
+      for (final key in sortedKeys) {
+        sortedGrouped[key] = grouped[key]!;
       }
       
       setState(() {
         _lotesEnTransito = lotesFormateados;
-        _lotesPorCarga = grouped;
+        _lotesPorOrigen = sortedGrouped;
         _isLoading = false;
       });
     } catch (e) {
@@ -95,9 +102,9 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
     });
   }
   
-  void _selectAllFromGroup(String cargaId) {
+  void _selectAllFromGroup(String origenKey) {
     setState(() {
-      final lotesDelGrupo = _lotesPorCarga[cargaId] ?? [];
+      final lotesDelGrupo = _lotesPorOrigen[origenKey] ?? [];
       final idsDelGrupo = lotesDelGrupo.map((lote) => lote['id'] as String).toSet();
       
       // Si todos están seleccionados, deseleccionar todos
@@ -141,20 +148,18 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
   void _onBottomNavTapped(int index) {
     switch (index) {
       case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const TransporteEscanearCargaScreen(),
-          ),
-        );
+        Navigator.pushReplacementNamed(context, '/transporte_inicio');
         break;
       case 1:
-        break; // Ya estamos aquí
+        // Si el usuario hace clic en 'Entregar' estando en la pantalla de entregar,
+        // lo llevamos a la pantalla de inicio del transportista
+        Navigator.pushReplacementNamed(context, '/transporte_inicio');
+        break;
       case 2:
-        Navigator.pushNamed(context, '/transporte_ayuda');
+        Navigator.pushReplacementNamed(context, '/transporte_ayuda');
         break;
       case 3:
-        Navigator.pushNamed(context, '/transporte_perfil');
+        Navigator.pushReplacementNamed(context, '/transporte_perfil');
         break;
     }
   }
@@ -283,13 +288,16 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: _lotesPorCarga.length,
+                        padding: EdgeInsets.only(
+                          top: 8,
+                          bottom: _selectedLotes.isNotEmpty ? 100 : 8,
+                        ),
+                        itemCount: _lotesPorOrigen.length,
                         itemBuilder: (context, index) {
-                          final cargaId = _lotesPorCarga.keys.elementAt(index);
-                          final lotes = _lotesPorCarga[cargaId]!;
+                          final origenKey = _lotesPorOrigen.keys.elementAt(index);
+                          final lotes = _lotesPorOrigen[origenKey]!;
                           
-                          return _buildCargaGroup(cargaId, lotes);
+                          return _buildOrigenGroup(origenKey, lotes);
                         },
                       ),
           ),
@@ -412,214 +420,300 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
     );
   }
   
-  Widget _buildCargaGroup(String cargaId, List<Map<String, dynamic>> lotes) {
+  Widget _buildOrigenGroup(String origenKey, List<Map<String, dynamic>> lotes) {
     final allSelected = lotes.every((lote) => _selectedLotes.contains(lote['id']));
-    
-    // Obtener información del primer lote para mostrar el origen
-    final primerLote = lotes.first;
-    final origenInfo = '${primerLote['origen_nombre']} (${primerLote['origen_folio']})';
+    final totalPesoGrupo = lotes.fold(0.0, (sum, lote) => sum + (lote['peso'] as double));
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header del grupo
+        // Header del grupo con información del origen
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          color: Colors.grey.shade100,
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Carga: ${cargaId.substring(0, 8)}...',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: BioWayColors.darkGreen,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Origen: $origenInfo',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              TextButton(
-                onPressed: () => _selectAllFromGroup(cargaId),
-                child: Text(
-                  allSelected ? 'Deseleccionar Todos' : 'Seleccionar Todos',
-                  style: TextStyle(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1490EE).withValues(alpha: 0.1),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(12),
+              topRight: Radius.circular(12),
+            ),
+            border: Border.all(
+              color: const Color(0xFF1490EE).withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                // Ícono de ubicación
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.location_on,
                     color: const Color(0xFF1490EE),
-                    fontWeight: FontWeight.w500,
+                    size: 20,
                   ),
                 ),
-                key: Key('btn_select_group_$cargaId'),
-              ),
-            ],
+                const SizedBox(width: 12),
+                
+                // Información del origen
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        origenKey,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: BioWayColors.darkGreen,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          Text(
+                            '${lotes.length} ${lotes.length == 1 ? 'lote' : 'lotes'}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                          Container(
+                            width: 4,
+                            height: 4,
+                            margin: const EdgeInsets.only(top: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade400,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          Text(
+                            '${totalPesoGrupo.toStringAsFixed(1)} kg total',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade700,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Botón de selección
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () => _selectAllFromGroup(origenKey),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    minimumSize: const Size(0, 0),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    allSelected ? 'Deseleccionar' : 'Seleccionar',
+                    style: const TextStyle(
+                      color: Color(0xFF1490EE),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         
-        // Lista de lotes del grupo
-        ...lotes.map((lote) => _buildLoteCard(lote)),
-      ],
-    );
-  }
-  
-  Widget _buildLoteCard(Map<String, dynamic> lote) {
-    final isSelected = _selectedLotes.contains(lote['id']);
-    
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isSelected ? const Color(0xFF1490EE) : Colors.grey.shade200,
-          width: isSelected ? 2 : 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+        // Container para los lotes con borde
+        Container(
+          margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(12),
+              bottomRight: Radius.circular(12),
+            ),
+            border: Border.all(
+              color: Colors.grey.shade200,
+              width: 1,
+            ),
           ),
-        ],
-      ),
-      child: InkWell(
-        onTap: () => _toggleLoteSelection(lote['id']),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
+          child: Column(
             children: [
-              // Checkbox
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF1490EE) : Colors.white,
-                  border: Border.all(
-                    color: isSelected ? const Color(0xFF1490EE) : Colors.grey.shade400,
-                    width: 2,
-                  ),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: isSelected
-                    ? const Icon(
-                        Icons.check,
-                        size: 16,
-                        color: Colors.white,
-                      )
-                    : null,
-              ),
-              
-              const SizedBox(width: 16),
-              
-              // Contenido del lote
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              // Lista de lotes del grupo
+              ...lotes.asMap().entries.map((entry) {
+                final index = entry.key;
+                final lote = entry.value;
+                final isLast = index == lotes.length - 1;
+                
+                return Column(
                   children: [
-                    // Chip con ID
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF9C4),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFFFD54F)),
+                    _buildLoteItem(lote),
+                    if (!isLast)
+                      Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: Colors.grey.shade100,
+                        indent: 16,
+                        endIndent: 16,
                       ),
-                      child: Text(
-                        lote['id'],
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF827717),
-                        ),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 12),
-                    
-                    // Datos del lote
-                    Row(
-                      children: [
-                        _buildLoteData('Material', lote['material']),
-                        const SizedBox(width: 24),
-                        _buildLoteData('Peso', '${lote['peso']} kg'),
-                      ],
-                    ),
-                    
-                    // Indicador de muestras de laboratorio
-                    if (lote['tiene_muestras_lab'] == true) ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: BioWayColors.info.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: BioWayColors.info.withOpacity(0.3),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.science,
-                              size: 14,
-                              color: BioWayColors.info,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Muestras lab: ${lote['peso_muestras']} kg',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: BioWayColors.info,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
                   ],
-                ),
-              ),
+                );
+              }),
             ],
           ),
         ),
+      ],
+    );
+  }
+  
+  Widget _buildLoteItem(Map<String, dynamic> lote) {
+    final isSelected = _selectedLotes.contains(lote['id']);
+    
+    return InkWell(
+      onTap: () => _toggleLoteSelection(lote['id']),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Checkbox
+            Container(
+              width: 20,
+              height: 20,
+              margin: const EdgeInsets.only(top: 2),
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFF1490EE) : Colors.white,
+                border: Border.all(
+                  color: isSelected ? const Color(0xFF1490EE) : Colors.grey.shade400,
+                  width: 2,
+                ),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: isSelected
+                  ? const Icon(
+                        Icons.check,
+                        size: 14,
+                        color: Colors.white,
+                      )
+                  : null,
+            ),
+            
+            const SizedBox(width: 12),
+            
+            // Contenido del lote
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Primera fila: ID y Material
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      // ID del lote
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F5F5),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          lote['id'].toString().substring(0, 8),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: BioWayColors.darkGreen,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ),
+                      // Material
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.category_outlined,
+                            size: 16,
+                            color: Colors.grey.shade600,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              lote['material'],
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade700,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Segunda fila: Peso y muestra de laboratorio
+                  Row(
+                    children: [
+                      // Peso
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.scale_outlined,
+                            size: 16,
+                            color: Colors.grey.shade600,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${lote['peso']} kg',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: BioWayColors.darkGreen,
+                            ),
+                          ),
+                        ],
+                      ),
+                      // Indicador de muestras de laboratorio
+                      if (lote['tiene_muestras_lab'] == true) ...[
+                        const SizedBox(width: 12),
+                        Tooltip(
+                          message: 'Muestras de laboratorio: ${lote['peso_muestras']} kg',
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: BioWayColors.psYellow.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.science,
+                              size: 16,
+                              color: BioWayColors.psYellow,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
   
-  Widget _buildLoteData(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: BioWayColors.darkGreen,
-          ),
-        ),
-      ],
-    );
-  }
 }

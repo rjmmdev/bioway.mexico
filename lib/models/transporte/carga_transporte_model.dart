@@ -17,6 +17,7 @@ class CargaTransporteModel {
   final DateTime fechaRecogida;
   final String vehiculoPlacas;
   final String nombreConductor;
+  final String nombreOperador;
   final double pesoTotalRecogido;
   final String? firmaRecogida;
   final List<String> evidenciasFotoRecogida;
@@ -39,6 +40,7 @@ class CargaTransporteModel {
     required this.fechaRecogida,
     required this.vehiculoPlacas,
     required this.nombreConductor,
+    required this.nombreOperador,
     required this.pesoTotalRecogido,
     this.firmaRecogida,
     required this.evidenciasFotoRecogida,
@@ -62,6 +64,7 @@ class CargaTransporteModel {
       fechaRecogida: (data['fecha_recogida'] as Timestamp).toDate(),
       vehiculoPlacas: data['vehiculo_placas'] ?? '',
       nombreConductor: data['nombre_conductor'] ?? '',
+      nombreOperador: data['nombre_operador'] ?? '',
       pesoTotalRecogido: (data['peso_total_recogido'] ?? 0.0).toDouble(),
       firmaRecogida: data['firma_recogida'],
       evidenciasFotoRecogida: List<String>.from(data['evidencias_foto_recogida'] ?? []),
@@ -84,6 +87,7 @@ class CargaTransporteModel {
       'fecha_recogida': Timestamp.fromDate(fechaRecogida),
       'vehiculo_placas': vehiculoPlacas,
       'nombre_conductor': nombreConductor,
+      'nombre_operador': nombreOperador,
       'peso_total_recogido': pesoTotalRecogido,
       'firma_recogida': firmaRecogida,
       'evidencias_foto_recogida': evidenciasFotoRecogida,
