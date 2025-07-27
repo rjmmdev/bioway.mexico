@@ -68,7 +68,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
     'Triturado': false,
     'Compactado': false,
     'Formulado': false,
-    'Pelletizado': false,
+    'Pelletizado': true, // Seleccionado por defecto
   };
   
   // Variables para la firma
@@ -102,41 +102,55 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
     });
     
     try {
-      if (_isMultipleLotes) {
-        // Cargar múltiples lotes
+      if (widget.lotesIds != null && widget.lotesIds!.isNotEmpty) {
+        // Cargar múltiples lotes (incluso si es solo uno)
         double pesoTotal = 0;
+        _lotesParaProcesar.clear();
+        
         for (final loteId in widget.lotesIds!) {
           final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
           if (lote != null && lote.puedeSerTransformado) {
             _lotesParaProcesar.add(lote);
+            // Usar el peso actual del lote que ya considera las muestras de laboratorio
             pesoTotal += lote.pesoActual;
+            
+            print('Lote $loteId - Peso actual: ${lote.pesoActual} kg');
           }
         }
+        
+        print('Peso total calculado: $pesoTotal kg');
+        print('Número de lotes a procesar: ${_lotesParaProcesar.length}');
+        
         setState(() {
           _pesoTotalOriginal = pesoTotal;
           _pesoNetoAprovechable = pesoTotal;
+          _isMultipleLotes = widget.lotesIds!.length > 1;
+          print('Peso neto aprovechable asignado: $_pesoNetoAprovechable kg');
         });
-      } else {
+      } else if (widget.loteId != null) {
         // Cargar lote individual
         final lote = await _loteUnificadoService.obtenerLotePorId(widget.loteId!);
         
         if (lote == null) {
           print('Lote no encontrado');
           setState(() {
-            _pesoTotalOriginal = widget.pesoOriginal!;
-            _pesoNetoAprovechable = widget.pesoOriginal!;
-          _isLoading = false;
-        });
-        return;
-      }
-      
-      // Los datos del reciclador están en el objeto reciclador del modelo
-      if (lote.reciclador != null) {
-        // Usar los datos del modelo para los campos básicos
+            _pesoTotalOriginal = widget.pesoOriginal ?? 0.0;
+            _pesoNetoAprovechable = widget.pesoOriginal ?? 0.0;
+            _isLoading = false;
+          });
+          return;
+        }
+        
+        // Agregar el lote a la lista para procesamiento
+        if (lote.puedeSerTransformado) {
+          _lotesParaProcesar.add(lote);
+        }
+        
+        // Usar el peso actual del lote que ya considera las muestras de laboratorio
         setState(() {
-          _pesoNetoAprovechable = lote.reciclador!.pesoEntrada;
+          _pesoTotalOriginal = lote.pesoActual;
+          _pesoNetoAprovechable = lote.pesoActual;
         });
-      }
       
       // Para los datos específicos del formulario de salida, necesitamos consultarlos directamente
       // porque el modelo no incluye todos los campos
@@ -156,8 +170,11 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
       if (recicladorDoc.exists) {
         final data = recicladorDoc.data()!;
         setState(() {
-          // Cargar peso neto aprovechable (del formulario de entrada)
-          _pesoNetoAprovechable = (data['peso_neto'] ?? data['peso_entrada'] ?? widget.pesoOriginal).toDouble();
+          // NO sobrescribir el peso neto aprovechable si ya fue calculado desde pesoActual
+          // Solo usar este valor si no tenemos un peso calculado
+          if (_pesoNetoAprovechable == 0) {
+            _pesoNetoAprovechable = (data['peso_neto'] ?? data['peso_entrada'] ?? widget.pesoOriginal).toDouble();
+          }
           
           // Cargar datos de salida guardados previamente
           if (data['peso_neto_salida'] != null && data['peso_neto_salida'] > 0) {
@@ -171,11 +188,21 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
           
           // Cargar procesos aplicados
           if (data['procesos_aplicados'] != null && data['procesos_aplicados'] is List) {
-            for (String proceso in data['procesos_aplicados']) {
-              if (_procesosAplicados.containsKey(proceso)) {
-                _procesosAplicados[proceso] = true;
+            // Solo sobrescribir si hay datos guardados
+            final procesosGuardados = data['procesos_aplicados'] as List;
+            if (procesosGuardados.isNotEmpty) {
+              // Limpiar todas las selecciones antes de cargar las guardadas
+              _procesosAplicados.forEach((key, value) {
+                _procesosAplicados[key] = false;
+              });
+              // Cargar los procesos guardados
+              for (String proceso in procesosGuardados) {
+                if (_procesosAplicados.containsKey(proceso)) {
+                  _procesosAplicados[proceso] = true;
+                }
               }
             }
+            // Si no hay procesos guardados, mantener Pelletizado seleccionado por defecto
           }
           
           // Cargar tipo de polímero seleccionado
@@ -208,9 +235,11 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
           }
         });
       } else {
-        // Si no existe el documento, usar el peso original pasado como parámetro
+        // Si no existe el documento y no tenemos peso calculado, usar el peso original
         setState(() {
-          _pesoNetoAprovechable = widget.pesoOriginal ?? 0.0;
+          if (_pesoNetoAprovechable == 0) {
+            _pesoNetoAprovechable = widget.pesoOriginal ?? 0.0;
+          }
         });
       }
     }
@@ -317,6 +346,14 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
       // Preparar datos para actualizar
       Map<String, dynamic> datosActualizacion = {};
       
+      // Obtener procesos seleccionados ANTES de usarlos
+      List<String> procesosSeleccionados = [];
+      _procesosAplicados.forEach((proceso, seleccionado) {
+        if (seleccionado) {
+          procesosSeleccionados.add(proceso);
+        }
+      });
+      
       // Solo subir firma si existe y no ha sido subida antes
       if (_hasSignature && _signatureUrl == null && _signaturePoints.isNotEmpty) {
         final signatureImage = await _captureSignature();
@@ -349,12 +386,6 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
       }
 
       // Agregar procesos aplicados
-      List<String> procesosSeleccionados = [];
-      _procesosAplicados.forEach((proceso, seleccionado) {
-        if (seleccionado) {
-          procesosSeleccionados.add(proceso);
-        }
-      });
       if (procesosSeleccionados.isNotEmpty) {
         datosActualizacion['procesos_aplicados'] = procesosSeleccionados;
       }
@@ -396,14 +427,25 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
         datosActualizacion['fecha_salida'] = FieldValue.serverTimestamp();
       }
 
-      // Verificar si es procesamiento múltiple
-      if (_isMultipleLotes && !esGuardadoParcial) {
-        // Crear transformación con múltiples lotes
+      // SIEMPRE crear transformación (megalote) - incluso para lotes individuales
+      if (!esGuardadoParcial) {
+        // Asegurar que tenemos los lotes a procesar
+        if (_lotesParaProcesar.isEmpty && widget.lotesIds != null) {
+          // Si no se cargaron los lotes pero tenemos los IDs, cargarlos
+          for (final loteId in widget.lotesIds!) {
+            final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
+            if (lote != null && lote.puedeSerTransformado) {
+              _lotesParaProcesar.add(lote);
+            }
+          }
+        }
+        
+        // Crear transformación con los lotes (uno o varios)
         final transformacionId = await _transformacionService.crearTransformacion(
           lotes: _lotesParaProcesar,
           mermaProceso: _mermaCalculada,
-          procesoAplicado: procesosSeleccionados.join(', '),
-          observaciones: _comentariosController.text.trim(),
+          procesoAplicado: procesosSeleccionados.isNotEmpty ? procesosSeleccionados.join(', ') : null,
+          observaciones: _comentariosController.text.trim().isNotEmpty ? _comentariosController.text.trim() : null,
         );
         
         // Actualizar cada lote con los datos de salida
@@ -415,12 +457,16 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
           );
         }
       } else {
-        // Actualizar lote individual
-        await _loteUnificadoService.actualizarDatosProceso(
-          loteId: widget.loteId!,
-          proceso: 'reciclador',
-          datos: datosActualizacion,
-        );
+        // Solo actualizar datos sin crear transformación (guardado parcial)
+        if (widget.lotesIds != null) {
+          for (final loteId in widget.lotesIds!) {
+            await _loteUnificadoService.actualizarDatosProceso(
+              loteId: loteId,
+              proceso: 'reciclador',
+              datos: datosActualizacion,
+            );
+          }
+        }
       }
 
       if (mounted) {
@@ -492,9 +538,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
               ),
               const SizedBox(height: 10),
               Text(
-                _isMultipleLotes 
-                  ? 'Se ha creado una transformación con ${_lotesParaProcesar.length} lotes.\n\nLos lotes han sido procesados y marcados como consumidos.'
-                  : 'Se ha guardado el formulario de salida del lote ${widget.loteId}.\n\nAhora debe cargar la documentación requerida.',
+                'Se ha creado una transformación (megalote) con ${_lotesParaProcesar.length} ${_lotesParaProcesar.length == 1 ? "lote" : "lotes"}.\n\nLos lotes han sido procesados y marcados como consumidos.\n\nAhora debe cargar la documentación requerida.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
@@ -507,21 +551,9 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(); // Cerrar el diálogo
-                if (_isMultipleLotes) {
-                  // Para múltiples lotes, volver a la lista
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                  Navigator.pushReplacementNamed(context, '/reciclador_lotes');
-                } else {
-                  // Para lote individual, ir a documentación
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => RecicladorDocumentacion(
-                        lotId: widget.loteId!,
-                      ),
-                    ),
-                  );
-                }
+                // Todos los casos van a la pantalla de lotes, pestaña completados
+                Navigator.of(context).popUntil((route) => route.isFirst);
+                Navigator.pushReplacementNamed(context, '/reciclador_lotes');
               },
               child: Text(
                 'Continuar',
@@ -784,7 +816,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Peso neto aprovechable: $_pesoNetoAprovechable kg',
+                                  'Peso neto aprovechable: ${_pesoNetoAprovechable.toStringAsFixed(2)} kg',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey[600],

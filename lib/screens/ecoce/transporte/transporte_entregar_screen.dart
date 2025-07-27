@@ -3,7 +3,6 @@ import '../../../utils/colors.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/carga_transporte_service.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
-import 'transporte_escanear_carga_screen.dart';
 import 'transporte_entrega_pasos_screen.dart';
 
 class TransporteEntregarScreen extends StatefulWidget {
@@ -173,9 +172,11 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
     final userName = userData?['nombre'] ?? 'Usuario';
     final userFolio = userData?['folio'] ?? 'V0000001';
     
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: Column(
+    return WillPopScope(
+      onWillPop: () async => false,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        body: Column(
         children: [
           // Header con gradiente azul
           Container(
@@ -377,6 +378,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
           ),
         ],
         fabConfig: null,
+      ),
       ),
     );
   }

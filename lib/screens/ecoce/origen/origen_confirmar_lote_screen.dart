@@ -342,15 +342,23 @@ class _OrigenConfirmarLoteScreenState extends State<OrigenConfirmarLoteScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: BioWayColors.backgroundGrey,
-      appBar: AppBar(
-        backgroundColor: _primaryColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        
+        // Volver a la pantalla anterior
+        Navigator.of(context).pop();
+      },
+      child: Scaffold(
+        backgroundColor: BioWayColors.backgroundGrey,
+        appBar: AppBar(
+          backgroundColor: _primaryColor,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
         title: const Text(
           'Confirmar Datos del Lote',
           style: TextStyle(
@@ -530,6 +538,7 @@ class _OrigenConfirmarLoteScreenState extends State<OrigenConfirmarLoteScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

@@ -1,16 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
-import '../../../models/lotes/lote_origen_model.dart';
 import '../../../models/lotes/lote_unificado_model.dart';
 import '../../../services/lote_service.dart';
 import '../../../services/lote_unificado_service.dart';
-import 'origen_inicio_screen.dart';
 import 'origen_lote_detalle_screen.dart';
 import 'origen_crear_lote_screen.dart';
-import '../shared/ecoce_ayuda_screen.dart';
-import '../shared/ecoce_perfil_screen.dart';
-import 'widgets/origen_lote_card.dart';
 import 'widgets/origen_lote_unificado_card.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import 'origen_config.dart';
@@ -27,7 +22,6 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
   final int _selectedIndex = 1; // Lotes está seleccionado
 
   Color get _primaryColor => OrigenUserConfig.current.color;
-  final LoteService _loteService = LoteService();
   final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
 
   // Filtros

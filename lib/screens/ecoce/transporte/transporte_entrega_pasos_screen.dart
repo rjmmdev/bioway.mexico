@@ -3,13 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../../utils/colors.dart';
 import '../../../services/user_session_service.dart';
-import '../../../services/firebase/auth_service.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
 import '../../../services/carga_transporte_service.dart';
 import '../../../services/lote_unificado_service.dart';
 import 'transporte_escanear_receptor_screen.dart';
 import '../shared/widgets/dialog_utils.dart';
-import 'transporte_qr_entrega_screen.dart';
 import 'transporte_formulario_entrega_screen.dart';
 
 class TransporteEntregaPasosScreen extends StatefulWidget {
@@ -26,7 +24,6 @@ class TransporteEntregaPasosScreen extends StatefulWidget {
 
 class _TransporteEntregaPasosScreenState extends State<TransporteEntregaPasosScreen> {
   final UserSessionService _userSession = UserSessionService();
-  final AuthService _authService = AuthService();
   final CargaTransporteService _cargaService = CargaTransporteService();
   final LoteUnificadoService _loteService = LoteUnificadoService();
   

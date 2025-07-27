@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:printing/printing.dart';
@@ -12,12 +10,10 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:gal/gal.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/carga_transporte_service.dart';
-import '../../../services/firebase/auth_service.dart';
 import 'transporte_formulario_entrega_screen.dart';
 import 'transporte_escanear_carga_screen.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
@@ -39,7 +35,6 @@ class TransporteQREntregaScreen extends StatefulWidget {
 class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
   final UserSessionService _userSession = UserSessionService();
   final CargaTransporteService _cargaService = CargaTransporteService();
-  final AuthService _authService = AuthService();
   final ScreenshotController _screenshotController = ScreenshotController();
   String? _qrData;
   String? _entregaId;
@@ -217,9 +212,17 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
   
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        
+        // Volver a la pantalla anterior
+        Navigator.of(context).pop();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        appBar: AppBar(
         backgroundColor: BioWayColors.deepBlue,
         elevation: 0,
         leading: IconButton(
@@ -746,6 +749,7 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
             testKey: 'transporte_nav_perfil',
           ),
         ],
+      ),
       ),
     );
   }

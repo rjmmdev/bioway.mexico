@@ -9,8 +9,6 @@ import '../../../models/lotes/lote_origen_model.dart';
 import '../../../services/lote_service.dart';
 import 'origen_crear_lote_screen.dart';
 import 'origen_lotes_screen.dart';
-import '../shared/ecoce_ayuda_screen.dart';
-import '../shared/ecoce_perfil_screen.dart';
 import 'origen_lote_detalle_screen.dart';
 import 'widgets/origen_lote_card.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
@@ -77,7 +75,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
         setState(() {
           _lotesRecientes = lotes.take(3).toList(); // Solo los 3 más recientes
           _totalLotes = lotes.length;
-          _totalPeso = lotes.fold(0.0, (sum, lote) => sum + lote.pesoNace);
+          _totalPeso = lotes.fold(0.0, (sum, lote) => sum + (lote.pesoNace ?? 0.0));
         });
       }
     });
@@ -234,10 +232,11 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
       );
     }
     
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
         // Prevenir que el botón atrás cierre la sesión
-        return false;
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F5F5),

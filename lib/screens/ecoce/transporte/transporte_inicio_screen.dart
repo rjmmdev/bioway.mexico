@@ -10,7 +10,6 @@ import '../../../services/carga_transporte_service.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/unified_stat_card.dart';
 import '../shared/utils/material_utils.dart';
-import '../shared/utils/dialog_utils.dart';
 import 'transporte_entregar_screen.dart';
 import 'transporte_escanear_carga_screen.dart';
 
@@ -23,7 +22,6 @@ class TransporteInicioScreen extends StatefulWidget {
 
 class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
   final UserSessionService _sessionService = UserSessionService();
-  final LoteService _loteService = LoteService();
   final CargaTransporteService _cargaService = CargaTransporteService();
   
   EcoceProfileModel? _userProfile;

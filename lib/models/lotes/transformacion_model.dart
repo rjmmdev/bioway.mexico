@@ -12,7 +12,7 @@ class TransformacionModel {
   final double pesoDisponible;
   final double mermaProceso;
   final List<String> sublotesGenerados;
-  final List<String> documentosAsociados;
+  final Map<String, String> documentosAsociados;
   final String usuarioId;
   final String usuarioFolio;
   final String? procesoAplicado;
@@ -54,7 +54,7 @@ class TransformacionModel {
       pesoDisponible: (data['peso_disponible'] ?? 0.0).toDouble(),
       mermaProceso: (data['merma_proceso'] ?? 0.0).toDouble(),
       sublotesGenerados: List<String>.from(data['sublotes_generados'] ?? []),
-      documentosAsociados: List<String>.from(data['documentos_asociados'] ?? []),
+      documentosAsociados: Map<String, String>.from(data['documentos_asociados'] ?? {}),
       usuarioId: data['usuario_id'] ?? '',
       usuarioFolio: data['usuario_folio'] ?? '',
       procesoAplicado: data['proceso_aplicado'],
@@ -92,6 +92,13 @@ class TransformacionModel {
   
   /// Calcula el peso total asignado a sublotes
   double get pesoAsignadoSublotes => pesoTotalEntrada - mermaProceso - pesoDisponible;
+  
+  /// Verifica si tiene documentación cargada
+  bool get tieneDocumentacion => documentosAsociados.isNotEmpty;
+  
+  /// Verifica si la transformación está lista para ser eliminada
+  /// Solo debe eliminarse cuando no hay peso disponible Y tiene documentación
+  bool get debeSerEliminada => pesoDisponible <= 0 && tieneDocumentacion;
 }
 
 /// Modelo para representar un lote de entrada en la transformación

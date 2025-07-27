@@ -990,6 +990,77 @@ class LoteUnificadoService {
     }
   }
   
+  /// Procesar muestra de megalote cuando el laboratorio la toma
+  Future<void> procesarMuestraMegalote({
+    required String qrCode,
+    required double pesoMuestra,
+    required String firmaOperador,
+    List<String>? evidenciasFoto,
+  }) async {
+    try {
+      final userId = _currentUserId;
+      if (userId == null) throw Exception('Usuario no autenticado');
+      
+      // Extraer IDs del QR code: MUESTRA-MEGALOTE-transformacionId-muestraId
+      final parts = qrCode.split('-');
+      if (parts.length != 4 || parts[0] != 'MUESTRA' || parts[1] != 'MEGALOTE') {
+        throw Exception('Código QR de muestra inválido');
+      }
+      
+      final transformacionId = parts[2];
+      final muestraId = parts[3];
+      
+      // Obtener la transformación
+      final transformacionDoc = await _firestore
+          .collection('transformaciones')
+          .doc(transformacionId)
+          .get();
+          
+      if (!transformacionDoc.exists) {
+        throw Exception('Transformación no encontrada');
+      }
+      
+      final transformacionData = transformacionDoc.data()!;
+      final pesoDisponible = transformacionData['peso_disponible'] as double;
+      
+      // Validar peso disponible
+      if (pesoMuestra > pesoDisponible) {
+        throw Exception('Peso de muestra ($pesoMuestra kg) excede el peso disponible ($pesoDisponible kg)');
+      }
+      
+      // Buscar la muestra pendiente
+      final muestrasLab = List<Map<String, dynamic>>.from(
+        transformacionData['muestras_laboratorio'] ?? []
+      );
+      
+      final muestraIndex = muestrasLab.indexWhere((m) => m['id'] == muestraId);
+      if (muestraIndex == -1) {
+        throw Exception('Muestra no encontrada');
+      }
+      
+      // Actualizar la muestra con el peso real
+      muestrasLab[muestraIndex] = {
+        ...muestrasLab[muestraIndex],
+        'peso': pesoMuestra,
+        'estado': 'completado',
+        'fecha_toma': FieldValue.serverTimestamp(),
+        'tomado_por': userId,
+        'firma_operador': firmaOperador,
+        if (evidenciasFoto != null) 'evidencias_foto': evidenciasFoto,
+      };
+      
+      // Actualizar la transformación
+      await _firestore.collection('transformaciones').doc(transformacionId).update({
+        'peso_disponible': FieldValue.increment(-pesoMuestra),
+        'muestras_laboratorio': muestrasLab,
+      });
+      
+      _debugPrint('Muestra de megalote procesada: $muestraId con peso $pesoMuestra kg');
+    } catch (e) {
+      throw Exception('Error al procesar muestra de megalote: $e');
+    }
+  }
+  
   /// Procesar recepción de lote en laboratorio
   Future<void> procesarRecepcionLaboratorio({
     required String loteId,

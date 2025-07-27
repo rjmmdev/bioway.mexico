@@ -9,7 +9,6 @@ import '../../../services/carga_transporte_service.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
 import '../../../models/lotes/lote_unificado_model.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
-import '../shared/utils/dialog_utils.dart';
 import 'transporte_formulario_carga_screen.dart';
 
 class TransporteEscanearCargaScreen extends StatefulWidget {
@@ -21,7 +20,6 @@ class TransporteEscanearCargaScreen extends StatefulWidget {
 
 class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaScreen> {
   final LoteUnificadoService _loteService = LoteUnificadoService();
-  final UserSessionService _userSession = UserSessionService();
   final EcoceProfileService _profileService = EcoceProfileService();
   
   MobileScannerController? _scannerController;
@@ -270,15 +268,23 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
-        ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        
+        // Volver a la pantalla de inicio
+        Navigator.pushReplacementNamed(context, '/transporte_inicio');
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.black87),
+            onPressed: () => Navigator.pushReplacementNamed(context, '/transporte_inicio'),
+          ),
         title: const Text(
           'Crear Carga',
           style: TextStyle(
@@ -588,6 +594,7 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
             testKey: 'transporte_nav_perfil',
           ),
         ],
+      ),
       ),
     );
   }

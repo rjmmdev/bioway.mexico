@@ -17,6 +17,7 @@ import '../shared/widgets/form_widgets.dart';
 import '../shared/utils/input_decorations.dart';
 import 'origen_lote_detalle_screen.dart';
 import 'origen_confirmar_lote_screen.dart';
+import 'origen_inicio_screen.dart';
 import '../../../models/lotes/lote_unificado_model.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
@@ -34,12 +35,6 @@ class OrigenCrearLoteScreen extends StatefulWidget {
 }
 
 class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
-  final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
-  final FirebaseStorageService _storageService = FirebaseStorageService();
-  final UserSessionService _userSession = UserSessionService();
-  final AuthService _authService = AuthService();
-  final EcoceProfileService _profileService = EcoceProfileService();
-  final ScreenshotController _screenshotController = ScreenshotController();
   bool _isLoading = false;
   List<File> _photoFiles = [];
   // Constants
@@ -88,11 +83,9 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
   // Variables para la firma
   List<Offset?> _signaturePoints = [];
   bool _hasSignature = false;
-  String? _signatureUrl;
   
   // Variables para las imágenes
   bool _hasImages = false;
-  List<String> _photoUrls = [];
   
   // ScrollController para manejar el auto-scroll
   final ScrollController _scrollController = ScrollController();
@@ -238,51 +231,6 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
     );
   }
 
-  Future<File?> _captureSignature() async {
-    try {
-      final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, 300, 200));
-      
-      // Fondo blanco
-      canvas.drawRect(
-        Rect.fromLTWH(0, 0, 300, 200),
-        Paint()..color = Colors.white,
-      );
-
-      // Dibujar la firma
-      final paint = Paint()
-        ..color = Colors.black
-        ..strokeWidth = 3.0
-        ..strokeCap = StrokeCap.round
-        ..style = PaintingStyle.stroke;
-
-      for (int i = 0; i < _signaturePoints.length - 1; i++) {
-        if (_signaturePoints[i] != null && _signaturePoints[i + 1] != null) {
-          canvas.drawLine(_signaturePoints[i]!, _signaturePoints[i + 1]!, paint);
-        }
-      }
-
-      final picture = recorder.endRecording();
-      final img = await picture.toImage(300, 200);
-      final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
-      
-      if (byteData != null) {
-        final buffer = byteData.buffer.asUint8List();
-        
-        // Guardar temporalmente
-        final tempDir = await getTemporaryDirectory();
-        final file = File('${tempDir.path}/signature_${DateTime.now().millisecondsSinceEpoch}.png');
-        await file.writeAsBytes(buffer);
-        
-        return file;
-      }
-      
-      return null;
-    } catch (e) {
-      print('Error al capturar firma: $e');
-      return null;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -291,7 +239,18 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
     final horizontalPadding = screenWidth * 0.03; // 3% del ancho de pantalla
     final verticalPadding = screenHeight * 0.02; // 2% del alto de pantalla
     
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        
+        // Navegar de vuelta a la pantalla de inicio
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const OrigenInicioScreen()),
+        );
+      },
+      child: Scaffold(
         backgroundColor: BioWayColors.backgroundGrey,
         resizeToAvoidBottomInset: true,
         body: CustomScrollView(
@@ -731,6 +690,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

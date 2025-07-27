@@ -6,12 +6,15 @@ import '../../../utils/format_utils.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/lote_service.dart';
 import '../../../services/lote_unificado_service.dart';
+import '../../../services/transformacion_service.dart';
 import '../../../models/ecoce/ecoce_profile_model.dart';
 import '../../../models/lotes/lote_reciclador_model.dart';
 import '../../../models/lotes/lote_unificado_model.dart';
+import '../../../models/lotes/transformacion_model.dart';
 import 'reciclador_formulario_salida.dart';
 import 'reciclador_documentacion.dart';
 import 'reciclador_lote_qr_screen.dart';
+import 'reciclador_administracion_lotes.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/unified_stat_card.dart';
 import 'widgets/reciclador_lote_card.dart';
@@ -28,6 +31,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
   final UserSessionService _sessionService = UserSessionService();
   final LoteService _loteService = LoteService();
   final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
+  final TransformacionService _transformacionService = TransformacionService();
   
   EcoceProfileModel? _userProfile;
   
@@ -42,6 +46,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
   // Stream para lotes
   Stream<List<LoteRecicladorModel>>? _lotesStream;
   Stream<List<dynamic>>? _lotesUnificadosStream;
+  Stream<List<TransformacionModel>>? _transformacionesStream;
   
   // Stream para estadísticas
   Stream<Map<String, dynamic>>? _estadisticasStream;
@@ -84,6 +89,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
   void _setupStreams() {
     _lotesStream = _loteService.getLotesReciclador();
     _lotesUnificadosStream = _loteUnificadoService.obtenerLotesRecicladorConPendientes();
+    _transformacionesStream = _transformacionService.obtenerTransformacionesUsuario();
     _estadisticasStream = _loteUnificadoService.streamEstadisticasReciclador();
     
     // Cargar estadísticas iniciales
@@ -186,6 +192,114 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
     Navigator.pushNamed(context, '/reciclador_lotes');
   }
   
+  void _navigateToLotControlCompletedTab() {
+    HapticFeedback.lightImpact();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const RecicladorAdministracionLotes(
+          initialTab: 1, // Pestaña Completados
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildMegaloteCard(TransformacionModel transformacion) {
+    final bool isComplete = transformacion.estado == 'completada';
+    final hasAvailableWeight = transformacion.pesoDisponible > 0;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: null, // No hacer nada al tocar
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Icono de megalote
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.merge_type,
+                  color: BioWayColors.ecoceGreen,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Información del megalote
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'MEGALOTE ${transformacion.id.substring(0, 8).toUpperCase()}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.scale,
+                          size: 14,
+                          color: Colors.grey[600],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${transformacion.pesoDisponible.toStringAsFixed(2)} kg disponibles',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          '${transformacion.lotesEntrada.length} lotes',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Botón de ojo
+              IconButton(
+                onPressed: _navigateToLotControlCompletedTab,
+                icon: Icon(
+                  Icons.remove_red_eye_outlined,
+                  color: BioWayColors.ecoceGreen,
+                ),
+                tooltip: 'Ver en lotes completados',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   void _onBottomNavTapped(int index) {
     HapticFeedback.lightImpact();
@@ -730,20 +844,30 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                       
                       const SizedBox(height: 20),
                       
-                      // Sección de lotes recientes
+                      // Sección de megalotes recientes
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Lotes Recientes',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.merge_type,
+                                size: 24,
+                                color: BioWayColors.ecoceGreen,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Megalotes Recientes',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
                           ),
                           TextButton(
-                            onPressed: _navigateToLotControl,
+                            onPressed: () => _navigateToLotControlCompletedTab(),
                             child: Row(
                               children: [
                                 Text(
@@ -767,9 +891,9 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                       ),
                       const SizedBox(height: 16),
                       
-                      // Lista de lotes con Stream de datos reales del sistema unificado
-                      StreamBuilder<List<dynamic>>(
-                        stream: _lotesUnificadosStream,
+                      // Lista de megalotes con Stream de transformaciones
+                      StreamBuilder<List<TransformacionModel>>(
+                        stream: _transformacionesStream,
                         builder: (context, snapshot) {
                           if (snapshot.connectionState == ConnectionState.waiting) {
                             return const Center(
@@ -787,13 +911,13 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                                 child: Column(
                                   children: [
                                     Icon(
-                                      Icons.inventory_2_outlined,
+                                      Icons.merge_type,
                                       size: 60,
                                       color: Colors.grey.shade300,
                                     ),
                                     const SizedBox(height: 16),
                                     Text(
-                                      'No hay lotes recientes',
+                                      'No hay megalotes recientes',
                                       style: TextStyle(
                                         fontSize: 16,
                                         color: Colors.grey.shade500,
@@ -805,35 +929,11 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                             );
                           }
                           
-                          final lotes = snapshot.data!.take(5).toList(); // Mostrar solo 5 más recientes
+                          final transformaciones = snapshot.data!.take(5).toList(); // Mostrar solo 5 más recientes
                           
                           return Column(
-                            children: lotes.map((loteModel) {
-                              final lote = _loteUnificadoToMap(loteModel as LoteUnificadoModel);
-                              
-                              // Para lotes finalizados, mostrar botón QR debajo
-                              if (lote['estado'] == 'finalizado') {
-                                return RecicladorLoteCard(
-                                  lote: lote,
-                                  onTap: null, // No hacer nada al tocar la tarjeta
-                                  showActionButton: true,
-                                  actionButtonText: 'Ver código QR',
-                                  actionButtonColor: BioWayColors.ecoceGreen,
-                                  onActionPressed: () => _handleLoteTap(lote),
-                                  showActions: false, // No mostrar flecha lateral
-                                );
-                              }
-                              
-                              // Para otros estados, mostrar botón debajo
-                              return RecicladorLoteCard(
-                                lote: lote,
-                                onTap: null, // No hacer nada al tocar la tarjeta
-                                showActionButton: true,
-                                actionButtonText: _getActionButtonText(lote['estado']),
-                                actionButtonColor: _getActionButtonColor(lote['estado']),
-                                onActionPressed: () => _handleLoteTap(lote),
-                                showActions: false, // No mostrar flecha lateral
-                              );
+                            children: transformaciones.map((transformacion) {
+                              return _buildMegaloteCard(transformacion);
                             }).toList(),
                           );
                         },

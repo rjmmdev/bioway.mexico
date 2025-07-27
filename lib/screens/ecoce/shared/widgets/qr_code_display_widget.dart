@@ -653,13 +653,17 @@ Fecha: $_fechaFormateada${widget.pesoFinal != null ? '\nPeso Final: ${widget.pes
                   size: 20,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  widget.loteId,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: widget.colorPrincipal.withValues(alpha: 0.9),
-                    letterSpacing: 0.5,
+                Flexible(
+                  child: Text(
+                    widget.loteId,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: widget.colorPrincipal.withValues(alpha: 0.9),
+                      letterSpacing: 0.5,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ),
               ],

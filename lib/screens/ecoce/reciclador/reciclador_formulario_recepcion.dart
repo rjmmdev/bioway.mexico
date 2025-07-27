@@ -101,6 +101,8 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
     final userData = _userSession.getUserData();
     // Pre-cargar nombre del operador actual
     _operadorController.text = userData?['nombre'] ?? '';
+    // Inicializar merma en 0
+    _mermaController.text = '0.0';
     setState(() {
       _isLoading = false;
     });
@@ -130,15 +132,17 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
     final pesoOriginal = double.tryParse(_pesoTotalOriginalController.text) ?? 0;
     final pesoRecibido = double.tryParse(_pesoRecibidoController.text) ?? 0;
     
-    // Validar que el peso recibido no sea mayor al peso bruto
-    if (pesoRecibido > pesoOriginal) {
-      _pesoRecibidoController.text = pesoOriginal.toString();
-      _mermaController.text = '0.0';
-      return;
-    }
-    
-    final merma = pesoOriginal - pesoRecibido;
-    _mermaController.text = merma.toStringAsFixed(1);
+    setState(() {
+      // Validar que el peso recibido no sea mayor al peso bruto
+      if (pesoRecibido > pesoOriginal) {
+        _pesoRecibidoController.text = pesoOriginal.toString();
+        _mermaController.text = '0.0';
+        return;
+      }
+      
+      final merma = pesoOriginal - pesoRecibido;
+      _mermaController.text = merma.toStringAsFixed(1);
+    });
   }
 
   void _captureSignature() {
@@ -841,7 +845,7 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '${_mermaController.text} kg',
+                                  '${_mermaController.text.isEmpty ? "0.0" : _mermaController.text} kg',
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,

@@ -20,6 +20,11 @@ class TransformacionService {
       final userData = _userSession.getUserData();
       if (userData == null) throw Exception('Usuario no autenticado');
       
+      // Verificar que tenemos el uid
+      if (userData['uid'] == null) {
+        throw Exception('No se pudo obtener el ID del usuario');
+      }
+      
       // Validar que todos los lotes pueden ser transformados
       for (final lote in lotes) {
         if (!lote.puedeSerTransformado) {
@@ -44,12 +49,12 @@ class TransformacionService {
       }
       
       // Calcular porcentajes
-      for (var loteEntrada in lotesEntrada) {
-        loteEntrada = LoteEntrada(
-          loteId: loteEntrada.loteId,
-          peso: loteEntrada.peso,
-          porcentaje: (loteEntrada.peso / pesoTotal) * 100,
-          tipoMaterial: loteEntrada.tipoMaterial,
+      for (int i = 0; i < lotesEntrada.length; i++) {
+        lotesEntrada[i] = LoteEntrada(
+          loteId: lotesEntrada[i].loteId,
+          peso: lotesEntrada[i].peso,
+          porcentaje: (lotesEntrada[i].peso / pesoTotal) * 100,
+          tipoMaterial: lotesEntrada[i].tipoMaterial,
         );
       }
       
@@ -67,7 +72,7 @@ class TransformacionService {
         pesoDisponible: pesoTotal - mermaProceso,
         mermaProceso: mermaProceso,
         sublotesGenerados: [],
-        documentosAsociados: [],
+        documentosAsociados: {},
         usuarioId: userData['uid'],
         usuarioFolio: userData['folio'] ?? '',
         procesoAplicado: procesoAplicado,
@@ -85,13 +90,14 @@ class TransformacionService {
               .collection('lotes')
               .doc(lote.id)
               .collection('datos_generales')
-              .doc('data');
+              .doc('info');  // Cambiar de 'data' a 'info'
               
-          transaction.update(loteRef, {
+          // Usar set con merge para crear el documento si no existe
+          transaction.set(loteRef, {
             'consumido_en_transformacion': true,
             'transformacion_id': transformacionId,
             'fecha_consumido': FieldValue.serverTimestamp(),
-          });
+          }, SetOptions(merge: true));
         }
       });
       
@@ -178,7 +184,7 @@ class TransformacionService {
             .collection('lotes')
             .doc(subloteId)
             .collection('datos_generales')
-            .doc('data');
+            .doc('info');  // Cambiar de 'data' a 'info' para consistencia
             
         transaction.set(datosGeneralesRef, {
           'id': subloteId,
@@ -194,6 +200,27 @@ class TransformacionService {
           'tipo_lote': 'derivado',
           'consumido_en_transformacion': false,
           'sublote_origen_id': subloteId,
+          'transformacion_origen': transformacionId,
+        });
+        
+        // Crear proceso de reciclador para el sublote
+        final recicladorRef = _firestore
+            .collection('lotes')
+            .doc(subloteId)
+            .collection('reciclador')
+            .doc('data');
+            
+        transaction.set(recicladorRef, {
+          'fecha_entrada': FieldValue.serverTimestamp(),
+          'peso_entrada': peso,
+          'peso_procesado': peso,  // Sublote ya está procesado
+          'firma_salida': null,
+          'fecha_salida': null,
+          'entrega_completada': false,
+          'usuario_id': userData['uid'],
+          'usuario_folio': userData['folio'] ?? '',
+          'origen_transformacion': transformacionId,
+          'tipo_entrada': 'sublote',
         });
       });
       
@@ -227,11 +254,18 @@ class TransformacionService {
     return _firestore
         .collection('transformaciones')
         .where('usuario_id', isEqualTo: userData['uid'])
-        .orderBy('fecha_inicio', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => TransformacionModel.fromFirestore(doc))
-            .toList());
+        .map((snapshot) {
+          // Ordenar manualmente para evitar requerir índice
+          final transformaciones = snapshot.docs
+              .map((doc) => TransformacionModel.fromFirestore(doc))
+              .toList();
+          
+          // Ordenar por fecha_inicio descendente
+          transformaciones.sort((a, b) => b.fechaInicio.compareTo(a.fechaInicio));
+          
+          return transformaciones;
+        });
   }
   
   /// Completa una transformación
@@ -270,28 +304,53 @@ class TransformacionService {
       
       final transformacion = TransformacionModel.fromFirestore(transformacionDoc);
       
-      // Validar peso disponible
-      if (pesoMuestra > transformacion.pesoDisponible) {
+      // Si se especifica un peso, validar que haya disponible
+      if (pesoMuestra > 0 && pesoMuestra > transformacion.pesoDisponible) {
         throw Exception('Peso de muestra excede el peso disponible');
       }
       
       // Crear ID único para la muestra
       final muestraId = _firestore.collection('muestras_laboratorio').doc().id;
-      final qrCode = 'MUESTRA-MEGALOTE-$muestraId';
+      final qrCode = 'MUESTRA-MEGALOTE-$transformacionId-$muestraId';
       
-      // Actualizar la transformación para restar el peso
-      await _firestore
-          .collection('transformaciones')
-          .doc(transformacionId)
-          .update({
-        'peso_disponible': FieldValue.increment(-pesoMuestra),
-        'muestras_laboratorio': FieldValue.arrayUnion([{
-          'id': muestraId,
-          'peso': pesoMuestra,
-          'fecha': FieldValue.serverTimestamp(),
-          'qr_code': qrCode,
-        }]),
-      });
+      // Si el peso es 0, solo registrar la muestra pendiente
+      // El peso se actualizará cuando el laboratorio tome la muestra
+      if (pesoMuestra == 0) {
+        // Registrar muestra pendiente sin restar peso
+        // No podemos usar FieldValue.serverTimestamp() dentro de arrayUnion
+        // Usamos DateTime.now() en su lugar
+        await _firestore
+            .collection('transformaciones')
+            .doc(transformacionId)
+            .update({
+          'muestras_laboratorio': FieldValue.arrayUnion([{
+            'id': muestraId,
+            'peso': 0,
+            'estado': 'pendiente',
+            'fecha_creacion': DateTime.now().toIso8601String(),
+            'qr_code': qrCode,
+            'creado_por': userData['uid'],
+          }]),
+        });
+      } else {
+        // Si hay peso, restar inmediatamente (comportamiento anterior)
+        // No podemos usar FieldValue.serverTimestamp() dentro de arrayUnion
+        // Usamos DateTime.now() en su lugar
+        await _firestore
+            .collection('transformaciones')
+            .doc(transformacionId)
+            .update({
+          'peso_disponible': FieldValue.increment(-pesoMuestra),
+          'muestras_laboratorio': FieldValue.arrayUnion([{
+            'id': muestraId,
+            'peso': pesoMuestra,
+            'estado': 'completado',
+            'fecha': DateTime.now().toIso8601String(),
+            'qr_code': qrCode,
+            'creado_por': userData['uid'],
+          }]),
+        });
+      }
       
       return qrCode;
     } catch (e) {

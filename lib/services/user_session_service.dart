@@ -103,6 +103,7 @@ class UserSessionService {
     if (_currentUserProfile == null) return null;
     
     return {
+      'uid': _currentUserProfile!.id,
       'nombre': _currentUserProfile!.ecoceNombre,
       'folio': _currentUserProfile!.ecoceFolio,
       'email': _currentUserProfile!.ecoceCorreoContacto,

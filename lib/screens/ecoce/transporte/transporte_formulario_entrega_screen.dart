@@ -9,7 +9,6 @@ import '../../../services/user_session_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
-import '../../../services/image_service.dart';
 import '../../../services/carga_transporte_service.dart';
 import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
@@ -1301,26 +1300,6 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
     );
   }
   
-  Widget _buildSection({
-    required String title,
-    required List<Widget> children,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: BioWayColors.darkGreen,
-          ),
-        ),
-        const SizedBox(height: 16),
-        ...children,
-      ],
-    );
-  }
   
   Widget _buildInfoRow(String label, String value) {
     return Padding(

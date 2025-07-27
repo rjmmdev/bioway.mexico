@@ -2,18 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
-import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
 import '../../../services/user_session_service.dart';
-import '../../../services/image_service.dart';
 import '../../../services/carga_transporte_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
 import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
-import '../shared/widgets/form_widgets.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
 import '../shared/widgets/lote_card_unified.dart';
 import '../shared/utils/dialog_utils.dart';
@@ -67,7 +62,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
     _nombreController.text = userData?['nombre'] ?? '';
     
     // Calcular peso total
-    double pesoTotal = widget.lotes.fold(0.0, (sum, lote) => sum + (lote['peso'] as double));
+    double pesoTotal = widget.lotes.fold(0.0, (previousValue, lote) => previousValue + (lote['peso'] as double));
     _pesoController.text = pesoTotal.toStringAsFixed(1);
   }
   
@@ -267,9 +262,17 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
   
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        
+        // Volver a la pantalla anterior
+        Navigator.of(context).pop();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        appBar: AppBar(
         backgroundColor: BioWayColors.primaryGreen,
         elevation: 0,
         leading: IconButton(
@@ -810,6 +813,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
           ),
         ],
         fabConfig: null,
+      ),
       ),
     );
   }

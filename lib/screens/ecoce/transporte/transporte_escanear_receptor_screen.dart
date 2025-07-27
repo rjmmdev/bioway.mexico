@@ -52,13 +52,13 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
     try {
       // Detectar si se escaneó un código de lote en lugar de usuario
       if (codigo.startsWith('LOTE-')) {
-        _mostrarError('Has escaneado un código de lote. Por favor escanea el código QR del receptor');
+        _mostrarError('Por favor escanea el código QR de identificación del receptor');
         return;
       }
       
       // Detectar si se escaneó un código de entrega
       if (codigo.startsWith('ENTREGA-')) {
-        _mostrarError('Has escaneado un código de entrega. Por favor escanea el código QR del receptor');
+        _mostrarError('Por favor escanea el código QR de identificación del receptor');
         return;
       }
       
@@ -178,9 +178,17 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        
+        // Volver a la pantalla anterior
+        Navigator.of(context).pop();
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -241,7 +249,7 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
                 // Oscurecer áreas fuera del recuadro
                 ColorFiltered(
                   colorFilter: ColorFilter.mode(
-                    Colors.black.withOpacity(0.5),
+                    Colors.black.withValues(alpha: 0.5),
                     BlendMode.srcOut,
                   ),
                   child: Stack(
@@ -365,11 +373,11 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.95),
+                color: Colors.white.withValues(alpha: 0.95),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 5),
                   ),
@@ -454,7 +462,7 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
           // Indicador de procesamiento
           if (_isProcessing)
             Container(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
               child: const Center(
                 child: CircularProgressIndicator(
                   color: Colors.white,
@@ -463,7 +471,8 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
             ),
         ],
       ),
-    );
+    ),
+  );
   }
   
   String _calcularPesoTotal() {

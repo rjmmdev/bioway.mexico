@@ -175,9 +175,22 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        
+        // Si se está mostrando el mensaje de éxito, ir al inicio
+        if (widget.mostrarMensajeExito) {
+          _irAInicio();
+        } else {
+          // Si no, volver a la pantalla anterior
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: widget.mostrarMensajeExito 
@@ -413,6 +426,7 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
             ],
           ),
         ),
+      ),
       ),
     );
   }

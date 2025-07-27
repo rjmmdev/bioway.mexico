@@ -129,6 +129,24 @@ service cloud.firestore {
       allow delete: if isAuthenticated(); // Permitir eliminar entregas completadas
     }
     
+    // ============ TRANSFORMACIONES Y SUBLOTES ============
+    
+    // Transformaciones (megalotes)
+    match /transformaciones/{transformacionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if false;
+    }
+    
+    // Sublotes
+    match /sublotes/{subloteId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if false;
+    }
+    
     // ============ OTRAS COLECCIONES ============
     
     // Usuarios pendientes de eliminación
