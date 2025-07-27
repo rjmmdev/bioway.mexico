@@ -11,6 +11,8 @@ import '../../../services/lote_unificado_service.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
+import '../../../services/transformacion_service.dart';
+import '../../../models/lotes/lote_unificado_model.dart';
 import '../shared/utils/dialog_utils.dart';
 import 'reciclador_documentacion.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
@@ -19,14 +21,19 @@ import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/signature_painter.dart';
 
 class RecicladorFormularioSalida extends StatefulWidget {
-  final String loteId;
-  final double pesoOriginal; // Peso registrado en la entrada
+  final String? loteId; // Para compatibilidad con lote individual
+  final double? pesoOriginal; // Peso registrado en la entrada
+  final List<String>? lotesIds; // Para procesamiento múltiple
 
   const RecicladorFormularioSalida({
     super.key,
-    required this.loteId,
-    required this.pesoOriginal,
-  });
+    this.loteId,
+    this.pesoOriginal,
+    this.lotesIds,
+  }) : assert(
+         (loteId != null && pesoOriginal != null) || lotesIds != null,
+         'Debe proporcionar loteId y pesoOriginal o lotesIds',
+       );
 
   @override
   State<RecicladorFormularioSalida> createState() => _RecicladorFormularioSalidaState();
@@ -35,6 +42,8 @@ class RecicladorFormularioSalida extends StatefulWidget {
 class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida> {
   final _formKey = GlobalKey<FormState>();
   final LoteService _loteService = LoteService();
+  final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
+  final TransformacionService _transformacionService = TransformacionService();
   final UserSessionService _userSession = UserSessionService();
   final FirebaseStorageService _storageService = FirebaseStorageService();
   
@@ -46,8 +55,11 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
   // Variables para cálculos
   double _mermaCalculada = 0.0;
   double _pesoNetoAprovechable = 0.0;
+  double _pesoTotalOriginal = 0.0; // Para múltiples lotes
   
   // Estados
+  bool _isMultipleLotes = false;
+  List<LoteUnificadoModel> _lotesParaProcesar = [];
   bool _isLoading = false;
   
   // Variables para procesos aplicados
@@ -76,9 +88,12 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
   @override
   void initState() {
     super.initState();
+    _isMultipleLotes = widget.lotesIds != null && widget.lotesIds!.length > 1;
     _pesoResultanteController.addListener(_calcularMerma);
     _loadLoteData();
-    _initializeForm();
+    // Initialize operator
+    final userData = UserSessionService().getUserData();
+    _operadorController.text = userData?['nombre'] ?? '';
   }
   
   Future<void> _loadLoteData() async {
@@ -87,14 +102,29 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
     });
     
     try {
-      // Obtener datos del lote usando el servicio unificado
-      final loteUnificadoService = LoteUnificadoService();
-      final lote = await loteUnificadoService.obtenerLotePorId(widget.loteId);
-      
-      if (lote == null) {
-        print('Lote no encontrado');
+      if (_isMultipleLotes) {
+        // Cargar múltiples lotes
+        double pesoTotal = 0;
+        for (final loteId in widget.lotesIds!) {
+          final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
+          if (lote != null && lote.puedeSerTransformado) {
+            _lotesParaProcesar.add(lote);
+            pesoTotal += lote.pesoActual;
+          }
+        }
         setState(() {
-          _pesoNetoAprovechable = widget.pesoOriginal;
+          _pesoTotalOriginal = pesoTotal;
+          _pesoNetoAprovechable = pesoTotal;
+        });
+      } else {
+        // Cargar lote individual
+        final lote = await _loteUnificadoService.obtenerLotePorId(widget.loteId!);
+        
+        if (lote == null) {
+          print('Lote no encontrado');
+          setState(() {
+            _pesoTotalOriginal = widget.pesoOriginal!;
+            _pesoNetoAprovechable = widget.pesoOriginal!;
           _isLoading = false;
         });
         return;
@@ -180,14 +210,15 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
       } else {
         // Si no existe el documento, usar el peso original pasado como parámetro
         setState(() {
-          _pesoNetoAprovechable = widget.pesoOriginal;
+          _pesoNetoAprovechable = widget.pesoOriginal ?? 0.0;
         });
       }
+    }
     } catch (e) {
       print('Error al cargar datos del lote unificado: $e');
       // Fallback al peso original
       setState(() {
-        _pesoNetoAprovechable = widget.pesoOriginal;
+        _pesoNetoAprovechable = widget.pesoOriginal ?? 0.0;
       });
     } finally {
       setState(() {
@@ -196,10 +227,6 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
     }
   }
   
-  void _initializeForm() {
-    final userData = _userSession.getUserData();
-    _operadorController.text = userData?['nombre'] ?? '';
-  }
 
   @override
   void dispose() {
@@ -215,6 +242,19 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
     setState(() {
       _mermaCalculada = _pesoNetoAprovechable - pesoResultante;
     });
+  }
+  
+  Color _getMaterialColor(String material) {
+    switch (material) {
+      case 'PEBD':
+        return BioWayColors.pebdPink;
+      case 'PP':
+        return BioWayColors.ppPurple;
+      case 'Multilaminado':
+        return BioWayColors.multilaminadoBrown;
+      default:
+        return BioWayColors.ecoceGreen;
+    }
   }
 
   void _showSignatureDialog() {
@@ -356,12 +396,32 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
         datosActualizacion['fecha_salida'] = FieldValue.serverTimestamp();
       }
 
-      // Actualizar usando el servicio unificado
-      await loteUnificadoService.actualizarDatosProceso(
-        loteId: widget.loteId,
-        proceso: 'reciclador',
-        datos: datosActualizacion,
-      );
+      // Verificar si es procesamiento múltiple
+      if (_isMultipleLotes && !esGuardadoParcial) {
+        // Crear transformación con múltiples lotes
+        final transformacionId = await _transformacionService.crearTransformacion(
+          lotes: _lotesParaProcesar,
+          mermaProceso: _mermaCalculada,
+          procesoAplicado: procesosSeleccionados.join(', '),
+          observaciones: _comentariosController.text.trim(),
+        );
+        
+        // Actualizar cada lote con los datos de salida
+        for (final lote in _lotesParaProcesar) {
+          await _loteUnificadoService.actualizarDatosProceso(
+            loteId: lote.id,
+            proceso: 'reciclador',
+            datos: datosActualizacion,
+          );
+        }
+      } else {
+        // Actualizar lote individual
+        await _loteUnificadoService.actualizarDatosProceso(
+          loteId: widget.loteId!,
+          proceso: 'reciclador',
+          datos: datosActualizacion,
+        );
+      }
 
       if (mounted) {
         if (esGuardadoParcial) {
@@ -377,7 +437,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
           _showSuccessAndNavigate();
         }
       }
-      } catch (e) {
+    } catch (e) {
         if (mounted) {
           DialogUtils.showErrorDialog(
             context: context,
@@ -432,7 +492,9 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
               ),
               const SizedBox(height: 10),
               Text(
-                'Se ha guardado el formulario de salida del lote ${widget.loteId}.\n\nAhora debe cargar la documentación requerida.',
+                _isMultipleLotes 
+                  ? 'Se ha creado una transformación con ${_lotesParaProcesar.length} lotes.\n\nLos lotes han sido procesados y marcados como consumidos.'
+                  : 'Se ha guardado el formulario de salida del lote ${widget.loteId}.\n\nAhora debe cargar la documentación requerida.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
@@ -445,14 +507,21 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(); // Cerrar el diálogo
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => RecicladorDocumentacion(
-                      lotId: widget.loteId,
+                if (_isMultipleLotes) {
+                  // Para múltiples lotes, volver a la lista
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  Navigator.pushReplacementNamed(context, '/reciclador_lotes');
+                } else {
+                  // Para lote individual, ir a documentación
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => RecicladorDocumentacion(
+                        lotId: widget.loteId!,
+                      ),
                     ),
-                  ),
-                );
+                  );
+                }
               },
               child: Text(
                 'Continuar',
@@ -483,9 +552,11 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
             Navigator.pop(context);
           },
         ),
-        title: const Text(
-          'Formulario de Salida',
-          style: TextStyle(
+        title: Text(
+          _isMultipleLotes 
+            ? 'Procesar ${widget.lotesIds?.length ?? 0} Lotes'
+            : 'Formulario de Salida',
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -525,7 +596,9 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    'Lote ${widget.loteId}',
+                    _isMultipleLotes
+                      ? '${widget.lotesIds?.length ?? 0} lotes seleccionados'
+                      : 'Lote ${widget.loteId}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -545,6 +618,72 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                 key: _formKey,
                 child: Column(
                   children: [
+                    // Mostrar lotes seleccionados si es procesamiento múltiple
+                    if (_isMultipleLotes && _lotesParaProcesar.isNotEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.merge_type,
+                                  color: BioWayColors.ecoceGreen,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Lotes a procesar juntos',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            ..._lotesParaProcesar.map((lote) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: _getMaterialColor(lote.datosGenerales.tipoMaterial),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Lote ${lote.id.substring(0, 8)}',
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    '${lote.datosGenerales.tipoMaterial} - ${lote.pesoActual.toStringAsFixed(2)} kg',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )).toList(),
+                          ],
+                        ),
+                      ),
+                    ],
                     // Tarjeta de Características del Lote
                     Container(
                       width: double.infinity,

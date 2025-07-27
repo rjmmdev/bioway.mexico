@@ -5,7 +5,7 @@ import '../../../services/lote_service.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
 import '../../../models/lotes/lote_reciclador_model.dart';
-import 'reciclador_administracion_lotes_v2.dart';
+import 'reciclador_administracion_lotes.dart';
 import '../shared/widgets/document_upload_per_requirement_widget.dart';
 
 class RecicladorDocumentacion extends StatefulWidget {
@@ -158,7 +158,7 @@ class _RecicladorDocumentacionState extends State<RecicladorDocumentacion> {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const RecicladorAdministracionLotesV2(
+                        builder: (context) => const RecicladorAdministracionLotes(
                           initialTab: 1, // Pestaña Completados
                         ),
                       ),
@@ -209,7 +209,7 @@ class _RecicladorDocumentacionState extends State<RecicladorDocumentacion> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const RecicladorAdministracionLotesV2(
+            builder: (context) => const RecicladorAdministracionLotes(
               initialTab: 1, // Pestaña Completados
             ),
           ),
@@ -228,7 +228,7 @@ class _RecicladorDocumentacionState extends State<RecicladorDocumentacion> {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const RecicladorAdministracionLotesV2(
+                  builder: (context) => const RecicladorAdministracionLotes(
                     initialTab: 1, // Pestaña Completados
                   ),
                 ),

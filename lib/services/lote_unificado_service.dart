@@ -1622,4 +1622,156 @@ class LoteUnificadoService {
           };
         });
   }
+  
+  // ============= MÉTODOS PARA SISTEMA DE TRANSFORMACIONES =============
+  
+  /// Obtiene lotes del reciclador que pueden ser transformados
+  Stream<List<LoteUnificadoModel>> obtenerLotesTransformables() {
+    final userId = _currentUserId;
+    if (userId == null) {
+      _debugPrint('No hay usuario autenticado');
+      return Stream.value([]);
+    }
+    
+    return _firestore
+        .collection(COLECCION_LOTES)
+        .where('datos_generales.proceso_actual', isEqualTo: 'reciclador')
+        .where('datos_generales.tipo_lote', isEqualTo: 'original')
+        .where('datos_generales.consumido_en_transformacion', isEqualTo: false)
+        .snapshots()
+        .asyncMap((snapshot) async {
+      List<LoteUnificadoModel> lotes = [];
+      
+      for (var doc in snapshot.docs) {
+        try {
+          final lote = await obtenerLotePorId(doc.id);
+          if (lote != null && lote.puedeSerTransformado) {
+            // Verificar que el lote pertenece al reciclador actual
+            if (lote.reciclador?.usuarioId == userId) {
+              lotes.add(lote);
+            }
+          }
+        } catch (e) {
+          _debugPrint('Error procesando lote ${doc.id}: $e');
+        }
+      }
+      
+      return lotes;
+    });
+  }
+  
+  /// Marca múltiples lotes como consumidos en una transformación
+  Future<void> marcarLotesComoConsumidos({
+    required List<String> loteIds,
+    required String transformacionId,
+  }) async {
+    try {
+      // Usar batch para actualizar múltiples documentos
+      final batch = _firestore.batch();
+      
+      for (final loteId in loteIds) {
+        final datosGeneralesRef = _firestore
+            .collection(COLECCION_LOTES)
+            .doc(loteId)
+            .collection(DATOS_GENERALES)
+            .doc('data');
+            
+        batch.update(datosGeneralesRef, {
+          'consumido_en_transformacion': true,
+          'transformacion_id': transformacionId,
+          'fecha_consumido': FieldValue.serverTimestamp(),
+        });
+      }
+      
+      await batch.commit();
+      _debugPrint('${loteIds.length} lotes marcados como consumidos en transformación $transformacionId');
+    } catch (e) {
+      _debugPrint('Error al marcar lotes como consumidos: $e');
+      throw Exception('Error al marcar lotes como consumidos: $e');
+    }
+  }
+  
+  /// Crea un lote en el sistema unificado a partir de un sublote
+  Future<void> crearLoteDesdeSubLote({
+    required String subloteId,
+    required Map<String, dynamic> datosSubLote,
+  }) async {
+    try {
+      // Crear estructura de lote unificado
+      final loteRef = _firestore.collection(COLECCION_LOTES).doc(subloteId);
+      
+      // Datos generales
+      await loteRef.collection(DATOS_GENERALES).doc('data').set({
+        'id': subloteId,
+        'fecha_creacion': FieldValue.serverTimestamp(),
+        'creado_por': datosSubLote['creado_por'],
+        'tipo_material': datosSubLote['material_predominante'] ?? 'Mixto',
+        'peso_inicial': datosSubLote['peso'],
+        'peso': datosSubLote['peso'],
+        'estado_actual': 'activo',
+        'proceso_actual': 'reciclador',
+        'historial_procesos': ['reciclador'],
+        'qr_code': datosSubLote['qr_code'],
+        'tipo_lote': 'derivado',
+        'consumido_en_transformacion': false,
+        'sublote_origen_id': subloteId,
+        'transformacion_origen': datosSubLote['transformacion_origen'],
+      });
+      
+      // Proceso reciclador
+      await loteRef.collection(PROCESO_RECICLADOR).doc('data').set({
+        'usuario_id': datosSubLote['creado_por'],
+        'usuario_folio': datosSubLote['creado_por_folio'],
+        'fecha_entrada': FieldValue.serverTimestamp(),
+        'peso_entrada': datosSubLote['peso'],
+        'evidencias_foto': [],
+        'es_sublote': true,
+        'composicion': datosSubLote['composicion'] ?? {},
+      });
+      
+      _debugPrint('Lote creado desde sublote: $subloteId');
+    } catch (e) {
+      _debugPrint('Error al crear lote desde sublote: $e');
+      throw Exception('Error al crear lote desde sublote: $e');
+    }
+  }
+  
+  /// Obtiene lotes del reciclador incluyendo sublotes
+  Stream<List<LoteUnificadoModel>> obtenerLotesRecicladorConSublotes() {
+    final userId = _currentUserId;
+    if (userId == null) {
+      _debugPrint('No hay usuario autenticado');
+      return Stream.value([]);
+    }
+    
+    return _firestore
+        .collection(COLECCION_LOTES)
+        .where('datos_generales.proceso_actual', isEqualTo: 'reciclador')
+        .snapshots()
+        .asyncMap((snapshot) async {
+      List<LoteUnificadoModel> lotes = [];
+      
+      for (var doc in snapshot.docs) {
+        try {
+          final lote = await obtenerLotePorId(doc.id);
+          if (lote != null && lote.reciclador?.usuarioId == userId) {
+            lotes.add(lote);
+          }
+        } catch (e) {
+          _debugPrint('Error procesando lote ${doc.id}: $e');
+        }
+      }
+      
+      // Ordenar: primero lotes originales no consumidos, luego sublotes, luego consumidos
+      lotes.sort((a, b) {
+        if (a.estaConsumido && !b.estaConsumido) return 1;
+        if (!a.estaConsumido && b.estaConsumido) return -1;
+        if (a.esSublote && !b.esSublote) return 1;
+        if (!a.esSublote && b.esSublote) return -1;
+        return b.datosGenerales.fechaCreacion.compareTo(a.datosGenerales.fechaCreacion);
+      });
+      
+      return lotes;
+    });
+  }
 }

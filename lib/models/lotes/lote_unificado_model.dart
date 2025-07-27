@@ -189,6 +189,21 @@ class LoteUnificadoModel {
   
   /// Verificar si el lote tiene análisis de laboratorio
   bool get tieneAnalisisLaboratorio => analisisLaboratorio.isNotEmpty;
+  
+  /// Verificar si el lote puede ser incluido en una transformación
+  bool get puedeSerTransformado {
+    // Solo lotes originales en proceso reciclador pueden ser transformados
+    return datosGenerales.tipoLote == 'original' &&
+           !datosGenerales.consumidoEnTransformacion &&
+           datosGenerales.procesoActual == 'reciclador' &&
+           reciclador != null;
+  }
+  
+  /// Verificar si es un sublote
+  bool get esSublote => datosGenerales.tipoLote == 'derivado';
+  
+  /// Verificar si está consumido en una transformación
+  bool get estaConsumido => datosGenerales.consumidoEnTransformacion;
 }
 
 /// Datos generales del lote (siempre presentes)
@@ -206,6 +221,12 @@ class DatosGeneralesLote {
   final String? materialPresentacion;
   final String? materialFuente;
   
+  // Campos para sistema de transformaciones
+  final String tipoLote; // 'original' o 'derivado'
+  final bool consumidoEnTransformacion;
+  final String? transformacionId; // Si fue consumido, ID de la transformación
+  final String? subloteOrigenId; // Si es derivado, ID del sublote
+  
   DatosGeneralesLote({
     required this.id,
     required this.fechaCreacion,
@@ -219,6 +240,10 @@ class DatosGeneralesLote {
     required this.qrCode,
     this.materialPresentacion,
     this.materialFuente,
+    this.tipoLote = 'original',
+    this.consumidoEnTransformacion = false,
+    this.transformacionId,
+    this.subloteOrigenId,
   });
   
   factory DatosGeneralesLote.fromMap(Map<String, dynamic> map) {
@@ -235,6 +260,10 @@ class DatosGeneralesLote {
       qrCode: map['qr_code'] ?? '',
       materialPresentacion: map['material_presentacion'],
       materialFuente: map['material_fuente'],
+      tipoLote: map['tipo_lote'] ?? 'original',
+      consumidoEnTransformacion: map['consumido_en_transformacion'] ?? false,
+      transformacionId: map['transformacion_id'],
+      subloteOrigenId: map['sublote_origen_id'],
     );
   }
   
@@ -252,6 +281,10 @@ class DatosGeneralesLote {
       'qr_code': qrCode,
       'material_presentacion': materialPresentacion,
       'material_fuente': materialFuente,
+      'tipo_lote': tipoLote,
+      'consumido_en_transformacion': consumidoEnTransformacion,
+      'transformacion_id': transformacionId,
+      'sublote_origen_id': subloteOrigenId,
     };
   }
 }

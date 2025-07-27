@@ -10,7 +10,7 @@ import 'screens/ecoce/origen/origen_crear_lote_screen.dart';
 
 // Screens - Reciclador
 import 'screens/ecoce/reciclador/reciclador_inicio.dart';
-import 'screens/ecoce/reciclador/reciclador_administracion_lotes_v2.dart';
+import 'screens/ecoce/reciclador/reciclador_administracion_lotes.dart';
 import 'screens/ecoce/reciclador/reciclador_escaneo_qr.dart';
 import 'screens/ecoce/reciclador/reciclador_documentacion.dart';
 import 'screens/ecoce/reciclador/reciclador_formulario_recepcion.dart';
@@ -231,7 +231,7 @@ class BioWayApp extends StatelessWidget {
         '/reciclador_inicio': (context) => const RecicladorInicio(),
         '/reciclador_lotes': (context) {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-          return RecicladorAdministracionLotesV2(
+          return RecicladorAdministracionLotes(
             initialTab: args?['initialTab'] ?? 0,
           );
         },
