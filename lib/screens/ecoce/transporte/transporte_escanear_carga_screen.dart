@@ -4,7 +4,6 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/qr_utils.dart';
 import '../../../services/lote_unificado_service.dart';
-import '../../../services/user_session_service.dart';
 import '../../../services/carga_transporte_service.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
 import '../../../models/lotes/lote_unificado_model.dart';

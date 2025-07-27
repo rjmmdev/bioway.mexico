@@ -190,8 +190,12 @@ class _EcoceAyudaScreenState extends State<EcoceAyudaScreen> {
       onRetry: _loadUserData,
       errorMessage: 'Error al cargar datos',
       primaryColor: primaryColor,
-      child: WillPopScope(
-        onWillPop: () async => false,
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
+          // Prevent back navigation on help screen
+        },
         child: Scaffold(
           backgroundColor: const Color(0xFFF5F5F5),
           body: SafeArea(

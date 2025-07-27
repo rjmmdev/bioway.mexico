@@ -177,6 +177,12 @@ lotes/                         # Unified lot collection
 │   ├── analisis_laboratorio/ # Laboratory analysis (parallel process)
 │   └── transformador/        # Transformer process data
 
+transformaciones/              # Megalotes and sublotes system
+├── [transformacionId]/
+│   ├── datos_generales/      # General transformation info
+│   ├── sublotes/             # Generated sublotes
+│   └── documentacion/        # Technical sheets and reports
+
 users_pending_deletion/        # Users marked for Auth deletion
 ├── [userId]
 │   └── status: "pending"/"completed"/"failed"
@@ -229,6 +235,30 @@ The system uses dynamic weight calculation through the `pesoActual` getter:
 - **Transformer**: Uses output weight or input weight
 
 **Important**: Laboratory samples are automatically subtracted from recycler's weight. The laboratory must take samples BEFORE transport picks up the lot.
+
+## Transformation System (Megalotes & Sublotes)
+
+### Overview
+The transformation system allows recyclers to process multiple lots together as "megalotes" and split them into "sublotes":
+- **Megalote**: Virtual container for processing multiple lots together
+- **Sublote**: New lot created from megalote with specific weight
+- **Automatic deletion**: Megalotes are removed when `pesoDisponible == 0` AND documentation is uploaded
+
+### Key Implementation
+```dart
+// Megalote deletion logic in transformacion_model.dart
+bool get debeSerEliminada => pesoDisponible <= 0 && tieneDocumentacion;
+
+// Creating sublotes
+await _transformacionService.crearSublote(
+  transformacionId: transformacion.id,
+  peso: peso,
+);
+```
+
+### Documentation Requirements
+- **Ficha Técnica de Pellet** (f_tecnica_pellet)
+- **Reporte de Resultado de Reciclador** (rep_result_reci)
 
 ## Unified Lot System
 
@@ -372,6 +402,29 @@ To get lots with laboratory analyses:
 _loteService.obtenerLotesConAnalisisLaboratorio()
 ```
 
+### Transformation System (Megalotes)
+Megalotes are created when recycler processes materials. Critical deletion logic:
+```dart
+// TransformacionModel deletion criteria
+bool get debeSerEliminada => pesoDisponible <= 0 && tieneDocumentacion;
+
+// NEVER auto-complete transformations when uploading docs
+// Let the user explicitly mark as complete
+```
+
+### Merma Calculation Display
+Always wrap merma calculations in setState for UI updates:
+```dart
+void _calcularMerma() {
+  setState(() {
+    final pesoOriginal = double.tryParse(_pesoOriginalController.text) ?? 0;
+    final pesoProcesado = double.tryParse(_pesoProcesadoController.text) ?? 0;
+    _merma = pesoOriginal - pesoProcesado;
+    _mermaController.text = _merma.toStringAsFixed(2);
+  });
+}
+```
+
 ### Signature Widget Pattern
 For signature capture with dynamic sizing:
 ```dart
@@ -405,21 +458,46 @@ AspectRatio(
 )
 ```
 
-### WillPopScope Pattern
-All main screens should prevent back button from logging out:
+### WillPopScope/PopScope Pattern
+All main screens should prevent back button from logging out. Use PopScope for newer Flutter versions:
 ```dart
 @override
 Widget build(BuildContext context) {
-  return WillPopScope(
-    onWillPop: () async {
-      // Prevent back button from closing session
-      return false;
+  return PopScope(
+    canPop: false,
+    onPopInvokedWithResult: (didPop, result) async {
+      if (didPop) return;
+      // Handle back button action
     },
     child: Scaffold(
       // ... screen content
     ),
   );
 }
+```
+
+### Adaptive UI for Overflow Prevention
+When displaying multiple items in rows, use Expanded widgets:
+```dart
+Row(
+  children: [
+    Expanded(
+      flex: 2,
+      child: Text(
+        'Long text here',
+        overflow: TextOverflow.ellipsis,
+      ),
+    ),
+    Expanded(
+      flex: 3,
+      child: Text(
+        'Another long text',
+        textAlign: TextAlign.end,
+        overflow: TextOverflow.ellipsis,
+      ),
+    ),
+  ],
+)
 ```
 
 ## Code Patterns
@@ -475,6 +553,22 @@ await DocumentUtils.openDocument(
   url: documentUrl,
   documentName: 'Constancia de Situación Fiscal',
 );
+```
+
+### Scrollable Content Pattern
+For filters and statistics that should scroll with content:
+```dart
+ListView(
+  physics: const BouncingScrollPhysics(),
+  children: [
+    // Filters container
+    Container(...),
+    // Statistics container  
+    Container(...),
+    // List items
+    ...items.map((item) => ItemWidget(item)),
+  ],
+)
 ```
 
 ## Naming Conventions
@@ -578,8 +672,10 @@ NEVER hardcode colors. Always use `BioWayColors` constants:
 ### UI/UX Improvements
 - **Signature Display**: Fixed AspectRatio to 2.5 with 300x120 dimensions
 - **Origin Statistics**: Shows ALL lots created (using `creado_por` field)
-- **Back Button**: All main screens use WillPopScope to prevent accidental logout
+- **Back Button**: All main screens use PopScope to prevent accidental logout
 - **Document Viewing**: Simplified approach with DocumentUtils and external browser
+- **Pixel Overflow**: Fixed in Recycler exit form with adaptive UI components
+- **Scrollable Statistics**: Made filters and statistics scrollable in lot management screens
 
 ### Weight Tracking
 - Dynamic weight calculation through `pesoActual` getter
@@ -590,5 +686,39 @@ NEVER hardcode colors. Always use `BioWayColors` constants:
 - Unified scanner implementation across all user types
 - Debounce logic to prevent duplicate scans
 - QRUtils for consistent QR code handling
+
+### Recent UI Updates (2025-07-27)
+- **Merma Display**: Fixed merma calculation display in Recycler reception form
+- **Scanner Messages**: Unified error messages in Transport receiver scanning
+- **Statistics Optimization**: Removed polymer statistics, reduced statistics space
+- **Adaptive Layouts**: Fixed pixel overflow in multi-lot processing sections
+
+### Critical Fixes (2025-07-27)
+
+#### Megalote Deletion Issue
+- **Problem**: Megalotes were being deleted without using all weight or uploading documentation
+- **Solution**: Modified `debeSerEliminada` getter in `transformacion_model.dart` to only check weight and documentation
+- **Files Modified**: 
+  - `lib/models/lotes/transformacion_model.dart` - Changed deletion logic
+  - `lib/screens/ecoce/reciclador/reciclador_transformacion_documentacion.dart` - Removed automatic completion
+
+#### Android Back Button Navigation
+- **Problem**: Back button was logging users out instead of navigating to home screen
+- **Solution**: Implemented PopScope with proper navigation handling
+- **Files Modified**:
+  - All Origin screens: Added PopScope to navigate to home instead of logout
+  - All Transporter screens: Replaced deprecated WillPopScope with PopScope
+  - Shared screens (profile, help): Updated to use PopScope
+
+#### UI/UX Improvements
+- **Merma Calculation**: Wrapped calculation in setState() for proper UI updates
+- **Scrollable Statistics**: Changed Column to ListView in lot management screens
+- **Adaptive Multi-lot Display**: Used Expanded widgets with flex ratios to prevent overflow
+- **Empty State Handling**: Ensured filters/statistics remain visible when no lots exist
+
+#### Code Cleanup
+- **Removed Unused Imports**: Cleaned up unused imports across Origin and Transporter screens
+- **Fixed Deprecated Methods**: Replaced withOpacity with withValues(alpha:)
+- **Added Missing Dependency**: Added pdf package (^3.11.0) to pubspec.yaml
 
 For detailed implementation fixes, see documentation in `docs/` directory.

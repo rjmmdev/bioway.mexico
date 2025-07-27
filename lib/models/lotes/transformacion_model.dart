@@ -47,8 +47,14 @@ class TransformacionModel {
           ? (data['fecha_fin'] as Timestamp).toDate() 
           : null,
       estado: data['estado'] ?? 'en_proceso',
-      lotesEntrada: (data['lotes_entrada'] as List<dynamic>)
-          .map((e) => LoteEntrada.fromMap(e as Map<String, dynamic>))
+      lotesEntrada: (data['lotes_entrada'] as List<dynamic>? ?? [])
+          .map((e) {
+            if (e is Map<String, dynamic>) {
+              return LoteEntrada.fromMap(e);
+            } else {
+              throw Exception('Formato inválido en lotes_entrada: se esperaba Map pero se recibió ${e.runtimeType}');
+            }
+          })
           .toList(),
       pesoTotalEntrada: (data['peso_total_entrada'] ?? 0.0).toDouble(),
       pesoDisponible: (data['peso_disponible'] ?? 0.0).toDouble(),
@@ -96,8 +102,14 @@ class TransformacionModel {
   /// Verifica si tiene documentación cargada
   bool get tieneDocumentacion => documentosAsociados.isNotEmpty;
   
+  /// Verifica si puede crear más sublotes
+  bool get puedeCrearSublotes => pesoDisponible > 0;
+  
+  /// Verifica si puede subir documentación
+  bool get puedeSubirDocumentacion => !tieneDocumentacion;
+  
   /// Verifica si la transformación está lista para ser eliminada
-  /// Solo debe eliminarse cuando no hay peso disponible Y tiene documentación
+  /// Se elimina cuando no hay peso disponible Y tiene documentación
   bool get debeSerEliminada => pesoDisponible <= 0 && tieneDocumentacion;
 }
 

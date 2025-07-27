@@ -138,28 +138,19 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
           // 1. NO sean sublotes (los sublotes ya pasaron por el proceso de salida)
           // 2. Estén en proceso reciclador
           // 3. No tengan fecha de salida
+          // 4. NO estén consumidos en una transformación
           return !esSublote &&
                  lote.datosGenerales.procesoActual == 'reciclador' &&
                  reciclador != null && 
-                 reciclador.fechaSalida == null;
+                 reciclador.fechaSalida == null &&
+                 !lote.estaConsumido; // Excluir lotes consumidos
         }).toList();
         
       case 1: // Completados
         var completados = filteredLotes.where((lote) {
-          final reciclador = lote.reciclador;
-          // Verificar si es un sublote
-          final bool esSublote = lote.datosGenerales.tipoLote == 'derivado' || 
-                                lote.datosGenerales.qrCode.startsWith('SUBLOTE-');
-          
-          // Mostrar:
-          // 1. Sublotes (siempre se consideran completados)
-          // 2. Lotes con fecha de salida (en reciclador)
-          // 3. Lotes transferidos sin documentación
-          return reciclador != null && (
-            esSublote ||
-            (lote.datosGenerales.procesoActual == 'reciclador' && reciclador.fechaSalida != null) ||
-            (lote.datosGenerales.procesoActual != 'reciclador')
-          );
+          // En la pestaña Completados SOLO mostrar sublotes que no han sido tomados por transportista
+          // Los megalotes se muestran a través del stream de transformaciones
+          return lote.esSublote && lote.datosGenerales.procesoActual == 'reciclador';
         }).toList();
         
         // Aplicar filtro de documentación si está activo
@@ -377,40 +368,11 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
   
   Widget _buildTabContent(List<LoteUnificadoModel> lotes) {
     final pesoTotal = _calcularPesoTotal(lotes);
-    final polimeroInfo = _calcularPolimeroMasComun(lotes);
     final tabColor = _getTabColor();
     
-    return lotes.isEmpty
-        ? ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            physics: const BouncingScrollPhysics(),
-            children: [
-              const SizedBox(height: 100),
-              Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.inventory_2_outlined,
-                      size: 80,
-                      color: Colors.grey[300],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No hay lotes en esta categoría',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          )
-        : ListView(
-            physics: const BouncingScrollPhysics(),
-            children: [
+    return ListView(
+      physics: const BouncingScrollPhysics(),
+      children: [
               // Filtros horizontales
               Container(
                 color: Colors.white,
@@ -636,68 +598,40 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    // Polímero más común
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: BioWayColors.ppPurple.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(Icons.polymer, color: BioWayColors.ppPurple, size: 18),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  '${polimeroInfo['material']} (${polimeroInfo['porcentaje']}%)',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                Text(
-                                  'Polímero más común',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
               ),
               
-              // Lista de lotes
-              ...lotes.map((lote) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildLoteCard(lote),
-              )),
+              // Lista de lotes o mensaje vacío
+              if (lotes.isEmpty) ...[
+                Container(
+                  height: 200,
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.inventory_2_outlined,
+                        size: 60,
+                        color: Colors.grey[300],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No hay lotes en esta categoría',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else ...[
+                ...lotes.map((lote) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildLoteCard(lote),
+                )),
+              ],
               const SizedBox(height: 80), // Espacio adicional al final
             ],
           );
@@ -1074,12 +1008,60 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
     );
   }
   
-  void _showQRCode(LoteUnificadoModel lote) {
+  void _showQRCode(LoteUnificadoModel lote) async {
     // Verificar si es un sublote
     final bool esSublote = lote.datosGenerales.tipoLote == 'derivado' || 
                           lote.datosGenerales.qrCode.startsWith('SUBLOTE-');
     
     if (esSublote) {
+      // Para sublotes, verificar si necesita crearse en el sistema unificado
+      try {
+        // Verificar si el sublote ya existe como lote
+        final existeLote = await _loteService.obtenerLotePorId(lote.id);
+        if (existeLote == null) {
+          // Si no existe, crearlo desde el sublote
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+          
+          // Obtener datos del sublote desde la colección sublotes
+          final subloteDoc = await FirebaseFirestore.instance
+              .collection('sublotes')
+              .doc(lote.id)
+              .get();
+              
+          if (subloteDoc.exists) {
+            final subloteData = subloteDoc.data()!;
+            await _loteService.crearLoteDesdeSubLote(
+              subloteId: lote.id,
+              datosSubLote: {
+                'creado_por': subloteData['creado_por'],
+                'creado_por_folio': subloteData['creado_por_folio'],
+                'material_predominante': subloteData['material_predominante'] ?? 'Mixto',
+                'peso': subloteData['peso'],
+                'qr_code': subloteData['qr_code'],
+                'transformacion_origen': subloteData['transformacion_origen'],
+              },
+            );
+          }
+          
+          Navigator.of(context).pop(); // Cerrar loading
+        }
+      } catch (e) {
+        if (mounted) {
+          DialogUtils.showErrorDialog(
+            context,
+            title: 'Error',
+            message: 'Error al procesar sublote: ${e.toString()}',
+          );
+        }
+        return;
+      }
+      
       // Para sublotes, usar los datos generales directamente
       Navigator.push(
         context,
@@ -1199,28 +1181,6 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
     return total;
   }
   
-  // Calcular polímero más común
-  Map<String, dynamic> _calcularPolimeroMasComun(List<LoteUnificadoModel> lotes) {
-    if (lotes.isEmpty) return {'material': 'N/A', 'porcentaje': 0};
-    
-    final Map<String, int> conteo = {};
-    for (final lote in lotes) {
-      final material = lote.datosGenerales.tipoMaterial;
-      conteo[material] = (conteo[material] ?? 0) + 1;
-    }
-    
-    String materialMasComun = '';
-    int maxConteo = 0;
-    conteo.forEach((material, cantidad) {
-      if (cantidad > maxConteo) {
-        maxConteo = cantidad;
-        materialMasComun = material;
-      }
-    });
-    
-    final porcentaje = (maxConteo / lotes.length * 100).toInt();
-    return {'material': materialMasComun, 'porcentaje': porcentaje};
-  }
 
   @override
   void dispose() {
@@ -1370,9 +1330,10 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
         // NO filtrar transformaciones - mostrar todas
         final transformaciones = snapshot.data ?? [];
         final pesoTotal = _calcularPesoTotal(lotes);
-        final polimeroInfo = _calcularPolimeroMasComun(lotes);
         final tabColor = _getTabColor();
-        final bool hasNoItems = _showOnlyMegalotes ? transformaciones.isEmpty : (lotes.isEmpty && transformaciones.isEmpty);
+        // Solo sublotes en lotes (los megalotes están en transformaciones)
+        final sublotes = lotes.where((lote) => lote.esSublote).toList();
+        final bool hasNoItems = _showOnlyMegalotes ? transformaciones.isEmpty : (sublotes.isEmpty && transformaciones.isEmpty);
         
         return ListView(
           physics: const BouncingScrollPhysics(),
@@ -1639,21 +1600,21 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
             // Lista combinada de transformaciones y lotes o mensaje de vacío
             if (hasNoItems) ...[
               Container(
-                height: 300,
+                height: 200,
                 alignment: Alignment.center,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
                       _showOnlyMegalotes ? Icons.merge_type : Icons.inventory_2_outlined,
-                      size: 80,
+                      size: 60,
                       color: Colors.grey[300],
                     ),
                     const SizedBox(height: 16),
                     Text(
                       _showOnlyMegalotes 
-                        ? 'No hay megalotes completados'
-                        : 'No hay lotes completados',
+                        ? 'No hay megalotes'
+                        : 'No hay megalotes ni sublotes',
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey[600],
@@ -1672,7 +1633,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                   )
                 ),
               ] else ...[
-                // Si no, mostrar todo
+                // Mostrar transformaciones (megalotes) y sublotes únicamente
                 // Primero mostrar transformaciones
                 ...transformaciones.map((transformacion) => 
                   Padding(
@@ -1680,8 +1641,8 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                     child: _buildTransformacionCard(transformacion),
                   )
                 ),
-                // Luego mostrar lotes normales
-                ...lotes.map((lote) => 
+                // Luego mostrar SOLO sublotes (no lotes normales)
+                ...lotes.where((lote) => lote.esSublote).map((lote) => 
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: _buildLoteCard(lote),
@@ -2257,6 +2218,30 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                   if (dialogContext.mounted) {
                     Navigator.of(dialogContext).pop();
                   }
+                  
+                  // Crear el lote en el sistema unificado
+                  final subloteDoc = await FirebaseFirestore.instance
+                      .collection('sublotes')
+                      .doc(subloteId)
+                      .get();
+                      
+                  if (subloteDoc.exists) {
+                    final subloteData = subloteDoc.data()!;
+                    await _loteService.crearLoteDesdeSubLote(
+                      subloteId: subloteId,
+                      datosSubLote: {
+                        'creado_por': subloteData['creado_por'],
+                        'creado_por_folio': subloteData['creado_por_folio'],
+                        'material_predominante': subloteData['material_predominante'] ?? 'Mixto',
+                        'peso': subloteData['peso'],
+                        'qr_code': subloteData['qr_code'],
+                        'transformacion_origen': subloteData['transformacion_origen'],
+                      },
+                    );
+                  }
+                  
+                  // Recargar los lotes
+                  _loadLotes();
                   
                   // Mostrar éxito
                   if (mounted) {

@@ -266,13 +266,15 @@ class _TransporteEntregaPasosScreenState extends State<TransporteEntregaPasosScr
   Widget build(BuildContext context) {
     final currentStepInfo = _steps[_currentStep];
     
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: _currentStep == 0,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
         if (_currentStep > 0) {
           _previousStep();
-          return false;
+        } else {
+          Navigator.of(context).pop();
         }
-        return true;
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F5F5),

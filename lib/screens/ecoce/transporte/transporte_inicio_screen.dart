@@ -5,7 +5,6 @@ import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
 import '../../../services/user_session_service.dart';
 import '../../../models/ecoce/ecoce_profile_model.dart';
-import '../../../services/lote_service.dart';
 import '../../../services/carga_transporte_service.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/unified_stat_card.dart';
@@ -162,8 +161,12 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async => false,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        // Prevent back navigation on home screen
+      },
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F5F5),
         body: SafeArea(

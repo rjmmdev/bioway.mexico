@@ -529,8 +529,11 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
   
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        
         // Mostrar la misma alerta al presionar el botón de retroceso
         final shouldLeave = await showDialog<bool>(
           context: context,
@@ -556,7 +559,9 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
           ),
         );
         
-        return shouldLeave ?? false;
+        if (shouldLeave == true && mounted) {
+          Navigator.of(context).pop();
+        }
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F5F5),

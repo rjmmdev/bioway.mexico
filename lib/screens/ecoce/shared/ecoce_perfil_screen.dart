@@ -152,8 +152,12 @@ class _EcocePerfilScreenState extends State<EcocePerfilScreen> with SingleTicker
       onRetry: _loadUserData,
       errorMessage: 'Error al cargar perfil',
       primaryColor: primaryColor,
-      child: WillPopScope(
-        onWillPop: () async => false,
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
+          // Prevent back navigation on profile screen
+        },
         child: Scaffold(
           backgroundColor: const Color(0xFFF5F5F5),
           body: SafeArea(

@@ -769,7 +769,19 @@ class LoteUnificadoService {
         final loteId = doc.reference.parent.parent!.id;
         final lote = await obtenerLotePorId(loteId);
         
-        if (lote != null && lote.reciclador != null) {
+        if (lote != null) {
+          // Incluir lotes del reciclador o sublotes (tipo_lote: 'derivado')
+          bool esDelReciclador = lote.reciclador != null || lote.esSublote;
+          
+          if (!esDelReciclador) {
+            continue; // Saltar si no es del reciclador ni sublote
+          }
+          
+          // EXCLUIR LOTES CONSUMIDOS EN TRANSFORMACIONES
+          if (lote.estaConsumido) {
+            continue; // Saltar lotes consumidos
+          }
+          
           // Incluir si está en reciclador o si fue transferido pero le falta documentación
           if (lote.datosGenerales.procesoActual == 'reciclador') {
             lotes.add(lote);
@@ -1772,7 +1784,7 @@ class LoteUnificadoService {
       final loteRef = _firestore.collection(COLECCION_LOTES).doc(subloteId);
       
       // Datos generales
-      await loteRef.collection(DATOS_GENERALES).doc('data').set({
+      await loteRef.collection(DATOS_GENERALES).doc('info').set({
         'id': subloteId,
         'fecha_creacion': FieldValue.serverTimestamp(),
         'creado_por': datosSubLote['creado_por'],

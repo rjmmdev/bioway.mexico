@@ -168,17 +168,33 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
           .get();
       
       if (recicladorDoc.exists) {
-        final data = recicladorDoc.data()!;
-        setState(() {
+        final data = recicladorDoc.data();
+        if (data != null && data is Map<String, dynamic>) {
+          setState(() {
           // NO sobrescribir el peso neto aprovechable si ya fue calculado desde pesoActual
           // Solo usar este valor si no tenemos un peso calculado
           if (_pesoNetoAprovechable == 0) {
-            _pesoNetoAprovechable = (data['peso_neto'] ?? data['peso_entrada'] ?? widget.pesoOriginal).toDouble();
+            final pesoNeto = data['peso_neto'];
+            final pesoEntrada = data['peso_entrada'];
+            final pesoOriginal = widget.pesoOriginal;
+            
+            // Manejar diferentes tipos de datos (int o double)
+            if (pesoNeto != null) {
+              _pesoNetoAprovechable = pesoNeto is int ? pesoNeto.toDouble() : (pesoNeto as double);
+            } else if (pesoEntrada != null) {
+              _pesoNetoAprovechable = pesoEntrada is int ? pesoEntrada.toDouble() : (pesoEntrada as double);
+            } else if (pesoOriginal != null) {
+              _pesoNetoAprovechable = pesoOriginal;
+            }
           }
           
           // Cargar datos de salida guardados previamente
-          if (data['peso_neto_salida'] != null && data['peso_neto_salida'] > 0) {
-            _pesoResultanteController.text = data['peso_neto_salida'].toString();
+          if (data['peso_neto_salida'] != null) {
+            final pesoSalida = data['peso_neto_salida'];
+            final pesoDouble = pesoSalida is int ? pesoSalida.toDouble() : (pesoSalida as double);
+            if (pesoDouble > 0) {
+              _pesoResultanteController.text = pesoDouble.toString();
+            }
           }
           
           // Cargar operador de salida si existe
@@ -233,7 +249,8 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
             _hasImages = true;
             _existingPhotoUrls = List<String>.from(data['evidencias_foto_salida']);
           }
-        });
+          });
+        }
       } else {
         // Si no existe el documento y no tenemos peso calculado, usar el peso original
         setState(() {
@@ -430,14 +447,21 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
       // SIEMPRE crear transformación (megalote) - incluso para lotes individuales
       if (!esGuardadoParcial) {
         // Asegurar que tenemos los lotes a procesar
-        if (_lotesParaProcesar.isEmpty && widget.lotesIds != null) {
-          // Si no se cargaron los lotes pero tenemos los IDs, cargarlos
-          for (final loteId in widget.lotesIds!) {
+        if (_lotesParaProcesar.isEmpty) {
+          // Si no se cargaron los lotes, intentar cargarlos
+          final lotesIds = widget.lotesIds ?? (widget.loteId != null ? [widget.loteId!] : []);
+          
+          for (final loteId in lotesIds) {
             final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
             if (lote != null && lote.puedeSerTransformado) {
               _lotesParaProcesar.add(lote);
             }
           }
+        }
+        
+        // Verificar que tenemos lotes para procesar
+        if (_lotesParaProcesar.isEmpty) {
+          throw Exception('No hay lotes válidos para procesar');
         }
         
         // Crear transformación con los lotes (uno o varios)
@@ -448,24 +472,19 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
           observaciones: _comentariosController.text.trim().isNotEmpty ? _comentariosController.text.trim() : null,
         );
         
-        // Actualizar cada lote con los datos de salida
-        for (final lote in _lotesParaProcesar) {
+        // NO actualizar los lotes individuales cuando se crea una transformación
+        // Los lotes originales se marcan como consumidos en el TransformacionService
+        // y no deben aparecer como completados
+      } else {
+        // Solo actualizar datos sin crear transformación (guardado parcial)
+        final lotesIds = widget.lotesIds ?? (widget.loteId != null ? [widget.loteId!] : []);
+        
+        for (final loteId in lotesIds) {
           await _loteUnificadoService.actualizarDatosProceso(
-            loteId: lote.id,
+            loteId: loteId,
             proceso: 'reciclador',
             datos: datosActualizacion,
           );
-        }
-      } else {
-        // Solo actualizar datos sin crear transformación (guardado parcial)
-        if (widget.lotesIds != null) {
-          for (final loteId in widget.lotesIds!) {
-            await _loteUnificadoService.actualizarDatosProceso(
-              loteId: loteId,
-              proceso: 'reciclador',
-              datos: datosActualizacion,
-            );
-          }
         }
       }
 
@@ -480,7 +499,9 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
             },
           );
         } else {
-          _showSuccessAndNavigate();
+          // Navegar sin mostrar diálogo de éxito
+          Navigator.of(context).popUntil((route) => route.isFirst);
+          Navigator.pushReplacementNamed(context, '/reciclador_lotes', arguments: 1);
         }
       }
     } catch (e) {
@@ -511,64 +532,65 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
     );
   }
 
-  void _showSuccessAndNavigate() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.check_circle,
-                color: BioWayColors.success,
-                size: 80,
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Formulario Completado',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Se ha creado una transformación (megalote) con ${_lotesParaProcesar.length} ${_lotesParaProcesar.length == 1 ? "lote" : "lotes"}.\n\nLos lotes han sido procesados y marcados como consumidos.\n\nAhora debe cargar la documentación requerida.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: BioWayColors.textGrey,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Cerrar el diálogo
-                // Todos los casos van a la pantalla de lotes, pestaña completados
-                Navigator.of(context).popUntil((route) => route.isFirst);
-                Navigator.pushReplacementNamed(context, '/reciclador_lotes');
-              },
-              child: Text(
-                'Continuar',
-                style: TextStyle(
-                  color: BioWayColors.ecoceGreen,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  // Método comentado - ya no se usa
+  // void _showSuccessAndNavigate() {
+  //   showDialog(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (BuildContext context) {
+  //       return AlertDialog(
+  //         shape: RoundedRectangleBorder(
+  //           borderRadius: BorderRadius.circular(20),
+  //         ),
+  //         content: Column(
+  //           mainAxisSize: MainAxisSize.min,
+  //           children: [
+  //             Icon(
+  //               Icons.check_circle,
+  //               color: BioWayColors.success,
+  //               size: 80,
+  //             ),
+  //             const SizedBox(height: 20),
+  //             const Text(
+  //               'Formulario Completado',
+  //               style: TextStyle(
+  //                 fontSize: 20,
+  //                 fontWeight: FontWeight.bold,
+  //               ),
+  //             ),
+  //             const SizedBox(height: 10),
+  //             Text(
+  //               'Se ha creado una transformación (megalote) con ${_lotesParaProcesar.length} ${_lotesParaProcesar.length == 1 ? "lote" : "lotes"}.\n\nLos lotes han sido procesados y marcados como consumidos.\n\nAhora debe cargar la documentación requerida.',
+  //               textAlign: TextAlign.center,
+  //               style: TextStyle(
+  //                 fontSize: 16,
+  //                 color: BioWayColors.textGrey,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //         actions: [
+  //           TextButton(
+  //             onPressed: () {
+  //               Navigator.of(context).pop(); // Cerrar el diálogo
+  //               // Todos los casos van a la pantalla de lotes, pestaña completados
+  //               Navigator.of(context).popUntil((route) => route.isFirst);
+  //               Navigator.pushReplacementNamed(context, '/reciclador_lotes');
+  //             },
+  //             child: Text(
+  //               'Continuar',
+  //               style: TextStyle(
+  //                 color: BioWayColors.ecoceGreen,
+  //                 fontWeight: FontWeight.bold,
+  //                 fontSize: 16,
+  //               ),
+  //             ),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -665,6 +687,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Row(
                               children: [
@@ -674,44 +697,134 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                   size: 24,
                                 ),
                                 const SizedBox(width: 8),
-                                const Text(
-                                  'Lotes a procesar juntos',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Lotes a procesar juntos',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${_lotesParaProcesar.length} lotes seleccionados',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 12),
-                            ..._lotesParaProcesar.map((lote) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: BoxDecoration(
-                                      color: _getMaterialColor(lote.datosGenerales.tipoMaterial),
-                                      shape: BoxShape.circle,
+                            // Limitar la altura si hay muchos lotes
+                            ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxHeight: _lotesParaProcesar.length > 5 ? 200 : double.infinity,
+                              ),
+                              child: SingleChildScrollView(
+                                physics: const BouncingScrollPhysics(),
+                                child: Column(
+                                  children: _lotesParaProcesar.map((lote) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: Colors.grey.withValues(alpha: 0.2),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 8,
+                                            height: 8,
+                                            decoration: BoxDecoration(
+                                              color: _getMaterialColor(lote.datosGenerales.tipoMaterial),
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            flex: 2,
+                                            child: Text(
+                                              'Lote ${lote.id.substring(0, 8).toUpperCase()}',
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            flex: 3,
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.end,
+                                              children: [
+                                                Text(
+                                                  lote.datosGenerales.tipoMaterial,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: _getMaterialColor(lote.datosGenerales.tipoMaterial),
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                Text(
+                                                  '${lote.pesoActual.toStringAsFixed(2)} kg',
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    color: Colors.grey[700],
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Lote ${lote.id.substring(0, 8)}',
-                                    style: const TextStyle(fontSize: 14),
-                                  ),
-                                  const Spacer(),
-                                  Text(
-                                    '${lote.datosGenerales.tipoMaterial} - ${lote.pesoActual.toStringAsFixed(2)} kg',
+                                  )).toList(),
+                                ),
+                              ),
+                            ),
+                            // Mostrar peso total
+                            const SizedBox(height: 8),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: BioWayColors.ecoceGreen.withValues(alpha: 0.05),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Peso total a procesar:',
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: Colors.grey[700],
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${_pesoTotalOriginal.toStringAsFixed(2)} kg',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: BioWayColors.ecoceGreen,
                                     ),
                                   ),
                                 ],
                               ),
-                            )).toList(),
+                            ),
                           ],
                         ),
                       ),

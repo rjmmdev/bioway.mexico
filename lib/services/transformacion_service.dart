@@ -90,7 +90,7 @@ class TransformacionService {
               .collection('lotes')
               .doc(lote.id)
               .collection('datos_generales')
-              .doc('info');  // Cambiar de 'data' a 'info'
+              .doc('data');  // Usar 'data' para consistencia con el modelo
               
           // Usar set con merge para crear el documento si no existe
           transaction.set(loteRef, {
@@ -165,10 +165,15 @@ class TransformacionService {
         historialProcesos: ['reciclador'],
       );
       
+      // Obtener material predominante para guardarlo en el mapa
+      final materialPredominante = sublote.materialPredominante;
+      
       // Usar transacción para actualizar transformación y crear sublote
       await _firestore.runTransaction((transaction) async {
-        // Crear el sublote
-        transaction.set(subloteRef, sublote.toMap());
+        // Crear el sublote con material predominante
+        final subloteMap = sublote.toMap();
+        subloteMap['material_predominante'] = materialPredominante;
+        transaction.set(subloteRef, subloteMap);
         
         // Actualizar la transformación
         transaction.update(
@@ -179,49 +184,9 @@ class TransformacionService {
           },
         );
         
-        // Crear entrada en lotes unificados para el sublote
-        final datosGeneralesRef = _firestore
-            .collection('lotes')
-            .doc(subloteId)
-            .collection('datos_generales')
-            .doc('info');  // Cambiar de 'data' a 'info' para consistencia
-            
-        transaction.set(datosGeneralesRef, {
-          'id': subloteId,
-          'fecha_creacion': FieldValue.serverTimestamp(),
-          'creado_por': userData['uid'],
-          'tipo_material': sublote.materialPredominante,
-          'peso_inicial': peso,
-          'peso': peso,
-          'estado_actual': 'activo',
-          'proceso_actual': 'reciclador',
-          'historial_procesos': ['reciclador'],
-          'qr_code': sublote.qrCode,
-          'tipo_lote': 'derivado',
-          'consumido_en_transformacion': false,
-          'sublote_origen_id': subloteId,
-          'transformacion_origen': transformacionId,
-        });
-        
-        // Crear proceso de reciclador para el sublote
-        final recicladorRef = _firestore
-            .collection('lotes')
-            .doc(subloteId)
-            .collection('reciclador')
-            .doc('data');
-            
-        transaction.set(recicladorRef, {
-          'fecha_entrada': FieldValue.serverTimestamp(),
-          'peso_entrada': peso,
-          'peso_procesado': peso,  // Sublote ya está procesado
-          'firma_salida': null,
-          'fecha_salida': null,
-          'entrega_completada': false,
-          'usuario_id': userData['uid'],
-          'usuario_folio': userData['folio'] ?? '',
-          'origen_transformacion': transformacionId,
-          'tipo_entrada': 'sublote',
-        });
+        // NO crear entrada en lotes unificados para el sublote
+        // Los sublotes se manejan separadamente y solo se crean como lotes
+        // cuando se necesita transferirlos a otro proceso
       });
       
       return subloteId;
@@ -259,6 +224,8 @@ class TransformacionService {
           // Ordenar manualmente para evitar requerir índice
           final transformaciones = snapshot.docs
               .map((doc) => TransformacionModel.fromFirestore(doc))
+              // Filtrar transformaciones que deben ser eliminadas (peso=0 y con documentación)
+              .where((transformacion) => !transformacion.debeSerEliminada)
               .toList();
           
           // Ordenar por fecha_inicio descendente
