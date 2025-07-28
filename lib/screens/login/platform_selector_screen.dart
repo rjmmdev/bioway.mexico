@@ -151,8 +151,7 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
 
   void _navigateToBioWay() {
     HapticFeedback.mediumImpact();
-    // Volver al login de BioWay
-    Navigator.pop(context);
+    Navigator.pushNamed(context, '/bioway_login');
   }
 
   void _navigateToECOCE() {

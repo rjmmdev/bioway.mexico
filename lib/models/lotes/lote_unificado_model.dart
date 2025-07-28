@@ -49,9 +49,12 @@ class LoteUnificadoModel {
     final Map<String, ProcesoTransporteData> fasesTransporte = {};
     transporteFases?.forEach((fase, doc) {
       if (doc.exists) {
-        fasesTransporte[fase] = ProcesoTransporteData.fromMap(
-          doc.data() as Map<String, dynamic>,
-        );
+        final data = doc.data();
+        if (data != null && data is Map) {
+          fasesTransporte[fase] = ProcesoTransporteData.fromMap(
+            Map<String, dynamic>.from(data),
+          );
+        }
       }
     });
     
@@ -59,27 +62,30 @@ class LoteUnificadoModel {
     final List<AnalisisLaboratorioData> analisis = [];
     analisisLaboratorio?.forEach((doc) {
       if (doc.exists) {
-        analisis.add(AnalisisLaboratorioData.fromMap(
-          doc.data() as Map<String, dynamic>,
-        ));
+        final data = doc.data();
+        if (data != null && data is Map) {
+          analisis.add(AnalisisLaboratorioData.fromMap(
+            Map<String, dynamic>.from(data),
+          ));
+        }
       }
     });
     
     return LoteUnificadoModel(
       id: id,
       datosGenerales: DatosGeneralesLote.fromMap(
-        datosGenerales.data() as Map<String, dynamic>,
+        Map<String, dynamic>.from(datosGenerales.data() as Map),
       ),
-      origen: origen != null 
-          ? ProcesoOrigenData.fromMap(origen.data() as Map<String, dynamic>)
+      origen: origen != null && origen.exists && origen.data() != null
+          ? ProcesoOrigenData.fromMap(Map<String, dynamic>.from(origen.data() as Map))
           : null,
       transporteFases: fasesTransporte,
-      reciclador: reciclador != null
-          ? ProcesoRecicladorData.fromMap(reciclador.data() as Map<String, dynamic>)
+      reciclador: reciclador != null && reciclador.exists && reciclador.data() != null
+          ? ProcesoRecicladorData.fromMap(Map<String, dynamic>.from(reciclador.data() as Map))
           : null,
       analisisLaboratorio: analisis,
-      transformador: transformador != null
-          ? ProcesoTransformadorData.fromMap(transformador.data() as Map<String, dynamic>)
+      transformador: transformador != null && transformador.exists && transformador.data() != null
+          ? ProcesoTransformadorData.fromMap(Map<String, dynamic>.from(transformador.data() as Map))
           : null,
     );
   }
@@ -513,7 +519,7 @@ class ProcesoLaboratorioData {
           : null,
       pesoMuestra: (map['peso_muestra'] ?? 0.0).toDouble(),
       tipoAnalisis: List<String>.from(map['tipo_analisis'] ?? []),
-      resultados: map['resultados'] as Map<String, dynamic>?,
+      resultados: _convertirAMapStringDynamic(map['resultados'], 'resultados'),
       certificado: map['certificado'],
       observaciones: map['observaciones'],
     );
@@ -562,9 +568,26 @@ class ProcesoTransformadorData {
           ? (map['merma_transformacion'] as num).toDouble() 
           : null,
       tipoProducto: map['tipo_producto'],
-      especificaciones: map['especificaciones'] as Map<String, dynamic>?,
+      especificaciones: _convertirAMapStringDynamic(map['especificaciones'], 'especificaciones'),
       evidenciasFoto: List<String>.from(map['evidencias_foto'] ?? []),
     );
+  }
+}
+
+/// Método helper para convertir de forma segura a Map<String, dynamic>
+Map<String, dynamic>? _convertirAMapStringDynamic(dynamic valor, String campo) {
+  try {
+    if (valor == null) return null;
+    if (valor is Map<String, dynamic>) return valor;
+    if (valor is Map) {
+      print('[LoteUnificadoModel] ADVERTENCIA: Convirtiendo $campo de Map genérico a Map<String, dynamic>');
+      return Map<String, dynamic>.from(valor);
+    }
+    print('[LoteUnificadoModel] ERROR: $campo no es un Map, es: ${valor.runtimeType}, valor: $valor');
+    return null;
+  } catch (e) {
+    print('[LoteUnificadoModel] ERROR al convertir $campo a Map<String, dynamic>: $e');
+    return null;
   }
 }
 

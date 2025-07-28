@@ -1922,8 +1922,10 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                   _buildActionButton(
                     icon: Icons.science,
                     label: 'Muestra',
-                    onPressed: () => _createMuestra(transformacion),
-                    enabled: true,
+                    onPressed: hasAvailableWeight
+                        ? () => _createMuestra(transformacion)
+                        : null,
+                    enabled: hasAvailableWeight,
                     color: Colors.orange,
                   ),
                   
@@ -2242,6 +2244,11 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                   
                   // Recargar los lotes
                   _loadLotes();
+                  
+                  // Asegurar que estamos en la pestaña Completados
+                  if (_tabController.index != 1) {
+                    _tabController.animateTo(1);
+                  }
                   
                   // Mostrar éxito
                   if (mounted) {

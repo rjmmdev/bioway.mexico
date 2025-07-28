@@ -40,8 +40,8 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
 
   // Estadísticas reales (valores iniciales)
   int _lotesRecibidos = 0;
-  int _lotesCreados = 0;
-  double _pesoProcesado = 0.0; // en kg
+  int _megalotesCreados = 0;
+  double _materialProcesado = 0.0; // en kg
   
   // Stream para lotes
   Stream<List<LoteRecicladorModel>>? _lotesStream;
@@ -98,16 +98,20 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
   
   Future<void> _loadInitialStatistics() async {
     try {
+      print('=== CARGANDO ESTADÍSTICAS INICIALES RECICLADOR ===');
       final stats = await _loteUnificadoService.obtenerEstadisticasReciclador();
+      print('Estadísticas obtenidas: $stats');
       
       if (mounted) {
         setState(() {
           _lotesRecibidos = stats['lotesRecibidos'] ?? 0;
-          _lotesCreados = stats['lotesCreados'] ?? 0;
-          _pesoProcesado = stats['materialProcesado'] ?? 0.0;
+          _megalotesCreados = stats['megalotesCreados'] ?? 0;
+          _materialProcesado = stats['materialProcesado'] ?? 0.0;
         });
+        print('Estado actualizado - Lotes: $_lotesRecibidos, Megalotes: $_megalotesCreados, Material: $_materialProcesado');
       }
     } catch (e) {
+      print('ERROR cargando estadísticas: $e');
       // Error ya manejado con valores por defecto
     }
   }
@@ -594,13 +598,13 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                             stream: _estadisticasStream,
                             initialData: {
                               'lotesRecibidos': _lotesRecibidos,
-                              'lotesCreados': _lotesCreados,
-                              'materialProcesado': _pesoProcesado,
+                              'megalotesCreados': _megalotesCreados,
+                              'materialProcesado': _materialProcesado,
                             },
                             builder: (context, snapshot) {
                               final stats = snapshot.data ?? {};
                               final lotesRecibidos = stats['lotesRecibidos'] ?? 0;
-                              final lotesCreados = stats['lotesCreados'] ?? 0;
+                              final megalotesCreados = stats['megalotesCreados'] ?? 0;
                               final materialProcesado = (stats['materialProcesado'] ?? 0.0) as double;
                               
                               return Column(
@@ -618,12 +622,12 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                                         ),
                                       ),
                                       const SizedBox(width: 12),
-                                      // Estadística de Lotes Creados
+                                      // Estadística de Megalotes Creados
                                       Expanded(
                                         child: UnifiedStatCard.horizontal(
-                                          title: 'Lotes creados',
-                                          value: lotesCreados.toString(),
-                                          icon: Icons.add_box,
+                                          title: 'Megalotes creados',
+                                          value: megalotesCreados.toString(),
+                                          icon: Icons.merge_type,
                                           color: BioWayColors.ppPurple,
                                           height: 70,
                                         ),

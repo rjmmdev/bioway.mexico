@@ -168,8 +168,24 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
           .get();
       
       if (recicladorDoc.exists) {
-        final data = recicladorDoc.data();
-        if (data != null && data is Map<String, dynamic>) {
+        print('[FORMULARIO_SALIDA] Documento reciclador existe');
+        final rawData = recicladorDoc.data();
+        print('[FORMULARIO_SALIDA] Tipo de rawData: ${rawData?.runtimeType}');
+        
+        if (rawData != null) {
+          print('[FORMULARIO_SALIDA] rawData no es null, intentando convertir');
+          
+          // Validar que rawData sea un Map antes de convertir
+          if (rawData is! Map) {
+            print('[FORMULARIO_SALIDA] ERROR: rawData no es Map, es: ${rawData.runtimeType}');
+            print('[FORMULARIO_SALIDA] Contenido de rawData: $rawData');
+            throw Exception('Datos del reciclador no son válidos: se esperaba Map pero se recibió ${rawData.runtimeType}');
+          }
+          
+          // Asegurar que data es un Map<String, dynamic>
+          final Map<String, dynamic> data = Map<String, dynamic>.from(rawData);
+          print('[FORMULARIO_SALIDA] Conversión exitosa a Map<String, dynamic>');
+          
           setState(() {
           // NO sobrescribir el peso neto aprovechable si ya fue calculado desde pesoActual
           // Solo usar este valor si no tenemos un peso calculado
@@ -501,7 +517,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
         } else {
           // Navegar sin mostrar diálogo de éxito
           Navigator.of(context).popUntil((route) => route.isFirst);
-          Navigator.pushReplacementNamed(context, '/reciclador_lotes', arguments: 1);
+          Navigator.pushReplacementNamed(context, '/reciclador_lotes', arguments: {'initialTab': 1});
         }
       }
     } catch (e) {

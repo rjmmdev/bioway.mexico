@@ -16,6 +16,10 @@ class TransformacionService {
     String? procesoAplicado,
     String? observaciones,
   }) async {
+    print('[TransformacionService] Iniciando creación de transformación');
+    print('[TransformacionService] Número de lotes: ${lotes.length}');
+    print('[TransformacionService] Merma proceso: $mermaProceso');
+    
     try {
       final userData = _userSession.getUserData();
       if (userData == null) throw Exception('Usuario no autenticado');
@@ -79,10 +83,17 @@ class TransformacionService {
         observaciones: observaciones,
       );
       
+      print('[TransformacionService] Transformación creada en memoria');
+      print('[TransformacionService] Convirtiendo transformación a Map');
+      
+      final transformacionMap = transformacion.toMap();
+      print('[TransformacionService] Map de transformación creado exitosamente');
+      
       // Usar transacción para asegurar consistencia
       await _firestore.runTransaction((transaction) async {
+        print('[TransformacionService] Iniciando transacción');
         // Crear la transformación
-        transaction.set(transformacionRef, transformacion.toMap());
+        transaction.set(transformacionRef, transformacionMap);
         
         // Marcar cada lote como consumido
         for (final lote in lotes) {
@@ -90,7 +101,7 @@ class TransformacionService {
               .collection('lotes')
               .doc(lote.id)
               .collection('datos_generales')
-              .doc('data');  // Usar 'data' para consistencia con el modelo
+              .doc('info');  // Usar 'info' - este es el documento correcto para datos_generales
               
           // Usar set con merge para crear el documento si no existe
           transaction.set(loteRef, {
