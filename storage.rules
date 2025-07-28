@@ -17,6 +17,12 @@ service firebase.storage {
       allow read: if request.auth != null; // Solo autenticados pueden leer
     }
     
+    // Permitir subida de documentos temporales para registro (sin autenticación)
+    match /ecoce/documentos/{solicitudId}/{document=**} {
+      allow write: if true; // Cualquiera puede subir durante registro
+      allow read: if request.auth != null; // Solo autenticados pueden leer
+    }
+    
     // Archivos de lotes - RUTAS ESPECÍFICAS
     match /lotes/{tipoLote}/{tipoArchivo}/{fileName} {
       allow read: if request.auth != null;

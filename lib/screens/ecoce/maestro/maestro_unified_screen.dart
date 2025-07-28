@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../utils/colors.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
+import '../../../services/firebase/firebase_manager.dart';
 import '../shared/widgets/loading_indicator.dart';
 import '../shared/utils/dialog_utils.dart';
 import 'widgets/maestro_solicitud_card.dart';
@@ -30,8 +33,8 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
   final List<String> _filtrosTipoUsuario = [];
   int _selectedIndex = 0; // 0: Aprobación, 1: Administración
   
-  // ID del usuario maestro (por ahora hardcodeado, luego se obtendría del usuario actual)
-  final String _maestroUserId = 'ECOCE_ADMIN_001';
+  // ID del usuario maestro
+  String _maestroUserId = '';
 
   @override
   void initState() {
@@ -39,6 +42,7 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
     WidgetsBinding.instance.addObserver(this);
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_handleTabChange);
+    _ensureMaestroSetup(); // Configurar usuario maestro si es necesario
     _loadSolicitudes();
   }
   
@@ -46,6 +50,56 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
     if (_tabController.indexIsChanging) return;
     // Recargar datos cuando se cambia de pestaña
     _loadSolicitudes();
+  }
+  
+  Future<void> _ensureMaestroSetup() async {
+    try {
+      // Obtener el usuario actual
+      final firebaseManager = FirebaseManager();
+      final app = firebaseManager.currentApp;
+      if (app == null) return;
+      
+      final auth = FirebaseAuth.instanceFor(app: app);
+      final firestore = FirebaseFirestore.instanceFor(app: app);
+      final currentUser = auth.currentUser;
+      
+      if (currentUser == null) {
+        print('No hay usuario autenticado');
+        return;
+      }
+      
+      final uid = currentUser.uid;
+      print('Verificando configuración del maestro con UID: $uid');
+      
+      // Guardar el UID para uso posterior
+      setState(() {
+        _maestroUserId = uid;
+      });
+      
+      // Verificar si existe en la colección maestros
+      final maestroDoc = firestore.collection('maestros').doc(uid);
+      final docSnapshot = await maestroDoc.get();
+      
+      if (!docSnapshot.exists) {
+        print('Creando documento en colección maestros para el usuario...');
+        await maestroDoc.set({
+          'activo': true,
+          'nombre': currentUser.displayName ?? 'Maestro ECOCE',
+          'email': currentUser.email,
+          'fecha_creacion': FieldValue.serverTimestamp(),
+          'permisos': {
+            'aprobar_solicitudes': true,
+            'eliminar_usuarios': true,
+            'gestionar_sistema': true,
+          }
+        });
+        print('✅ Usuario maestro configurado correctamente');
+      } else {
+        print('✅ Usuario maestro ya está configurado');
+      }
+    } catch (e) {
+      print('Error al configurar usuario maestro: $e');
+    }
   }
 
   @override

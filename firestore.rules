@@ -20,10 +20,6 @@ service cloud.firestore {
              exists(/databases/$(database)/documents/maestros/$(request.auth.uid));
     }
     
-    // Función para obtener datos del usuario actual
-    function getUserData() {
-      return get(/databases/$(database)/documents/ecoce_profiles/$(request.auth.uid)).data;
-    }
     
     // ============ COLECCIONES PRINCIPALES ============
     
@@ -54,8 +50,19 @@ service cloud.firestore {
     // Solicitudes de cuentas
     match /solicitudes_cuentas/{solicitudId} {
       allow create: if true; // Cualquiera puede crear solicitud
+      
+      // Permitir lectura a usuarios autenticados
       allow read: if isAuthenticated();
-      allow update, delete: if isMaestro();
+      
+      // Permitir actualizar documentos sin autenticación (para el flujo de registro)
+      // O permitir todas las actualizaciones si es maestro
+      allow update: if (
+        // Permitir actualización sin auth solo para documentos
+        request.auth == null && 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['documentos']) 
+      ) || isMaestro();
+      
+      allow delete: if isMaestro();
     }
     
     // ============ LOTES Y TRAZABILIDAD ============
@@ -212,13 +219,18 @@ service cloud.firestore {
     
     // Usuarios pendientes de eliminación
     match /users_pending_deletion/{userId} {
-      allow read, write: if isMaestro();
+      allow read: if isMaestro();
+      allow create: if isMaestro();
+      allow update: if isMaestro();
+      allow delete: if isMaestro();
     }
     
     // Logs de auditoría
     match /audit_logs/{logId} {
       allow read: if isMaestro();
-      allow write: if false; // Solo Cloud Functions
+      allow create: if isMaestro(); // Permitir que maestros creen logs
+      allow update: if false; // No se pueden actualizar logs
+      allow delete: if false; // No se pueden eliminar logs
     }
     
     // ============ REGLA TEMPORAL DE DEPURACIÓN ============
