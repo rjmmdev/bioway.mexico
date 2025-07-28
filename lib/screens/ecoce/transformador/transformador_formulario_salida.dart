@@ -68,18 +68,20 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
   final TextEditingController _productoGeneradoController = TextEditingController();
   final TextEditingController _cantidadGeneradaController = TextEditingController();
   final TextEditingController _mermaController = TextEditingController();
+  final TextEditingController _productoFabricadoController = TextEditingController();
+  final TextEditingController _compuestoController = TextEditingController();
   
   
-  // Variables para los procesos aplicados
+  // Variables para los procesos aplicados (tipos de proceso del transformador)
   final Map<String, bool> _procesosAplicados = {
-    'Triturado': false,
-    'Lavado': false,
-    'Secado': false,
+    'Inyección': false,
+    'Rotomoldeo': false,
     'Extrusión': false,
-    'Pelletizado': false,
-    'Clasificación': false,
-    'Control de calidad': false,
-    'Empaquetado': false,
+    'Termoformado': false,
+    'Pultrusión': false,
+    'Soplado': false,
+    'Laminado': false,
+    'Plástico corrugado': false,
   };
   
   // Variables para la firma
@@ -101,6 +103,14 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
   // Estado de carga
   bool _isLoading = false;
   String? _signatureUrl;
+  
+  // Variables para el transformador
+  String? _tipoPolimero; // Se extrae del lote
+  final double _porcentajeMaterialReciclado = 33.0; // Fijo
+  String? _transformacionId; // ID del megalote si existe
+  bool _hasUnsavedChanges = false;
+  List<String> _existingPhotoUrls = [];
+  bool _hasImages = false;
 
   @override
   void initState() {
@@ -158,37 +168,201 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
       _operadorController.text = userData['nombre'] ?? '';
     }
     
-    // Si es procesamiento múltiple, calcular peso total
-    if (_esProcesamientoMultiple && _loteIds.isNotEmpty) {
-      setState(() {
-        _isLoading = true;
-      });
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      double pesoTotal = 0.0;
+      Set<String> tiposPolimero = {};
       
-      try {
-        double pesoTotal = 0.0;
+      // Cargar información de los lotes
+      for (String loteId in _loteIds) {
+        final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
+        if (lote != null) {
+          pesoTotal += lote.pesoActual;
+          tiposPolimero.add(lote.datosGenerales.tipoMaterial);
+        }
+      }
+      
+      // Verificar que todos los lotes sean del mismo material
+      if (tiposPolimero.length > 1) {
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Materiales diferentes'),
+              content: const Text(
+                'Los lotes seleccionados contienen diferentes tipos de material. '
+                'Solo se pueden procesar juntos lotes del mismo tipo de material.'
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).pop(); // Salir del formulario
+                  },
+                  child: const Text('Entendido'),
+                ),
+              ],
+            ),
+          );
+          return;
+        }
+      }
+      
+      // Establecer el tipo de polímero
+      _tipoPolimero = tiposPolimero.first;
+      
+      // Verificar si existe una transformación guardada para estos lotes
+      final transformacionExistente = await _checkExistingTransformacion();
+      if (transformacionExistente != null) {
+        _transformacionId = transformacionExistente.id;
+        await _loadSavedData(transformacionExistente.data() as Map<String, dynamic>);
+      }
+      
+      setState(() {
+        _pesoTotalOriginal = pesoTotal;
+        if (_cantidadGeneradaController.text.isEmpty) {
+          _cantidadGeneradaController.text = pesoTotal.toStringAsFixed(2);
+        }
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error al inicializar formulario: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<DocumentSnapshot?> _checkExistingTransformacion() async {
+    try {
+      // Buscar transformación existente con estos lotes y estado 'en_proceso'
+      final query = await FirebaseFirestore.instance
+          .collection('transformaciones')
+          .where('tipo', isEqualTo: 'agrupacion_transformador')
+          .where('estado', isEqualTo: 'en_proceso')
+          .where('usuario_id', isEqualTo: _userSession.getUserData()?['userId'] ?? _userSession.getUserData()?['uid'])
+          .get();
+      
+      for (var doc in query.docs) {
+        final data = doc.data();
+        final lotesEntrada = List<String>.from(
+          (data['lotes_entrada'] as List).map((lote) => lote['lote_id'])
+        );
         
-        for (String loteId in _loteIds) {
-          final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
-          if (lote != null) {
-            pesoTotal += lote.pesoActual;
+        // Verificar si contiene los mismos lotes
+        if (lotesEntrada.length == _loteIds.length &&
+            lotesEntrada.toSet().containsAll(_loteIds)) {
+          return doc;
+        }
+      }
+      
+      return null;
+    } catch (e) {
+      print('Error al buscar transformación existente: $e');
+      return null;
+    }
+  }
+  
+  Future<void> _loadSavedData(Map<String, dynamic> data) async {
+    setState(() {
+      // Cargar procesos aplicados
+      if (data['procesos_aplicados'] != null) {
+        final procesos = List<String>.from(data['procesos_aplicados']);
+        for (var proceso in procesos) {
+          if (_procesosAplicados.containsKey(proceso)) {
+            _procesosAplicados[proceso] = true;
           }
         }
-        
-        setState(() {
-          _pesoTotalOriginal = pesoTotal;
-          _pesoSalidaController.text = pesoTotal.toStringAsFixed(2);
-          _isLoading = false;
-        });
-      } catch (e) {
-        setState(() {
-          _isLoading = false;
+      }
+      
+      // Cargar campos de texto
+      _productoFabricadoController.text = data['producto_fabricado'] ?? '';
+      _compuestoController.text = data['compuesto_67'] ?? '';
+      _cantidadGeneradaController.text = (data['cantidad_producto'] ?? _pesoTotalOriginal).toString();
+      _comentariosController.text = data['observaciones'] ?? '';
+      
+      // Cargar firma si existe
+      if (data['firma_operador'] != null) {
+        _signatureUrl = data['firma_operador'];
+        _hasSignature = true;
+      }
+      
+      // Cargar fotos si existen
+      if (data['evidencias_foto'] != null) {
+        _existingPhotoUrls = List<String>.from(data['evidencias_foto']);
+        _hasImages = _existingPhotoUrls.isNotEmpty;
+      }
+    });
+  }
+  
+  Future<void> _guardarBorrador() async {
+    if (_transformacionId == null) {
+      // Crear nueva transformación si no existe
+      final transformacionData = await _prepareTransformacionData();
+      final docRef = await FirebaseFirestore.instance
+          .collection('transformaciones')
+          .add(transformacionData);
+      _transformacionId = docRef.id;
+    } else {
+      // Actualizar transformación existente
+      final updateData = await _prepareTransformacionData();
+      await FirebaseFirestore.instance
+          .collection('transformaciones')
+          .doc(_transformacionId)
+          .update(updateData);
+    }
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Borrador guardado'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+  
+  Future<Map<String, dynamic>> _prepareTransformacionData() async {
+    final userData = await _userSession.getUserProfile();
+    
+    // Preparar datos de los lotes
+    List<Map<String, dynamic>> lotesEntrada = [];
+    for (String loteId in _loteIds) {
+      final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
+      if (lote != null) {
+        lotesEntrada.add({
+          'lote_id': loteId,
+          'peso': lote.pesoActual,
+          'tipo_material': lote.datosGenerales.tipoMaterial,
         });
       }
-    } else if (_loteIds.length == 1) {
-      // Para lote individual, usar el peso pasado
-      _pesoTotalOriginal = widget.peso ?? 0.0;
-      _pesoSalidaController.text = _pesoTotalOriginal.toStringAsFixed(2);
     }
+    
+    return {
+      'tipo': 'agrupacion_transformador',
+      'estado': 'en_proceso',
+      'fecha_inicio': FieldValue.serverTimestamp(),
+      'lotes_entrada': lotesEntrada,
+      'peso_total_entrada': _pesoTotalOriginal,
+      'procesos_aplicados': _procesosAplicados.entries
+          .where((e) => e.value)
+          .map((e) => e.key)
+          .toList(),
+      'producto_fabricado': _productoFabricadoController.text.trim(),
+      'compuesto_67': _compuestoController.text.trim(),
+      'cantidad_producto': double.tryParse(_cantidadGeneradaController.text) ?? 0,
+      'porcentaje_material_reciclado': _porcentajeMaterialReciclado,
+      'tipo_polimero': _tipoPolimero,
+      'observaciones': _comentariosController.text.trim(),
+      'usuario_id': userData?['userId'] ?? userData?['uid'] ?? '',
+      'usuario_folio': userData?['ecoceFolio'] ?? userData?['folio'] ?? '',
+      'firma_operador': _signatureUrl,
+      'evidencias_foto': _existingPhotoUrls,
+      'ultima_actualizacion': FieldValue.serverTimestamp(),
+    };
   }
 
   void _showSignatureDialog() {
@@ -201,9 +375,37 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
           _signaturePoints = List.from(points);
           _hasSignature = points.isNotEmpty;
         });
+        // Guardar borrador después de firmar
+        _guardarBorrador();
       },
       primaryColor: _primaryColor,
     );
+  }
+  
+  void _markAsUnsaved() {
+    setState(() {
+      _hasUnsavedChanges = true;
+    });
+  }
+  
+  bool _checkUnsavedChanges() {
+    return _hasUnsavedChanges || 
+           _productoFabricadoController.text.isNotEmpty ||
+           _compuestoController.text.isNotEmpty ||
+           _cantidadGeneradaController.text != _pesoTotalOriginal.toStringAsFixed(2) ||
+           _comentariosController.text.isNotEmpty ||
+           _procesosAplicados.values.any((selected) => selected) ||
+           _hasSignature ||
+           _photos.isNotEmpty;
+  }
+  
+  bool _isFormValid() {
+    return _productoFabricadoController.text.isNotEmpty &&
+           _compuestoController.text.isNotEmpty &&
+           _cantidadGeneradaController.text.isNotEmpty &&
+           _procesosAplicados.values.any((selected) => selected) &&
+           _hasSignature &&
+           _photos.isNotEmpty;
   }
 
   void _procesarSalida() async {
@@ -313,33 +515,76 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
           throw Exception('No se pudieron obtener los lotes');
         }
         
-        // Calcular merma
-        final pesoSalida = double.parse(_pesoSalidaController.text);
-        final merma = _pesoTotalOriginal - pesoSalida;
+        // Preparar datos de los lotes
+        List<Map<String, dynamic>> lotesEntrada = [];
+        for (var lote in lotes) {
+          lotesEntrada.add({
+            'lote_id': lote.id,
+            'peso': lote.pesoActual,
+            'tipo_material': lote.datosGenerales.tipoMaterial,
+          });
+          
+          // Marcar lote como consumido en transformación
+          // Mark lot as consumed in transformation
+          await FirebaseFirestore.instance
+              .collection('lotes')
+              .doc(lote.id)
+              .collection('datos_generales')
+              .doc('info')
+              .update({
+            'consumido_en_transformacion': true,
+            'transformacion_id': _transformacionId ?? '',
+          });
+        }
         
-        // Crear la transformación tipo 'agrupacion_transformador'
-        final transformacionId = await _transformacionService.crearTransformacion(
-          lotes: lotes,
-          mermaProceso: merma,
-          procesoAplicado: procesosSeleccionados.join(', '),
-          observaciones: _comentariosController.text.trim(),
-        );
-        
-        // Actualizar datos específicos del transformador en la transformación
-        await FirebaseFirestore.instance
-            .collection('transformaciones')
-            .doc(transformacionId)
-            .update({
+        // Crear o actualizar la transformación
+        final transformacionData = {
           'tipo': 'agrupacion_transformador',
-          'peso_salida': pesoSalida,
-          'producto_generado': _productoGeneradoController.text.trim(),
-          'cantidad_generada': _cantidadGeneradaController.text.trim(),
+          'estado': 'documentacion',
+          'fecha_inicio': FieldValue.serverTimestamp(),
+          'lotes_entrada': lotesEntrada,
+          'peso_total_entrada': _pesoTotalOriginal,
           'procesos_aplicados': procesosSeleccionados,
-          'operador_salida': _operadorController.text.trim(),
-          'firma_salida': _signatureUrl,
-          'evidencias_salida': photoUrls,
-          'estado': 'documentacion', // Requiere documentación
-        });
+          'producto_fabricado': _productoFabricadoController.text.trim(),
+          'compuesto_67': _compuestoController.text.trim(),
+          'cantidad_producto': double.tryParse(_cantidadGeneradaController.text) ?? 0,
+          'porcentaje_material_reciclado': _porcentajeMaterialReciclado,
+          'tipo_polimero': _tipoPolimero,
+          'observaciones': _comentariosController.text.trim(),
+          'usuario_id': userProfile['userId'] ?? userProfile['uid'] ?? '',
+          'usuario_folio': userProfile['ecoceFolio'] ?? userProfile['folio'] ?? '',
+          'firma_operador': _signatureUrl,
+          'evidencias_foto': photoUrls,
+          'fecha_procesamiento': FieldValue.serverTimestamp(),
+        };
+        
+        if (_transformacionId != null) {
+          // Actualizar transformación existente
+          await FirebaseFirestore.instance
+              .collection('transformaciones')
+              .doc(_transformacionId)
+              .update(transformacionData);
+        } else {
+          // Crear nueva transformación
+          final docRef = await FirebaseFirestore.instance
+              .collection('transformaciones')
+              .add(transformacionData);
+          _transformacionId = docRef.id;
+          
+          // Actualizar IDs de lotes consumidos
+          for (var lote in lotes) {
+            // Mark lot as consumed in transformation
+            await FirebaseFirestore.instance
+                .collection('lotes')
+                .doc(lote.id)
+                .collection('datos_generales')
+                .doc('info')
+                .update({
+              'consumido_en_transformacion': true,
+              'transformacion_id': _transformacionId!,
+            });
+          }
+        }
         
       } else {
         // Procesamiento individual - comportamiento original
@@ -376,16 +621,23 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
         // Wait a moment for the database update to propagate
         await Future.delayed(const Duration(milliseconds: 1000));
         
-        // Navegar a la pantalla de documentación
+        // Navegar según el tipo de procesamiento
         if (mounted) {
-          // No navegar a documentación automáticamente en procesamiento múltiple
-          if (!_esProcesamientoMultiple) {
+          if (_esProcesamientoMultiple) {
+            // Para procesamiento múltiple (megalotes), volver a producción con tab Documentación
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              '/transformador_produccion',
+              (route) => false,
+              arguments: {'initialTab': 1}, // Tab de Documentación
+            );
+          } else {
+            // Para lotes individuales, ir a documentación
             final result = await Navigator.push<bool>(
               context,
               MaterialPageRoute(
                 builder: (context) => TransformadorDocumentacionScreen(
                   loteId: _loteIds.first,
-                  material: widget.tipoPolimero ?? 'Material',
+                  material: widget.tipoPolimero ?? _tipoPolimero ?? 'Material',
                   peso: widget.peso ?? _pesoTotalOriginal,
                 ),
               ),
@@ -396,14 +648,12 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
               // Determine which tab to show based on whether documentation was completed
               final tabIndex = result == true ? 2 : 1; // Completados if true, Documentación if false
               
-              TransformadorNavigationHelper.navigateAfterDocumentation(
-                context,
-                allCompleted: result == true,
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                '/transformador_produccion',
+                (route) => false,
+                arguments: {'initialTab': tabIndex},
               );
             }
-          } else {
-            // Para procesamiento múltiple, volver a producción con tab Documentación
-            TransformadorNavigationHelper.navigateToDocumentation(context);
           }
         }
       }
@@ -940,6 +1190,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                       ),
                     ),
                   ),
+                  onChanged: (_) => _markAsUnsaved(),
                 ),
               ],
             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../models/lotes/lote_transformador_model.dart';
 import '../../../models/lotes/lote_unificado_model.dart';
 import '../../../models/lotes/transformacion_model.dart';
@@ -19,6 +20,7 @@ import 'transformador_escaneo_screen.dart';
 import 'transformador_formulario_salida.dart';
 import 'transformador_documentacion_screen.dart';
 import 'transformador_lote_detalle_screen.dart';
+import 'transformador_transformacion_documentacion.dart';
 import 'utils/transformador_navigation_helper.dart';
 
 class TransformadorProduccionScreen extends StatefulWidget {
@@ -120,10 +122,25 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
 
   Future<void> _loadTransformaciones() async {
     try {
-      final stream = _transformacionService.obtenerTransformacionesUsuario();
+      // Get transformations of type 'agrupacion_transformador' only
+      final userData = _userSession.getUserData();
+      final userId = userData?['userId'] ?? userData?['uid'];
+      if (userId == null) return;
       
-      stream.listen((transformaciones) {
+      final stream = FirebaseFirestore.instance
+          .collection('transformaciones')
+          .where('tipo', isEqualTo: 'agrupacion_transformador')
+          .where('usuario_id', isEqualTo: userId)
+          .snapshots();
+      
+      stream.listen((snapshot) {
         if (mounted) {
+          final transformaciones = snapshot.docs.map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            return TransformacionModel.fromMap(data, doc.id);
+          }).toList();
+          
           setState(() {
             _transformaciones = transformaciones;
           });
@@ -227,8 +244,11 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
   }
 
   Widget _buildTransformacionCard(TransformacionModel transformacion) {
-    final bool hasAvailableWeight = transformacion.pesoDisponible > 0;
+    final estado = transformacion.datos['estado'] ?? 'en_proceso';
     final bool hasDocumentation = transformacion.tieneDocumentacion;
+    final productoFabricado = transformacion.datos['producto_fabricado'] ?? 'Sin especificar';
+    final cantidadProducto = transformacion.datos['cantidad_producto'] ?? 0.0;
+    final tipoPolimero = transformacion.datos['tipo_polimero'] ?? '';
     
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -305,36 +325,13 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                         ],
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: hasAvailableWeight 
-                            ? BioWayColors.success.withValues(alpha: 0.1)
-                            : Colors.grey.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: hasAvailableWeight 
-                              ? BioWayColors.success 
-                              : Colors.grey,
-                        ),
-                      ),
-                      child: Text(
-                        hasAvailableWeight ? 'Activo' : 'Completado',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: hasAvailableWeight 
-                              ? BioWayColors.success 
-                              : Colors.grey,
-                        ),
-                      ),
-                    ),
+                    _buildTransformacionEstadoChip(estado),
                   ],
                 ),
                 
                 const SizedBox(height: 16),
                 
-                // Weight info
+                // Product info
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -342,38 +339,55 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Peso disponible:',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          Text(
-                            '${transformacion.pesoDisponible.toStringAsFixed(2)} kg',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: hasAvailableWeight 
-                                  ? BioWayColors.success 
-                                  : Colors.grey,
+                          Icon(Icons.factory, size: 16, color: Colors.grey[600]),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              productoFabricado,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      LinearProgressIndicator(
-                        value: transformacion.pesoTotalEntrada > 0
-                            ? transformacion.pesoDisponible / transformacion.pesoTotalEntrada
-                            : 0,
-                        backgroundColor: Colors.grey[200],
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          hasAvailableWeight ? BioWayColors.success : Colors.grey,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: MaterialUtils.getMaterialColor(tipoPolimero).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  tipoPolimero,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: MaterialUtils.getMaterialColor(tipoPolimero),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '${cantidadProducto.toStringAsFixed(2)} kg',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -387,72 +401,46 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                     Icon(Icons.inventory_2, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 4),
                     Text(
-                      '${transformacion.lotesEntrada.length} lotes',
+                      '${transformacion.lotesEntrada.length} lotes procesados',
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey[600],
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Icon(Icons.cut, size: 16, color: Colors.purple),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${transformacion.sublotesGenerados.length} sublotes',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.purple,
+                    if (estado == 'completado') ...[
+                      const SizedBox(width: 16),
+                      Icon(Icons.check_circle, size: 16, color: BioWayColors.success),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Completado',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: BioWayColors.success,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
                 
                 const SizedBox(height: 16),
                 
-                // Action buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: hasAvailableWeight
-                            ? () => _createSublote(transformacion)
-                            : null,
-                        icon: const Icon(Icons.cut, size: 18),
-                        label: const Text('Crear Sublote'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.orange,
-                          side: BorderSide(
-                            color: hasAvailableWeight 
-                                ? Colors.orange 
-                                : Colors.grey[300]!,
-                          ),
-                        ),
+                // Action button
+                if (estado == 'documentacion') ...[
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _uploadDocumentacion(transformacion),
+                      icon: const Icon(Icons.upload_file, size: 18),
+                      label: const Text('Cargar Documentación'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.orange,
+                        side: const BorderSide(color: Colors.orange),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: !hasDocumentation
-                            ? () => _uploadDocumentacion(transformacion)
-                            : null,
-                        icon: Icon(
-                          hasDocumentation ? Icons.check_circle : Icons.upload_file,
-                          size: 18,
-                        ),
-                        label: const Text('Documentos'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: hasDocumentation 
-                              ? BioWayColors.success 
-                              : Colors.orange,
-                          side: BorderSide(
-                            color: hasDocumentation 
-                                ? BioWayColors.success 
-                                : Colors.orange,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -625,13 +613,21 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
   }
 
   void _uploadDocumentacion(TransformacionModel transformacion) {
-    // TODO: Navigate to documentation screen for megalotes
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Documentación de megalotes en desarrollo'),
-        backgroundColor: BioWayColors.info,
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TransformadorTransformacionDocumentacion(
+          transformacionId: transformacion.id,
+        ),
       ),
-    );
+    ).then((result) {
+      if (result == true) {
+        // Navigate to completed tab after successful documentation
+        setState(() {
+          _tabController.animateTo(2);
+        });
+      }
+    });
   }
 
   // Obtener color según el tab actual para indicar urgencia
@@ -975,73 +971,161 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              // Material filter chips
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                child: Row(
+              // Show megalotes toggle for documentation tab
+              if (_tabController.index == 1) ...[
+                Row(
                   children: [
-                    _buildFilterChip(
-                      label: 'Todos',
-                      isSelected: _filtroMaterial == 'Todos',
-                      onSelected: (selected) {
-                        setState(() {
-                          _filtroMaterial = 'Todos';
-                        });
-                        _loadLotes();
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    _buildFilterChip(
-                      label: 'PEBD',
-                      isSelected: _filtroMaterial == 'PEBD',
-                      onSelected: (selected) {
-                        setState(() {
-                          _filtroMaterial = selected ? 'PEBD' : 'Todos';
-                        });
-                        _loadLotes();
-                      },
-                      color: BioWayColors.pebdPink,
-                    ),
-                    const SizedBox(width: 8),
-                    _buildFilterChip(
-                      label: 'PP',
-                      isSelected: _filtroMaterial == 'PP',
-                      onSelected: (selected) {
-                        setState(() {
-                          _filtroMaterial = selected ? 'PP' : 'Todos';
-                        });
-                        _loadLotes();
-                      },
-                      color: BioWayColors.ppPurple,
-                    ),
-                    const SizedBox(width: 8),
-                    _buildFilterChip(
-                      label: 'Multilaminado',
-                      isSelected: _filtroMaterial == 'Multilaminado',
-                      onSelected: (selected) {
-                        setState(() {
-                          _filtroMaterial = selected ? 'Multilaminado' : 'Todos';
-                        });
-                        _loadLotes();
-                      },
-                      color: BioWayColors.multilaminadoBrown,
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _mostrarSoloMegalotes = !_mostrarSoloMegalotes;
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _mostrarSoloMegalotes
+                                ? Colors.orange.withValues(alpha: 0.1)
+                                : Colors.grey[100],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: _mostrarSoloMegalotes
+                                  ? Colors.orange
+                                  : Colors.grey[300]!,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _mostrarSoloMegalotes
+                                    ? Icons.check_box
+                                    : Icons.check_box_outline_blank,
+                                color: _mostrarSoloMegalotes
+                                    ? Colors.orange
+                                    : Colors.grey,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Mostrar Megalotes',
+                                style: TextStyle(
+                                  color: _mostrarSoloMegalotes
+                                      ? Colors.orange
+                                      : Colors.grey[700],
+                                  fontWeight: _mostrarSoloMegalotes
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                              const Spacer(),
+                              Icon(
+                                Icons.merge_type,
+                                color: _mostrarSoloMegalotes
+                                    ? Colors.orange
+                                    : Colors.grey,
+                                size: 20,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 12),
+              ],
+              
+              if (!_mostrarSoloMegalotes || _tabController.index != 1) ...[
+                // Material filter chips for individual lots
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    children: [
+                      _buildFilterChip(
+                        label: 'Todos',
+                        isSelected: _filtroMaterial == 'Todos',
+                        onSelected: (selected) {
+                          setState(() {
+                            _filtroMaterial = 'Todos';
+                          });
+                          _loadLotes();
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        label: 'PEBD',
+                        isSelected: _filtroMaterial == 'PEBD',
+                        onSelected: (selected) {
+                          setState(() {
+                            _filtroMaterial = selected ? 'PEBD' : 'Todos';
+                          });
+                          _loadLotes();
+                        },
+                        color: BioWayColors.pebdPink,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        label: 'PP',
+                        isSelected: _filtroMaterial == 'PP',
+                        onSelected: (selected) {
+                          setState(() {
+                            _filtroMaterial = selected ? 'PP' : 'Todos';
+                          });
+                          _loadLotes();
+                        },
+                        color: BioWayColors.ppPurple,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        label: 'Multilaminado',
+                        isSelected: _filtroMaterial == 'Multilaminado',
+                        onSelected: (selected) {
+                          setState(() {
+                            _filtroMaterial = selected ? 'Multilaminado' : 'Todos';
+                          });
+                          _loadLotes();
+                        },
+                        color: BioWayColors.multilaminadoBrown,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
         
         // Statistics container
-        _buildStatistics(),
+        if (_tabController.index == 1 && _mostrarSoloMegalotes)
+          _buildMegaloteStatistics()
+        else
+          _buildStatistics(),
         
         // List items
-        if (lotes.isEmpty)
-          _buildEmptyState()
-        else
-          ...lotes.map((lote) => _buildLoteCard(lote)),
+        if (_tabController.index == 1 && _mostrarSoloMegalotes) ...[
+          // Show megalotes with estado 'documentacion'
+          if (_filterTransformacionesByState().isEmpty)
+            _buildEmptyStateMegalotes()
+          else
+            ..._filterTransformacionesByState().map(
+              (transformacion) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildTransformacionCard(transformacion),
+              ),
+            ),
+        ] else ...[
+          // Show individual lots
+          if (lotes.isEmpty)
+            _buildEmptyState()
+          else
+            ...lotes.map((lote) => _buildLoteCard(lote)),
+        ],
         
         const SizedBox(height: 100), // Space for FAB
       ],
@@ -1192,18 +1276,27 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
         else
           _buildStatistics(),
         
-        // List items
-        if (_mostrarSoloMegalotes) ...[
+        // List items for completed tab - show megalotes
+        if (_tabController.index == 2) ...[
+          // Toggle between individual lots and megalotes
+          if (_mostrarSoloMegalotes) ...[
           if (_transformaciones.isEmpty)
             _buildEmptyStateMegalotes()
           else
-            ..._transformaciones.where((t) => !t.debeSerEliminada).map(
+            ..._filterTransformacionesByState().map(
               (transformacion) => Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _buildTransformacionCard(transformacion),
               ),
             ),
+          ] else ...[
+            if (_lotesCompletados.isEmpty)
+              _buildEmptyState()
+            else
+              ..._lotesCompletados.map((lote) => _buildLoteCard(lote)),
+          ],
         ] else ...[
+          // For tabs 0 and 1, only show individual lots
           if (_lotesCompletados.isEmpty)
             _buildEmptyState()
           else
@@ -1827,6 +1920,65 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
         _loadLotes();
       }
     });
+  }
+
+  Widget _buildTransformacionEstadoChip(String estado) {
+    Color color;
+    String texto;
+    IconData icon;
+    
+    switch (estado) {
+      case 'en_proceso':
+        color = Colors.blue;
+        texto = 'En Proceso';
+        icon = Icons.pending;
+        break;
+      case 'documentacion':
+        color = Colors.orange;
+        texto = 'Documentación';
+        icon = Icons.description;
+        break;
+      case 'completado':
+        color = BioWayColors.success;
+        texto = 'Completado';
+        icon = Icons.check_circle;
+        break;
+      default:
+        color = Colors.grey;
+        texto = estado;
+        icon = Icons.help_outline;
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 4),
+          Text(
+            texto,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<TransformacionModel> _filterTransformacionesByState() {
+    final estado = _tabController.index == 1 ? 'documentacion' : 'completado';
+    return _transformaciones.where((t) {
+      return t.estado == estado;
+    }).toList();
   }
 
 }

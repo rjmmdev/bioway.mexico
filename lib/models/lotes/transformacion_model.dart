@@ -228,6 +228,82 @@ class TransformacionModel {
   /// Verifica si la transformación está lista para ser eliminada
   /// Se elimina cuando no hay peso disponible Y tiene documentación
   bool get debeSerEliminada => pesoDisponible <= 0 && tieneDocumentacion;
+  
+  /// Factory constructor alternativo para compatibilidad
+  factory TransformacionModel.fromMap(Map<String, dynamic> data, String id) {
+    DateTime fechaInicio;
+    try {
+      final fechaInicioRaw = data['fecha_inicio'];
+      if (fechaInicioRaw == null) {
+        fechaInicio = DateTime.now();
+      } else if (fechaInicioRaw is Timestamp) {
+        fechaInicio = fechaInicioRaw.toDate();
+      } else if (fechaInicioRaw is int) {
+        fechaInicio = DateTime.fromMillisecondsSinceEpoch(fechaInicioRaw);
+      } else {
+        fechaInicio = DateTime.now();
+      }
+    } catch (e) {
+      fechaInicio = DateTime.now();
+    }
+    
+    DateTime? fechaFin;
+    if (data['fecha_fin'] != null) {
+      try {
+        final fechaFinRaw = data['fecha_fin'];
+        if (fechaFinRaw is Timestamp) {
+          fechaFin = fechaFinRaw.toDate();
+        } else if (fechaFinRaw is int) {
+          fechaFin = DateTime.fromMillisecondsSinceEpoch(fechaFinRaw);
+        }
+      } catch (e) {
+        // Ignore fecha_fin errors
+      }
+    }
+    
+    List<LoteEntrada> lotesEntrada = [];
+    try {
+      final lotesEntradaRaw = data['lotes_entrada'];
+      if (lotesEntradaRaw != null && lotesEntradaRaw is List) {
+        lotesEntrada = lotesEntradaRaw
+            .map((e) => LoteEntrada.fromMap(Map<String, dynamic>.from(e)))
+            .toList();
+      }
+    } catch (e) {
+      // Ignore lotes_entrada errors
+    }
+    
+    Map<String, String> documentosAsociados = {};
+    try {
+      final docsRaw = data['documentos_asociados'];
+      if (docsRaw != null && docsRaw is Map) {
+        documentosAsociados = Map<String, String>.from(docsRaw);
+      }
+    } catch (e) {
+      // Ignore documentos_asociados errors
+    }
+    
+    return TransformacionModel(
+      id: id,
+      tipo: data['tipo'] ?? 'agrupacion_reciclador',
+      fechaInicio: fechaInicio,
+      fechaFin: fechaFin,
+      estado: data['estado'] ?? 'en_proceso',
+      lotesEntrada: lotesEntrada,
+      pesoTotalEntrada: _convertirADouble(data['peso_total_entrada'], 'peso_total_entrada'),
+      pesoDisponible: _convertirADouble(data['peso_disponible'], 'peso_disponible'),
+      mermaProceso: _convertirADouble(data['merma_proceso'], 'merma_proceso'),
+      sublotesGenerados: _convertirAListaString(data['sublotes_generados'], 'sublotes_generados'),
+      documentosAsociados: documentosAsociados,
+      usuarioId: data['usuario_id']?.toString() ?? '',
+      usuarioFolio: data['usuario_folio']?.toString() ?? '',
+      procesoAplicado: data['proceso_aplicado']?.toString(),
+      observaciones: data['observaciones']?.toString(),
+    );
+  }
+  
+  /// Getter para acceder a los datos raw (para compatibilidad)
+  Map<String, dynamic> get datos => toMap();
 }
 
 /// Modelo para representar un lote de entrada en la transformación
