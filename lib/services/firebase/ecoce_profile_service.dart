@@ -452,7 +452,40 @@ class EcoceProfileService {
         print('  $field: ${datosPerfilDebug[field] != null ? 'URL presente' : 'null'}');
       });
 
-      // Guardar solicitud en Firestore
+      // Crear usuario en Firebase Auth DURANTE EL REGISTRO
+      // Esto evita el problema de cambio de sesión durante la aprobación
+      UserCredential? userCredential;
+      String? userId;
+      
+      try {
+        userCredential = await _auth.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+        
+        userId = userCredential.user!.uid;
+        
+        // Actualizar el nombre del usuario
+        await userCredential.user!.updateDisplayName(nombre);
+        
+        // IMPORTANTE: Cerrar sesión inmediatamente después de crear el usuario
+        // para que no quede autenticado hasta que sea aprobado
+        await _auth.signOut();
+        
+        // Actualizar solicitudData con el ID del usuario creado
+        solicitudData['usuario_creado_id'] = userId;
+        solicitudData['auth_creado'] = true;
+        
+        print('✅ Usuario creado en Auth con ID: $userId');
+      } catch (authError) {
+        print('⚠️ Error creando usuario en Auth: $authError');
+        // Si falla la creación en Auth, continuar sin el usuario
+        // El maestro deberá crearlo manualmente durante la aprobación
+        solicitudData['auth_creado'] = false;
+        solicitudData['auth_error'] = authError.toString();
+      }
+      
+      // Guardar solicitud en Firestore (con o sin usuario Auth creado)
       await _solicitudesCollection.doc(solicitudId).set(solicitudData);
       
       return solicitudId;
@@ -530,13 +563,12 @@ class EcoceProfileService {
     }
   }
   
-  // Aprobar solicitud y crear usuario
+  // Aprobar solicitud (el usuario ya existe en Auth)
   Future<void> approveSolicitud({
     required String solicitudId,
     required String approvedById,
     String? comments,
   }) async {
-    UserCredential? userCredential;
     String? userId;
     String? folio;
     
@@ -550,37 +582,27 @@ class EcoceProfileService {
       final solicitudData = solicitudDoc.data() as Map<String, dynamic>;
       final datosPerfil = solicitudData['datos_perfil'] as Map<String, dynamic>;
       
-      // Generar folio según tipo y subtipo ANTES de crear el usuario
+      // Verificar si el usuario ya fue creado en Auth
+      final authCreado = solicitudData['auth_creado'] ?? false;
+      userId = solicitudData['usuario_creado_id'] as String?;
+      
+      if (!authCreado || userId == null) {
+        throw Exception('El usuario no fue creado en Auth durante el registro. No se puede aprobar.');
+      }
+      
+      // Generar folio según tipo y subtipo
       final tipoActor = datosPerfil['ecoce_tipo_actor'];
       final subtipo = datosPerfil['ecoce_subtipo'];
       folio = await _generateFolio(tipoActor, subtipo);
       
-      // IMPORTANTE: Actualizar la solicitud ANTES de crear el usuario Auth
-      // Esto previene el problema de permisos cuando el nuevo usuario se autentica automáticamente
+      // IMPORTANTE: Actualizar la solicitud - ahora es seguro porque el maestro
+      // está autenticado y tiene permisos, no hay cambio de sesión
       await _solicitudesCollection.doc(solicitudId).update({
         'estado': 'aprobada',
         'fecha_revision': FieldValue.serverTimestamp(),
         'aprobado_por': approvedById,
         'comentarios_revision': comments,
         'folio_asignado': folio,
-        // Temporalmente marcar como procesando para evitar duplicados
-        'procesando': true,
-      });
-      
-      // Ahora crear el usuario en Auth (esto automáticamente lo autentica)
-      userCredential = await _auth.createUserWithEmailAndPassword(
-        email: solicitudData['email'],
-        password: solicitudData['password'],
-      );
-      
-      userId = userCredential.user!.uid;
-      
-      // Actualizar la solicitud con el ID del usuario creado
-      // NOTA: Después de crear el usuario, Firebase automáticamente lo autentica,
-      // pero no cerraremos sesión aquí para evitar desautenticar al maestro.
-      // En su lugar, manejamos esto en el UI
-      await _solicitudesCollection.doc(solicitudId).update({
-        'usuario_creado_id': userId,
         'procesando': false,
       });
       
@@ -594,6 +616,10 @@ class EcoceProfileService {
       datosPerfil['createdAt'] = Timestamp.fromDate(DateTime.now());
       datosPerfil['updatedAt'] = Timestamp.fromDate(DateTime.now());
       
+      // IMPORTANTE: Agregar el ID del usuario a la solicitud en datos_perfil
+      // para que las reglas puedan verificar la relación
+      datosPerfil['usuario_creado_id'] = userId;
+      
       // Debug: verificar documentos antes de guardar
       print('📋 Documentos en perfil aprobado:');
       ['ecoce_const_sit_fis', 'ecoce_comp_domicilio', 'ecoce_banco_caratula', 'ecoce_ine',
@@ -604,11 +630,8 @@ class EcoceProfileService {
       // Obtener la subcolección según el tipo
       final subcollection = _getProfileSubcollection(tipoActor, subtipo);
       
-      // Guardar SOLO en la subcolección correspondiente (sin crear índice)
+      // Guardar en la subcolección correspondiente
       await subcollection.doc(userId).set(datosPerfil);
-      
-      // Actualizar nombre del usuario
-      await userCredential.user!.updateDisplayName(datosPerfil['ecoce_nombre']);
       
       // Crear entrada en el índice de ecoce_profiles
       await _profilesCollection.doc(userId).set({
@@ -638,32 +661,16 @@ class EcoceProfileService {
       
       print('Usuario aprobado exitosamente: ${datosPerfil['ecoce_nombre']} con folio: $folio');
     } catch (e) {
-      // Si hay error, intentar limpiar lo que se haya creado
+      // Si hay error, intentar revertir los cambios
       try {
-        // Si se actualizó la solicitud pero falló la creación del usuario, revertir
-        if (userCredential == null && folio != null) {
+        if (folio != null) {
+          // Revertir la actualización de la solicitud
           await _solicitudesCollection.doc(solicitudId).update({
             'estado': 'pendiente',
             'fecha_revision': null,
             'aprobado_por': null,
             'comentarios_revision': null,
             'folio_asignado': null,
-            'procesando': false,
-          });
-        }
-        
-        // Si se creó el usuario en Auth pero falló algo después
-        if (userCredential != null && userCredential.user != null) {
-          await userCredential.user!.delete();
-          
-          // Revertir la solicitud si existe
-          await _solicitudesCollection.doc(solicitudId).update({
-            'estado': 'pendiente',
-            'fecha_revision': null,
-            'aprobado_por': null,
-            'comentarios_revision': null,
-            'folio_asignado': null,
-            'usuario_creado_id': null,
             'procesando': false,
           });
         }
@@ -671,9 +678,16 @@ class EcoceProfileService {
         // Si se creó el índice, eliminarlo
         if (userId != null) {
           await _profilesCollection.doc(userId).delete();
+          
+          // También intentar eliminar el perfil si se creó
+          final subcollection = _getProfileSubcollection(
+            datosPerfil['ecoce_tipo_actor'], 
+            datosPerfil['ecoce_subtipo']
+          );
+          await subcollection.doc(userId).delete();
         }
       } catch (cleanupError) {
-        print('Error al limpiar usuario parcialmente creado: $cleanupError');
+        print('Error al revertir cambios: $cleanupError');
       }
       rethrow;
     }
@@ -693,6 +707,26 @@ class EcoceProfileService {
         final solicitudData = solicitudDoc.data() as Map<String, dynamic>;
         final datosPerfil = solicitudData['datos_perfil'] as Map<String, dynamic>?;
         
+        // Verificar si se creó usuario en Auth
+        final authCreado = solicitudData['auth_creado'] ?? false;
+        final userId = solicitudData['usuario_creado_id'] as String?;
+        
+        // Si se creó usuario en Auth, marcarlo para eliminación
+        if (authCreado && userId != null) {
+          // Marcar el usuario para eliminación (Cloud Function lo eliminará)
+          await _firestore.collection('users_pending_deletion').doc(userId).set({
+            'userId': userId,
+            'userEmail': solicitudData['email'],
+            'requestedBy': rejectedById,
+            'requestedAt': FieldValue.serverTimestamp(),
+            'status': 'pending',
+            'reason': 'solicitud_rechazada',
+            'rejectionReason': reason,
+          });
+          
+          print('⚠️ Usuario $userId marcado para eliminación de Auth');
+        }
+        
         // Limpiar archivos de Storage si existen
         if (datosPerfil != null) {
           await _deleteStorageFiles(solicitudId, datosPerfil);
@@ -700,6 +734,17 @@ class EcoceProfileService {
         
         // Eliminar el documento de la solicitud
         await _solicitudesCollection.doc(solicitudId).delete();
+        
+        // Registrar en audit log
+        await _firestore.collection('audit_logs').add({
+          'action': 'account_rejected',
+          'solicitudId': solicitudId,
+          'userEmail': solicitudData['email'],
+          'userName': datosPerfil?['ecoce_nombre'] ?? 'Sin nombre',
+          'rejectedBy': rejectedById,
+          'rejectedAt': FieldValue.serverTimestamp(),
+          'reason': reason,
+        });
       }
     } catch (e) {
       rethrow;

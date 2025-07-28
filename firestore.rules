@@ -54,8 +54,9 @@ service cloud.firestore {
       // Permitir lectura a usuarios autenticados
       allow read: if isAuthenticated();
       
-      // Permitir actualizar documentos sin autenticación (para el flujo de registro)
-      // O permitir todas las actualizaciones si es maestro
+      // Permitir actualizar:
+      // 1. Sin autenticación solo para documentos (flujo de registro)
+      // 2. Si es maestro (todas las actualizaciones)
       allow update: if (
         // Permitir actualización sin auth solo para documentos
         request.auth == null && 
