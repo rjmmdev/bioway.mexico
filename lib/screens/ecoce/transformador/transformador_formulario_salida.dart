@@ -8,30 +8,35 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
 import '../../../services/lote_service.dart';
 import '../../../services/lote_unificado_service.dart';
+import '../../../services/transformacion_service.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
+import '../../../models/lotes/lote_unificado_model.dart';
 import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
 import '../shared/widgets/weight_input_widget.dart';
 import '../shared/widgets/unified_container.dart';
 import '../shared/widgets/field_label.dart';
+import '../shared/utils/dialog_utils.dart';
 import 'transformador_documentacion_screen.dart';
 
 class TransformadorFormularioSalida extends StatefulWidget {
-  final String loteId;
-  final double peso;
-  final List<String> tiposAnalisis;
-  final String productoFabricado;
-  final String composicionMaterial;
+  final String? loteId; // Individual
+  final List<String>? lotesIds; // Múltiples
+  final double? peso;
+  final List<String>? tiposAnalisis;
+  final String? productoFabricado;
+  final String? composicionMaterial;
   final String? tipoPolimero;
   
   const TransformadorFormularioSalida({
     super.key,
-    required this.loteId,
-    required this.peso,
-    required this.tiposAnalisis,
-    required this.productoFabricado,
-    required this.composicionMaterial,
+    this.loteId, // Individual
+    this.lotesIds, // Múltiples
+    this.peso,
+    this.tiposAnalisis,
+    this.productoFabricado,
+    this.composicionMaterial,
     this.tipoPolimero,
   });
 
@@ -46,8 +51,14 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
   // Servicios
   final LoteService _loteService = LoteService();
   final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
+  final TransformacionService _transformacionService = TransformacionService();
   final UserSessionService _userSession = UserSessionService();
   final FirebaseStorageService _storageService = FirebaseStorageService();
+  
+  // Variables para manejar múltiples lotes
+  late List<String> _loteIds;
+  bool _esProcesamientoMultiple = false;
+  double _pesoTotalOriginal = 0.0;
   
   // Controladores
   final TextEditingController _pesoSalidaController = TextEditingController();
@@ -55,6 +66,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
   final TextEditingController _comentariosController = TextEditingController();
   final TextEditingController _productoGeneradoController = TextEditingController();
   final TextEditingController _cantidadGeneradaController = TextEditingController();
+  final TextEditingController _mermaController = TextEditingController();
   
   
   // Variables para los procesos aplicados
@@ -92,6 +104,19 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
   @override
   void initState() {
     super.initState();
+    
+    // Determinar si es procesamiento múltiple o individual
+    if (widget.lotesIds != null && widget.lotesIds!.isNotEmpty) {
+      _loteIds = widget.lotesIds!;
+      _esProcesamientoMultiple = widget.lotesIds!.length > 1;
+    } else if (widget.loteId != null) {
+      _loteIds = [widget.loteId!];
+      _esProcesamientoMultiple = false;
+    } else {
+      _loteIds = [];
+      _esProcesamientoMultiple = false;
+    }
+    
     _initializeForm();
     
     // Listener para el campo de comentarios
@@ -117,6 +142,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
     _comentariosController.dispose();
     _productoGeneradoController.dispose();
     _cantidadGeneradaController.dispose();
+    _mermaController.dispose();
     _scrollController.dispose();
     _operadorFocus.dispose();
     _comentariosFocus.dispose();
@@ -129,6 +155,38 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
     final userData = _userSession.getUserData();
     if (userData != null) {
       _operadorController.text = userData['nombre'] ?? '';
+    }
+    
+    // Si es procesamiento múltiple, calcular peso total
+    if (_esProcesamientoMultiple && _loteIds.isNotEmpty) {
+      setState(() {
+        _isLoading = true;
+      });
+      
+      try {
+        double pesoTotal = 0.0;
+        
+        for (String loteId in _loteIds) {
+          final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
+          if (lote != null) {
+            pesoTotal += lote.pesoActual;
+          }
+        }
+        
+        setState(() {
+          _pesoTotalOriginal = pesoTotal;
+          _pesoSalidaController.text = pesoTotal.toStringAsFixed(2);
+          _isLoading = false;
+        });
+      } catch (e) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } else if (_loteIds.length == 1) {
+      // Para lote individual, usar el peso pasado
+      _pesoTotalOriginal = widget.peso ?? 0.0;
+      _pesoSalidaController.text = _pesoTotalOriginal.toStringAsFixed(2);
     }
   }
 
@@ -238,22 +296,68 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
         }
       }
       
-      // Actualizar el lote en el Sistema Unificado
-      await _loteUnificadoService.actualizarProcesoTransformador(
-        loteId: widget.loteId,
-        datosTransformador: {
-          'peso_salida': double.parse(_pesoSalidaController.text),
+      // Procesamiento según sea individual o múltiple
+      if (_esProcesamientoMultiple) {
+        // Crear transformación (megalote) del transformador
+        // Primero obtener los lotes
+        List<LoteUnificadoModel> lotes = [];
+        for (String loteId in _loteIds) {
+          final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
+          if (lote != null) {
+            lotes.add(lote);
+          }
+        }
+        
+        if (lotes.isEmpty) {
+          throw Exception('No se pudieron obtener los lotes');
+        }
+        
+        // Calcular merma
+        final pesoSalida = double.parse(_pesoSalidaController.text);
+        final merma = _pesoTotalOriginal - pesoSalida;
+        
+        // Crear la transformación tipo 'agrupacion_transformador'
+        final transformacionId = await _transformacionService.crearTransformacion(
+          lotes: lotes,
+          mermaProceso: merma,
+          procesoAplicado: procesosSeleccionados.join(', '),
+          observaciones: _comentariosController.text.trim(),
+        );
+        
+        // Actualizar datos específicos del transformador en la transformación
+        await FirebaseFirestore.instance
+            .collection('transformaciones')
+            .doc(transformacionId)
+            .update({
+          'tipo': 'agrupacion_transformador',
+          'peso_salida': pesoSalida,
           'producto_generado': _productoGeneradoController.text.trim(),
           'cantidad_generada': _cantidadGeneradaController.text.trim(),
           'procesos_aplicados': procesosSeleccionados,
           'operador_salida': _operadorController.text.trim(),
           'firma_salida': _signatureUrl,
           'evidencias_salida': photoUrls,
-          'comentarios_salida': _comentariosController.text.trim(),
-          'fecha_salida': DateTime.now(),
-          'estado': 'documentacion',
-        },
-      );
+          'estado': 'documentacion', // Requiere documentación
+        });
+        
+      } else {
+        // Procesamiento individual - comportamiento original
+        await _loteUnificadoService.actualizarProcesoTransformador(
+          loteId: _loteIds.first,
+          datosTransformador: {
+            'peso_salida': double.parse(_pesoSalidaController.text),
+            'producto_generado': _productoGeneradoController.text.trim(),
+            'cantidad_generada': _cantidadGeneradaController.text.trim(),
+            'procesos_aplicados': procesosSeleccionados,
+            'operador_salida': _operadorController.text.trim(),
+            'firma_salida': _signatureUrl,
+            'evidencias_salida': photoUrls,
+            'comentarios_salida': _comentariosController.text.trim(),
+            'fecha_salida': DateTime.now(),
+            'estado': 'documentacion',
+          },
+        );
+      }
       
       if (mounted) {
         // Mostrar mensaje de éxito
@@ -273,27 +377,38 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
         
         // Navegar a la pantalla de documentación
         if (mounted) {
-          final result = await Navigator.push<bool>(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TransformadorDocumentacionScreen(
-                loteId: widget.loteId,
-                material: widget.tipoPolimero ?? 'Material',
-                peso: widget.peso,
+          // No navegar a documentación automáticamente en procesamiento múltiple
+          if (!_esProcesamientoMultiple) {
+            final result = await Navigator.push<bool>(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TransformadorDocumentacionScreen(
+                  loteId: _loteIds.first,
+                  material: widget.tipoPolimero ?? 'Material',
+                  peso: widget.peso ?? _pesoTotalOriginal,
+                ),
               ),
-            ),
-          );
-          
-          // If documentation was completed or user pressed back, return to production
-          if (mounted) {
-            // Determine which tab to show based on whether documentation was completed
-            final tabIndex = result == true ? 2 : 1; // Completados if true, Documentación if false
+            );
             
+            // If documentation was completed or user pressed back, return to production
+            if (mounted) {
+              // Determine which tab to show based on whether documentation was completed
+              final tabIndex = result == true ? 2 : 1; // Completados if true, Documentación if false
+              
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/transformador_produccion',
+                (route) => false,
+                arguments: {'initialTab': tabIndex},
+              );
+            }
+          } else {
+            // Para procesamiento múltiple, volver a producción con tab Documentación
             Navigator.pushNamedAndRemoveUntil(
               context,
               '/transformador_produccion',
               (route) => false,
-              arguments: {'initialTab': tabIndex},
+              arguments: {'initialTab': 1}, // Tab Documentación
             );
           }
         }
@@ -411,8 +526,10 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
       appBar: AppBar(
         backgroundColor: _primaryColor,
         elevation: 0,
-        title: const Text(
-          'Formulario de Salida',
+        title: Text(
+          _esProcesamientoMultiple 
+            ? 'Procesamiento de ${_loteIds.length} Lotes' 
+            : 'Formulario de Salida',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -457,39 +574,80 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                             size: 20,
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            'Lote: ${widget.loteId}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: _primaryColor,
+                          Expanded(
+                            child: Text(
+                              _esProcesamientoMultiple 
+                                ? 'Procesando ${_loteIds.length} lotes/sublotes'
+                                : 'Lote: ${_loteIds.isNotEmpty ? _loteIds.first : ""}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: _primaryColor,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        'Producto: ${widget.productoFabricado}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                      Text(
-                        'Peso inicial: ${widget.peso} kg',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                      if (widget.tipoPolimero != null)
+                      if (_esProcesamientoMultiple) ...[
                         Text(
-                          'Polímero: ${widget.tipoPolimero}',
+                          'Peso total: ${_pesoTotalOriginal.toStringAsFixed(2)} kg',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey[700],
                           ),
                         ),
+                        if (_loteIds.isNotEmpty)
+                          Text(
+                            'Lotes seleccionados:',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[700],
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ..._loteIds.take(3).map((id) => Text(
+                          '• ${id.substring(0, id.length > 8 ? 8 : id.length)}...',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[600],
+                          ),
+                        )).toList(),
+                        if (_loteIds.length > 3)
+                          Text(
+                            '• y ${_loteIds.length - 3} más...',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[600],
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                      ] else ...[
+                        if (widget.productoFabricado != null)
+                          Text(
+                            'Producto: ${widget.productoFabricado}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        Text(
+                          'Peso inicial: ${widget.peso ?? _pesoTotalOriginal} kg',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                        if (widget.tipoPolimero != null)
+                          Text(
+                            'Polímero: ${widget.tipoPolimero}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                      ],
                     ],
                   ),
                 ),
