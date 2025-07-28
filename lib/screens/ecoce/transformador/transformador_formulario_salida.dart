@@ -619,7 +619,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
         );
         
         // Wait a moment for the database update to propagate
-        await Future.delayed(const Duration(milliseconds: 1000));
+        await Future.delayed(const Duration(milliseconds: 1500));
         
         // Navegar según el tipo de procesamiento
         if (mounted) {
@@ -628,7 +628,10 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
             Navigator.of(context).pushNamedAndRemoveUntil(
               '/transformador_produccion',
               (route) => false,
-              arguments: {'initialTab': 1}, // Tab de Documentación
+              arguments: {
+                'initialTab': 1, // Tab de Documentación
+                'showMegalotes': true, // Force show megalotes
+              },
             );
           } else {
             // Para lotes individuales, ir a documentación

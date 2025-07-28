@@ -20,7 +20,7 @@ import 'transformador_escaneo_screen.dart';
 import 'transformador_formulario_salida.dart';
 import 'transformador_documentacion_screen.dart';
 import 'transformador_lote_detalle_screen.dart';
-import 'transformador_transformacion_documentacion.dart';
+import 'transformador_documentacion_megalote_screen.dart';
 import 'utils/transformador_navigation_helper.dart';
 
 class TransformadorProduccionScreen extends StatefulWidget {
@@ -81,13 +81,40 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
     _loadTransformaciones();
   }
   
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Check if we need to update the tab based on navigation arguments
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map<String, dynamic>) {
+      // Handle initial tab
+      if (args['initialTab'] != null) {
+        final tabIndex = args['initialTab'] as int;
+        if (tabIndex >= 0 && tabIndex < 3 && _tabController.index != tabIndex) {
+          _tabController.animateTo(tabIndex);
+          // Force refresh when changing tabs via navigation
+          _loadLotes();
+          _loadTransformaciones();
+        }
+      }
+      
+      // Handle show megalotes flag
+      if (args['showMegalotes'] == true && !_mostrarSoloMegalotes) {
+        setState(() {
+          _mostrarSoloMegalotes = true;
+        });
+      }
+    }
+  }
+  
   // Helper para obtener el estado de un lote
   String _getEstadoLote(LoteUnificadoModel lote) {
     // Buscar estado en especificaciones del transformador
     // Si el transformador tiene especificaciones, buscar ahí el estado
     if (lote.transformador?.especificaciones != null && 
         lote.transformador!.especificaciones!.containsKey('estado')) {
-      return lote.transformador!.especificaciones!['estado'] as String;
+      final estado = lote.transformador!.especificaciones!['estado'] as String;
+      return estado;
     }
     
     // Si no se encuentra, usar 'pendiente' como valor por defecto
@@ -629,17 +656,14 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => TransformadorTransformacionDocumentacion(
+        builder: (context) => TransformadorDocumentacionMegaloteScreen(
           transformacionId: transformacion.id,
+          transformacion: transformacion,
         ),
       ),
     ).then((result) {
-      if (result == true) {
-        // Navigate to completed tab after successful documentation
-        setState(() {
-          _tabController.animateTo(2);
-        });
-      }
+      // Refresh transformaciones after returning
+      _loadTransformaciones();
     });
   }
 
