@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
-import '../../../services/lote_unificado_service.dart';
-import '../../../models/lotes/lote_unificado_model.dart';
+import '../../../services/firebase/auth_service.dart';
 import 'laboratorio_escaneo.dart';
 import 'laboratorio_formulario.dart';
 import 'laboratorio_documentacion.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
-import 'widgets/laboratorio_muestra_card.dart';
 
 class LaboratorioGestionMuestras extends StatefulWidget {
   final int initialTab;
@@ -33,10 +32,15 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
   // Bottom navigation
   final int _selectedIndex = 1; // Muestras está seleccionado
   
-  // Servicio y datos
-  final LoteUnificadoService _loteService = LoteUnificadoService();
-  List<LoteUnificadoModel> _todosLotes = [];
-  bool _isLoading = true;
+  // Servicios
+  final AuthService _authService = AuthService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  
+  // Datos
+  bool _isLoading = false;
+  List<Map<String, dynamic>> _muestrasAnalisis = [];
+  List<Map<String, dynamic>> _muestrasDocumentacion = [];
+  List<Map<String, dynamic>> _muestrasFinalizadas = [];
 
   @override
   void initState() {
@@ -54,22 +58,58 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
     _loadMuestras();
   }
 
-  void _loadMuestras() {
-    _loteService.obtenerLotesConAnalisisLaboratorio().listen((lotes) {
-      if (mounted) {
-        setState(() {
-          _todosLotes = lotes;
-          _isLoading = false;
-        });
+  void _loadMuestras() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final userId = _authService.currentUser?.uid;
+      if (userId == null) return;
+      
+      // Obtener muestras de megalotes tomadas por este laboratorio
+      final transformacionesSnapshot = await _firestore
+          .collection('transformaciones')
+          .where('muestras_laboratorio', isNotEqualTo: null)
+          .get();
+      
+      List<Map<String, dynamic>> todasLasMuestras = [];
+      
+      for (var doc in transformacionesSnapshot.docs) {
+        final data = doc.data();
+        final muestrasLab = List<Map<String, dynamic>>.from(data['muestras_laboratorio'] ?? []);
+        
+        for (var muestra in muestrasLab) {
+          if (muestra['usuario_id'] == userId) {
+            // Agregar información del megalote a la muestra
+            todasLasMuestras.add({
+              ...muestra,
+              'transformacion_id': doc.id,
+              'material_predominante': data['material_predominante'] ?? 'Mixto',
+              'fecha_megalote': data['fecha_inicio'],
+            });
+          }
+        }
       }
-    }, onError: (error) {
-      debugPrint('Error cargando lotes con análisis: $error');
+      
+      // Clasificar las muestras por estado
+      _muestrasAnalisis = todasLasMuestras.where((m) => 
+        m['analisis_completado'] != true && m['certificado'] == null
+      ).toList();
+      
+      _muestrasDocumentacion = todasLasMuestras.where((m) => 
+        m['analisis_completado'] == true && m['certificado'] == null
+      ).toList();
+      
+      _muestrasFinalizadas = todasLasMuestras.where((m) => 
+        m['certificado'] != null
+      ).toList();
+      
+    } catch (e) {
+      debugPrint('Error cargando muestras: $e');
+    } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
-    });
+    }
   }
   
   void _handleSearch(String value) {
@@ -152,39 +192,35 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
     super.dispose();
   }
 
-  List<LoteUnificadoModel> get _muestrasFiltradas {
-    // Para cada lote, obtener solo los análisis del usuario actual
-    final userId = _loteService.currentUserId;
+  List<Map<String, dynamic>> get _muestrasFiltradas {
+    List<Map<String, dynamic>> muestras;
     
-    return _todosLotes.where((lote) {
-      // Filtrar por material
-      if (_selectedMaterial != 'Todos' && lote.datosGenerales.tipoMaterial != _selectedMaterial) {
-        return false;
+    // Seleccionar muestras según la pestaña activa
+    switch (_tabController.index) {
+      case 0:
+        muestras = _muestrasAnalisis;
+        break;
+      case 1:
+        muestras = _muestrasDocumentacion;
+        break;
+      case 2:
+        muestras = _muestrasFinalizadas;
+        break;
+      default:
+        muestras = [];
+    }
+    
+    // Aplicar filtros
+    return muestras.where((muestra) {
+      // Filtro por material
+      if (_selectedMaterial != 'Todos') {
+        final material = muestra['material_predominante'] ?? 'Mixto';
+        if (!material.toString().toLowerCase().contains(_selectedMaterial.toLowerCase())) {
+          return false;
+        }
       }
       
-      // Obtener análisis del usuario actual
-      final analisisUsuario = lote.analisisLaboratorio.where(
-        (analisis) => analisis.usuarioId == userId
-      ).toList();
-      
-      if (analisisUsuario.isEmpty) return false;
-      
-      // Filtrar por estado según la pestaña
-      switch (_tabController.index) {
-        case 0: // Pendientes de análisis
-          // Lotes que aún no tienen certificado
-          return analisisUsuario.any((a) => a.certificado == null);
-        case 1: // Pendientes de documentación
-          // Lotes con certificado pero sin todos los documentos
-          return analisisUsuario.any((a) => 
-            a.certificado != null && a.evidenciasFoto.isEmpty
-          );
-        case 2: // Finalizados
-          // Lotes con certificado y documentación completa
-          return analisisUsuario.any((a) => 
-            a.certificado != null && a.evidenciasFoto.isNotEmpty
-          );
-      }
+      // Aquí se pueden agregar más filtros si es necesario
       
       return true;
     }).toList();
@@ -202,35 +238,17 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
         return const Color(0xFF9333EA);
     }
   }
-
-  // Obtener texto del botón según el estado
-  String _getActionButtonText(String estado) {
-    switch (estado) {
-      case 'pendiente':
-        return 'Análisis';
-      case 'analizado':
-        return 'Añadir Documentación';
-      case 'finalizado':
-        return 'Ver Resultados';
-      default:
-        return '';
+  
+  double _calcularPesoTotal() {
+    double pesoTotal = 0.0;
+    
+    // Sumar el peso de todas las muestras filtradas
+    for (var muestra in _muestrasFiltradas) {
+      pesoTotal += (muestra['peso_muestra'] ?? 0.0).toDouble();
     }
+    
+    return pesoTotal;
   }
-
-  // Obtener color del botón según el estado
-  Color _getActionButtonColor(String estado) {
-    switch (estado) {
-      case 'pendiente':
-        return const Color(0xFF9333EA); // Morado para análisis
-      case 'analizado':
-        return BioWayColors.warning; // Naranja para documentación
-      case 'finalizado':
-        return BioWayColors.success; // Verde para finalizados
-      default:
-        return const Color(0xFF9333EA);
-    }
-  }
-
 
   void _onBottomNavTapped(int index) {
     HapticFeedback.lightImpact();
@@ -362,45 +380,45 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
             ),
           ],
         ),
-      bottomNavigationBar: EcoceBottomNavigation(
-        selectedIndex: _selectedIndex,
-        onItemTapped: _onBottomNavTapped,
-        primaryColor: const Color(0xFF9333EA),
-        items: const [
-          NavigationItem(
-            icon: Icons.home,
-            label: 'Inicio',
-            testKey: 'laboratorio_nav_inicio',
+        bottomNavigationBar: EcoceBottomNavigation(
+          selectedIndex: _selectedIndex,
+          onItemTapped: _onBottomNavTapped,
+          primaryColor: const Color(0xFF9333EA),
+          items: const [
+            NavigationItem(
+              icon: Icons.home,
+              label: 'Inicio',
+              testKey: 'laboratorio_nav_inicio',
+            ),
+            NavigationItem(
+              icon: Icons.science,
+              label: 'Muestras',
+              testKey: 'laboratorio_nav_muestras',
+            ),
+            NavigationItem(
+              icon: Icons.help_outline,
+              label: 'Ayuda',
+              testKey: 'laboratorio_nav_ayuda',
+            ),
+            NavigationItem(
+              icon: Icons.person,
+              label: 'Perfil',
+              testKey: 'laboratorio_nav_perfil',
+            ),
+          ],
+          fabConfig: FabConfig(
+            icon: Icons.add,
+            onPressed: _navigateToNewMuestra,
+            tooltip: 'Nueva muestra',
           ),
-          NavigationItem(
-            icon: Icons.science,
-            label: 'Muestras',
-            testKey: 'laboratorio_nav_muestras',
-          ),
-          NavigationItem(
-            icon: Icons.help_outline,
-            label: 'Ayuda',
-            testKey: 'laboratorio_nav_ayuda',
-          ),
-          NavigationItem(
-            icon: Icons.person,
-            label: 'Perfil',
-            testKey: 'laboratorio_nav_perfil',
-          ),
-        ],
-        fabConfig: FabConfig(
-          icon: Icons.add,
+        ),
+        floatingActionButton: EcoceFloatingActionButton(
           onPressed: _navigateToNewMuestra,
+          icon: Icons.add,
+          backgroundColor: const Color(0xFF9333EA),
           tooltip: 'Nueva muestra',
         ),
-      ),
-      floatingActionButton: EcoceFloatingActionButton(
-        onPressed: _navigateToNewMuestra,
-        icon: Icons.add,
-        backgroundColor: const Color(0xFF9333EA),
-        tooltip: 'Nueva muestra',
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
   }
@@ -605,50 +623,48 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.science_outlined,
+                        _tabController.index == 0 ? Icons.analytics : 
+                        _tabController.index == 1 ? Icons.upload_file : Icons.check_circle,
                         size: 80,
                         color: Colors.grey[300],
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'No hay muestras en esta sección',
+                        _tabController.index == 0 ? 'No hay muestras pendientes de análisis' :
+                        _tabController.index == 1 ? 'No hay muestras pendientes de documentación' :
+                        'No hay muestras finalizadas',
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.grey[600],
                         ),
                       ),
+                      const SizedBox(height: 24),
+                      if (_tabController.index == 0)
+                        ElevatedButton.icon(
+                          onPressed: _navigateToNewMuestra,
+                          icon: const Icon(Icons.qr_code_scanner),
+                          label: const Text('Escanear Nueva Muestra'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF9333EA),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 )
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.only(bottom: 100),
                   itemCount: _muestrasFiltradas.length,
                   itemBuilder: (context, index) {
-                    final lote = _muestrasFiltradas[index];
-                    final userId = _loteService.currentUserId;
-                    // Obtener el último análisis del usuario actual
-                    final analisisUsuario = lote.analisisLaboratorio
-                        .where((a) => a.usuarioId == userId)
-                        .toList();
-                    if (analisisUsuario.isEmpty) return const SizedBox.shrink();
-                    
-                    final ultimoAnalisis = analisisUsuario.last;
-                    final estado = _determinarEstadoAnalisis(ultimoAnalisis);
-                    
-                    final muestraMap = {
-                      'id': lote.id,
-                      'analisisId': ultimoAnalisis.id,
-                      'material': lote.datosGenerales.tipoMaterial,
-                      'peso': ultimoAnalisis.pesoMuestra,
-                      'presentacion': 'Muestra',
-                      'origen': lote.origen?.usuarioFolio ?? 'Desconocido',
-                      'fecha': _formatDate(ultimoAnalisis.fechaToma),
-                      'fechaAnalisis': _formatDate(ultimoAnalisis.fechaToma),
-                      'estado': estado,
-                      'tieneDocumentacion': ultimoAnalisis.evidenciasFoto.isNotEmpty,
-                    };
-                    
-                    return _buildMuestraCard(lote, ultimoAnalisis);
+                    final muestra = _muestrasFiltradas[index];
+                    return _buildMuestraCard(muestra);
                   },
                 ),
         ),
@@ -692,242 +708,143 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
       ),
     );
   }
-
-
-  void _onMuestraTap(LoteUnificadoModel lote, AnalisisLaboratorioData analisis) {
-    HapticFeedback.lightImpact();
-    
-    final estado = _determinarEstadoAnalisis(analisis);
-    
-    switch (estado) {
-      case 'pendiente':
-        // Navegar a formulario de análisis
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => LaboratorioFormulario(
-              muestraId: analisis.id,
-              peso: analisis.pesoMuestra,
-            ),
-          ),
-        );
-        break;
-      case 'analizado':
-        // Navegar a documentación
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => LaboratorioDocumentacion(
-              muestraId: analisis.id,
-            ),
-          ),
-        );
-        break;
-      case 'finalizado':
-        // Ver resultados de análisis
-        _showResultadosDialog(lote, analisis);
-        break;
-    }
-  }
-
-  void _showResultadosDialog(LoteUnificadoModel lote, AnalisisLaboratorioData analisis) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Resultados de Análisis'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('ID Lote: ${lote.id.substring(0, 8).toUpperCase()}'),
-            Text('Material: ${lote.datosGenerales.tipoMaterial}'),
-            Text('Peso Muestra: ${analisis.pesoMuestra} kg'),
-            const SizedBox(height: 8),
-            Text('Fecha de Toma: ${_formatDate(analisis.fechaToma)}'),
-            if (analisis.certificado != null) ...[
-              const SizedBox(height: 8),
-              const Text('Certificado: Disponible', style: TextStyle(color: Colors.green)),
-            ],
-            if (analisis.evidenciasFoto.isNotEmpty) ...[
-              Text('Evidencias: ${analisis.evidenciasFoto.length} fotos'),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cerrar'),
-          ),
-        ],
-      ),
-    );
-  }
   
-  double _calcularPesoTotal() {
-    final userId = _loteService.currentUserId;
-    double total = 0.0;
-    
-    for (final lote in _muestrasFiltradas) {
-      final analisisUsuario = lote.analisisLaboratorio
-          .where((a) => a.usuarioId == userId)
-          .toList();
-      
-      for (final analisis in analisisUsuario) {
-        total += analisis.pesoMuestra;
-      }
-    }
-    
-    return total;
-  }
-  
-  String _determinarEstadoAnalisis(AnalisisLaboratorioData analisis) {
-    if (analisis.certificado == null) {
-      return 'pendiente';
-    } else if (analisis.evidenciasFoto.isEmpty) {
-      return 'analizado';
-    } else {
-      return 'finalizado';
-    }
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-  }
-  
-  Widget _buildMuestraCard(LoteUnificadoModel lote, AnalisisLaboratorioData analisis) {
-    final estado = _determinarEstadoAnalisis(analisis);
-    final material = lote.datosGenerales.tipoMaterial;
-    
-    Color statusColor;
-    String statusText;
-    IconData statusIcon;
-    
-    switch (estado) {
-      case 'pendiente':
-        statusColor = Colors.orange;
-        statusText = 'Pendiente de análisis';
-        statusIcon = Icons.pending_actions;
-        break;
-      case 'analizado':
-        statusColor = Colors.blue;
-        statusText = 'Pendiente de documentación';
-        statusIcon = Icons.description;
-        break;
-      case 'finalizado':
-        statusColor = Colors.green;
-        statusText = 'Finalizado';
-        statusIcon = Icons.check_circle;
-        break;
-      default:
-        statusColor = Colors.grey;
-        statusText = 'Desconocido';
-        statusIcon = Icons.help_outline;
-    }
+  Widget _buildMuestraCard(Map<String, dynamic> muestra) {
+    final tabColor = _getTabColor();
+    final muestraId = muestra['id'] ?? '';
+    final material = muestra['material_predominante'] ?? 'Mixto';
+    final peso = (muestra['peso_muestra'] ?? 0.0).toDouble();
+    final fecha = muestra['fecha_toma'] != null 
+        ? (muestra['fecha_toma'] as Timestamp).toDate()
+        : DateTime.now();
     
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
-        onTap: () => _onMuestraTap(lote, analisis),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
+        onTap: _tabController.index == 2 ? null : () {
+          // Navegar según la pestaña
+          _navigateToMuestraDetail(muestra);
+        },
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
+              // Header con ID y material
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      statusIcon,
-                      color: statusColor,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'ID: ${lote.id.substring(0, 8).toUpperCase()}',
+                          'Muestra ${muestraId.substring(0, 8).toUpperCase()}',
                           style: const TextStyle(
-                            fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            fontFamily: 'monospace',
+                            fontSize: 16,
                           ),
                         ),
-                        Text(
-                          statusText,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: statusColor,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _getMaterialColor(material).withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                material,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: _getMaterialColor(material),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: Colors.grey[400],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Información principal
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildInfoItem(
-                      icon: Icons.category,
-                      label: 'Material',
-                      value: material,
+                  // Icono de acción según pestaña
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: tabColor.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildInfoItem(
-                      icon: Icons.scale,
-                      label: 'Peso Muestra',
-                      value: '${analisis.pesoMuestra} kg',
+                    child: Icon(
+                      _tabController.index == 0 ? Icons.analytics :
+                      _tabController.index == 1 ? Icons.upload_file :
+                      Icons.check_circle,
+                      color: tabColor,
+                      size: 20,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              // Información secundaria
+              // Información adicional
               Row(
                 children: [
-                  Expanded(
-                    child: _buildInfoItem(
-                      icon: Icons.calendar_today,
-                      label: 'Fecha',
-                      value: _formatDate(analisis.fechaToma),
-                      fontSize: 12,
+                  Icon(Icons.scale, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${peso.toStringAsFixed(2)} kg',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
                     ),
                   ),
-                  if (lote.origen != null)
-                    Expanded(
-                      child: _buildInfoItem(
-                        icon: Icons.business,
-                        label: 'Origen',
-                        value: lote.origen!.usuarioFolio ?? 'Desconocido',
-                        fontSize: 12,
-                      ),
+                  const SizedBox(width: 16),
+                  Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${fecha.day}/${fecha.month}/${fecha.year}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
                     ),
+                  ),
                 ],
               ),
+              // Botón de acción solo si no está en Finalizadas
+              if (_tabController.index != 2) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _navigateToMuestraDetail(muestra),
+                    icon: Icon(
+                      _tabController.index == 0 ? Icons.analytics : Icons.upload_file,
+                      size: 18,
+                    ),
+                    label: Text(
+                      _tabController.index == 0 ? 'Realizar Análisis' : 'Subir Documentos',
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: tabColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -935,45 +852,45 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
     );
   }
   
-  Widget _buildInfoItem({
-    required IconData icon,
-    required String label,
-    required String value,
-    double fontSize = 14,
-    Color? color,
-  }) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 16,
-          color: color ?? Colors.grey[600],
-        ),
-        const SizedBox(width: 4),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.grey[500],
-                ),
-              ),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: fontSize,
-                  fontWeight: FontWeight.w500,
-                  color: color ?? Colors.black87,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+  Color _getMaterialColor(String material) {
+    switch (material.toUpperCase()) {
+      case 'PEBD':
+        return BioWayColors.pebdPink;
+      case 'PP':
+        return BioWayColors.ppPurple;
+      case 'MULTILAMINADO':
+        return BioWayColors.multilaminadoBrown;
+      default:
+        return Colors.grey;
+    }
+  }
+  
+  void _navigateToMuestraDetail(Map<String, dynamic> muestra) {
+    HapticFeedback.lightImpact();
+    
+    if (_tabController.index == 0) {
+      // Navegar al formulario de análisis
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LaboratorioFormulario(
+            muestraId: muestra['id'] ?? '',
+            transformacionId: muestra['transformacion_id'] ?? '',
+            datosMuestra: muestra,
           ),
         ),
-      ],
-    );
+      ).then((_) => _loadMuestras()); // Recargar al volver
+    } else if (_tabController.index == 1) {
+      // Navegar a la carga de documentación
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LaboratorioDocumentacion(
+            muestraId: muestra['id'] ?? '',
+            transformacionId: muestra['transformacion_id'],
+          ),
+        ),
+      ).then((_) => _loadMuestras()); // Recargar al volver
+    }
   }
 }

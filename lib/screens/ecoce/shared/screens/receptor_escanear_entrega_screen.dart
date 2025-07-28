@@ -60,9 +60,6 @@ class _ReceptorEscanearEntregaScreenState extends State<ReceptorEscanearEntregaS
         return;
       }
       
-      // Extraer ID de la entrega
-      final entregaId = codigo.split('-').last;
-      
       // Obtener información de la entrega
       final entrega = await _cargaService.getEntregaPorQR(codigo);
       
@@ -108,7 +105,7 @@ class _ReceptorEscanearEntregaScreenState extends State<ReceptorEscanearEntregaS
       }
       
     } catch (e) {
-      print('Error al procesar QR: $e');
+      debugPrint('Error al procesar QR: $e');
       _mostrarError('Error al procesar el código QR');
     } finally {
       setState(() {
@@ -137,10 +134,11 @@ class _ReceptorEscanearEntregaScreenState extends State<ReceptorEscanearEntregaS
         );
         break;
       case 'laboratorio':
-        Navigator.pushNamed(
-          context,
-          '/laboratorio_formulario_recepcion',
-          arguments: datosEntrega,
+        // El laboratorio no recibe lotes completos
+        DialogUtils.showErrorDialog(
+          context: context,
+          title: 'No disponible',
+          message: 'El laboratorio solo puede tomar muestras mediante escaneo de código QR de megalotes',
         );
         break;
       case 'transformador':
@@ -245,7 +243,7 @@ class _ReceptorEscanearEntregaScreenState extends State<ReceptorEscanearEntregaS
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white.withValues(alpha: 0.3),
                       width: 2,
                     ),
                   ),
@@ -253,7 +251,7 @@ class _ReceptorEscanearEntregaScreenState extends State<ReceptorEscanearEntregaS
                     child: Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
+                        color: Colors.black.withValues(alpha: 0.7),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
@@ -291,7 +289,7 @@ class _ReceptorEscanearEntregaScreenState extends State<ReceptorEscanearEntregaS
                 
                 if (_isProcessing)
                   Container(
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black.withValues(alpha: 0.5),
                     child: const Center(
                       child: CircularProgressIndicator(
                         color: Colors.white,

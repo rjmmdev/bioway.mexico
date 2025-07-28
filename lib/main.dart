@@ -34,7 +34,6 @@ import 'screens/ecoce/transformador/transformador_formulario_recepcion.dart';
 // Screens - Laboratorio
 import 'screens/ecoce/laboratorio/laboratorio_inicio.dart';
 import 'screens/ecoce/laboratorio/laboratorio_gestion_muestras.dart';
-import 'screens/ecoce/laboratorio/laboratorio_formulario_recepcion.dart';
 
 // Screens - Maestro
 import 'screens/ecoce/maestro/maestro_unified_screen.dart';
@@ -296,13 +295,6 @@ class BioWayApp extends StatelessWidget {
           return const LaboratorioInicioScreen();
         },
         '/laboratorio_muestras': (context) => const LaboratorioGestionMuestras(),
-        '/laboratorio_formulario_recepcion': (context) {
-          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-          return LaboratorioFormularioRecepcion(
-            lotes: args?['lotes'] ?? [],
-            datosEntrega: args?['datosEntrega'] ?? {},
-          );
-        },
         '/laboratorio_perfil': (context) => const EcocePerfilScreen(),
         '/laboratorio_ayuda': (context) => const EcoceAyudaScreen(),
         
