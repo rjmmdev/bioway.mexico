@@ -60,27 +60,42 @@ class FirebaseStorageService {
     }
   }
 
-  // Subir archivo (PDF, DOC, etc)
+  // Subir archivo (PDF, DOC, etc) - Ya comprimido previamente
   Future<String?> uploadFile(File file, String folder) async {
     try {
-      // Validar tamaño del archivo (máximo 5MB)
-      final fileSize = await file.length();
-      if (fileSize > 5 * 1024 * 1024) {
-        throw Exception('El archivo es demasiado grande. Máximo 5MB.');
+      print('=== INICIO SUBIDA DE DOCUMENTO ===');
+      print('Archivo: ${file.path}');
+      print('Carpeta destino: $folder');
+      
+      // Leer los bytes del archivo (ya está comprimido)
+      final fileData = await file.readAsBytes();
+      print('Tamaño del archivo: ${_formatBytes(fileData.length)}');
+      
+      // Validar tamaño final (máximo 1MB)
+      if (fileData.length > 1024 * 1024) {
+        throw Exception('El archivo es demasiado grande. Máximo 1MB.');
       }
 
       // Generar nombre único
       final fileName = '${DateTime.now().millisecondsSinceEpoch}_${path.basename(file.path)}';
-      final ref = _storage.ref().child('$folder/$fileName');
+      final fullPath = '$folder/$fileName';
+      print('Ruta completa en Storage: $fullPath');
+      
+      final ref = _storage.ref().child(fullPath);
 
       // Subir archivo
-      final uploadTask = await ref.putFile(file);
+      print('Iniciando subida a Firebase Storage...');
+      final uploadTask = await ref.putData(fileData);
       
       // Obtener URL
       final downloadUrl = await uploadTask.ref.getDownloadURL();
+      print('URL obtenida: $downloadUrl');
+      print('=== FIN SUBIDA DE DOCUMENTO ===');
+      
       return downloadUrl;
     } catch (e) {
-      print('Error al subir archivo: $e');
+      print('ERROR al subir archivo: $e');
+      print('Stack trace: ${StackTrace.current}');
       return null;
     }
   }
@@ -88,21 +103,33 @@ class FirebaseStorageService {
   // Comprimir imagen a ~50KB
   Future<List<int>?> _compressImage(File file) async {
     try {
-      final result = await FlutterImageCompress.compressWithFile(
+      // Primera compresión
+      var result = await FlutterImageCompress.compressWithFile(
         file.absolute.path,
         minWidth: 800,
         minHeight: 600,
-        quality: 70,
+        quality: 60,
         rotate: 0,
       );
       
-      // Si aún es muy grande, reducir calidad
-      if (result != null && result.length > 60000) {
-        return await FlutterImageCompress.compressWithFile(
+      // Si aún es muy grande, reducir más agresivamente
+      if (result != null && result.length > 50000) {
+        result = await FlutterImageCompress.compressWithFile(
           file.absolute.path,
           minWidth: 600,
           minHeight: 450,
-          quality: 50,
+          quality: 40,
+          rotate: 0,
+        );
+      }
+      
+      // Si todavía es muy grande, última reducción
+      if (result != null && result.length > 50000) {
+        result = await FlutterImageCompress.compressWithFile(
+          file.absolute.path,
+          minWidth: 400,
+          minHeight: 300,
+          quality: 30,
           rotate: 0,
         );
       }
@@ -295,5 +322,12 @@ class FirebaseStorageService {
       print('Stack trace: ${StackTrace.current}');
       return null;
     }
+  }
+  
+  // Método helper para formatear bytes
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(2)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
   }
 }

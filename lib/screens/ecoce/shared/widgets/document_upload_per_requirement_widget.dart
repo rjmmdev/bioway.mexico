@@ -4,6 +4,7 @@ import 'package:open_file/open_file.dart';
 import 'dart:io';
 import '../../../../utils/colors.dart';
 import '../../../../services/document_service.dart';
+import '../../../../services/document_compression_service.dart';
 
 /// Widget para carga de documentación con un área de carga por cada requisito
 class DocumentUploadPerRequirementWidget extends StatefulWidget {
@@ -57,16 +58,61 @@ class _DocumentUploadPerRequirementWidgetState extends State<DocumentUploadPerRe
       );
       
       if (result != null) {
-        setState(() {
-          _uploadedDocuments[requirementId] = DocumentInfo(
-            file: File(result.path!),
-            fileName: result.name,
-            fileSize: result.size.toString(),
-            uploadDate: DateTime.now(),
-          );
-        });
+        final file = File(result.path!);
         
-        _showSuccessSnackBar('Documento cargado correctamente');
+        // Obtener información del archivo original
+        final fileInfo = await DocumentCompressionService.getFileInfo(file);
+        final originalSize = fileInfo['size'] as int;
+        final originalSizeFormatted = fileInfo['sizeFormatted'] as String;
+        
+        // Mostrar indicador de procesamiento
+        _showInfoSnackBar('Procesando archivo...');
+        
+        try {
+          // Comprimir el archivo inmediatamente
+          final compressedData = await DocumentCompressionService.compressDocument(file);
+          
+          if (compressedData != null) {
+            // Crear archivo temporal con los datos comprimidos
+            final tempDir = await DocumentService().getTempDirectory();
+            final tempFile = File('${tempDir.path}/temp_${DateTime.now().millisecondsSinceEpoch}_${result.name}');
+            await tempFile.writeAsBytes(compressedData);
+            
+            final compressedSize = compressedData.length;
+            final compressedSizeFormatted = DocumentCompressionService.formatBytes(compressedSize);
+            
+            // Mostrar resultado de la compresión
+            if (originalSize > compressedSize) {
+              final reduction = ((originalSize - compressedSize) / originalSize * 100).toStringAsFixed(1);
+              _showSuccessSnackBar(
+                'Archivo optimizado: $originalSizeFormatted → $compressedSizeFormatted (-$reduction%)'
+              );
+            } else {
+              _showSuccessSnackBar(
+                'Documento cargado correctamente ($compressedSizeFormatted)'
+              );
+            }
+            
+            setState(() {
+              _uploadedDocuments[requirementId] = DocumentInfo(
+                file: tempFile,
+                fileName: result.name,
+                fileSize: compressedSizeFormatted,
+                uploadDate: DateTime.now(),
+                additionalInfo: {
+                  'originalSize': originalSize,
+                  'originalSizeFormatted': originalSizeFormatted,
+                  'compressedSize': compressedSize,
+                  'compressedSizeFormatted': compressedSizeFormatted,
+                  'isCompressed': true,
+                },
+              );
+            });
+          }
+        } catch (e) {
+          // Si la compresión falla, mostrar error específico
+          _showErrorSnackBar(e.toString());
+        }
       }
     } catch (e) {
       _showErrorSnackBar('Error al cargar el documento: ${e.toString()}');
@@ -139,6 +185,19 @@ class _DocumentUploadPerRequirementWidgetState extends State<DocumentUploadPerRe
       SnackBar(
         content: Text(message),
         backgroundColor: BioWayColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+
+  void _showInfoSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: BioWayColors.info,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
@@ -499,7 +558,7 @@ class _DocumentUploadPerRequirementWidgetState extends State<DocumentUploadPerRe
               ),
               const SizedBox(height: 4),
               Text(
-                'PDF, JPG, PNG',
+                'PDF (máx. 5MB), JPG, PNG',
                 style: TextStyle(
                   fontSize: 12,
                   color: BioWayColors.textGrey,
@@ -579,7 +638,7 @@ class _DocumentUploadPerRequirementWidgetState extends State<DocumentUploadPerRe
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        doc.fileSize,
+                        doc.additionalInfo?['compressedSizeFormatted'] ?? doc.fileSize,
                         style: TextStyle(
                           fontSize: 11,
                           color: BioWayColors.textGrey,
@@ -665,11 +724,13 @@ class DocumentInfo {
   final String fileName;
   final String fileSize;
   final DateTime uploadDate;
+  final Map<String, dynamic>? additionalInfo;
 
   DocumentInfo({
     required this.file,
     required this.fileName,
     required this.fileSize,
     required this.uploadDate,
+    this.additionalInfo,
   });
 }

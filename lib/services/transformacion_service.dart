@@ -1,13 +1,27 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/lotes/transformacion_model.dart';
 import '../models/lotes/sublote_model.dart';
 import '../models/lotes/lote_unificado_model.dart';
 import 'user_session_service.dart';
+import 'firebase/auth_service.dart';
+import 'firebase/firebase_manager.dart';
 
 /// Servicio para manejar las transformaciones de lotes en el reciclador
 class TransformacionService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final UserSessionService _userSession = UserSessionService();
+  final AuthService _authService = AuthService();
+  final FirebaseManager _firebaseManager = FirebaseManager();
+  
+  // Obtener Firestore de la instancia correcta de Firebase
+  FirebaseFirestore get _firestore {
+    // Obtener la misma instancia que usa AuthService
+    final app = _firebaseManager.currentApp;
+    if (app != null) {
+      return FirebaseFirestore.instanceFor(app: app);
+    }
+    return FirebaseFirestore.instance;
+  }
   
   /// Crea una nueva transformación con múltiples lotes
   Future<String> crearTransformacion({
@@ -21,8 +35,32 @@ class TransformacionService {
     print('[TransformacionService] Merma proceso: $mermaProceso');
     
     try {
-      final userData = _userSession.getUserData();
-      if (userData == null) throw Exception('Usuario no autenticado');
+      // Primero intentar obtener el perfil del usuario para asegurar que está cargado
+      print('[TransformacionService] Cargando perfil del usuario...');
+      final userProfile = await _userSession.getCurrentUserProfile(forceRefresh: false);
+      
+      if (userProfile == null) {
+        print('[TransformacionService] No se pudo cargar el perfil, intentando forzar recarga...');
+        final refreshedProfile = await _userSession.getCurrentUserProfile(forceRefresh: true);
+        if (refreshedProfile == null) {
+          throw Exception('No se pudo cargar el perfil del usuario. Por favor cierra sesión y vuelve a iniciar.');
+        }
+      }
+      
+      // Ahora obtener los datos del usuario
+      var userData = _userSession.getUserData();
+      if (userData == null || userData['uid'] == null) {
+        throw Exception('Datos del usuario incompletos. Por favor cierra sesión y vuelve a iniciar.');
+      }
+      
+      print('[TransformacionService] Usuario autenticado - UID: ${userData['uid']}');
+      print('[TransformacionService] Usuario folio: ${userData['folio']}');
+      
+      // Usar el UID del userData que ya está validado
+      final authUid = userData['uid'] as String;
+      
+      print('[TransformacionService] userData uid: ${userData['uid']}');
+      print('[TransformacionService] userData folio: ${userData['folio']}');
       
       // Verificar que tenemos el uid
       if (userData['uid'] == null) {
@@ -77,7 +115,7 @@ class TransformacionService {
         mermaProceso: mermaProceso,
         sublotesGenerados: [],
         documentosAsociados: {},
-        usuarioId: userData['uid'],
+        usuarioId: authUid, // Usar siempre el UID de Firebase Auth
         usuarioFolio: userData['folio'] ?? '',
         procesoAplicado: procesoAplicado,
         observaciones: observaciones,
@@ -88,10 +126,33 @@ class TransformacionService {
       
       final transformacionMap = transformacion.toMap();
       print('[TransformacionService] Map de transformación creado exitosamente');
+      print('[TransformacionService] usuario_id en el mapa: ${transformacionMap['usuario_id']}');
+      print('[TransformacionService] Tipo de usuario_id: ${transformacionMap['usuario_id'].runtimeType}');
+      // Verificar con Firebase directamente
+      final app = _firebaseManager.currentApp;
+      final firebaseAuth = app != null ? FirebaseAuth.instanceFor(app: app) : FirebaseAuth.instance;
+      final firebaseUser = firebaseAuth.currentUser;
+      
+      print('[TransformacionService] Firebase Auth directo UID: ${firebaseUser?.uid}');
+      print('[TransformacionService] AuthService currentUser UID: ${_authService.currentUser?.uid}');
+      print('[TransformacionService] ¿UIDs coinciden con Firebase directo?: ${transformacionMap['usuario_id'] == firebaseUser?.uid}');
+      print('[TransformacionService] ¿UIDs coinciden con AuthService?: ${transformacionMap['usuario_id'] == _authService.currentUser?.uid}');
+      
+      // Verificar una vez más que el usuario_id está presente
+      if (transformacionMap['usuario_id'] == null || transformacionMap['usuario_id'].toString().isEmpty) {
+        throw Exception('usuario_id no está presente en los datos de la transformación');
+      }
+      
+      // DEBUG: Imprimir todo el mapa para verificar estructura
+      print('[TransformacionService] Mapa completo a guardar:');
+      transformacionMap.forEach((key, value) {
+        print('[TransformacionService]   $key: $value (${value.runtimeType})');
+      });
       
       // Usar transacción para asegurar consistencia
       await _firestore.runTransaction((transaction) async {
         print('[TransformacionService] Iniciando transacción');
+        print('[TransformacionService] Documento a crear: transformaciones/${transformacionRef.id}');
         // Crear la transformación
         transaction.set(transformacionRef, transformacionMap);
         
@@ -114,6 +175,18 @@ class TransformacionService {
       
       return transformacionId;
     } catch (e) {
+      print('[TransformacionService] ERROR COMPLETO: $e');
+      
+      // Verificar si es un error de permisos específico
+      if (e.toString().contains('permission-denied')) {
+        print('[TransformacionService] Error de permisos detectado');
+        print('[TransformacionService] Verifica que las reglas de Firebase permitan escribir en transformaciones');
+        print('[TransformacionService] Usuario actual UID: ${_authService.currentUser?.uid ?? "No disponible"}');
+        
+        throw Exception('Error de permisos: No tienes permiso para crear transformaciones. '
+                       'Por favor contacta al administrador para verificar las reglas de seguridad.');
+      }
+      
       throw Exception('Error al crear transformación: $e');
     }
   }
@@ -195,9 +268,47 @@ class TransformacionService {
           },
         );
         
-        // NO crear entrada en lotes unificados para el sublote
-        // Los sublotes se manejan separadamente y solo se crean como lotes
-        // cuando se necesita transferirlos a otro proceso
+        // IMPORTANTE: Crear entrada en lotes para que el sublote sea visible
+        // Crear estructura de lote unificado para el sublote
+        final loteRef = _firestore.collection('lotes').doc(subloteId);
+        
+        // Crear datos generales
+        transaction.set(
+          loteRef.collection('datos_generales').doc('info'),
+          {
+            'id': subloteId,
+            'qr_code': 'SUBLOTE-$subloteId',
+            'tipo_lote': 'derivado',
+            'tipo_material': materialPredominante,
+            'peso_original': peso,
+            'proceso_actual': 'reciclador',
+            'creado_por': userData['uid'],
+            'creado_por_folio': userData['folio'] ?? '',
+            'fecha_creacion': FieldValue.serverTimestamp(),
+            'activo': true,
+            'consumido_en_transformacion': false,
+            'transformacion_origen': transformacionId,
+            'composicion': composicion.map((k, v) => MapEntry(k, {
+              'peso_aportado': v.pesoAportado,
+              'porcentaje': v.porcentaje,
+              'tipo_material': v.tipoMaterial,
+            })),
+          },
+        );
+        
+        // Crear proceso reciclador
+        transaction.set(
+          loteRef.collection('reciclador').doc('data'),
+          {
+            'usuario_id': userData['uid'],
+            'usuario_folio': userData['folio'] ?? '',
+            'fecha_entrada': FieldValue.serverTimestamp(),
+            'peso_entrada': peso,
+            'tipo_proceso': 'sublote_generado',
+            'estado': 'activo',
+            'transformacion_origen': transformacionId,
+          },
+        );
       });
       
       return subloteId;

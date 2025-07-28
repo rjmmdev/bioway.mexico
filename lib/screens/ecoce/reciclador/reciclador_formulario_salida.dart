@@ -90,10 +90,47 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
     super.initState();
     _isMultipleLotes = widget.lotesIds != null && widget.lotesIds!.length > 1;
     _pesoResultanteController.addListener(_calcularMerma);
-    _loadLoteData();
-    // Initialize operator
-    final userData = UserSessionService().getUserData();
-    _operadorController.text = userData?['nombre'] ?? '';
+    _initializeUserAndLoadData();
+  }
+  
+  Future<void> _initializeUserAndLoadData() async {
+    try {
+      // Verificar autenticación
+      print('[RecicladorFormularioSalida] Verificando autenticación...');
+      
+      // Primero intentar obtener el perfil del usuario
+      final userProfile = await _userSession.getCurrentUserProfile();
+      if (userProfile == null) {
+        print('[RecicladorFormularioSalida] No se pudo obtener el perfil del usuario');
+        if (!mounted) return;
+        
+        DialogUtils.showErrorDialog(
+          context: context,
+          title: 'Error de Sesión',
+          message: 'No se pudo cargar tu perfil. Por favor cierra sesión y vuelve a iniciar.',
+        ).then((_) {
+          Navigator.of(context).pushNamedAndRemoveUntil('/platform_selector', (route) => false);
+        });
+        return;
+      }
+      
+      // Initialize operator
+      final userData = _userSession.getUserData();
+      print('[RecicladorFormularioSalida] Usuario cargado: ${userData?['nombre']} (${userData?['uid']})');
+      _operadorController.text = userData?['nombre'] ?? '';
+      
+      // Cargar datos del lote
+      await _loadLoteData();
+    } catch (e) {
+      print('[RecicladorFormularioSalida] Error al inicializar: $e');
+      if (!mounted) return;
+      
+      DialogUtils.showErrorDialog(
+        context: context,
+        title: 'Error',
+        message: 'Error al cargar los datos: ${e.toString()}',
+      );
+    }
   }
   
   Future<void> _loadLoteData() async {
@@ -479,6 +516,22 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
         if (_lotesParaProcesar.isEmpty) {
           throw Exception('No hay lotes válidos para procesar');
         }
+        
+        // Verificar autenticación antes de crear transformación
+        print('[RecicladorFormularioSalida] Verificando autenticación antes de crear transformación...');
+        final currentProfile = await _userSession.getCurrentUserProfile();
+        if (currentProfile == null) {
+          print('[RecicladorFormularioSalida] ERROR: No hay perfil de usuario');
+          throw Exception('Sesión expirada. Por favor cierra sesión y vuelve a iniciar.');
+        }
+        
+        final userData = _userSession.getUserData();
+        if (userData == null || userData['uid'] == null) {
+          print('[RecicladorFormularioSalida] ERROR: No hay datos de usuario o UID');
+          throw Exception('Datos de usuario incompletos. Por favor cierra sesión y vuelve a iniciar.');
+        }
+        
+        print('[RecicladorFormularioSalida] Usuario autenticado correctamente: ${userData['uid']}');
         
         // Crear transformación con los lotes (uno o varios)
         final transformacionId = await _transformacionService.crearTransformacion(

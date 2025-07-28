@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../utils/colors.dart';
 import '../../../services/transformacion_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
+import '../../../services/firebase/firebase_manager.dart';
 import '../../../models/lotes/transformacion_model.dart';
 import '../shared/widgets/document_upload_per_requirement_widget.dart';
 import '../shared/widgets/dialog_utils.dart';
@@ -22,7 +24,16 @@ class RecicladorTransformacionDocumentacion extends StatefulWidget {
 class _RecicladorTransformacionDocumentacionState extends State<RecicladorTransformacionDocumentacion> {
   final TransformacionService _transformacionService = TransformacionService();
   final FirebaseStorageService _storageService = FirebaseStorageService();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseManager _firebaseManager = FirebaseManager();
+  
+  // Obtener Firestore de la instancia correcta
+  FirebaseFirestore get _firestore {
+    final app = _firebaseManager.currentApp;
+    if (app != null) {
+      return FirebaseFirestore.instanceFor(app: app);
+    }
+    return FirebaseFirestore.instance;
+  }
   
   TransformacionModel? _transformacion;
   bool _isLoading = true;
@@ -143,6 +154,29 @@ class _RecicladorTransformacionDocumentacionState extends State<RecicladorTransf
             documentUrls[entry.key] = url;
           }
         }
+      }
+      
+      // Verificar que tenemos la transformación y el usuario es el dueño
+      print('[DocumentacionTransformacion] Actualizando transformación ${widget.transformacionId}');
+      
+      if (_transformacion == null) {
+        throw Exception('No se pudo cargar la información de la transformación');
+      }
+      
+      // Obtener el usuario actual
+      final firebaseManager = FirebaseManager();
+      final app = firebaseManager.currentApp;
+      final firebaseAuth = app != null 
+        ? FirebaseAuth.instanceFor(app: app) 
+        : FirebaseAuth.instance;
+      final currentUser = firebaseAuth.currentUser;
+      
+      print('[DocumentacionTransformacion] Usuario actual: ${currentUser?.uid}');
+      print('[DocumentacionTransformacion] Dueño de la transformación: ${_transformacion!.usuarioId}');
+      
+      // Verificar que el usuario sea el dueño
+      if (currentUser?.uid != _transformacion!.usuarioId) {
+        throw Exception('No tienes permisos para actualizar esta transformación');
       }
       
       // Actualizar la transformación con los documentos
