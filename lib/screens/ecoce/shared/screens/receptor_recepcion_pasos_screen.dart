@@ -7,7 +7,6 @@ import '../../../../services/firebase/auth_service.dart';
 import '../../../../services/carga_transporte_service.dart';
 import '../../../../services/lote_unificado_service.dart';
 import '../../reciclador/reciclador_formulario_recepcion.dart';
-import '../../laboratorio/laboratorio_formulario_recepcion.dart';
 import '../../transformador/transformador_formulario_recepcion.dart';
 import '../widgets/shared_qr_scanner_screen.dart';
 import '../widgets/dialog_utils.dart';
@@ -236,10 +235,13 @@ class _ReceptorRecepcionPasosScreenState extends State<ReceptorRecepcionPasosScr
         );
         break;
       case 'laboratorio':
-        formScreen = LaboratorioFormularioRecepcion(
-          lotes: _lotes,
-          datosEntrega: _datosEntrega!,
+        // El laboratorio no recibe lotes completos, solo toma muestras por QR
+        DialogUtils.showErrorDialog(
+          context,
+          title: 'No disponible',
+          message: 'El laboratorio solo puede tomar muestras mediante escaneo de código QR de megalotes',
         );
+        return;
         break;
       case 'transformador':
         formScreen = TransformadorFormularioRecepcion(

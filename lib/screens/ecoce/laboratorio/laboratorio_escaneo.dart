@@ -18,20 +18,37 @@ class LaboratorioEscaneoScreen extends StatefulWidget {
 
 class _LaboratorioEscaneoScreenState extends State<LaboratorioEscaneoScreen> {
   void _navigateToScannedMuestras(String qrCode) {
-    // Extraer el ID del lote del código QR
-    final loteId = QRUtils.extractLoteIdFromQR(qrCode);
-    
-    // Si estamos agregando más muestras, devolver el ID
-    if (widget.isAddingMore) {
-      Navigator.pop(context, loteId);
-    } else {
-      // Si es la primera vez, navegar a la pantalla de muestras escaneadas
+    // Verificar si es un código QR de muestra de megalote
+    if (qrCode.startsWith('MUESTRA-MEGALOTE-')) {
+      // Es una muestra de megalote, procesarla directamente
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => LaboratorioRegistroMuestrasScreen(initialMuestraId: loteId),
+          builder: (context) => LaboratorioRegistroMuestrasScreen(
+            initialMuestraId: qrCode, // Pasar el QR completo
+            isMegaloteSample: true,
+          ),
         ),
       );
+    } else {
+      // Es un lote normal, extraer el ID
+      final loteId = QRUtils.extractLoteIdFromQR(qrCode);
+      
+      // Si estamos agregando más muestras, devolver el ID
+      if (widget.isAddingMore) {
+        Navigator.pop(context, loteId);
+      } else {
+        // Si es la primera vez, navegar a la pantalla de muestras escaneadas
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LaboratorioRegistroMuestrasScreen(
+              initialMuestraId: loteId,
+              isMegaloteSample: false,
+            ),
+          ),
+        );
+      }
     }
   }
   

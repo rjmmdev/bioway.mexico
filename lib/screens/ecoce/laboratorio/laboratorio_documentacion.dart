@@ -8,10 +8,12 @@ import '../shared/widgets/document_upload_per_requirement_widget.dart';
 
 class LaboratorioDocumentacion extends StatelessWidget {
   final String muestraId;
+  final String? transformacionId;
   
   LaboratorioDocumentacion({
     super.key,
     required this.muestraId,
+    this.transformacionId,
   });
   
   final LoteService _loteService = LoteService();
@@ -19,29 +21,65 @@ class LaboratorioDocumentacion extends StatelessWidget {
 
   void _onDocumentsSubmitted(BuildContext context, Map<String, DocumentInfo> documents) async {
     try {
+      // Preparar URLs de documentos
+      Map<String, String> documentosUrls = {};
+      
       // Subir documentos a Firebase Storage
-      List<String> documentUrls = [];
-      for (var doc in documents.values) {
-        if (doc.file != null) {
+      for (var entry in documents.entries) {
+        if (entry.value.file != null) {
           final url = await _storageService.uploadFile(
-            doc.file!,
-            'lotes/laboratorio/documentos',
+            entry.value.file!,
+            'laboratorio/documentos/${transformacionId ?? 'lotes'}',
           );
           if (url != null) {
-            documentUrls.add(url);
+            documentosUrls[entry.key] = url;
           }
         }
       }
       
-      // Actualizar el lote con los documentos
-      await _loteService.actualizarLoteLaboratorio(
-        muestraId,
-        {
-          'ecoce_laboratorio_documentos': documentUrls,
-          'ecoce_laboratorio_fecha_documentos': Timestamp.fromDate(DateTime.now()),
-          'estado': 'finalizado',
-        },
-      );
+      // Si hay transformacionId, actualizar la muestra del megalote
+      if (transformacionId != null) {
+        // Obtener la transformación actual
+        final transformacionDoc = await FirebaseFirestore.instance
+            .collection('transformaciones')
+            .doc(transformacionId)
+            .get();
+            
+        if (transformacionDoc.exists) {
+          final muestrasLab = List<Map<String, dynamic>>.from(
+            transformacionDoc.data()!['muestras_laboratorio'] ?? []
+          );
+          
+          // Buscar la muestra y actualizarla
+          final muestraIndex = muestrasLab.indexWhere((m) => m['id'] == muestraId);
+          if (muestraIndex != -1) {
+            muestrasLab[muestraIndex] = {
+              ...muestrasLab[muestraIndex],
+              'certificado': documentosUrls['certificado_analisis'] ?? '',
+              'documentos': documentosUrls,
+              'fecha_documentos': FieldValue.serverTimestamp(),
+            };
+            
+            // Actualizar la transformación
+            await FirebaseFirestore.instance
+                .collection('transformaciones')
+                .doc(transformacionId)
+                .update({
+              'muestras_laboratorio': muestrasLab,
+            });
+          }
+        }
+      } else {
+        // Sistema antiguo (por compatibilidad)
+        await _loteService.actualizarLoteLaboratorio(
+          muestraId,
+          {
+            'ecoce_laboratorio_documentos': documentosUrls.values.toList(),
+            'ecoce_laboratorio_fecha_documentos': Timestamp.fromDate(DateTime.now()),
+            'estado': 'finalizado',
+          },
+        );
+      }
       
       // Mostrar diálogo de éxito
       showDialog(
@@ -121,13 +159,13 @@ class LaboratorioDocumentacion extends StatelessWidget {
   Widget build(BuildContext context) {
     return DocumentUploadPerRequirementWidget(
       title: 'Documentación de Análisis',
-      subtitle: 'Carga un documento por cada requisito',
+      subtitle: 'Carga el certificado de análisis de la muestra',
       lotId: muestraId,
       requiredDocuments: const {
-        'informe_tecnico': 'Informe Técnico o Ficha Técnica',
+        'certificado_analisis': 'Certificado de Análisis de Laboratorio',
       },
       onDocumentsSubmitted: (documents) => _onDocumentsSubmitted(context, documents),
-      primaryColor: BioWayColors.ecoceGreen,
+      primaryColor: const Color(0xFF9333EA), // Morado para laboratorio
       userType: 'laboratorio',
     );
   }

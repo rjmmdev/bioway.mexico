@@ -1002,6 +1002,41 @@ class LoteUnificadoService {
     }
   }
   
+  /// Obtener estadísticas del laboratorio
+  Future<Map<String, dynamic>> obtenerEstadisticasLaboratorio() async {
+    try {
+      // El laboratorio cuenta TODAS las muestras tomadas, no solo las del usuario actual
+      final transformacionesSnapshot = await _firestore
+          .collection('transformaciones')
+          .where('muestras_laboratorio', isNotEqualTo: null)
+          .get();
+      
+      int muestrasRecibidas = 0;
+      double materialAnalizado = 0.0;
+      
+      for (final doc in transformacionesSnapshot.docs) {
+        final muestrasLab = List<Map<String, dynamic>>.from(
+          doc.data()['muestras_laboratorio'] ?? []
+        );
+        
+        for (final muestra in muestrasLab) {
+          // Contar solo muestras completadas (con peso registrado)
+          if (muestra['estado'] == 'completado' && muestra['peso'] != null) {
+            muestrasRecibidas++;
+            materialAnalizado += (muestra['peso'] as num).toDouble();
+          }
+        }
+      }
+      
+      return {
+        'muestrasRecibidas': muestrasRecibidas,
+        'materialAnalizado': materialAnalizado,
+      };
+    } catch (e) {
+      throw Exception('Error al obtener estadísticas del laboratorio: $e');
+    }
+  }
+  
   /// Procesar muestra de megalote cuando el laboratorio la toma
   Future<void> procesarMuestraMegalote({
     required String qrCode,
@@ -1070,6 +1105,53 @@ class LoteUnificadoService {
       _debugPrint('Muestra de megalote procesada: $muestraId con peso $pesoMuestra kg');
     } catch (e) {
       throw Exception('Error al procesar muestra de megalote: $e');
+    }
+  }
+  
+  /// Actualizar análisis de muestra de megalote
+  Future<void> actualizarAnalisisMuestraMegalote({
+    required String transformacionId,
+    required String muestraId,
+    required Map<String, dynamic> datosAnalisis,
+  }) async {
+    try {
+      // Obtener la transformación
+      final transformacionDoc = await _firestore
+          .collection('transformaciones')
+          .doc(transformacionId)
+          .get();
+          
+      if (!transformacionDoc.exists) {
+        throw Exception('Transformación no encontrada');
+      }
+      
+      // Obtener las muestras actuales
+      final muestrasLab = List<Map<String, dynamic>>.from(
+        transformacionDoc.data()!['muestras_laboratorio'] ?? []
+      );
+      
+      // Buscar y actualizar la muestra específica
+      final muestraIndex = muestrasLab.indexWhere((m) => m['id'] == muestraId);
+      if (muestraIndex == -1) {
+        throw Exception('Muestra no encontrada');
+      }
+      
+      // Actualizar la muestra con los datos del análisis
+      muestrasLab[muestraIndex] = {
+        ...muestrasLab[muestraIndex],
+        ...datosAnalisis,
+        'analisis_completado': true,
+        'fecha_analisis': FieldValue.serverTimestamp(),
+      };
+      
+      // Actualizar en Firestore
+      await _firestore.collection('transformaciones').doc(transformacionId).update({
+        'muestras_laboratorio': muestrasLab,
+      });
+      
+      _debugPrint('Análisis de muestra actualizado: $muestraId');
+    } catch (e) {
+      throw Exception('Error al actualizar análisis de muestra: $e');
     }
   }
   

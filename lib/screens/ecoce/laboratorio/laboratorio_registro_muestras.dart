@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../../utils/colors.dart';
-import '../../../utils/format_utils.dart';
 import '../../../services/lote_service.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/firebase/auth_service.dart';
-import '../../../models/lotes/lote_laboratorio_model.dart';
-import '../../../models/lotes/lote_unificado_model.dart';
 import '../shared/utils/material_utils.dart';
 import 'laboratorio_escaneo.dart';
-import 'laboratorio_gestion_muestras.dart';
-import 'laboratorio_formulario.dart';
 import 'laboratorio_toma_muestra_screen.dart';
+import 'laboratorio_toma_muestra_megalote_screen.dart';
 import 'widgets/laboratorio_muestra_card.dart';
 
 // Modelo temporal para representar una muestra
@@ -35,10 +30,12 @@ class ScannedMuestra {
 
 class LaboratorioRegistroMuestrasScreen extends StatefulWidget {
   final String? initialMuestraId;
+  final bool isMegaloteSample;
 
   const LaboratorioRegistroMuestrasScreen({
     super.key,
     this.initialMuestraId,
+    this.isMegaloteSample = false,
   });
 
   @override
@@ -59,9 +56,13 @@ class _LaboratorioRegistroMuestrasScreenState extends State<LaboratorioRegistroM
   @override
   void initState() {
     super.initState();
-    // Si viene con un ID inicial, agregarlo a la lista
+    // Si viene con un ID inicial, procesarlo según el tipo
     if (widget.initialMuestraId != null) {
-      _addMuestraFromId(widget.initialMuestraId!);
+      if (widget.isMegaloteSample) {
+        _processMegaloteSample(widget.initialMuestraId!);
+      } else {
+        _addMuestraFromId(widget.initialMuestraId!);
+      }
     }
   }
 
@@ -143,7 +144,7 @@ class _LaboratorioRegistroMuestrasScreenState extends State<LaboratorioRegistroM
             }
           }
           peso = (info['data']['ecoce_transportista_peso_total'] ?? 0.0).toDouble();
-          origen = info['data']['ecoce_transportista_proveedor'] ?? 'Transportista';
+          // origen = info['data']['ecoce_transportista_proveedor'] ?? 'Transportista';
         }
         
         // Tomar solo una muestra pequeña del peso total (1-5 kg)
@@ -302,6 +303,35 @@ class _LaboratorioRegistroMuestrasScreenState extends State<LaboratorioRegistroM
     }
   }
 
+  Future<void> _processMegaloteSample(String qrCode) async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      // Navegar directamente a la pantalla de toma de muestra para megalote
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LaboratorioTomaMuestraMegaloteScreen(
+              qrCode: qrCode,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        _showError('Error al procesar muestra de megalote: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

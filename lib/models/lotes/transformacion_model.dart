@@ -17,6 +17,8 @@ class TransformacionModel {
   final String usuarioFolio;
   final String? procesoAplicado;
   final String? observaciones;
+  final List<Map<String, dynamic>> muestrasLaboratorio;
+  final String? materialPredominante;
   
   TransformacionModel({
     required this.id,
@@ -34,7 +36,9 @@ class TransformacionModel {
     required this.usuarioFolio,
     this.procesoAplicado,
     this.observaciones,
-  });
+    List<Map<String, dynamic>>? muestrasLaboratorio,
+    this.materialPredominante,
+  }) : muestrasLaboratorio = muestrasLaboratorio ?? [];
   
   factory TransformacionModel.fromFirestore(DocumentSnapshot doc) {
     print('[TransformacionModel] Iniciando conversión desde Firestore para doc: ${doc.id}');
@@ -152,6 +156,8 @@ class TransformacionModel {
       usuarioFolio: data['usuario_folio']?.toString() ?? '',
       procesoAplicado: data['proceso_aplicado']?.toString(),
       observaciones: data['observaciones']?.toString(),
+      muestrasLaboratorio: _convertirAListaMapas(data['muestras_laboratorio'], 'muestras_laboratorio'),
+      materialPredominante: data['material_predominante']?.toString(),
     );
   }
   
@@ -185,6 +191,25 @@ class TransformacionModel {
     }
   }
   
+  /// Método helper para convertir a lista de mapas de forma segura
+  static List<Map<String, dynamic>> _convertirAListaMapas(dynamic valor, String campo) {
+    try {
+      if (valor == null) return [];
+      if (valor is List) {
+        return valor.map((e) {
+          if (e is Map<String, dynamic>) return e;
+          if (e is Map) return Map<String, dynamic>.from(e);
+          return <String, dynamic>{};
+        }).toList();
+      }
+      print('[TransformacionModel] ADVERTENCIA: $campo no es una lista: ${valor.runtimeType}');
+      return [];
+    } catch (e) {
+      print('[TransformacionModel] ERROR al convertir $campo a List<Map>: $e');
+      return [];
+    }
+  }
+  
   Map<String, dynamic> toMap() {
     return {
       'tipo': tipo,
@@ -201,6 +226,8 @@ class TransformacionModel {
       'usuario_folio': usuarioFolio,
       'proceso_aplicado': procesoAplicado,
       'observaciones': observaciones,
+      'muestras_laboratorio': muestrasLaboratorio,
+      'material_predominante': materialPredominante,
     };
   }
   

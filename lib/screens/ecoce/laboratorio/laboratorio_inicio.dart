@@ -2,22 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../../utils/colors.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 import '../../../utils/format_utils.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
 import '../../../services/firebase/auth_service.dart';
-import '../../../services/lote_service.dart';
-import '../../../services/user_session_service.dart';
-import '../../../models/lotes/lote_laboratorio_model.dart';
-import '../../../models/ecoce/ecoce_profile_model.dart';
+import '../../../services/lote_unificado_service.dart';
 import 'laboratorio_escaneo.dart';
 import 'laboratorio_gestion_muestras.dart';
-import 'laboratorio_formulario.dart';
-import 'laboratorio_documentacion.dart';
 import '../shared/ecoce_ayuda_screen.dart';
 import '../shared/ecoce_perfil_screen.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
-import 'widgets/laboratorio_muestra_card.dart';
 import '../shared/widgets/unified_stat_card.dart';
 import '../shared/utils/navigation_utils.dart';
 
@@ -35,8 +30,8 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
   // Servicios
   final EcoceProfileService _profileService = EcoceProfileService();
   final AuthService _authService = AuthService();
-  final LoteService _loteService = LoteService();
-  final UserSessionService _userSession = UserSessionService();
+    final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   
   // Datos del usuario
   String _nombreLaboratorio = "Cargando...";
@@ -44,8 +39,8 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
   int _muestrasRecibidas = 0;
   double _materialAnalizado = 0.0; // en kg
   
-  // Stream para lotes
-  Stream<List<LoteLaboratorioModel>>? _lotesStream;
+  // Stream para muestras del laboratorio
+  StreamSubscription? _statsSubscription;
   
   @override
   void initState() {
@@ -53,25 +48,51 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
     _loadUserData();
     _loadStatistics();
     _setupLotesStream();
+    _setupStatisticsListener();
   }
   
   void _setupLotesStream() {
-    _lotesStream = _loteService.getLotesLaboratorio();
+    // Las muestras solo se obtienen por escaneo QR
+    // No hay acceso directo a megalotes
+  }
+  
+  void _setupStatisticsListener() {
+    // Escuchar cambios en las transformaciones para actualizar estadísticas
+    _statsSubscription = _firestore
+        .collection('transformaciones')
+        .where('muestras_laboratorio', isNotEqualTo: null)
+        .snapshots()
+        .listen((_) {
+      // Cuando hay cambios, recargar estadísticas
+      _loadStatistics();
+    });
+  }
+  
+  @override
+  void dispose() {
+    _statsSubscription?.cancel();
+    super.dispose();
   }
   
   Future<void> _loadStatistics() async {
     try {
-      // Obtener todos los lotes del laboratorio
-      final lotes = await _loteService.getLotesLaboratorio().first;
+      // Usar el nuevo método de estadísticas del servicio
+      final estadisticas = await _loteUnificadoService.obtenerEstadisticasLaboratorio();
       
       if (mounted) {
         setState(() {
-          _muestrasRecibidas = lotes.length;
-          _materialAnalizado = lotes.fold(0.0, (sum, lote) => sum + (lote.pesoMuestra ?? 0));
+          _muestrasRecibidas = estadisticas['muestrasRecibidas'] ?? 0;
+          _materialAnalizado = (estadisticas['materialAnalizado'] ?? 0.0).toDouble();
         });
       }
     } catch (e) {
       debugPrint('Error cargando estadísticas: $e');
+      if (mounted) {
+        setState(() {
+          _muestrasRecibidas = 0;
+          _materialAnalizado = 0.0;
+        });
+      }
     }
   }
   
@@ -82,8 +103,8 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
         final profile = await _profileService.getProfile(currentUser.uid);
         if (profile != null && mounted) {
           setState(() {
-            _nombreLaboratorio = profile.ecoceNombre ?? "Laboratorio";
-            _folioLaboratorio = profile.ecoceFolio ?? "L0000000";
+            _nombreLaboratorio = profile.ecoceNombre;
+            _folioLaboratorio = profile.ecoceFolio;
           });
         }
       }
@@ -92,18 +113,6 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
     }
   }
 
-  // Convertir modelo de lote a Map para el widget
-  Map<String, dynamic> _loteToMap(LoteLaboratorioModel lote) {
-    return {
-      'id': lote.id,
-      'fecha': FormatUtils.formatDate(lote.fechaAnalisis),
-      'peso': lote.pesoMuestra ?? 0,
-      'material': lote.tipoMaterial ?? 'Sin especificar',
-      'origen': lote.proveedor ?? 'Sin origen',
-      'presentacion': 'Muestra',
-      'estado': lote.estado ?? 'pendiente',
-    };
-  }
 
   void _navigateToNewMuestra() {
     HapticFeedback.lightImpact();
@@ -151,79 +160,12 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
     }
   }
 
-  // Obtener texto del botón según el estado
-  String _getActionButtonText(String estado) {
-    switch (estado) {
-      case 'pendiente':
-        return 'Iniciar Análisis';
-      case 'formulario':
-        return 'Formulario';
-      case 'documentacion':
-        return 'Ingresar Documentación';
-      case 'finalizado':
-        return '';
-      default:
-        return '';
-    }
-  }
 
-  // Obtener color del botón según el estado
-  Color _getActionButtonColor(String estado) {
-    switch (estado) {
-      case 'formulario':
-        return BioWayColors.error; // Rojo
-      case 'documentacion':
-        return BioWayColors.warning; // Naranja
-      case 'finalizado':
-        return BioWayColors.success; // Verde
-      default:
-        return BioWayColors.ecoceGreen;
-    }
-  }
-
-  // Manejar tap en muestra según su estado
-  void _handleMuestraTap(Map<String, dynamic> muestra) {
-    HapticFeedback.lightImpact();
-    
-    switch (muestra['estado']) {
-      case 'pendiente':
-      case 'formulario':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => LaboratorioFormulario(
-              muestraId: muestra['id'],
-              peso: muestra['peso'].toDouble(),
-            ),
-          ),
-        );
-        break;
-      case 'documentacion':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => LaboratorioDocumentacion(
-              muestraId: muestra['id'],
-            ),
-          ),
-        );
-        break;
-      case 'finalizado':
-        // TODO: Mostrar resultados o reporte
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Muestra completada'),
-            backgroundColor: BioWayColors.success,
-          ),
-        );
-        break;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async => false,
+    return PopScope(
+      canPop: false,
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F5F5),
         body: SafeArea(
@@ -559,84 +501,55 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                       ),
                       const SizedBox(height: 16),
                       
-                      // Lista de muestras con nuevo diseño y botones según estado
-                      StreamBuilder<List<LoteLaboratorioModel>>(
-                        stream: _lotesStream,
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return Center(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 40),
-                                child: CircularProgressIndicator(
-                                  color: const Color(0xFF9333EA),
+                      // Mensaje informativo sobre el flujo de trabajo
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 40),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.qr_code_scanner,
+                                size: 64,
+                                color: Colors.grey[300],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Toma de muestras por código QR',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
-                            );
-                          }
-                          
-                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                            return Center(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 40),
-                                child: Column(
-                                  children: [
-                                    Icon(
-                                      Icons.science_outlined,
-                                      size: 64,
-                                      color: Colors.grey[300],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'No hay muestras registradas',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Escanea un código QR para comenzar',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey[400],
-                                      ),
-                                    ),
-                                  ],
+                              const SizedBox(height: 8),
+                              Text(
+                                'Escanea el código QR de muestra\ngenerado por el Reciclador',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[400],
                                 ),
                               ),
-                            );
-                          }
-                          
-                          // Tomar solo las primeras 5 muestras
-                          final muestrasRecientes = snapshot.data!.take(5).toList();
-                          
-                          return Column(
-                            children: muestrasRecientes.map((lote) {
-                              final muestra = _loteToMap(lote);
-                              
-                              // Para muestras finalizadas, no mostrar botón de acción
-                              if (muestra['estado'] == 'finalizado') {
-                                return LaboratorioMuestraCard(
-                                  muestra: muestra,
-                                  onTap: null,
-                                  showActionButton: false,
-                                  showActions: false,
-                                );
-                              }
-                              
-                              // Para otros estados, mostrar botón debajo
-                              return LaboratorioMuestraCard(
-                                muestra: muestra,
-                                onTap: () => _handleMuestraTap(muestra),
-                                showActionButton: true,
-                                actionButtonText: _getActionButtonText(muestra['estado']),
-                                actionButtonColor: _getActionButtonColor(muestra['estado']),
-                                onActionPressed: () => _handleMuestraTap(muestra),
-                                showActions: true, // Mostrar flecha lateral
-                              );
-                            }).toList(),
-                          );
-                        },
+                              const SizedBox(height: 24),
+                              ElevatedButton.icon(
+                                onPressed: _navigateToNewMuestra,
+                                icon: const Icon(Icons.qr_code_scanner),
+                                label: const Text('Escanear Código QR'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF9333EA),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                       
                       const SizedBox(height: 100), // Espacio para el FAB

@@ -222,6 +222,11 @@ class TransformacionService {
     }
   }
   
+  /// Obtiene una transformación por ID (alias para compatibilidad)
+  Future<TransformacionModel?> obtenerTransformacionPorId(String transformacionId) async {
+    return obtenerTransformacion(transformacionId);
+  }
+  
   /// Stream de transformaciones del usuario actual
   Stream<List<TransformacionModel>> obtenerTransformacionesUsuario() {
     final userData = _userSession.getUserData();
