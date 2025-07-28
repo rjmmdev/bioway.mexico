@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 BioWay México is a dual-platform Flutter mobile application for recycling and waste management supporting both BioWay and ECOCE systems. The app implements a complete supply chain tracking system for recyclable materials with role-based access and multi-tenant Firebase architecture.
 
+**Current Status**: ECOCE platform is in production. BioWay platform pending Firebase configuration.
+
 ### Key Features
 - **Dual Platform Support**: BioWay and ECOCE in a single application
 - **Multi-Tenant Firebase**: Separate projects per platform
@@ -87,6 +89,15 @@ flutter pub outdated
 # Upgrade packages
 flutter pub upgrade
 ```
+
+### Package Dependencies
+Key dependencies (from pubspec.yaml):
+- **Flutter SDK**: ^3.8.1
+- **Firebase**: cloud_firestore, firebase_auth, firebase_storage, firebase_core
+- **QR/Scanning**: mobile_scanner ^7.0.1, qr_flutter ^4.1.0
+- **Image handling**: image_picker ^1.0.7, flutter_image_compress ^2.1.0
+- **Documents**: pdf ^3.11.0, printing ^5.13.0, file_picker ^8.0.0+1
+- **Location**: google_maps_flutter ^2.9.0
 
 ## Architecture
 
@@ -226,6 +237,11 @@ Lots appear in user screens based on `proceso_actual` field:
 
 When a lot is successfully transferred (both delivery and reception completed), the `proceso_actual` updates and the lot moves to the new user's screen.
 
+Special cases:
+- **Consumed lots**: Marked with `consumido_en_transformacion: true` are hidden from Exit tab
+- **Sublots**: Only visible in Recycler's Completed tab when `proceso_actual == 'reciclador'`
+- **Laboratory samples**: Don't change `proceso_actual` (parallel process)
+
 ### Weight Tracking System
 The system uses dynamic weight calculation through the `pesoActual` getter:
 - **Origin**: Uses initial weight (`pesoNace`)
@@ -340,6 +356,16 @@ Always check actual Firebase field names in models:
 // Example: Transport phases use specific field names
 'transporteFases' // Map<String, ProcesoTransporteData>
 'analisisLaboratorio' // List<AnalisisLaboratorioData>
+```
+
+### Route Arguments Pattern
+Always pass route arguments as Map<String, dynamic>:
+```dart
+// CORRECT
+Navigator.pushNamed(context, '/reciclador_lotes', arguments: {'initialTab': 1});
+
+// WRONG - Will cause type casting error
+Navigator.pushNamed(context, '/reciclador_lotes', arguments: 1);
 ```
 
 ### Navigation After Success
@@ -662,6 +688,11 @@ NEVER hardcode colors. Always use `BioWayColors` constants:
 4. Default emulator is `emulator-5554`
 5. Firebase Storage rules must be configured for document access (see `docs/FIREBASE_STORAGE_RULES_SOLUTION.md`)
 
+### Testing Considerations
+- No unit tests currently implemented
+- Integration tests require real device or emulator
+- Firebase emulator suite not configured
+
 ## Recent Critical Fixes
 
 ### Transfer System
@@ -721,4 +752,71 @@ NEVER hardcode colors. Always use `BioWayColors` constants:
 - **Fixed Deprecated Methods**: Replaced withOpacity with withValues(alpha:)
 - **Added Missing Dependency**: Added pdf package (^3.11.0) to pubspec.yaml
 
-For detailed implementation fixes, see documentation in `docs/` directory.
+### Critical Fixes (2025-07-28)
+
+#### Type Casting Error in Recycler Exit Form
+- **Problem**: `'int' is not a subtype of type 'Map<String, dynamic>?' in type cast` error when completing exit form
+- **Root Cause**: Route argument was passed as integer instead of Map in `reciclador_formulario_salida.dart`
+- **Solution**: 
+  - Changed `arguments: 1` to `arguments: {'initialTab': 1}`
+  - Updated `main.dart` routing to handle both int and Map arguments for backward compatibility
+- **Files Modified**:
+  - `lib/screens/ecoce/reciclador/reciclador_formulario_salida.dart` - Fixed route argument format
+  - `lib/main.dart` - Added robust argument handling for `/reciclador_lotes` route
+
+#### Consumed Lots Not Disappearing from Exit Tab
+- **Problem**: Lots used to create megalotes were not being removed from the "Salida" (Exit) tab
+- **Root Cause**: Document name inconsistency - `datos_generales` collection uses `'info'` document, but transformation service was updating `'data'`
+- **Solution**: Updated document references to use consistent naming
+- **Files Modified**:
+  - `lib/services/transformacion_service.dart` - Changed `.doc('data')` to `.doc('info')` for datos_generales updates
+  - `lib/services/lote_unificado_service.dart` - Fixed inconsistent document reference in line 1760
+
+#### Recycler Lots Tab Improvements
+- **Sublots Visibility**: Fixed sublots not appearing in Completed tab by updating filters
+- **Tab Navigation**: User now stays on Completed tab after creating sublots
+- **Sample Button**: Disabled when megalote has no available weight
+- **Megalote Filtering**: Only show megalotes with available weight or pending documentation
+
+### Database Document Structure Clarification
+- **datos_generales**: Uses document name `'info'`
+- **Other processes** (origen, reciclador, transformador): Use document name `'data'`
+- **transporte**: Uses phase names ('fase_1', 'fase_2') as document names
+
+### Recent Critical Fixes (2025-01-28) - Reciclador Final Implementation
+
+#### Estadísticas del Reciclador Mostrando 0
+- **Problem**: Statistics showed 0 despite having data (megalotes and processed lots)
+- **Root Cause**: 
+  - Field name mismatch: searching for `usuarioId` instead of `usuario_id`
+  - Searching in empty `lotes` collection (lots were consumed in transformations)
+- **Solution**: 
+  - Changed query field from `usuarioId` to `usuario_id`
+  - New strategy: count unique lots from transformations instead of lotes collection
+  - Simplified stream to use single query instead of rxdart CombineLatestStream
+- **Files Modified**:
+  - `lib/services/lote_unificado_service.dart` - New statistics methods
+  - `lib/screens/ecoce/reciclador/reciclador_inicio.dart` - Updated field names
+
+#### Sistema de Transformaciones y Sublotes Completo
+- **Features Implemented**:
+  - Multiple lot selection in "Salida" tab
+  - Megalote creation with weight loss (merma) tracking
+  - On-demand sublot creation from available weight
+  - Automatic megalote deletion when weight=0 AND documentation complete
+  - Complete traceability from sublots to original lots
+- **Key Files**:
+  - `lib/services/transformacion_service.dart` - Core transformation logic
+  - `lib/screens/ecoce/reciclador/reciclador_formulario_salida.dart` - Multi-lot processing
+  - `lib/screens/ecoce/reciclador/reciclador_administracion_lotes.dart` - Sublot creation UI
+
+#### Important Field Names in Firebase
+- **Transformaciones collection**: 
+  - User field: `usuario_id` (NOT `usuarioId`)
+  - Weight field: `peso_total_entrada`
+  - Lots array: `lotes_entrada` with objects containing `lote_id`
+- **Lotes consumed**: Marked with `consumido_en_transformacion: true` in datos_generales/info
+
+For detailed implementation fixes, see documentation in `docs/` directory:
+- `docs/RECICLADOR_ESTADISTICAS_SOLUCION.md` - Statistics fix details
+- `docs/RECICLADOR_TRANSFORMACIONES_IMPLEMENTACION.md` - Complete transformation system

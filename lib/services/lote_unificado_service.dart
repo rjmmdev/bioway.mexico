@@ -1559,148 +1559,146 @@ class LoteUnificadoService {
   }
 
 
-  /// Obtener estadísticas completas del reciclador
+  /// Obtener estadísticas del reciclador
+  /// - lotesRecibidos: Total de lotes aceptados a través del escáner (independiente del estado actual)
+  /// - megalotesCreados: Total de megalotes (transformaciones) creados por el usuario
+  /// - materialProcesado: Suma del peso de entrada de todos los megalotes creados
   Future<Map<String, dynamic>> obtenerEstadisticasReciclador() async {
     try {
       final userId = _currentUserId;
+      debugPrint('=== OBTENIENDO ESTADÍSTICAS RECICLADOR ===');
+      debugPrint('Usuario ID: $userId');
+      
       if (userId == null) {
+        debugPrint('No hay usuario autenticado');
         return {
           'lotesRecibidos': 0,
-          'lotesCreados': 0,
+          'megalotesCreados': 0,
           'materialProcesado': 0.0,
         };
       }
 
       int lotesRecibidos = 0;
-      int lotesCreados = 0;
+      int megalotesCreados = 0;
       double materialProcesado = 0.0;
 
-      // Obtener todos los lotes del sistema
-      final lotesSnapshot = await _firestore.collection(COLECCION_LOTES).get();
-      debugPrint('Total de lotes en el sistema: ${lotesSnapshot.docs.length}');
+      // 1. Obtener todas las transformaciones del usuario para contar lotes y megalotes
+      debugPrint('Obteniendo transformaciones del usuario...');
       
-      for (final loteDoc in lotesSnapshot.docs) {
-        final loteId = loteDoc.id;
+      // Nueva estrategia: contar lotes únicos desde las transformaciones del usuario
+      final transformacionesUsuario = await _firestore
+          .collection('transformaciones')
+          .where('usuario_id', isEqualTo: userId)
+          .get();
+      
+      Set<String> lotesUnicos = {};
+      
+      for (final transformDoc in transformacionesUsuario.docs) {
+        final data = transformDoc.data();
+        final lotesEntrada = data['lotes_entrada'] as List<dynamic>?;
         
-        // 1. Verificar si este lote fue recibido por el reciclador
-        // Revisar en la colección reciclador/data
-        final recicladorDoc = await loteDoc.reference
-            .collection(PROCESO_RECICLADOR)
-            .doc('data')
-            .get();
-            
-        if (recicladorDoc.exists) {
-          final data = recicladorDoc.data()!;
-          debugPrint('Lote $loteId tiene datos de reciclador: $data');
-          
-          // Verificar si el reciclador actual recibió este lote
-          // Buscar en varios campos posibles donde podría estar el ID
-          final recicladorId = data['reciclador_id'] ?? 
-                              data['usuario_id'] ?? 
-                              data['usuarioId'];
-          
-          debugPrint('Comparando recicladorId: $recicladorId con userId: $userId');
-          
-          // En el sistema unificado, si existe el documento en reciclador/data
-          // y el usuario_id coincide, significa que fue recibido
-          if (recicladorId == userId) {
-            lotesRecibidos++;
-            
-            // Sumar el peso usando los campos correctos del sistema unificado
-            final peso = (data['peso_neto'] ?? 
-                         data['peso_entrada'] ?? 
-                         data['pesoNeto'] ?? 
-                         data['pesoEntrada'] ?? 0.0) as num;
-            materialProcesado += peso.toDouble();
-            debugPrint('Lote $loteId contado. Peso: $peso');
+        if (lotesEntrada != null) {
+          for (var lote in lotesEntrada) {
+            if (lote is Map<String, dynamic>) {
+              final loteId = lote['lote_id'] as String?;
+              if (loteId != null) {
+                lotesUnicos.add(loteId);
+              }
+            }
           }
         }
-        
-        // 2. Verificar si este lote fue creado por el reciclador
-        // Los lotes creados por el reciclador no existen en el sistema actual
-        // ya que el reciclador no crea lotes nuevos, solo procesa los existentes
+      }
+      
+      lotesRecibidos = lotesUnicos.length;
+      debugPrint('Lotes únicos recibidos (desde transformaciones): $lotesRecibidos');
+
+      // 2. Contar megalotes creados y sumar material procesado
+      // Ya tenemos las transformaciones del usuario, usarlas
+      megalotesCreados = transformacionesUsuario.docs.length;
+      debugPrint('\nMegalotes creados: $megalotesCreados');
+      
+      // Sumar el peso de entrada de todos los megalotes
+      for (final transformacionDoc in transformacionesUsuario.docs) {
+        final data = transformacionDoc.data();
+        final pesoTotalEntrada = (data['peso_total_entrada'] as num?)?.toDouble() ?? 0.0;
+        materialProcesado += pesoTotalEntrada;
+        debugPrint('Transformación ${transformacionDoc.id} - Peso: $pesoTotalEntrada kg');
       }
 
-      debugPrint('=== ESTADÍSTICAS FINALES ===');
+      debugPrint('=== ESTADÍSTICAS RECICLADOR ===');
       debugPrint('Lotes recibidos: $lotesRecibidos');
-      debugPrint('Lotes creados: $lotesCreados');
+      debugPrint('Megalotes creados: $megalotesCreados');
       debugPrint('Material procesado: $materialProcesado kg');
 
       return {
         'lotesRecibidos': lotesRecibidos,
-        'lotesCreados': lotesCreados,
+        'megalotesCreados': megalotesCreados,
         'materialProcesado': materialProcesado,
       };
-      
     } catch (e) {
-      debugPrint('Error al obtener estadísticas del reciclador: $e');
+      debugPrint('Error obteniendo estadísticas del reciclador: $e');
       return {
         'lotesRecibidos': 0,
-        'lotesCreados': 0,
+        'megalotesCreados': 0,
         'materialProcesado': 0.0,
       };
     }
   }
 
-  /// Stream de estadísticas del reciclador en tiempo real (simplificado)
+  /// Stream de estadísticas del reciclador en tiempo real
   Stream<Map<String, dynamic>> streamEstadisticasReciclador() {
     final userId = _currentUserId;
     
     if (userId == null) {
       return Stream.value({
         'lotesRecibidos': 0,
-        'lotesCreados': 0,
+        'megalotesCreados': 0,
         'materialProcesado': 0.0,
       });
     }
 
-    // Usar un stream de la colección de lotes y recalcular las estadísticas
+    // Stream solo de transformaciones ya que los lotes se cuentan desde ahí
     return _firestore
-        .collection(COLECCION_LOTES)
+        .collection('transformaciones')
+        .where('usuario_id', isEqualTo: userId)
         .snapshots()
-        .asyncMap((snapshot) async {
+        .map((transformacionesSnapshot) {
           int lotesRecibidos = 0;
-          int lotesCreados = 0;
+          int megalotesCreados = 0;
           double materialProcesado = 0.0;
-
-          debugPrint('Stream - Total lotes: ${snapshot.docs.length}');
-
-          for (final loteDoc in snapshot.docs) {
-            final loteId = loteDoc.id;
+          
+          Set<String> lotesUnicos = {};
+          
+          // Contar megalotes
+          megalotesCreados = transformacionesSnapshot.docs.length;
+          
+          // Contar lotes únicos y sumar material procesado
+          for (final transformacionDoc in transformacionesSnapshot.docs) {
+            final data = transformacionDoc.data();
             
-            // 1. Verificar si este lote fue recibido por el reciclador
-            final recicladorDoc = await loteDoc.reference
-                .collection(PROCESO_RECICLADOR)
-                .doc('data')
-                .get();
-                
-            if (recicladorDoc.exists) {
-              final data = recicladorDoc.data()!;
-              // Buscar en varios campos posibles donde podría estar el ID
-              final recicladorId = data['reciclador_id'] ?? 
-                                  data['usuario_id'] ?? 
-                                  data['usuarioId'];
-              
-              // En el sistema unificado, si existe el documento en reciclador/data
-              // y el usuario_id coincide, significa que fue recibido
-              if (recicladorId == userId) {
-                lotesRecibidos++;
-                
-                // Sumar el peso usando los campos correctos del sistema unificado
-                final peso = (data['peso_neto'] ?? 
-                             data['peso_entrada'] ?? 
-                             data['pesoNeto'] ?? 
-                             data['pesoEntrada'] ?? 0.0) as num;
-                materialProcesado += peso.toDouble();
+            // Contar lotes únicos
+            final lotesEntrada = data['lotes_entrada'] as List<dynamic>?;
+            if (lotesEntrada != null) {
+              for (var lote in lotesEntrada) {
+                if (lote is Map<String, dynamic>) {
+                  final loteId = lote['lote_id'] as String?;
+                  if (loteId != null) {
+                    lotesUnicos.add(loteId);
+                  }
+                }
               }
             }
+            
+            // Sumar peso
+            final pesoTotalEntrada = (data['peso_total_entrada'] as num?)?.toDouble() ?? 0.0;
+            materialProcesado += pesoTotalEntrada;
           }
-
-          debugPrint('Stream - Estadísticas: lotesRecibidos=$lotesRecibidos, materialProcesado=$materialProcesado');
-
+          
+          lotesRecibidos = lotesUnicos.length;
+          
           return {
             'lotesRecibidos': lotesRecibidos,
-            'lotesCreados': lotesCreados,
+            'megalotesCreados': megalotesCreados,
             'materialProcesado': materialProcesado,
           };
         });
@@ -1757,7 +1755,7 @@ class LoteUnificadoService {
             .collection(COLECCION_LOTES)
             .doc(loteId)
             .collection(DATOS_GENERALES)
-            .doc('data');
+            .doc('info');
             
         batch.update(datosGeneralesRef, {
           'consumido_en_transformacion': true,

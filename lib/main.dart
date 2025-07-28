@@ -230,9 +230,20 @@ class BioWayApp extends StatelessWidget {
         // Rutas de Reciclador
         '/reciclador_inicio': (context) => const RecicladorInicio(),
         '/reciclador_lotes': (context) {
-          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          final arguments = ModalRoute.of(context)?.settings.arguments;
+          int initialTab = 0;
+          
+          if (arguments != null) {
+            if (arguments is Map<String, dynamic>) {
+              initialTab = arguments['initialTab'] ?? 0;
+            } else if (arguments is int) {
+              // Compatibilidad con código antiguo que pasaba int directamente
+              initialTab = arguments;
+            }
+          }
+          
           return RecicladorAdministracionLotes(
-            initialTab: args?['initialTab'] ?? 0,
+            initialTab: initialTab,
           );
         },
         '/reciclador_escaneo': (context) => const RecicladorEscaneoQR(),
