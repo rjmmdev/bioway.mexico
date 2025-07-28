@@ -810,6 +810,21 @@ NEVER hardcode colors. Always use `BioWayColors` constants:
   - `lib/screens/ecoce/reciclador/reciclador_formulario_salida.dart` - Multi-lot processing
   - `lib/screens/ecoce/reciclador/reciclador_administracion_lotes.dart` - Sublot creation UI
 
+#### Laboratory Module Implementation (2025-01-28)
+- **Problem**: Laboratory signature and photo evidence not working
+- **Solution**: Replicated exact implementation from functional Recycler forms
+- **Files Modified**:
+  - `lib/screens/ecoce/laboratorio/laboratorio_toma_muestra_megalote_screen.dart` - Fixed signature and photo widgets
+
+#### Megalotes Visibility Issue (PENDING)
+- **Problem**: Megalotes not visible on different devices with same account
+- **Root Cause**: Transformaciones use `where('usuario_id', isEqualTo: uid)` filter that requires specific permissions
+- **Current Behavior**:
+  - Lotes: Use `collectionGroup` without user filter (work correctly)
+  - Transformaciones: Use `where` with user filter (blocked by permissions)
+- **Status**: Identified but pending implementation
+- **Documentation**: `docs/PROBLEMA_VISUALIZACION_MEGALOTES.md`
+
 #### Important Field Names in Firebase
 - **Transformaciones collection**: 
   - User field: `usuario_id` (NOT `usuarioId`)
@@ -820,3 +835,6 @@ NEVER hardcode colors. Always use `BioWayColors` constants:
 For detailed implementation fixes, see documentation in `docs/` directory:
 - `docs/RECICLADOR_ESTADISTICAS_SOLUCION.md` - Statistics fix details
 - `docs/RECICLADOR_TRANSFORMACIONES_IMPLEMENTACION.md` - Complete transformation system
+- `docs/PROBLEMA_VISUALIZACION_MEGALOTES.md` - Megalotes visibility issue analysis
+- `docs/MISMO_USUARIO_MULTIPLES_DISPOSITIVOS.md` - Multi-device same account usage
+- `docs/FIREBASE_RULES_TRANSFORMACIONES_SOLUTION.md` - Firebase security rules for transformaciones

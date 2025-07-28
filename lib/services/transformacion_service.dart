@@ -228,19 +228,78 @@ class TransformacionService {
   }
   
   /// Stream de transformaciones del usuario actual
+  /// NOTA: Si se usa la misma cuenta (email/password) en múltiples dispositivos,
+  /// el UID será el mismo y se verán las mismas transformaciones
   Stream<List<TransformacionModel>> obtenerTransformacionesUsuario() {
     final userData = _userSession.getUserData();
     if (userData == null) return Stream.value([]);
+    
+    // Debug: Imprimir el UID del usuario actual
+    print('=== DEBUG TRANSFORMACIONES ===');
+    print('Usuario actual UID: ${userData['uid']}');
+    print('Usuario actual Folio: ${userData['folio']}');
+    print('Usuario actual Nombre: ${userData['nombre']}');
     
     return _firestore
         .collection('transformaciones')
         .where('usuario_id', isEqualTo: userData['uid'])
         .snapshots()
         .map((snapshot) {
+          print('Transformaciones encontradas: ${snapshot.docs.length}');
+          
           // Ordenar manualmente para evitar requerir índice
           final transformaciones = snapshot.docs
-              .map((doc) => TransformacionModel.fromFirestore(doc))
+              .map((doc) {
+                final trans = TransformacionModel.fromFirestore(doc);
+                print('Transformación ID: ${trans.id}, Usuario: ${trans.usuarioId}, Folio: ${trans.usuarioFolio}');
+                return trans;
+              })
               // Filtrar transformaciones que deben ser eliminadas (peso=0 y con documentación)
+              .where((transformacion) => !transformacion.debeSerEliminada)
+              .toList();
+          
+          print('Transformaciones después de filtrar: ${transformaciones.length}');
+          
+          // Ordenar por fecha_inicio descendente
+          transformaciones.sort((a, b) => b.fechaInicio.compareTo(a.fechaInicio));
+          
+          return transformaciones;
+        });
+  }
+  
+  /// Stream de transformaciones por folio del reciclador
+  /// Esto permite ver todas las transformaciones de la misma organización
+  Stream<List<TransformacionModel>> obtenerTransformacionesPorFolio() {
+    final userData = _userSession.getUserData();
+    if (userData == null) return Stream.value([]);
+    
+    final userFolio = userData['folio'] as String?;
+    if (userFolio == null || userFolio.isEmpty) {
+      // Si no hay folio, usar el método por usuario
+      return obtenerTransformacionesUsuario();
+    }
+    
+    // Extraer el prefijo del folio (R para reciclador)
+    final folioPrefix = userFolio.substring(0, 1);
+    
+    // Solo aplicar filtro por folio para recicladores
+    if (folioPrefix != 'R') {
+      return obtenerTransformacionesUsuario();
+    }
+    
+    print('=== TRANSFORMACIONES POR FOLIO ===');
+    print('Buscando transformaciones con folio prefijo: $folioPrefix');
+    
+    return _firestore
+        .collection('transformaciones')
+        .where('usuario_folio', isGreaterThanOrEqualTo: folioPrefix)
+        .where('usuario_folio', isLessThan: folioPrefix + '\uf8ff')
+        .snapshots()
+        .map((snapshot) {
+          print('Transformaciones encontradas por folio: ${snapshot.docs.length}');
+          
+          final transformaciones = snapshot.docs
+              .map((doc) => TransformacionModel.fromFirestore(doc))
               .where((transformacion) => !transformacion.debeSerEliminada)
               .toList();
           
