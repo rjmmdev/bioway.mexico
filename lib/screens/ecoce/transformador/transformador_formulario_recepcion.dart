@@ -153,7 +153,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
             'usuario_id': _authService.currentUser?.uid,
             'fecha_entrada': FieldValue.serverTimestamp(),
             'fecha_creacion': FieldValue.serverTimestamp(),
-            'peso_ingreso': double.tryParse(_pesoRecibidoController.text) ?? lote['peso'],
+            'peso_entrada': double.tryParse(_pesoRecibidoController.text) ?? lote['peso'],
             'peso_recibido': double.tryParse(_pesoRecibidoController.text) ?? lote['peso'],
             'tipos_analisis': [_tipoProcesamiento],
             'producto_fabricado': _tipoProcesamiento == 'pellets' ? 'Pellets' : 
@@ -162,8 +162,13 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
             'operador_recibe': _userSession.getUserData()?['nombre'] ?? 'Sin nombre',
             'firma_recibe': _signatureUrl,
             'comentarios': _observacionesController.text,
-            'estado': 'pendiente',
             'proveedor': _datosEntrega!['transportista_nombre'] ?? 'Sin especificar',
+            // Guardar estado en especificaciones como espera la pantalla de producción
+            'especificaciones': {
+              'estado': 'pendiente',
+              'tipo_procesamiento': _tipoProcesamiento,
+              'calidad_material': _calidadMaterialController.text,
+            },
           },
         );
 
