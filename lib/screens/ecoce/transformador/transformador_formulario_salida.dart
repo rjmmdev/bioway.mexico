@@ -1152,7 +1152,8 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
               icon: '📷',
               title: 'Evidencia Fotográfica',
               children: [
-                PhotoEvidenceFormField(
+                PhotoEvidenceWidget(
+                  title: '', // Empty title since SectionCard already provides it
                   onPhotosChanged: (photos) {
                     setState(() {
                       _photos = photos;
@@ -1160,6 +1161,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                   },
                   primaryColor: _primaryColor,
                   isRequired: true,
+                  showCounter: true,
                 ),
               ],
             ),
