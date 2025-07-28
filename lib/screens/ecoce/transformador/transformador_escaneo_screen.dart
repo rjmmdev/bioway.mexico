@@ -36,7 +36,7 @@ class TransformadorEscaneoScreen extends StatelessWidget {
       title: 'Recibir Lotes',
       subtitle: 'Paso 1: Escanear o ingresar ID',
       onCodeScanned: (code) => _navigateToScannedLots(context, code),
-      primaryColor: BioWayColors.ecoceGreen,
+      primaryColor: Colors.orange,
       headerLabel: 'Transformador',
       headerValue: 'V0000001',
       userType: 'transformador',

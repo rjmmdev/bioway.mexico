@@ -265,13 +265,13 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
                 height: 40,
                 decoration: BoxDecoration(
                   color: tieneArchivos 
-                      ? BioWayColors.ecoceGreen.withValues(alpha: 0.1)
+                      ? Colors.orange.withValues(alpha: 0.1)
                       : Colors.grey.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   icono,
-                  color: tieneArchivos ? BioWayColors.ecoceGreen : Colors.grey,
+                  color: tieneArchivos ? Colors.orange : Colors.grey,
                   size: 24,
                 ),
               ),
@@ -309,7 +309,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
                         '${archivos.length} archivo${archivos.length > 1 ? 's' : ''} cargado${archivos.length > 1 ? 's' : ''}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: BioWayColors.ecoceGreen,
+                          color: Colors.orange,
                         ),
                       ),
                     ] else if (esObligatorio) ...[
@@ -329,7 +329,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
               if (tieneArchivos)
                 Icon(
                   Icons.check_circle,
-                  color: BioWayColors.ecoceGreen,
+                  color: Colors.orange,
                   size: 24,
                 ),
             ],
@@ -356,7 +356,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
                 children: [
                   Icon(
                     Icons.add_circle_outline,
-                    color: BioWayColors.ecoceGreen,
+                    color: Colors.orange,
                     size: 20,
                   ),
                   const SizedBox(width: 8),
@@ -365,7 +365,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: BioWayColors.ecoceGreen,
+                      color: Colors.orange,
                     ),
                   ),
                 ],
@@ -469,7 +469,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: _todosDocumentosCargados 
-                    ? BioWayColors.ecoceGreen.withValues(alpha: 0.1)
+                    ? Colors.orange.withValues(alpha: 0.1)
                     : Colors.grey.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -479,7 +479,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
                     Icons.cloud_upload,
                     size: 16,
                     color: _todosDocumentosCargados 
-                        ? BioWayColors.ecoceGreen
+                        ? Colors.orange
                         : Colors.grey,
                   ),
                   const SizedBox(width: 4),
@@ -489,7 +489,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: _todosDocumentosCargados 
-                          ? BioWayColors.ecoceGreen
+                          ? Colors.orange
                           : Colors.grey,
                     ),
                   ),
@@ -621,7 +621,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
                           ? 0 
                           : _documentosObligatorios.where((doc) => _archivosPorDocumento[doc]!.isNotEmpty).length / _documentosObligatorios.length,
                       backgroundColor: Colors.grey[200],
-                      valueColor: AlwaysStoppedAnimation<Color>(BioWayColors.ecoceGreen),
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
                       minHeight: 6,
                     ),
                   ],
@@ -679,7 +679,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
                       ? null 
                       : _confirmarDocumentacion,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: BioWayColors.ecoceGreen,
+                    backgroundColor: Colors.orange,
                     disabledBackgroundColor: Colors.grey[300],
                     elevation: 0,
                     shape: RoundedRectangleBorder(

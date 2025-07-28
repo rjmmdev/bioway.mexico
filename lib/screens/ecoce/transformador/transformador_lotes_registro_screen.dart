@@ -297,8 +297,8 @@ class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesReg
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  BioWayColors.ecoceGreen,
-                  BioWayColors.ecoceGreen.withValues(alpha: 0.8),
+                  Colors.orange,
+                  Colors.orange.withValues(alpha: 0.8),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -306,7 +306,7 @@ class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesReg
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
+                  color: Colors.orange.withValues(alpha: 0.3),
                   blurRadius: 15,
                   offset: const Offset(0, 8),
                 ),
@@ -393,19 +393,19 @@ class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesReg
                   onPressed: _addMoreLots,
                   icon: Icon(
                     Icons.add,
-                    color: BioWayColors.ecoceGreen,
+                    color: Colors.orange,
                     size: 20,
                   ),
                   label: Text(
                     'Agregar',
                     style: TextStyle(
-                      color: BioWayColors.ecoceGreen,
+                      color: Colors.orange,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    backgroundColor: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
+                    backgroundColor: Colors.orange.withValues(alpha: 0.1),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -441,7 +441,7 @@ class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesReg
                     child: Text(
                       'Escanear o ingresar primer lote',
                       style: TextStyle(
-                        color: BioWayColors.ecoceGreen,
+                        color: Colors.orange,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -565,7 +565,7 @@ class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesReg
       floatingActionButton: _scannedLots.isNotEmpty
           ? FloatingActionButton.extended(
         onPressed: _continueWithLots,
-        backgroundColor: BioWayColors.ecoceGreen,
+        backgroundColor: Colors.orange,
         elevation: 4,
         icon: const Icon(Icons.arrow_forward, color: Colors.white),
         label: const Text(

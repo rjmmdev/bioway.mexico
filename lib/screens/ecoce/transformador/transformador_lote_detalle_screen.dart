@@ -40,7 +40,7 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
 
-  final Color _primaryColor = BioWayColors.ecoceGreen;
+  final Color _primaryColor = Colors.orange;
 
   @override
   void initState() {

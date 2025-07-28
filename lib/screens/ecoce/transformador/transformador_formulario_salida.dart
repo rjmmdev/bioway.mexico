@@ -19,6 +19,7 @@ import '../shared/widgets/unified_container.dart';
 import '../shared/widgets/field_label.dart';
 import '../shared/utils/dialog_utils.dart';
 import 'transformador_documentacion_screen.dart';
+import 'utils/transformador_navigation_helper.dart';
 
 class TransformadorFormularioSalida extends StatefulWidget {
   final String? loteId; // Individual
@@ -46,7 +47,7 @@ class TransformadorFormularioSalida extends StatefulWidget {
 
 class _TransformadorFormularioSalidaState extends State<TransformadorFormularioSalida> {
   final _formKey = GlobalKey<FormState>();
-  final Color _primaryColor = BioWayColors.ecoceGreen;
+  final Color _primaryColor = Colors.orange;
   
   // Servicios
   final LoteService _loteService = LoteService();
@@ -395,21 +396,14 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
               // Determine which tab to show based on whether documentation was completed
               final tabIndex = result == true ? 2 : 1; // Completados if true, Documentación if false
               
-              Navigator.pushNamedAndRemoveUntil(
+              TransformadorNavigationHelper.navigateAfterDocumentation(
                 context,
-                '/transformador_produccion',
-                (route) => false,
-                arguments: {'initialTab': tabIndex},
+                allCompleted: result == true,
               );
             }
           } else {
             // Para procesamiento múltiple, volver a producción con tab Documentación
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/transformador_produccion',
-              (route) => false,
-              arguments: {'initialTab': 1}, // Tab Documentación
-            );
+            TransformadorNavigationHelper.navigateToDocumentation(context);
           }
         }
       }

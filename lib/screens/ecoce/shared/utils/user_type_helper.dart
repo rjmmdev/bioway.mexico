@@ -28,7 +28,7 @@ class UserTypeHelper {
       case 'V':
         return BioWayColors.petBlue; // Transporte
       case 'T':
-        return BioWayColors.ecoceGreen; // Transformador
+        return Colors.orange; // Transformador
       case 'L':
         return BioWayColors.otherPurple; // Laboratorio
       case 'M':

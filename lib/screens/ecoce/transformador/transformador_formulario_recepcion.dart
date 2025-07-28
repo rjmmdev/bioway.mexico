@@ -18,6 +18,7 @@ import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/form_widgets.dart';
 import '../shared/widgets/dialog_utils.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
+import 'utils/transformador_navigation_helper.dart';
 
 
 class TransformadorFormularioRecepcion extends StatefulWidget {
@@ -102,7 +103,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
           _signatureUrl = null;
         });
       },
-      primaryColor: BioWayColors.ecoceGreen,
+      primaryColor: Colors.orange,
     );
   }
 
@@ -176,12 +177,8 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
           title: 'Recepción Exitosa',
           message: 'Los materiales han sido recibidos correctamente. Puede proceder con el procesamiento.',
           onAccept: () {
-            // Navegar a la pantalla de producción en la pestaña de Salida (tab 0)
-            Navigator.of(context).pushNamedAndRemoveUntil(
-              '/transformador_produccion',
-              (route) => false,
-              arguments: {'initialTab': 0}, // Pestaña Salida
-            );
+            // Navegar a la pantalla de producción en la pestaña de Salida
+            TransformadorNavigationHelper.navigateAfterReception(context);
           },
         );
       }
@@ -219,7 +216,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
       
       // Dibujar la firma con color personalizado
       final paint = Paint()
-        ..color = BioWayColors.ecoceGreen
+        ..color = Colors.orange
         ..strokeCap = StrokeCap.round
         ..strokeWidth = 2.0;
       
@@ -273,12 +270,12 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: BioWayColors.ecoceGreen.withOpacity(0.1),
+              color: Colors.orange.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               Icons.precision_manufacturing,
-              color: BioWayColors.ecoceGreen,
+              color: Colors.orange,
               size: 24,
             ),
           ),
@@ -316,7 +313,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
         backgroundColor: const Color(0xFFF5F5F5),
         body: Center(
           child: CircularProgressIndicator(
-            color: BioWayColors.ecoceGreen,
+            color: Colors.orange,
           ),
         ),
       );
@@ -325,7 +322,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: BioWayColors.ecoceGreen,
+        backgroundColor: Colors.orange,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
@@ -372,7 +369,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                       children: [
                         Icon(
                           Icons.local_shipping,
-                          color: BioWayColors.ecoceGreen,
+                          color: Colors.orange,
                           size: 24,
                         ),
                         const SizedBox(width: 12),
@@ -424,7 +421,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                       children: [
                         Icon(
                           Icons.precision_manufacturing,
-                          color: BioWayColors.ecoceGreen,
+                          color: Colors.orange,
                           size: 24,
                         ),
                         const SizedBox(width: 12),
@@ -466,7 +463,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                       children: [
                         Icon(
                           Icons.settings,
-                          color: BioWayColors.ecoceGreen,
+                          color: Colors.orange,
                           size: 24,
                         ),
                         const SizedBox(width: 12),
@@ -504,17 +501,17 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                               });
                             }
                           },
-                          selectedColor: BioWayColors.ecoceGreen.withOpacity(0.2),
+                          selectedColor: Colors.orange.withOpacity(0.2),
                           backgroundColor: Colors.grey[100],
                           labelStyle: TextStyle(
                             color: _tipoProcesamiento == 'pellets'
-                                ? BioWayColors.ecoceGreen
+                                ? Colors.orange
                                 : Colors.grey[700],
                             fontWeight: _tipoProcesamiento == 'pellets'
                                 ? FontWeight.bold
                                 : FontWeight.normal,
                           ),
-                          checkmarkColor: BioWayColors.ecoceGreen,
+                          checkmarkColor: Colors.orange,
                         ),
                         ChoiceChip(
                           label: const Text('Hojuelas'),
@@ -526,17 +523,17 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                               });
                             }
                           },
-                          selectedColor: BioWayColors.ecoceGreen.withOpacity(0.2),
+                          selectedColor: Colors.orange.withOpacity(0.2),
                           backgroundColor: Colors.grey[100],
                           labelStyle: TextStyle(
                             color: _tipoProcesamiento == 'hojuelas'
-                                ? BioWayColors.ecoceGreen
+                                ? Colors.orange
                                 : Colors.grey[700],
                             fontWeight: _tipoProcesamiento == 'hojuelas'
                                 ? FontWeight.bold
                                 : FontWeight.normal,
                           ),
-                          checkmarkColor: BioWayColors.ecoceGreen,
+                          checkmarkColor: Colors.orange,
                         ),
                         ChoiceChip(
                           label: const Text('Otros'),
@@ -548,17 +545,17 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                               });
                             }
                           },
-                          selectedColor: BioWayColors.ecoceGreen.withOpacity(0.2),
+                          selectedColor: Colors.orange.withOpacity(0.2),
                           backgroundColor: Colors.grey[100],
                           labelStyle: TextStyle(
                             color: _tipoProcesamiento == 'otros'
-                                ? BioWayColors.ecoceGreen
+                                ? Colors.orange
                                 : Colors.grey[700],
                             fontWeight: _tipoProcesamiento == 'otros'
                                 ? FontWeight.bold
                                 : FontWeight.normal,
                           ),
-                          checkmarkColor: BioWayColors.ecoceGreen,
+                          checkmarkColor: Colors.orange,
                         ),
                       ],
                     ),
@@ -645,7 +642,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                       children: [
                         Icon(
                           Icons.comment,
-                          color: BioWayColors.ecoceGreen,
+                          color: Colors.orange,
                           size: 24,
                         ),
                         const SizedBox(width: 12),
@@ -697,7 +694,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                       children: [
                         Icon(
                           Icons.draw,
-                          color: BioWayColors.ecoceGreen,
+                          color: Colors.orange,
                           size: 24,
                         ),
                         const SizedBox(width: 12),
@@ -721,7 +718,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                           border: Border.all(
                             color: _signaturePoints.isEmpty
                                 ? Colors.grey[300]!
-                                : BioWayColors.ecoceGreen,
+                                : Colors.orange,
                             width: 2,
                           ),
                         ),
@@ -770,7 +767,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                 child: ElevatedButton(
                   onPressed: _isSubmitting ? null : _submitForm,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: BioWayColors.ecoceGreen,
+                    backgroundColor: Colors.orange,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -826,14 +823,14 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
             case 1:
               break; // Ya estamos aquí
             case 2:
-              Navigator.pushReplacementNamed(context, '/transformador_produccion');
+              TransformadorNavigationHelper.navigateToPendingSalida(context, replacement: true);
               break;
             case 3:
               Navigator.pushReplacementNamed(context, '/transformador_perfil');
               break;
           }
         },
-        primaryColor: BioWayColors.ecoceGreen,
+        primaryColor: Colors.orange,
         items: const [
           NavigationItem(
             icon: Icons.home_rounded,
