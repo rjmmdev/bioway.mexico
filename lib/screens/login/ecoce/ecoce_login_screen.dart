@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:math';
 import '../../../utils/colors.dart';
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
@@ -544,14 +545,11 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
     }
   }
 
-  void _showPendingApprovalDialog() {
-    DialogUtils.showInfoDialog(
+  void _showErrorDialog(String title, String message) {
+    DialogUtils.showErrorDialog(
       context: context,
-      title: 'Aprobación Pendiente',
-      message: 'Tu cuenta está siendo revisada por ECOCE.\n\nRecibirás una notificación por correo cuando tu cuenta sea aprobada.',
-      buttonText: 'Entendido',
-      icon: Icons.hourglass_empty,
-      iconColor: BioWayColors.warning,
+      title: title,
+      message: message,
     );
   }
 
@@ -561,14 +559,6 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
       title: 'Solicitud Rechazada',
       message: 'Razón: $reason\n\nPara más información, contacta a:\nsoporte@ecoce.mx',
       buttonText: 'Cerrar',
-    );
-  }
-
-  void _showErrorDialog(String title, String message) {
-    DialogUtils.showErrorDialog(
-      context: context,
-      title: title,
-      message: message,
     );
   }
 
@@ -605,14 +595,46 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
     }
   }
 
-  void _showTemporarySuccessDialog() {
-    DialogUtils.showSuccessDialog(
-      context: context,
-      title: '¡Bienvenido a ECOCE!',
-      message: 'Has ingresado correctamente al sistema de trazabilidad ECOCE.\n\nNota: Las pantallas del sistema ECOCE están en desarrollo.',
-      buttonText: 'Volver al selector',
-      onPressed: () {
-        Navigator.pop(context); // Volver al selector
+  Widget _buildBackButton() {
+    return IconButton(
+      onPressed: _navigateBack,
+      icon: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(
+          Icons.arrow_back_ios_new,
+          color: BioWayColors.ecoceGreen,
+          size: 20,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogo() {
+    return AnimatedBuilder(
+      animation: _logoController,
+      builder: (context, child) {
+        return FadeTransition(
+          opacity: _logoFadeAnimation,
+          child: Transform.scale(
+            scale: _logoScaleAnimation.value,
+            child: SvgPicture.asset(
+              'assets/logos/ecoce_logo.svg',
+              width: 140,
+              height: 140,
+            ),
+          ),
+        );
       },
     );
   }
@@ -620,7 +642,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: BioWayColors.ecoceLight,
+      backgroundColor: const Color(0xFFF6FBF8),
       body: SafeArea(
         child: Stack(
           children: [
@@ -636,48 +658,10 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
               children: [
                 // Header con botón de regreso
                 Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                   child: Row(
                     children: [
-                      IconButton(
-                        onPressed: _navigateBack,
-                        icon: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.arrow_back_ios_new,
-                            color: BioWayColors.ecoceGreen,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      // Logo pequeño de ECOCE
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'ECOCE',
-                          style: TextStyle(
-                            color: BioWayColors.ecoceGreen,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
+                      _buildBackButton(),
                     ],
                   ),
                 ),
@@ -688,49 +672,27 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                     physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 0),
 
                         // Logo animado
-                        AnimatedBuilder(
-                          animation: _logoController,
-                          builder: (context, child) {
-                            return FadeTransition(
-                              opacity: _logoFadeAnimation,
-                              child: Transform.scale(
-                                scale: _logoScaleAnimation.value,
-                                child: SvgPicture.asset(
-                                  'assets/logos/ecoce_logo.svg',
-                                  width: 120,
-                                  height: 120,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                        _buildLogo(),
 
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 16),
 
-                        // Título y subtítulo
-                        const Text(
-                          'ECOCE',
-                          style: TextStyle(
-                            fontSize: 36,
-                            fontWeight: FontWeight.bold,
-                            color: BioWayColors.ecoceGreen,
-                            letterSpacing: 2,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
+                        // Título principal
                         Text(
                           'Sistema de Trazabilidad',
                           style: TextStyle(
-                            fontSize: 18,
-                            color: BioWayColors.ecoceDark.withValues(alpha: 0.7),
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: BioWayColors.ecoceDark,
+                            letterSpacing: 0.2,
                           ),
                         ),
 
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 24),
 
                         // Formulario animado
                         AnimatedBuilder(
@@ -746,13 +708,23 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                           },
                           child: Container(
                             constraints: const BoxConstraints(maxWidth: 400),
-                            padding: const EdgeInsets.all(24),
+                            padding: const EdgeInsets.all(28),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: BioWayColors.ecoceGreen.withValues(alpha: 0.25),
+                                width: 2,
+                              ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
+                                  color: BioWayColors.ecoceGreen.withValues(alpha: 0.12),
+                                  blurRadius: 40,
+                                  offset: const Offset(0, 20),
+                                  spreadRadius: -5,
+                                ),
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.08),
                                   blurRadius: 20,
                                   offset: const Offset(0, 10),
                                 ),
@@ -938,7 +910,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                             },
                           ),
 
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),
@@ -955,13 +927,23 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Correo o Folio',
-          style: TextStyle(
-            color: BioWayColors.ecoceDark,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+        Row(
+          children: [
+            Icon(
+              Icons.account_circle_outlined,
+              size: 16,
+              color: BioWayColors.ecoceGreen,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Correo o Folio',
+              style: TextStyle(
+                color: BioWayColors.ecoceDark,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         TextFormField(
@@ -983,7 +965,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
               size: 22,
             ),
             filled: true,
-            fillColor: BioWayColors.ecoceLight,
+            fillColor: const Color(0xFFF6FBF8),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -991,15 +973,15 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: BioWayColors.ecoceGreen.withValues(alpha: 0.2),
-                width: 1,
+                color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
+                width: 1.5,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
                 color: BioWayColors.ecoceGreen,
-                width: 2,
+                width: 2.5,
               ),
             ),
             errorBorder: OutlineInputBorder(
@@ -1034,13 +1016,23 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Contraseña',
-          style: TextStyle(
-            color: BioWayColors.ecoceDark,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+        Row(
+          children: [
+            Icon(
+              Icons.lock_outlined,
+              size: 16,
+              color: BioWayColors.ecoceGreen,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Contraseña',
+              style: TextStyle(
+                color: BioWayColors.ecoceDark,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         TextFormField(
@@ -1075,7 +1067,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
               },
             ),
             filled: true,
-            fillColor: BioWayColors.ecoceLight,
+            fillColor: const Color(0xFFF6FBF8),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -1083,15 +1075,15 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: BioWayColors.ecoceGreen.withValues(alpha: 0.2),
-                width: 1,
+                color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
+                width: 1.5,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
                 color: BioWayColors.ecoceGreen,
-                width: 2,
+                width: 2.5,
               ),
             ),
             errorBorder: OutlineInputBorder(
@@ -1202,7 +1194,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
       height: 52,
       child: ElevatedButton.icon(
         onPressed: _isLoading ? null : () => _handleLogin(goToRepository: true),
-        icon: const Icon(Icons.inventory_2, size: 20),
+        icon: const Icon(Icons.inventory_2_outlined, size: 20),
         label: const Text(
           'Acceder al Repositorio',
           style: TextStyle(
@@ -1211,10 +1203,10 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
           ),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: BioWayColors.primaryGreen,
+          backgroundColor: BioWayColors.ecoceDark,
           foregroundColor: Colors.white,
           elevation: _isLoading ? 0 : 3,
-          shadowColor: BioWayColors.primaryGreen.withValues(alpha: 0.4),
+          shadowColor: BioWayColors.ecoceDark.withValues(alpha: 0.3),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -1231,21 +1223,33 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         onPressed: _handleRegister,
         style: OutlinedButton.styleFrom(
           foregroundColor: BioWayColors.ecoceGreen,
+          backgroundColor: BioWayColors.ecoceGreen.withValues(alpha: 0.05),
           side: BorderSide(
-            color: BioWayColors.ecoceGreen,
-            width: 2,
+            color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
+            width: 1.5,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        child: const Text(
-          'Registrar Proveedor',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-          ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.person_add_outlined,
+              size: 20,
+              color: BioWayColors.ecoceGreen,
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              'Registrar Proveedor',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1364,39 +1368,123 @@ class ECOCEBackgroundPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..style = PaintingStyle.fill;
 
-    // Círculo decorativo superior
+    // Fondo gradiente principal
+    final backgroundGradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        const Color(0xFFF8FFFE),
+        const Color(0xFFF0FBF5),
+        const Color(0xFFE8F8F0),
+      ],
+      stops: const [0.0, 0.5, 1.0],
+    );
+    
+    paint.shader = backgroundGradient.createShader(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+    );
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
+
+    // Círculos flotantes con efecto de profundidad
+    paint.shader = null;
+    
+    // Círculo grande superior
+    final circle1Center = Offset(size.width * 0.8, size.height * 0.1);
     paint.color = BioWayColors.ecoceGreen.withValues(alpha: 0.05);
-    canvas.drawCircle(
-      Offset(size.width * 0.8, -50),
-      150,
-      paint,
-    );
-
-    // Círculo decorativo inferior
+    canvas.drawCircle(circle1Center, 120, paint);
+    
     paint.color = BioWayColors.ecoceGreen.withValues(alpha: 0.03);
-    canvas.drawCircle(
-      Offset(size.width * 0.2, size.height + 100),
-      200,
-      paint,
-    );
-
-    // Líneas decorativas
-    paint.color = BioWayColors.ecoceGreen.withValues(alpha: 0.02);
-    paint.strokeWidth = 1;
+    canvas.drawCircle(circle1Center, 140, paint);
+    
+    // Círculo mediano centro-izquierda
+    final circle2Center = Offset(size.width * 0.1, size.height * 0.4);
+    paint.color = BioWayColors.ecoceGreen.withValues(alpha: 0.04);
+    canvas.drawCircle(circle2Center, 80, paint);
+    
+    // Círculo pequeño inferior-derecha
+    final circle3Center = Offset(size.width * 0.9, size.height * 0.8);
+    paint.color = BioWayColors.ecoceGreen.withValues(alpha: 0.06);
+    canvas.drawCircle(circle3Center, 60, paint);
+    
+    // Patrón de hojas estilizadas
     paint.style = PaintingStyle.stroke;
-
-    for (int i = 0; i < 5; i++) {
-      final y = size.height * 0.2 * i;
-      final path = Path();
-      path.moveTo(0, y);
-      path.quadraticBezierTo(
-        size.width * 0.5,
-        y + 50,
-        size.width,
-        y,
+    paint.strokeWidth = 2;
+    
+    // Hoja 1 - superior izquierda
+    _drawLeaf(canvas, paint, Offset(size.width * 0.15, size.height * 0.2), 30, -0.5);
+    
+    // Hoja 2 - centro derecha
+    _drawLeaf(canvas, paint, Offset(size.width * 0.85, size.height * 0.5), 25, 0.8);
+    
+    // Hoja 3 - inferior izquierda
+    _drawLeaf(canvas, paint, Offset(size.width * 0.2, size.height * 0.75), 20, -0.3);
+    
+    // Elementos geométricos flotantes
+    paint.style = PaintingStyle.fill;
+    paint.color = BioWayColors.ecoceGreen.withValues(alpha: 0.03);
+    
+    // Triángulo superior
+    final triangle1 = Path()
+      ..moveTo(size.width * 0.5, size.height * 0.15)
+      ..lineTo(size.width * 0.52, size.height * 0.18)
+      ..lineTo(size.width * 0.48, size.height * 0.18)
+      ..close();
+    canvas.drawPath(triangle1, paint);
+    
+    // Hexágono centro
+    _drawHexagon(canvas, paint, Offset(size.width * 0.7, size.height * 0.35), 15);
+    
+    // Líneas de conexión sutiles
+    paint.style = PaintingStyle.stroke;
+    paint.strokeWidth = 0.5;
+    paint.color = BioWayColors.ecoceGreen.withValues(alpha: 0.05);
+    
+    final connectionPath = Path()
+      ..moveTo(size.width * 0.1, size.height * 0.3)
+      ..quadraticBezierTo(
+        size.width * 0.5, size.height * 0.4,
+        size.width * 0.9, size.height * 0.6,
       );
-      canvas.drawPath(path, paint);
+    canvas.drawPath(connectionPath, paint);
+  }
+  
+  void _drawLeaf(Canvas canvas, Paint paint, Offset position, double size, double rotation) {
+    canvas.save();
+    canvas.translate(position.dx, position.dy);
+    canvas.rotate(rotation);
+    
+    paint.color = BioWayColors.ecoceGreen.withValues(alpha: 0.08);
+    
+    final leafPath = Path()
+      ..moveTo(0, 0)
+      ..quadraticBezierTo(size * 0.5, -size * 0.3, size, 0)
+      ..quadraticBezierTo(size * 0.5, size * 0.3, 0, 0);
+    
+    canvas.drawPath(leafPath, paint);
+    
+    // Vena central
+    paint.strokeWidth = 1;
+    paint.color = BioWayColors.ecoceGreen.withValues(alpha: 0.06);
+    canvas.drawLine(Offset(0, 0), Offset(size, 0), paint);
+    
+    canvas.restore();
+  }
+  
+  void _drawHexagon(Canvas canvas, Paint paint, Offset center, double radius) {
+    final hexPath = Path();
+    for (int i = 0; i < 6; i++) {
+      final angle = (i * 60 - 30) * (3.14159 / 180);
+      final x = center.dx + radius * cos(angle);
+      final y = center.dy + radius * sin(angle);
+      
+      if (i == 0) {
+        hexPath.moveTo(x, y);
+      } else {
+        hexPath.lineTo(x, y);
+      }
     }
+    hexPath.close();
+    canvas.drawPath(hexPath, paint);
   }
 
   @override
