@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import '../../../services/lote_service.dart';
+import '../../../services/lote_unificado_service.dart';
 import '../shared/utils/dialog_utils.dart';
 import '../shared/utils/material_utils.dart';
 import 'transformador_escaneo_screen.dart';
@@ -56,10 +57,10 @@ class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesReg
     });
     
     try {
-      // Buscar el lote en Firebase
-      final lotesInfo = await _loteService.getLotesInfo([lotId]);
+      // Buscar el lote en Firebase usando el servicio unificado
+      final loteUnificado = await LoteUnificadoService().obtenerLotePorId(lotId);
       
-      if (lotesInfo.isEmpty) {
+      if (loteUnificado == null) {
         if (mounted) {
           DialogUtils.showErrorDialog(
             context: context,
@@ -70,57 +71,38 @@ class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesReg
         return;
       }
 
-      final loteInfo = lotesInfo.first;
+      // Verificar que el lote esté en proceso de transporte (para ser recibido por transformador)
+      final procesoActual = loteUnificado.datosGenerales.procesoActual;
       
-      // Transformador puede recibir lotes de laboratorio o de transporte
-      final tipoLoteValido = loteInfo['tipo_lote'] == 'lotes_laboratorio' || 
-                           loteInfo['tipo_lote'] == 'lotes_transportista';
-      
-      if (!tipoLoteValido) {
+      if (procesoActual != 'transporte') {
         if (mounted) {
           DialogUtils.showErrorDialog(
             context: context,
-            title: 'Tipo de lote no válido',
-            message: 'Solo se pueden recibir lotes que hayan sido analizados por el laboratorio o estén en tránsito',
+            title: 'Lote no disponible',
+            message: 'Este lote no está disponible para recepción. Estado actual: $procesoActual',
           );
         }
         return;
       }
       
       // Extraer información del lote
-      String material = 'Desconocido';
-      double peso = 0.0;
-      String origen = 'Desconocido';
+      final material = loteUnificado.datosGenerales.tipoMaterial;
+      final peso = loteUnificado.pesoActual; // Usar peso actual que considera sublotes y procesamiento
       
-      if (loteInfo['tipo_lote'] == 'lotes_laboratorio') {
-        material = loteInfo['ecoce_laboratorio_tipo_material'] ?? 'Sin especificar';
-        peso = (loteInfo['ecoce_laboratorio_peso_muestra'] ?? 0).toDouble();
-        origen = loteInfo['ecoce_laboratorio_proveedor'] ?? 'Laboratorio';
-        
-        // Si viene del laboratorio, buscar el peso del lote original
-        final loteOrigen = loteInfo['ecoce_laboratorio_lote_origen'];
-        if (loteOrigen != null) {
-          final loteOriginalInfo = await _loteService.getLotesInfo([loteOrigen]);
-          if (loteOriginalInfo.isNotEmpty) {
-            // Usar el peso del lote original si es de reciclador
-            if (loteOriginalInfo.first['tipo_lote'] == 'lotes_reciclador') {
-              peso = (loteOriginalInfo.first['ecoce_reciclador_peso_resultante'] ?? peso).toDouble();
-            }
-          }
-        }
-      } else if (loteInfo['tipo_lote'] == 'lotes_transportista') {
-        // Si viene de transportista, buscar el material predominante
-        final lotesTransportados = loteInfo['ecoce_transportista_lotes'] as List<dynamic>? ?? [];
-        if (lotesTransportados.isNotEmpty) {
-          final tiposPoli = await _loteService.calcularTipoPolimeroPredominante(
-            lotesTransportados.map((e) => e.toString()).toList()
-          );
-          if (tiposPoli.isNotEmpty) {
-            material = tiposPoli.entries.reduce((a, b) => a.value > b.value ? a : b).key;
-          }
-        }
-        peso = (loteInfo['ecoce_transportista_peso_total'] ?? 0).toDouble();
-        origen = loteInfo['ecoce_transportista_proveedor'] ?? 'Transportista';
+      // Determinar origen
+      String origen = 'Desconocido';
+      if (loteUnificado.reciclador != null) {
+        origen = loteUnificado.reciclador!.usuarioFolio ?? 'Reciclador';
+      } else if (loteUnificado.origen != null) {
+        origen = loteUnificado.origen!.usuarioFolio ?? 'Origen';
+      }
+      
+      // Verificar si es un sublote
+      final esSublote = loteUnificado.datosGenerales.tipoLote == 'derivado' || 
+                       loteUnificado.datosGenerales.qrCode.startsWith('SUBLOTE-');
+      
+      if (esSublote) {
+        origen = 'Sublote - $origen';
       }
       
       final newLot = ScannedLot(

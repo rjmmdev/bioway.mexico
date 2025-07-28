@@ -446,7 +446,7 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
                           const SizedBox(height: 12),
                           TextField(
                             controller: _manualIdController,
-                            textCapitalization: TextCapitalization.characters,
+                            textCapitalization: TextCapitalization.none,
                             decoration: InputDecoration(
                               hintText: widget.manualInputHint,
                               hintStyle: TextStyle(

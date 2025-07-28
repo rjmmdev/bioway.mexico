@@ -80,6 +80,19 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
     _loadLotes();
     _loadTransformaciones();
   }
+  
+  // Helper para obtener el estado de un lote
+  String _getEstadoLote(LoteUnificadoModel lote) {
+    // Buscar estado en especificaciones del transformador
+    // Si el transformador tiene especificaciones, buscar ahí el estado
+    if (lote.transformador?.especificaciones != null && 
+        lote.transformador!.especificaciones!.containsKey('estado')) {
+      return lote.transformador!.especificaciones!['estado'] as String;
+    }
+    
+    // Si no se encuentra, usar 'pendiente' como valor por defecto
+    return 'pendiente';
+  }
 
   Future<void> _loadLotes() async {
     try {
@@ -92,17 +105,17 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
             var lotesFiltrados = _aplicarFiltros(lotes);
             
             _lotesPendientes = lotesFiltrados.where((lote) {
-              final estado = lote.transformador?.especificaciones?['estado'] ?? 'pendiente';
+              final estado = _getEstadoLote(lote);
               return estado == 'pendiente';
             }).toList();
 
             _lotesConDocumentacion = lotesFiltrados.where((lote) {
-              final estado = lote.transformador?.especificaciones?['estado'] ?? 'pendiente';
+              final estado = _getEstadoLote(lote);
               return estado == 'documentacion';
             }).toList();
 
             _lotesCompletados = lotesFiltrados.where((lote) {
-              final estado = lote.transformador?.especificaciones?['estado'] ?? 'pendiente';
+              final estado = _getEstadoLote(lote);
               return estado == 'completado';
             }).toList();
 
@@ -1479,7 +1492,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
 
   Widget _buildLoteCard(LoteUnificadoModel lote) {
     final bool isSelected = _selectedLotes.contains(lote.id);
-    final estado = lote.transformador?.especificaciones?['estado'] ?? 'pendiente';
+    final estado = _getEstadoLote(lote);
     final canSelect = _tabController.index == 0 && estado == 'pendiente';
     final bool esSublote = lote.esSublote;
     

@@ -280,7 +280,7 @@ class BioWayApp extends StatelessWidget {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
           return TransformadorFormularioRecepcion(
             lotes: args?['lotes'] ?? [],
-            datosEntrega: args?['datosEntrega'] ?? {},
+            datosEntrega: args ?? {},
           );
         },
         '/transformador_documentacion': (context) => const TransformadorDocumentacionScreen(),

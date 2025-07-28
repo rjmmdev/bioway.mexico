@@ -86,10 +86,13 @@ class _ReceptorEscanearEntregaScreenState extends State<ReceptorEscanearEntregaS
       for (final loteId in entrega.lotesIds) {
         final lote = await _loteService.obtenerLotePorId(loteId);
         if (lote != null) {
+          // Usar pesoActual para obtener el peso correcto (considera sublotes y procesamiento)
+          final pesoActual = lote.pesoActual;
+          
           lotesInfo.add({
             'id': loteId,
             'material': lote.datosGenerales.tipoMaterial,
-            'peso': lote.datosGenerales.peso,
+            'peso': pesoActual, // Usar peso actual en lugar de peso original
             'origen_nombre': lote.origen?.nombreOperador ?? 'Sin especificar',
             'origen_folio': lote.origen?.usuarioFolio ?? 'Sin folio',
           });
@@ -120,6 +123,7 @@ class _ReceptorEscanearEntregaScreenState extends State<ReceptorEscanearEntregaS
       'entrega_id': entrega.id,
       'transportista_id': entrega.transportistaId,
       'transportista_folio': entrega.transportistaFolio,
+      'transportista_nombre': entrega.transportistaNombre,
       'lotes': lotesInfo,
       'peso_total': entrega.pesoTotalEntregado,
     };

@@ -1545,6 +1545,16 @@ class LoteUnificadoService {
       final transformadorData = transformadorDoc.data()!;
       transformadorData.addAll(datosTransformador);
       
+      // Si el estado cambia, actualizar en especificaciones
+      if (datosTransformador['estado'] != null) {
+        // Asegurar que especificaciones existe
+        if (transformadorData['especificaciones'] == null) {
+          transformadorData['especificaciones'] = {};
+        }
+        // Actualizar estado en especificaciones
+        transformadorData['especificaciones']['estado'] = datosTransformador['estado'];
+      }
+      
       batch.update(
         loteRef.collection(PROCESO_TRANSFORMADOR).doc('data'),
         transformadorData,

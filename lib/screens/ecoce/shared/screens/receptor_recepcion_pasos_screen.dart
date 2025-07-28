@@ -188,11 +188,29 @@ class _ReceptorRecepcionPasosScreenState extends State<ReceptorRecepcionPasosScr
       for (final loteId in entrega.lotesIds) {
         final lote = await _loteService.obtenerLotePorId(loteId);
         if (lote != null) {
+          // Usar pesoActual para obtener el peso correcto (considera sublotes y procesamiento)
+          final pesoActual = lote.pesoActual;
+          
+          // Determinar origen para mostrar información adicional
+          String origen = 'Sin especificar';
+          if (lote.reciclador != null) {
+            origen = lote.reciclador!.usuarioFolio ?? 'Reciclador';
+          } else if (lote.origen != null) {
+            origen = lote.origen!.usuarioFolio ?? 'Origen';
+          }
+          
+          // Verificar si es un sublote
+          final esSublote = lote.datosGenerales.tipoLote == 'derivado' || 
+                           lote.datosGenerales.qrCode.startsWith('SUBLOTE-');
+          
           lotesInfo.add({
             'id': loteId,
             'material': lote.datosGenerales.tipoMaterial,
-            'peso': lote.datosGenerales.peso,
+            'peso': pesoActual, // Usar peso actual en lugar de peso original
             'presentacion': lote.datosGenerales.materialPresentacion,
+            'origen_nombre': origen,
+            'origen_folio': origen,
+            'es_sublote': esSublote,
           });
         }
       }
@@ -701,14 +719,21 @@ class _ReceptorRecepcionPasosScreenState extends State<ReceptorRecepcionPasosScr
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Transportista: ${_datosEntrega!['transportista_folio']}',
+                  'Transportista: ${_datosEntrega!['transportista_nombre'] ?? _datosEntrega!['transportista_folio']}',
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.green[700],
                   ),
                 ),
                 Text(
-                  'Lotes: ${_datosEntrega!['lotes_count']} - Peso: ${_datosEntrega!['peso_total']} kg',
+                  'Folio: ${_datosEntrega!['transportista_folio']}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.green[700],
+                  ),
+                ),
+                Text(
+                  'Lotes: ${_datosEntrega!['lotes_count']} - Peso total: ${_datosEntrega!['peso_total']} kg',
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.green[700],
@@ -806,38 +831,85 @@ class _ReceptorRecepcionPasosScreenState extends State<ReceptorRecepcionPasosScr
                   ),
                 ),
                 const SizedBox(height: 12),
-                ..._lotes.map((lote) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
+                ..._lotes.map((lote) => Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey[200]!),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.inventory_2,
-                        size: 20,
-                        color: _primaryColor,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '${lote['material']} - ${lote['peso']} kg',
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _primaryColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          lote['presentacion'] ?? 'N/A',
-                          style: TextStyle(
-                            fontSize: 12,
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.inventory_2,
+                            size: 20,
                             color: _primaryColor,
-                            fontWeight: FontWeight.w500,
                           ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Text(
+                                  '${lote['material']} - ${lote['peso']} kg',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                if (lote['es_sublote'] == true) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.purple.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text(
+                                      'SUBLOTE',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.purple,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _primaryColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              lote['presentacion'] ?? 'N/A',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _primaryColor,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Origen: ${lote['origen_nombre'] ?? 'Sin especificar'}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
                         ),
                       ),
                     ],
