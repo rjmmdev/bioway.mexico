@@ -34,7 +34,7 @@ class BioWayColors {
   // ===== COLORES DE ECOCE (BASADOS EN XML) =====
 
   /// Verde característico de ECOCE - basado en colores XML
-  static const Color ecoceGreen = Color(0xFF3DB388);
+  static const Color ecoceGreen = Color(0xFF1EA24D);
 
   /// Verde claro de ECOCE para fondos
   static const Color ecoceLight = Color(0xFFC3FACC);
