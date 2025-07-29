@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Versión sin círculo blanco para mejor aprovechamiento del espacio -->
+    <group>
+        <!-- Logo BioWay - Letra B estilizada en blanco -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:strokeWidth="0"
+            android:pathData="M36,30 L36,78 L56,78 C65,78 72,73 72,63 C72,56 68,52 62,50 C67,48 70,44 70,37 C70,27 63,30 56,30 Z
+                             M44,38 L56,38 C61,38 63,41 63,45 C63,49 61,52 56,52 L44,52 Z
+                             M44,60 L56,60 C61,60 64,63 64,67 C64,71 61,74 56,74 L44,74 Z" />
+        
+        <!-- Hoja ecológica grande -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:fillAlpha="0.9"
+            android:pathData="M68,42 C68,34 73,29 80,29 C87,29 92,34 92,42 C92,50 87,55 80,63 C73,55 68,50 68,42 Z" />
+        
+        <!-- Detalle interno de la hoja -->
+        <path
+            android:strokeColor="#70D997"
+            android:strokeWidth="1.5"
+            android:fillColor="#00000000"
+            android:pathData="M80,38 L80,55 M75,42 L80,47 M85,42 L80,47" />
+            
+    </group>
+</vector>
