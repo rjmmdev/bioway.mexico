@@ -22,6 +22,7 @@ import 'transformador_documentacion_screen.dart';
 import 'transformador_lote_detalle_screen.dart';
 import 'transformador_documentacion_megalote_screen.dart';
 import 'utils/transformador_navigation_helper.dart';
+import 'widgets/selection_panel.dart';
 
 class TransformadorProduccionScreen extends StatefulWidget {
   final int? initialTab;
@@ -50,6 +51,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
   bool _isLoading = true;
   bool _mostrarSoloMegalotes = false;
   bool _isSelectionMode = false;
+  bool _autoSelectionMode = false; // Para el tab de Salida
   Set<String> _selectedLotes = {};
   
   // Filtros
@@ -69,11 +71,20 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
       vsync: this,
       initialIndex: widget.initialTab ?? 0,
     );
+    // Activar modo de selección automática si iniciamos en el tab de Salida
+    _autoSelectionMode = (widget.initialTab ?? 0) == 0;
     _tabController.addListener(() {
       setState(() {
-        if (_tabController.indexIsChanging) {
-          _isSelectionMode = false;
+        // Forzar actualización del UI cuando cambia el tab para actualizar colores
+        if (_tabController.indexIsChanging || _tabController.index != _tabController.previousIndex) {
+          // Activar modo de selección automática solo en el tab de Salida (índice 0)
+          _autoSelectionMode = _tabController.index == 0;
+          // Limpiar selecciones al cambiar de tab
           _selectedLotes.clear();
+          // Solo mantener el modo de selección manual si NO estamos en el tab de Salida
+          if (_tabController.index != 0) {
+            _isSelectionMode = false;
+          }
         }
       });
     });
@@ -244,24 +255,6 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
     });
   }
 
-  void _selectAllLotes() {
-    setState(() {
-      List<LoteUnificadoModel> currentLotes;
-      if (_tabController.index == 0) {
-        currentLotes = _lotesPendientes;
-      } else if (_tabController.index == 1) {
-        currentLotes = _lotesConDocumentacion;
-      } else {
-        currentLotes = _lotesCompletados;
-      }
-      
-      if (_selectedLotes.length == currentLotes.length) {
-        _selectedLotes.clear();
-      } else {
-        _selectedLotes = currentLotes.map((lote) => lote.id).toSet();
-      }
-    });
-  }
 
   void _procesarLotesSeleccionados() async {
     if (_selectedLotes.isEmpty) return;
@@ -670,11 +663,11 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
   // Obtener color según el tab actual para indicar urgencia
   Color _getTabColor() {
     switch (_tabController.index) {
-      case 0: // Salida - Urgente
+      case 0: // Salida - Urgente (Rojo)
         return BioWayColors.error;
-      case 1: // Documentación - Medio
-        return BioWayColors.warning;
-      case 2: // Completados - Bajo
+      case 1: // Documentación - Medio (Naranja)
+        return Colors.orange;
+      case 2: // Completados - Bajo (Verde)
         return BioWayColors.success;
       default:
         return Colors.orange;
@@ -730,54 +723,21 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
           backgroundColor: Colors.white,
           elevation: 0,
           automaticallyImplyLeading: false,
-          title: _isSelectionMode
-              ? Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.black87),
-                      onPressed: _toggleSelectionMode,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${_selectedLotes.length} seleccionados',
-                      style: const TextStyle(
-                        color: Colors.black87,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                )
-              : const Text(
-                  'Gestión de Producción',
-                  style: TextStyle(
-                    color: Colors.black87,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-          actions: _isSelectionMode
-              ? [
-                  TextButton(
-                    onPressed: _selectAllLotes,
-                    child: Text(
-                      _selectedLotes.length == _getCurrentTabLotes().length
-                          ? 'Deseleccionar'
-                          : 'Seleccionar todo',
-                      style: TextStyle(
-                        color: Colors.orange,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ]
-              : [
-                  IconButton(
-                    icon: const Icon(Icons.checklist, color: Colors.grey),
-                    onPressed: _toggleSelectionMode,
-                  ),
-                ],
+          title: const Text(
+            'Gestión de Producción',
+            style: TextStyle(
+              color: Colors.black87,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          actions: [
+            if (!_autoSelectionMode && _tabController.index == 0)
+              IconButton(
+                icon: const Icon(Icons.checklist, color: Colors.grey),
+                onPressed: _toggleSelectionMode,
+              ),
+          ],
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(48),
             child: Container(
@@ -902,97 +862,75 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
             ),
           ),
         ),
-        body: TabBarView(
-          controller: _tabController,
+        body: Column(
           children: [
-            _buildTabContent(_lotesPendientes),
-            _buildTabContent(_lotesConDocumentacion),
-            _buildCompletadosTab(),
-          ],
-        ),
-        bottomNavigationBar: _isSelectionMode
-            ? Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, -5),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Peso total',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          Text(
-                            '${_calcularPesoSeleccionado().toStringAsFixed(2)} kg',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: _selectedLotes.isNotEmpty
-                          ? _procesarLotesSeleccionados
-                          : null,
-                      icon: const Icon(Icons.merge_type),
-                      label: Text(
-                        _selectedLotes.length > 1
-                            ? 'Procesar ${_selectedLotes.length} lotes'
-                            : 'Procesar lote',
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            : EcoceBottomNavigation(
-                selectedIndex: 1, // Producción está en índice 1
-                onItemTapped: _onBottomNavTapped,
-                primaryColor: Colors.orange,
-                items: EcoceNavigationConfigs.transformadorItems,
-                fabConfig: UserTypeHelper.getFabConfig('T', context),
+            // Panel de selección múltiple
+            if ((_isSelectionMode || _autoSelectionMode) && _selectedLotes.isNotEmpty && _tabController.index == 0)
+              SelectionPanel(
+                selectedLoteIds: _selectedLotes,
+                allLotes: _lotesPendientes,
+                onCancel: () {
+                  setState(() {
+                    _isSelectionMode = false;
+                    _selectedLotes.clear();
+                  });
+                },
+                onProcess: _procesarLotesSeleccionados,
               ),
-      floatingActionButton: EcoceFloatingActionButton(
-        onPressed: () {
-          HapticFeedback.lightImpact();
-          // Usar el flujo de recepción por pasos igual que el reciclador
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const ReceptorRecepcionPasosScreen(
-                userType: 'transformador',
+            // Contenido con TabBarView
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildTabContent(_lotesPendientes),
+                  _buildTabContent(_lotesConDocumentacion),
+                  _buildCompletadosTab(),
+                ],
               ),
             ),
-          );
-        },
-        icon: Icons.add,
-        backgroundColor: Colors.orange,
-        tooltip: 'Recibir Lote',
-      ),
+          ],
+        ),
+        bottomNavigationBar: EcoceBottomNavigation(
+          selectedIndex: 1, // Producción está en índice 1
+          onItemTapped: _onBottomNavTapped,
+          primaryColor: Colors.orange,
+          items: EcoceNavigationConfigs.transformadorItems,
+          fabConfig: UserTypeHelper.getFabConfig('T', context),
+        ),
+      floatingActionButton: _tabController.index == 0 && (_isSelectionMode || _autoSelectionMode) && _selectedLotes.isNotEmpty
+          ? FloatingActionButton.extended(
+              onPressed: _procesarLotesSeleccionados,
+              backgroundColor: Colors.orange,
+              icon: Icon(
+                Icons.merge_type, 
+                color: Colors.white,
+              ),
+              label: Text(
+                _selectedLotes.length > 1 
+                    ? 'Procesar ${_selectedLotes.length} lotes'
+                    : 'Procesar 1 lote',
+                style: TextStyle(
+                  color: Colors.white,
+                ),
+              ),
+            )
+          : EcoceFloatingActionButton(
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                // Usar el flujo de recepción por pasos igual que el reciclador
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ReceptorRecepcionPasosScreen(
+                      userType: 'transformador',
+                    ),
+                  ),
+                );
+              },
+              icon: Icons.add,
+              backgroundColor: Colors.orange,
+              tooltip: 'Recibir Lote',
+            ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
@@ -1372,36 +1310,24 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
     
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  icon: Icons.inventory_2,
-                  value: estadisticas['total'].toString(),
-                  label: 'Lotes',
-                  color: _getTabColor(),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildStatCard(
-                  icon: Icons.scale,
-                  value: '${(estadisticas['peso'] / 1000).toStringAsFixed(1)}',
-                  label: 'Toneladas',
-                  color: _getTabColor(),
-                ),
-              ),
-            ],
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.inventory_2,
+              value: estadisticas['total'].toString(),
+              label: 'Lotes',
+              color: _getTabColor(),
+            ),
           ),
-          const SizedBox(height: 10),
-          _buildStatCard(
-            icon: Icons.factory,
-            value: estadisticas['producto'],
-            label: 'Producto más fabricado',
-            color: _getTabColor(),
-            fullWidth: true,
+          const SizedBox(width: 10),
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.scale,
+              value: '${(estadisticas['peso'] / 1000).toStringAsFixed(1)}',
+              label: 'Toneladas',
+              color: _getTabColor(),
+            ),
           ),
         ],
       ),
@@ -1519,23 +1445,25 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
     final estado = _getEstadoLote(lote);
     final canSelect = _tabController.index == 0 && estado == 'pendiente';
     final bool esSublote = lote.esSublote;
+    // Mostrar checkboxes por defecto en el tab de Salida
+    final bool showCheckbox = _autoSelectionMode && canSelect;
     
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        elevation: isSelected ? 4 : 1,
-        shadowColor: isSelected ? Colors.orange.withValues(alpha: 0.3) : Colors.black12,
+        borderRadius: BorderRadius.circular(12),
+        elevation: isSelected ? 3 : 1,
+        shadowColor: isSelected ? Colors.orange.withValues(alpha: 0.25) : Colors.black12,
         child: InkWell(
           onTap: () {
-            if (_isSelectionMode && canSelect) {
+            if ((showCheckbox || _isSelectionMode) && canSelect) {
               _toggleLoteSelection(lote.id);
-            } else if (!_isSelectionMode) {
+            } else if (!_isSelectionMode && !showCheckbox) {
               _navigateToLoteDetail(lote);
             }
           },
-          onLongPress: canSelect
+          onLongPress: canSelect && !_autoSelectionMode
               ? () {
                   if (!_isSelectionMode) {
                     _toggleSelectionMode();
@@ -1543,10 +1471,10 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                   }
                 }
               : null,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected 
                     ? Colors.orange 
@@ -1556,14 +1484,14 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                 width: isSelected ? 2 : (esSublote ? 1.5 : 0),
               ),
             ),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header row
                 Row(
                   children: [
-                    if (_isSelectionMode && canSelect) ...[
+                    if ((showCheckbox || _isSelectionMode) && canSelect) ...[
                       Checkbox(
                         value: isSelected,
                         onChanged: (_) => _toggleLoteSelection(lote.id),
@@ -1580,14 +1508,15 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                           if (esSublote) ...[
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
+                                horizontal: 6,
+                                vertical: 2,
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.purple.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
                                   color: Colors.purple.withValues(alpha: 0.3),
+                                  width: 0.5,
                                 ),
                               ),
                               child: Row(
@@ -1595,14 +1524,14 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                                 children: [
                                   Icon(
                                     Icons.cut,
-                                    size: 14,
+                                    size: 10,
                                     color: Colors.purple,
                                   ),
-                                  const SizedBox(width: 4),
+                                  const SizedBox(width: 2),
                                   Text(
                                     'SUBLOTE',
                                     style: TextStyle(
-                                      fontSize: 10,
+                                      fontSize: 8,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.purple,
                                     ),
@@ -1610,13 +1539,13 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                           ],
                           Expanded(
                             child: Text(
                               'Lote ${lote.id}',
                               style: const TextStyle(
-                                fontSize: 16,
+                                fontSize: 14,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black87,
                               ),
@@ -1629,26 +1558,26 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                     _buildEstadoChip(estado),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 
                 // Material and weight info
                 Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
+                        horizontal: 10,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
                         color: MaterialUtils.getMaterialColor(
                           lote.datosGenerales.tipoMaterial
                         ).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: Text(
                         lote.datosGenerales.tipoMaterial,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: MaterialUtils.getMaterialColor(
                             lote.datosGenerales.tipoMaterial
@@ -1656,42 +1585,46 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Icon(Icons.scale, size: 16, color: Colors.grey[600]),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 8),
+                    Icon(Icons.scale, size: 14, color: Colors.grey[600]),
+                    const SizedBox(width: 3),
                     Text(
                       '${lote.pesoActual.toStringAsFixed(2)} kg',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 12,
                         color: Colors.grey[700],
                       ),
                     ),
                     const Spacer(),
-                    Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-                    const SizedBox(width: 4),
+                    Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
+                    const SizedBox(width: 3),
                     Text(
                       FormatUtils.formatDate(lote.datosGenerales.fechaCreacion),
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 11,
                         color: Colors.grey[600],
                       ),
                     ),
                   ],
                 ),
                 
-                // Action buttons for specific states
-                if (!_isSelectionMode && _tabController.index == 0) ...[
-                  const SizedBox(height: 12),
+                // Action buttons for specific states (hide when checkboxes are shown)
+                if (!showCheckbox && !_isSelectionMode && _tabController.index == 0) ...[
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _procesarLote(lote),
-                          icon: const Icon(Icons.play_arrow, size: 18),
-                          label: const Text('Procesar'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: _getTabColor(),
-                            side: BorderSide(color: _getTabColor()),
+                        child: SizedBox(
+                          height: 32,
+                          child: OutlinedButton.icon(
+                            onPressed: () => _procesarLote(lote),
+                            icon: const Icon(Icons.play_arrow, size: 16),
+                            label: const Text('Procesar', style: TextStyle(fontSize: 12)),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: _getTabColor(),
+                              side: BorderSide(color: _getTabColor()),
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                            ),
                           ),
                         ),
                       ),
@@ -1700,17 +1633,21 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                 ],
                 
                 if (!_isSelectionMode && _tabController.index == 1) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _cargarDocumentacion(lote),
-                          icon: const Icon(Icons.upload_file, size: 18),
-                          label: const Text('Cargar Documentos'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: BioWayColors.warning,
-                            side: BorderSide(color: BioWayColors.warning),
+                        child: SizedBox(
+                          height: 32,
+                          child: OutlinedButton.icon(
+                            onPressed: () => _cargarDocumentacion(lote),
+                            icon: const Icon(Icons.upload_file, size: 16),
+                            label: const Text('Cargar Documentos', style: TextStyle(fontSize: 12)),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: BioWayColors.warning,
+                              side: BorderSide(color: BioWayColors.warning),
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                            ),
                           ),
                         ),
                       ),
@@ -1753,21 +1690,21 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
     }
     
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color, width: 0.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 4),
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 3),
           Text(
             texto,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 10,
               fontWeight: FontWeight.bold,
               color: color,
             ),
@@ -1886,28 +1823,9 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
     final total = lotes.length;
     final peso = lotes.fold(0.0, (sum, lote) => sum + lote.pesoActual);
     
-    // Calculate most produced product
-    String producto = 'N/A';
-    if (lotes.isNotEmpty) {
-      final Map<String, int> productos = {};
-      for (final lote in lotes) {
-        final prod = lote.transformador?.especificaciones?['producto_fabricado'] ?? 'Sin especificar';
-        productos[prod] = (productos[prod] ?? 0) + 1;
-      }
-      
-      var maxCount = 0;
-      productos.forEach((key, value) {
-        if (value > maxCount) {
-          maxCount = value;
-          producto = key;
-        }
-      });
-    }
-    
     return {
       'total': total,
       'peso': peso,
-      'producto': producto,
     };
   }
 
