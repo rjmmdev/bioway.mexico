@@ -121,7 +121,7 @@ class _TransformadorMainScreenState extends State<TransformadorMainScreen> {
         } else {
           // Si estamos en inicio, preguntar si quiere salir
           final shouldExit = await DialogUtils.showConfirmDialog(
-            context,
+            context: context,
             title: '¿Cerrar sesión?',
             message: '¿Estás seguro de que deseas salir?',
           );
