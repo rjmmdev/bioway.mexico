@@ -1,4 +1,7 @@
-const functions = require('firebase-functions');
+const { onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
+const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { onRequest } = require('firebase-functions/v2/https');
 const admin = require('firebase-admin');
 
 // Inicializar Admin SDK
@@ -12,9 +15,11 @@ const auth = admin.auth();
  * Cloud Function que se activa cuando se crea un documento en users_pending_deletion
  * Elimina el usuario de Firebase Auth
  */
-exports.deleteAuthUser = functions.firestore
-  .document('users_pending_deletion/{userId}')
-  .onCreate(async (snap, context) => {
+exports.deleteAuthUser = onDocumentCreated(
+  'users_pending_deletion/{userId}',
+  async (event) => {
+    const snap = event.data;
+    const context = event.params;
     const userId = context.params.userId;
     const data = snap.data();
     
@@ -86,10 +91,10 @@ exports.deleteAuthUser = functions.firestore
  * Cloud Function programada para limpiar registros antiguos de users_pending_deletion
  * Se ejecuta diariamente a las 2 AM
  */
-exports.cleanupOldDeletionRecords = functions.pubsub
-  .schedule('0 2 * * *')
-  .timeZone('America/Mexico_City')
-  .onRun(async (context) => {
+exports.cleanupOldDeletionRecords = onSchedule({
+  schedule: '0 2 * * *',
+  timeZone: 'America/Mexico_City',
+}, async (event) => {
     console.log('🧹 Iniciando limpieza de registros antiguos');
     
     try {
@@ -149,21 +154,23 @@ exports.cleanupOldDeletionRecords = functions.pubsub
  * Cloud Function HTTP para eliminar manualmente un usuario
  * Útil para casos especiales o pruebas
  */
-exports.manualDeleteUser = functions.https.onCall(async (data, context) => {
+exports.manualDeleteUser = onCall(async (request) => {
+  const data = request.data;
+  const context = request.auth;
   // Verificar que el usuario está autenticado
-  if (!context.auth) {
-    throw new functions.https.HttpsError(
+  if (!context) {
+    throw new HttpsError(
       'unauthenticated',
       'Usuario no autenticado'
     );
   }
   
-  const requestingUserId = context.auth.uid;
+  const requestingUserId = context.uid;
   
   // Verificar que es un maestro
   const maestroDoc = await db.collection('maestros').doc(requestingUserId).get();
   if (!maestroDoc.exists) {
-    throw new functions.https.HttpsError(
+    throw new HttpsError(
       'permission-denied',
       'Solo los usuarios maestros pueden eliminar usuarios'
     );
@@ -172,7 +179,7 @@ exports.manualDeleteUser = functions.https.onCall(async (data, context) => {
   const { userId, reason } = data;
   
   if (!userId) {
-    throw new functions.https.HttpsError(
+    throw new HttpsError(
       'invalid-argument',
       'Se requiere el ID del usuario a eliminar'
     );
@@ -200,7 +207,7 @@ exports.manualDeleteUser = functions.https.onCall(async (data, context) => {
     
   } catch (error) {
     console.error('Error en eliminación manual:', error);
-    throw new functions.https.HttpsError(
+    throw new HttpsError(
       'internal',
       'Error al procesar la eliminación',
       error.message
@@ -211,7 +218,7 @@ exports.manualDeleteUser = functions.https.onCall(async (data, context) => {
 /**
  * Cloud Function para verificar el estado de salud del sistema
  */
-exports.healthCheck = functions.https.onRequest(async (req, res) => {
+exports.healthCheck = onRequest(async (req, res) => {
   try {
     // Verificar conexión a Firestore
     const testDoc = await db.collection('_health').doc('check').get();

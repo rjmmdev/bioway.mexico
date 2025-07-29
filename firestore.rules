@@ -34,7 +34,7 @@ service cloud.firestore {
     // Perfiles ECOCE (índice principal)
     match /ecoce_profiles/{userId} {
       allow read: if isAuthenticated();
-      allow create: if isOwner(userId);
+      allow create: if isOwner(userId) || isMaestro();
       allow update: if isOwner(userId) || isMaestro();
       allow delete: if isMaestro();
     }
@@ -42,7 +42,7 @@ service cloud.firestore {
     // Perfiles ECOCE por tipo (subcarpetas)
     match /ecoce_profiles/{tipo}/{subtipo}/{userId} {
       allow read: if isAuthenticated();
-      allow create: if isOwner(userId);
+      allow create: if isOwner(userId) || isMaestro();
       allow update: if isOwner(userId) || isMaestro();
       allow delete: if isMaestro();
     }
@@ -51,8 +51,15 @@ service cloud.firestore {
     match /solicitudes_cuentas/{solicitudId} {
       allow create: if true; // Cualquiera puede crear solicitud
       
-      // Permitir lectura a usuarios autenticados
-      allow read: if isAuthenticated();
+      // Permitir lectura:
+      // 1. Para verificar duplicados sin auth (consultas específicas)
+      // 2. Para usuarios autenticados (todas las lecturas)
+      allow read: if (
+        // Permitir consultas de verificación de duplicados sin auth
+        request.auth == null && 
+        request.query != null &&
+        request.query.limit <= 1
+      ) || isAuthenticated();
       
       // Permitir actualizar:
       // 1. Sin autenticación solo para documentos (flujo de registro)

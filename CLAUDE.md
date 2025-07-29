@@ -18,6 +18,7 @@ BioWay México is a dual-platform Flutter mobile application for recycling and w
 - **QR Code System**: Generation and scanning for batch tracking
 - **Document Management**: Upload and management with compression
 - **Geolocation**: Location selection without GPS permissions required
+- **Cloud Functions**: Automatic user deletion and scheduled cleanup tasks
 
 ## Commands
 
@@ -90,14 +91,41 @@ flutter pub outdated
 flutter pub upgrade
 ```
 
+### Firebase Functions
+```bash
+# Deploy functions (use Google Cloud Shell for Windows)
+cd functions
+firebase deploy --only functions
+
+# View function logs
+firebase functions:log
+
+# Test locally with emulators
+firebase emulators:start --only functions
+```
+
+### Firebase Rules
+```bash
+# Deploy Firestore rules
+firebase deploy --only firestore:rules
+
+# Deploy Storage rules
+firebase deploy --only storage:rules
+
+# Deploy both
+firebase deploy --only firestore:rules,storage:rules
+```
+
 ### Package Dependencies
 Key dependencies (from pubspec.yaml):
 - **Flutter SDK**: ^3.8.1
-- **Firebase**: cloud_firestore, firebase_auth, firebase_storage, firebase_core
+- **Firebase**: cloud_firestore, firebase_auth, firebase_storage, firebase_core, firebase_analytics
 - **QR/Scanning**: mobile_scanner ^7.0.1, qr_flutter ^4.1.0
 - **Image handling**: image_picker ^1.0.7, flutter_image_compress ^2.1.0
 - **Documents**: pdf ^3.11.0, printing ^5.13.0, file_picker ^8.0.0+1
-- **Location**: google_maps_flutter ^2.9.0
+- **Location**: google_maps_flutter ^2.9.0, geolocator ^13.0.2, geocoding ^3.0.0
+- **UI/UX**: timeline_tile ^2.0.0, photo_view ^0.15.0
+- **Utilities**: rxdart ^0.27.7, intl ^0.19.0, url_launcher ^6.2.0, share_plus ^10.1.0
 
 ## Architecture
 
@@ -163,7 +191,8 @@ solicitudes_cuentas/           # Account requests pending approval
 ├── [solicitudId]
 │   ├── estado: "pendiente"/"aprobada"/"rechazada"
 │   ├── datos_perfil: {...}
-│   └── documentos: {...}
+│   ├── documentos: {...}
+│   └── usuario_id: string    # Added for aprobación flow
 
 ecoce_profiles/                # User profiles index
 ├── [userId]
@@ -181,22 +210,31 @@ ecoce_profiles/[type]/usuarios/  # Profile data by type
 
 lotes/                         # Unified lot collection
 ├── [loteId]/
-│   ├── datos_generales/      # General lot information
-│   ├── origen/               # Origin process data
-│   ├── transporte/           # Transport phases (fase_1, fase_2)
-│   ├── reciclador/          # Recycler process data
+│   ├── datos_generales/      # General lot information (doc: 'info')
+│   ├── origen/               # Origin process data (doc: 'data')
+│   ├── transporte/           # Transport phases (docs: 'fase_1', 'fase_2')
+│   ├── reciclador/          # Recycler process data (doc: 'data')
 │   ├── analisis_laboratorio/ # Laboratory analysis (parallel process)
-│   └── transformador/        # Transformer process data
+│   └── transformador/        # Transformer process data (doc: 'data')
 
 transformaciones/              # Megalotes and sublotes system
 ├── [transformacionId]/
-│   ├── datos_generales/      # General transformation info
+│   ├── datos_generales/      # General transformation info (doc: 'info')
+│   │   ├── usuario_id: string # NOT usuarioId - critical field name
+│   │   ├── peso_total_entrada: number
+│   │   └── lotes_entrada: [{lote_id: string, ...}]
 │   ├── sublotes/             # Generated sublotes
 │   └── documentacion/        # Technical sheets and reports
 
-users_pending_deletion/        # Users marked for Auth deletion
+users_pending_deletion/        # Users marked for Auth deletion (Cloud Function trigger)
 ├── [userId]
-│   └── status: "pending"/"completed"/"failed"
+│   ├── status: "pending"/"completed"/"failed"
+│   ├── created_at: timestamp
+│   └── reason: string
+
+material_reciclable/           # Material configurations
+firmas/                        # Digital signatures storage
+audit_logs/                    # System audit trail from Cloud Functions
 ```
 
 ## ECOCE System
@@ -684,14 +722,26 @@ NEVER hardcode colors. Always use `BioWayColors` constants:
 ### Technical Limitations
 1. Google Maps API keys need to be configured
 2. iOS build not tested (no GoogleService-Info.plist)
-3. User deletion requires Cloud Function (see `docs/CLOUD_FUNCTION_DELETE_USERS.md`)
+3. Cloud Functions deployment blocked on Windows Git Bash conflict
+   - Solution: Use Google Cloud Shell (see `docs/DEPLOY_FUNCTIONS_CLOUD_SHELL.md`)
 4. Default emulator is `emulator-5554`
-5. Firebase Storage rules must be configured for document access (see `docs/FIREBASE_STORAGE_RULES_SOLUTION.md`)
+5. Firebase Storage rules must be configured for document access
+
+### Permissions Issues
+1. **Megalotes Visibility**: May not appear across devices with same account
+   - Root cause: Firestore security rules with user filters
+   - Solution documented in `docs/PROBLEMA_VISUALIZACION_MEGALOTES.md`
 
 ### Testing Considerations
 - No unit tests currently implemented
 - Integration tests require real device or emulator
 - Firebase emulator suite not configured
+
+### Performance Considerations
+- Image compression target: ~50KB
+- PDF size limit: 5MB
+- Signature dimensions: 300x120 with AspectRatio 2.5
+- Use `collectionGroup` queries without user filters for better cross-device compatibility
 
 ## Recent Critical Fixes
 
@@ -832,9 +882,46 @@ NEVER hardcode colors. Always use `BioWayColors` constants:
   - Lots array: `lotes_entrada` with objects containing `lote_id`
 - **Lotes consumed**: Marked with `consumido_en_transformacion: true` in datos_generales/info
 
-For detailed implementation fixes, see documentation in `docs/` directory:
+## Cloud Functions
+
+### Implemented Functions
+1. **deleteAuthUser**: Automatically deletes Firebase Auth users when accounts are rejected
+2. **cleanupOldDeletionRecords**: Daily cleanup of deletion records older than 30 days
+3. **manualDeleteUser**: Callable function for manual user deletion by administrators
+4. **healthCheck**: HTTP endpoint to verify functions are deployed and running
+
+### Deployment
+```bash
+# Use Google Cloud Shell for Windows users
+cd functions
+npm install
+firebase deploy --only functions
+```
+
+For detailed deployment instructions, see `docs/DEPLOY_FUNCTIONS_CLOUD_SHELL.md`
+
+## Documentation Index
+
+### Implementation Guides
 - `docs/RECICLADOR_ESTADISTICAS_SOLUCION.md` - Statistics fix details
 - `docs/RECICLADOR_TRANSFORMACIONES_IMPLEMENTACION.md` - Complete transformation system
+- `docs/SISTEMA_TRANSFORMACIONES_SUBLOTES.md` - Megalotes and sublotes architecture
+- `docs/RESUMEN_CLOUD_FUNCTIONS_IMPLEMENTACION.md` - Cloud Functions summary
+
+### Troubleshooting
 - `docs/PROBLEMA_VISUALIZACION_MEGALOTES.md` - Megalotes visibility issue analysis
 - `docs/MISMO_USUARIO_MULTIPLES_DISPOSITIVOS.md` - Multi-device same account usage
-- `docs/FIREBASE_RULES_TRANSFORMACIONES_SOLUTION.md` - Firebase security rules for transformaciones
+- `docs/FIREBASE_RULES_TRANSFORMACIONES_SOLUTION.md` - Firebase security rules
+- `docs/TROUBLESHOOTING_GUIDE.md` - General troubleshooting guide
+
+### Deployment & Configuration
+- `docs/DEPLOY_FUNCTIONS_CLOUD_SHELL.md` - Cloud Functions deployment
+- `docs/DEPLOY_FIRESTORE_RULES_FIX.md` - Firestore rules deployment
+- `docs/HABILITAR_APIS_CLOUD_FUNCTIONS.md` - Enable required Google Cloud APIs
+- `docs/CONFIGURACION_TECNICA_COMPLETA.md` - Complete technical configuration
+
+### Recent Fixes
+- `docs/OPTIMIZACION_REGISTRO_PROVEEDORES.md` - Provider registration optimization
+- `docs/FIX_FOLIO_FORMAT.md` - Folio format standardization
+- `docs/FIX_MISSING_USER_ID_IN_SOLICITUD.md` - User ID in account requests
+- `docs/ECOCE_PROFILE_SERVICE_FIXES.md` - Profile service improvements

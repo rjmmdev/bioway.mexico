@@ -276,87 +276,85 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
     
     final datosPerfil = solicitud['datos_perfil'] as Map<String, dynamic>;
     
-    // Usar un Completer para manejar el resultado del diálogo de forma más segura
-    String? reason;
-    try {
-      reason = await showDialog<String>(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext dialogContext) {
-          final TextEditingController controller = TextEditingController();
-          
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: const Text('Rechazar Cuenta'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Por favor, indica el motivo del rechazo para ${datosPerfil['ecoce_nombre']}:'),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: controller,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    hintText: 'Motivo del rechazo',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  autofocus: true,
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(dialogContext).pop(null);
-                },
-                child: const Text('Cancelar'),
+    // Mostrar diálogo de confirmación simple
+    final bool? confirmar = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text('Rechazar Solicitud'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('¿Está seguro que desea rechazar la solicitud de ${datosPerfil['ecoce_nombre']}?'),
+              const SizedBox(height: 16),
+              const Text(
+                'Esta acción eliminará:',
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(dialogContext).pop(controller.text);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BioWayColors.error,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text(
-                  'Rechazar',
-                  style: TextStyle(color: Colors.white),
-                ),
+              const SizedBox(height: 8),
+              const Text('• La solicitud de registro'),
+              const Text('• Los documentos subidos'),
+              const Text('• El usuario de autenticación (si existe)'),
+              const SizedBox(height: 16),
+              const Text(
+                'Esta acción no se puede deshacer.',
+                style: TextStyle(color: Colors.red, fontSize: 12),
               ),
             ],
-          );
-        },
-      );
-    } catch (e) {
-      // Si hay algún error con el diálogo, simplemente retornar
-      return;
-    }
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: BioWayColors.error,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'Rechazar',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
 
     if (!mounted) return;
     
-    if (reason != null && reason.isNotEmpty) {
+    if (confirmar == true) {
+      // Mostrar indicador de carga
+      DialogUtils.showLoadingDialog(
+        context: context,
+        message: 'Eliminando solicitud...',
+      );
+      
       try {
         await _profileService.rejectSolicitud(
           solicitudId: solicitud['solicitud_id'],
           rejectedById: _maestroUserId,
-          reason: reason,
+          reason: 'Rechazado por el administrador', // Razón genérica
         );
         
         if (mounted) {
+          Navigator.of(context).pop(); // Cerrar diálogo de carga
           _showSuccessMessage('Solicitud rechazada y eliminada correctamente');
           _loadSolicitudes();
         }
       } catch (e) {
         if (mounted) {
-          _showErrorMessage('Error al rechazar la solicitud');
+          Navigator.of(context).pop(); // Cerrar diálogo de carga
+          _showErrorMessage('Error al rechazar la solicitud: ${e.toString()}');
         }
       }
     }
@@ -620,6 +618,69 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                                     builder: (context) => const MaestroUtilitiesScreen(),
                                   ),
                                 );
+                              },
+                            ),
+                            // Botón de cerrar sesión
+                            IconButton(
+                              icon: const Icon(Icons.logout, color: Colors.white),
+                              tooltip: 'Cerrar Sesión',
+                              onPressed: () async {
+                                // Mostrar diálogo de confirmación
+                                final shouldLogout = await showDialog<bool>(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      title: const Text('Cerrar Sesión'),
+                                      content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.of(context).pop(false),
+                                          child: const Text('Cancelar'),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () => Navigator.of(context).pop(true),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: BioWayColors.error,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                          child: const Text(
+                                            'Cerrar Sesión',
+                                            style: TextStyle(color: Colors.white),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                                
+                                if (shouldLogout == true) {
+                                  try {
+                                    // Cerrar sesión en Firebase
+                                    final firebaseManager = FirebaseManager();
+                                    final app = firebaseManager.currentApp;
+                                    if (app != null) {
+                                      final auth = FirebaseAuth.instanceFor(app: app);
+                                      await auth.signOut();
+                                    }
+                                    
+                                    // Navegar a la pantalla de login
+                                    if (mounted) {
+                                      Navigator.of(context).pushNamedAndRemoveUntil(
+                                        '/ecoce_login',
+                                        (route) => false,
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (mounted) {
+                                      _showErrorMessage('Error al cerrar sesión: ${e.toString()}');
+                                    }
+                                  }
+                                }
                               },
                             ),
                             const SizedBox(width: 8),

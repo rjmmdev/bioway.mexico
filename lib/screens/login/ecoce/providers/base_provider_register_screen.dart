@@ -215,7 +215,48 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
       // Pequeña pausa para asegurar que el diálogo se muestre
       await Future.delayed(Duration(milliseconds: 100));
       
-      // Crear solicitud de cuenta primero (sin documentos)
+      // Primero subir documentos si existen
+      final Map<String, String?> documentosSubidos = {};
+      final hasDocuments = _platformFiles.values.any((file) => file != null);
+      String tempId = DateTime.now().millisecondsSinceEpoch.toString();
+      
+      if (hasDocuments) {
+        debugPrint('\n🗂️ SUBIENDO DOCUMENTOS...');
+        debugPrint('Total de documentos a subir: ${_platformFiles.values.where((f) => f != null).length}');
+        
+        // Subir cada documento antes de crear la solicitud
+        for (final entry in _platformFiles.entries) {
+          if (entry.value != null) {
+            final file = entry.value!;
+            debugPrint('📎 Subiendo ${entry.key}: ${file.name} (${file.size} bytes)...');
+            
+            try {
+              // Usar un ID temporal para organizar los archivos
+              final url = await _documentService.uploadDocument(
+                userId: tempId,
+                documentType: entry.key,
+                file: file,
+                solicitudId: tempId,
+              );
+              
+              if (url != null) {
+                documentosSubidos[entry.key] = url;
+                debugPrint('✅ ${entry.key} subido exitosamente');
+              } else {
+                debugPrint('❌ Error: ${entry.key} no se pudo subir');
+              }
+            } catch (e) {
+              debugPrint('❌ Error subiendo ${entry.key}: $e');
+            }
+          }
+        }
+        
+        debugPrint('\n📄 Documentos subidos: ${documentosSubidos.values.where((v) => v != null).length}/${_platformFiles.values.where((f) => f != null).length}');
+      }
+      
+      // Crear solicitud de cuenta con los documentos ya subidos
+      debugPrint('\n📝 CREANDO SOLICITUD DE CUENTA...');
+      
       final solicitudId = await _profileService.createAccountRequest(
         tipoUsuario: tipoUsuario,
         email: _controllers['email']!.text.trim(),
@@ -238,59 +279,55 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
         linkRedSocial: _controllers['linkRedSocial']!.text.trim().isEmpty ? null : _controllers['linkRedSocial']!.text.trim(),
         dimensionesCapacidad: dimensionesCapacidad,
         pesoCapacidad: pesoCapacidad,
-        documentos: {}, // Inicialmente sin documentos
+        documentos: documentosSubidos, // Pasar documentos ya subidos
         linkMaps: linkMaps,
         latitud: latitud,
         longitud: longitud,
         actividadesAutorizadas: _selectedActivities.toList(),
       );
       
-      // Ahora subir los documentos usando el ID de la solicitud
-      final Map<String, String?> uploadedDocuments = {};
-      final hasDocuments = _platformFiles.values.any((file) => file != null);
+      debugPrint('✅ Solicitud creada con ID: $solicitudId');
       
-      if (hasDocuments) {
-        print('\n🗂️ SUBIENDO DOCUMENTOS PARA SOLICITUD: $solicitudId');
-        print('Total de documentos a subir: ${_platformFiles.values.where((f) => f != null).length}');
+      // Verificar que la solicitud se creó correctamente con el usuario_creado_id
+      debugPrint('\n🔍 VERIFICANDO SOLICITUD CREADA...');
+      try {
+        final solicitudDoc = await _firestore
+            .collection('solicitudes_cuentas')
+            .doc(solicitudId)
+            .get();
         
-        // Subir cada documento
-        for (final entry in _platformFiles.entries) {
-          if (entry.value != null) {
-            final file = entry.value!;
-            print('📎 Subiendo ${entry.key}: ${file.name} (${file.size} bytes)...');
-            
-            try {
-              // Usar el servicio de documentos con la ruta de solicitudes
-              final url = await _documentService.uploadDocument(
-                userId: solicitudId, // Usar solicitudId como userId para organizar los archivos
-                documentType: entry.key,
-                file: file,
-                solicitudId: solicitudId,
-              );
-              
-              uploadedDocuments[entry.key] = url;
-              print('✅ ${entry.key} subido exitosamente');
-            } catch (e) {
-              print('❌ Error subiendo ${entry.key}: $e');
-              uploadedDocuments[entry.key] = null;
-            }
+        if (solicitudDoc.exists) {
+          final data = solicitudDoc.data();
+          final usuarioCreadoId = data?['usuario_creado_id'];
+          final authCreado = data?['auth_creado'] ?? false;
+          
+          debugPrint('ID de solicitud: $solicitudId');
+          debugPrint('usuario_creado_id: ${usuarioCreadoId ?? 'NO GUARDADO'}');
+          debugPrint('auth_creado: $authCreado');
+          debugPrint('Email: ${data?['email']}');
+          debugPrint('Estado: ${data?['estado']}');
+          
+          if (usuarioCreadoId == null || !authCreado) {
+            debugPrint('\n⚠️ ADVERTENCIA: El usuario no se guardó correctamente');
+            debugPrint('Esto puede causar problemas durante la aprobación');
+          } else {
+            debugPrint('\n✅ REGISTRO COMPLETADO EXITOSAMENTE');
+            debugPrint('Usuario creado en Auth: $usuarioCreadoId');
           }
         }
-        
-        // Actualizar la solicitud con las URLs de los documentos
-        if (uploadedDocuments.isNotEmpty) {
-          await _firestore.collection('solicitudes_cuentas').doc(solicitudId).update({
-            'documentos': uploadedDocuments,
-          });
-        }
+      } catch (e) {
+        debugPrint('Error verificando solicitud: $e');
       }
       
-      debugPrint('=== RESUMEN DE SUBIDA DE DOCUMENTOS ===');
-      debugPrint('Total documentos subidos: ${uploadedDocuments.length}');
-      uploadedDocuments.forEach((key, value) {
-        debugPrint('  $key: ${value != null ? 'OK (URL presente)' : 'FALLO'}');
+      debugPrint('\n=== RESUMEN DE REGISTRO ===');
+      debugPrint('Solicitud ID: $solicitudId');
+      debugPrint('Email: ${_controllers['email']!.text.trim()}');
+      debugPrint('Tipo: $tipoUsuario ($subtipo)');
+      debugPrint('Documentos subidos: ${documentosSubidos.values.where((v) => v != null).length}/${documentosSubidos.length}');
+      documentosSubidos.forEach((key, value) {
+        debugPrint('  $key: ${value != null ? 'OK' : 'FALLO'}');
       });
-      debugPrint('=====================================');
+      debugPrint('===========================');
       
       setState(() {
         _isLoading = false;
@@ -361,8 +398,12 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
       return 'Error de conexión. Verifica tu internet';
     } else if (error.contains('too-many-requests')) {
       return 'Demasiados intentos. Intenta más tarde';
+    } else if (error.contains('Ya existe una solicitud pendiente')) {
+      return 'Ya existe una solicitud pendiente con este correo';
+    } else if (error.contains('operation-not-allowed')) {
+      return 'El registro no está habilitado. Contacta al administrador';
     } else {
-      return 'Error al registrar. Intenta nuevamente.';
+      return 'Error al registrar: ${error.substring(0, error.length > 100 ? 100 : error.length)}...';
     }
   }
 

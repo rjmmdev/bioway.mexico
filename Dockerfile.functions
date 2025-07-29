@@ -1,0 +1,20 @@
+FROM node:20-alpine
+
+# Instalar Firebase CLI
+RUN npm install -g firebase-tools
+
+# Crear directorio de trabajo
+WORKDIR /app
+
+# Copiar archivos del proyecto
+COPY . .
+
+# Instalar dependencias
+WORKDIR /app/functions
+RUN npm install
+
+# Volver al directorio principal
+WORKDIR /app
+
+# Comando por defecto
+CMD ["firebase", "deploy", "--only", "functions"]

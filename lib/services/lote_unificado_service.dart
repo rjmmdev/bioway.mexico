@@ -733,6 +733,7 @@ class LoteUnificadoService {
   }
   
   /// Obtener lotes por proceso actual
+  /// IMPORTANTE: Este método NO filtra por usuario, usar obtenerMisLotesPorProcesoActual para lotes del usuario actual
   Stream<List<LoteUnificadoModel>> obtenerLotesPorProceso(String proceso) {
     return _firestore
         .collectionGroup(DATOS_GENERALES)
@@ -755,8 +756,120 @@ class LoteUnificadoService {
     });
   }
   
+  /// Obtener lotes del usuario actual por proceso
+  /// Este método filtra correctamente para que cada usuario solo vea lotes con los que ha interactuado
+  Stream<List<LoteUnificadoModel>> obtenerMisLotesPorProcesoActual(String proceso) {
+    final userId = _currentUserId;
+    if (userId == null) return Stream.value([]);
+    
+    return _firestore
+        .collectionGroup(DATOS_GENERALES)
+        .where('proceso_actual', isEqualTo: proceso)
+        .orderBy('fecha_creacion', descending: true)
+        .snapshots()
+        .asyncMap((snapshot) async {
+      final lotes = <LoteUnificadoModel>[];
+      
+      for (final doc in snapshot.docs) {
+        final loteId = doc.reference.parent.parent!.id;
+        final lote = await obtenerLotePorId(loteId);
+        
+        if (lote != null) {
+          // Excluir lotes consumidos
+          if (lote.estaConsumido) continue;
+          
+          bool incluirLote = false;
+          
+          // Verificar según el proceso actual
+          switch (proceso) {
+            case 'origen':
+              // Solo lotes creados por el usuario
+              incluirLote = lote.datosGenerales.creadoPor == userId;
+              break;
+              
+            case 'transporte':
+              // Verificar si el transporte actual tiene el lote
+              if (lote.transporteFases.isNotEmpty) {
+                // Buscar la fase activa de transporte
+                for (final fase in lote.transporteFases.entries) {
+                  final faseData = fase.value;
+                  // Un transporte tiene el lote si es el usuario asignado y no ha completado la entrega
+                  if (faseData.usuarioId == userId && 
+                      (faseData.fechaSalida == null || faseData.firmaEntrega == null)) {
+                    incluirLote = true;
+                    break;
+                  }
+                }
+              }
+              break;
+              
+            case 'reciclador':
+              // Para reciclador: lotes recibidos o sublotes creados
+              if (lote.esSublote) {
+                // Sublotes solo si fueron creados por este usuario
+                incluirLote = lote.datosGenerales.creadoPor == userId;
+              } else if (lote.reciclador != null) {
+                // Lotes originales solo si fueron recibidos por este usuario
+                final recicladorDoc = await _firestore
+                    .collection(COLECCION_LOTES)
+                    .doc(loteId)
+                    .collection(PROCESO_RECICLADOR)
+                    .doc('data')
+                    .get();
+                    
+                if (recicladorDoc.exists) {
+                  final data = recicladorDoc.data() ?? {};
+                  final recicladorUserId = data['usuario_id'] ?? data['reciclador_id'];
+                  incluirLote = recicladorUserId == userId;
+                }
+              }
+              break;
+              
+            case 'laboratorio':
+              // Solo lotes donde el laboratorio tomó muestras
+              if (lote.analisisLaboratorio.isNotEmpty) {
+                for (final analisis in lote.analisisLaboratorio) {
+                  if (analisis.usuarioId == userId) {
+                    incluirLote = true;
+                    break;
+                  }
+                }
+              }
+              break;
+              
+            case 'transformador':
+              // Solo lotes/sublotes recibidos por el transformador
+              if (lote.transformador != null) {
+                final transformadorDoc = await _firestore
+                    .collection(COLECCION_LOTES)
+                    .doc(loteId)
+                    .collection(PROCESO_TRANSFORMADOR)
+                    .doc('data')
+                    .get();
+                    
+                if (transformadorDoc.exists) {
+                  final data = transformadorDoc.data() ?? {};
+                  incluirLote = data['usuario_id'] == userId;
+                }
+              }
+              break;
+          }
+          
+          if (incluirLote) {
+            lotes.add(lote);
+          }
+        }
+      }
+      
+      return lotes;
+    });
+  }
+  
   /// Obtener lotes del reciclador incluyendo transferidos sin documentación
   Stream<List<LoteUnificadoModel>> obtenerLotesRecicladorConPendientes() {
+    final userId = _currentUserId;
+    if (userId == null) return Stream.value([]);
+    
     return _firestore
         .collectionGroup(DATOS_GENERALES)
         .where('proceso_actual', whereIn: ['reciclador', 'transporte', 'transformador'])
@@ -770,16 +883,44 @@ class LoteUnificadoService {
         final lote = await obtenerLotePorId(loteId);
         
         if (lote != null) {
-          // Incluir lotes del reciclador o sublotes (tipo_lote: 'derivado')
-          bool esDelReciclador = lote.reciclador != null || lote.esSublote;
-          
-          if (!esDelReciclador) {
-            continue; // Saltar si no es del reciclador ni sublote
-          }
-          
           // EXCLUIR LOTES CONSUMIDOS EN TRANSFORMACIONES
           if (lote.estaConsumido) {
             continue; // Saltar lotes consumidos
+          }
+          
+          // Verificar si el usuario actual tiene relación con este lote
+          bool usuarioRelacionado = false;
+          
+          // 1. Si es un sublote, verificar que fue creado por el usuario actual
+          if (lote.esSublote) {
+            if (lote.datosGenerales.creadoPor == userId) {
+              usuarioRelacionado = true;
+            } else {
+              continue; // No mostrar sublotes creados por otros usuarios
+            }
+          } 
+          // 2. Si es un lote original, verificar que el reciclador lo haya recibido
+          else if (lote.reciclador != null) {
+            // Verificar el usuario_id en el proceso reciclador
+            final recicladorDoc = await _firestore
+                .collection(COLECCION_LOTES)
+                .doc(loteId)
+                .collection(PROCESO_RECICLADOR)
+                .doc('data')
+                .get();
+                
+            if (recicladorDoc.exists) {
+              final data = recicladorDoc.data() ?? {};
+              final recicladorUserId = data['usuario_id'] ?? data['reciclador_id'];
+              
+              if (recicladorUserId == userId) {
+                usuarioRelacionado = true;
+              }
+            }
+          }
+          
+          if (!usuarioRelacionado) {
+            continue; // Saltar lotes sin relación con el usuario
           }
           
           // Incluir si está en reciclador o si fue transferido pero le falta documentación
