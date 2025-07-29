@@ -109,20 +109,18 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _startAnimationSequence() async {
-    // Iniciar todas las animaciones más rápido
+    // Iniciar todas las animaciones simultáneamente para mayor velocidad
     _logoController.forward();
-    
-    // Reducir delays para inicio más rápido
-    await Future.delayed(const Duration(milliseconds: 150));
     _textController.forward();
     
-    await Future.delayed(const Duration(milliseconds: 200));
+    // Esperar solo un poco antes del loading
+    await Future.delayed(const Duration(milliseconds: 100));
     _loadingController.forward();
     
-    // Reducir tiempo total del splash
-    await Future.delayed(const Duration(milliseconds: 1000));
+    // Tiempo mínimo de splash para que se vean las animaciones
+    await Future.delayed(const Duration(milliseconds: 600));
 
-    // Navegar al login con transición más rápida
+    // Navegar al login con transición rápida
     if (mounted) {
       Navigator.pushReplacement(
         context,
@@ -130,20 +128,13 @@ class _SplashScreenState extends State<SplashScreen>
           pageBuilder: (context, animation, secondaryAnimation) =>
           const BioWayLoginScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            var fadeAnimation = Tween<double>(
-              begin: 0.0,
-              end: 1.0,
-            ).animate(CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeInOut,
-            ));
-
+            // Transición simple de fade para continuidad visual
             return FadeTransition(
-              opacity: fadeAnimation,
+              opacity: animation,
               child: child,
             );
           },
-          transitionDuration: const Duration(milliseconds: 400),
+          transitionDuration: const Duration(milliseconds: 300),
         ),
       );
     }

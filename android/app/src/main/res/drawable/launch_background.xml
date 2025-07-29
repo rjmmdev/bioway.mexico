@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Modify this file to customize your launch splash screen -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Fondo blanco -->
-    <item android:drawable="@android:color/white" />
-
-    <!-- Logo centrado -->
+    <!-- Fondo con gradiente idéntico al splash screen de Flutter -->
     <item>
-        <bitmap
-            android:gravity="center"
-            android:src="@mipmap/ic_launcher" />
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#90EE80"
+                android:centerColor="#C3FACC"
+                android:endColor="#3FD9FF"
+                android:angle="270"
+                android:type="linear" />
+        </shape>
     </item>
 </layer-list>
