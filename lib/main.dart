@@ -43,35 +43,32 @@ import 'screens/ecoce/maestro/maestro_unified_screen.dart';
 import 'screens/ecoce/repositorio/repositorio_inicio_screen.dart';
 import 'screens/ecoce/repositorio/repositorio_debug_screen.dart';
 
-void main() async {
-  // Asegurar que los widgets estén inicializados
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // Firebase NO se inicializa aquí
-  // Se inicializará dinámicamente según la plataforma seleccionada
-  // Ver FirebaseManager para más detalles-init
-  
-  // Desactivar animaciones del teclado
-  SystemChannels.textInput.invokeMethod('TextInput.setClientFeatures', <String, dynamic>{
-    'enableAnimations': false,
-  });
-
-  // Configurar la orientación de la app (solo vertical)
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-
-  // Configurar el estilo de la barra de estado
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      statusBarBrightness: Brightness.light,
-    ),
-  );
-
+void main() {
+  // Configuración mínima inicial
   runApp(const BioWayApp());
+  
+  // Configuraciones adicionales en background después de mostrar la UI
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Desactivar animaciones del teclado
+    SystemChannels.textInput.invokeMethod('TextInput.setClientFeatures', <String, dynamic>{
+      'enableAnimations': false,
+    });
+
+    // Configurar la orientación de la app (solo vertical)
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+
+    // Configurar el estilo de la barra de estado
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+    );
+  });
 }
 
 class BioWayApp extends StatelessWidget {

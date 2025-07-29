@@ -109,25 +109,20 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _startAnimationSequence() async {
-    // Iniciar animación del logo
-    await _logoController.forward();
-
-    // Pequeña pausa
+    // Iniciar todas las animaciones más rápido
+    _logoController.forward();
+    
+    // Reducir delays para inicio más rápido
+    await Future.delayed(const Duration(milliseconds: 150));
+    _textController.forward();
+    
     await Future.delayed(const Duration(milliseconds: 200));
+    _loadingController.forward();
+    
+    // Reducir tiempo total del splash
+    await Future.delayed(const Duration(milliseconds: 1000));
 
-    // Iniciar animación del texto
-    await _textController.forward();
-
-    // Otra pequeña pausa
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    // Mostrar indicador de carga
-    await _loadingController.forward();
-
-    // Simular carga de datos/inicialización
-    await Future.delayed(const Duration(seconds: 2));
-
-    // Navegar al login con transición mejorada
+    // Navegar al login con transición más rápida
     if (mounted) {
       Navigator.pushReplacement(
         context,
@@ -135,31 +130,20 @@ class _SplashScreenState extends State<SplashScreen>
           pageBuilder: (context, animation, secondaryAnimation) =>
           const BioWayLoginScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            const begin = Offset(0.0, 0.03);
-            const end = Offset.zero;
-            const curve = Curves.easeInOutCubic;
-
-            var tween = Tween(begin: begin, end: end).chain(
-              CurveTween(curve: curve),
-            );
-            
             var fadeAnimation = Tween<double>(
               begin: 0.0,
               end: 1.0,
             ).animate(CurvedAnimation(
               parent: animation,
-              curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+              curve: Curves.easeInOut,
             ));
 
             return FadeTransition(
               opacity: fadeAnimation,
-              child: SlideTransition(
-                position: animation.drive(tween),
-                child: child,
-              ),
+              child: child,
             );
           },
-          transitionDuration: const Duration(milliseconds: 1200),
+          transitionDuration: const Duration(milliseconds: 400),
         ),
       );
     }
