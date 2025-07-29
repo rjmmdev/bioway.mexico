@@ -30,6 +30,7 @@ import 'screens/ecoce/transformador/transformador_inicio_screen.dart';
 import 'screens/ecoce/transformador/transformador_produccion_screen.dart';
 import 'screens/ecoce/transformador/transformador_documentacion_screen.dart';
 import 'screens/ecoce/transformador/transformador_formulario_recepcion.dart';
+import 'screens/ecoce/transformador/transformador_main_screen.dart';
 
 // Screens - Laboratorio
 import 'screens/ecoce/laboratorio/laboratorio_inicio.dart';
@@ -267,15 +268,15 @@ class BioWayApp extends StatelessWidget {
         '/transporte_perfil': (context) => const TransportePerfilScreen(),
         
         // Rutas de Transformador
-        '/transformador_inicio': (context) => const TransformadorInicioScreen(),
+        '/transformador_inicio': (context) => const TransformadorMainScreen(initialIndex: 0),
         '/transformador_produccion': (context) {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-          return TransformadorProduccionScreen(
-            initialTab: args?['initialTab'] as int?,
+          return TransformadorMainScreen(
+            initialIndex: 1,
           );
         },
-        '/transformador_ayuda': (context) => const EcoceAyudaScreen(),
-        '/transformador_perfil': (context) => const EcocePerfilScreen(),
+        '/transformador_ayuda': (context) => const TransformadorMainScreen(initialIndex: 2),
+        '/transformador_perfil': (context) => const TransformadorMainScreen(initialIndex: 3),
         '/transformador_formulario_recepcion': (context) {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
           return TransformadorFormularioRecepcion(

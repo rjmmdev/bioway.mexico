@@ -15,6 +15,7 @@ import 'transformador_lote_detalle_screen.dart';
 import '../shared/screens/usuario_qr_screen.dart';
 import '../shared/screens/receptor_recepcion_pasos_screen.dart';
 import 'utils/transformador_navigation_helper.dart';
+import 'transformador_main_screen.dart';
 
 class TransformadorInicioScreen extends StatefulWidget {
   const TransformadorInicioScreen({super.key});
@@ -74,11 +75,17 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
   }
 
   void _onBottomNavTapped(int index) {
-    UserTypeHelper.handleNavigation(
-      context,
-      _userProfile?.ecoceTipoActor,
-      index,
-      0, // Current index (inicio)
+    if (index == 0) return; // Ya estamos en inicio
+    
+    // Usar navegación optimizada para mantener estado
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => TransformadorMainScreen(
+          initialIndex: index,
+        ),
+        transitionDuration: Duration.zero, // Sin animación para mayor fluidez
+        reverseTransitionDuration: Duration.zero,
+      ),
     );
   }
 
