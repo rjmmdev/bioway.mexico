@@ -49,6 +49,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
   
   // Estados
   bool _isLoading = true;
+  bool _isRefreshing = false;
   bool _mostrarSoloMegalotes = false;
   bool _isSelectionMode = false;
   bool _autoSelectionMode = false; // Para el tab de Salida
@@ -937,9 +938,36 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
   }
 
   Widget _buildTabContent(List<LoteUnificadoModel> lotes) {
-    return ListView(
-      physics: const BouncingScrollPhysics(),
-      children: [
+    return RefreshIndicator(
+      onRefresh: () async {
+        HapticFeedback.mediumImpact();
+        setState(() {
+          _isRefreshing = true;
+        });
+        
+        // Simular un pequeño delay para que el usuario vea que se está refrescando
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        // Recargar los datos
+        _loadLotes();
+        _loadTransformaciones();
+        
+        // Esperar un poco más para asegurar que los listeners se actualicen
+        await Future.delayed(const Duration(milliseconds: 300));
+        
+        setState(() {
+          _isRefreshing = false;
+        });
+      },
+      color: Colors.orange,
+      backgroundColor: Colors.white,
+      strokeWidth: 2.5,
+      displacement: 40.0,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        children: [
         // Filters container
         Container(
           color: Colors.white,
@@ -1104,13 +1132,41 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
         
         const SizedBox(height: 100), // Space for FAB
       ],
+    ),
     );
   }
 
   Widget _buildCompletadosTab() {
-    return ListView(
-      physics: const BouncingScrollPhysics(),
-      children: [
+    return RefreshIndicator(
+      onRefresh: () async {
+        HapticFeedback.mediumImpact();
+        setState(() {
+          _isRefreshing = true;
+        });
+        
+        // Simular un pequeño delay para que el usuario vea que se está refrescando
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        // Recargar los datos
+        _loadLotes();
+        _loadTransformaciones();
+        
+        // Esperar un poco más para asegurar que los listeners se actualicen
+        await Future.delayed(const Duration(milliseconds: 300));
+        
+        setState(() {
+          _isRefreshing = false;
+        });
+      },
+      color: BioWayColors.success,
+      backgroundColor: Colors.white,
+      strokeWidth: 2.5,
+      displacement: 40.0,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        children: [
         // Filters container with megalote toggle
         Container(
           color: Colors.white,
@@ -1280,6 +1336,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
         
         const SizedBox(height: 100),
       ],
+    ),
     );
   }
 
