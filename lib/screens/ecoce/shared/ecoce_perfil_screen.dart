@@ -274,24 +274,6 @@ class _EcocePerfilScreenState extends State<EcocePerfilScreen> with SingleTicker
             ],
           ),
         ),
-        bottomNavigationBar: EcoceBottomNavigation(
-          selectedIndex: 3,
-          onItemTapped: _handleNavigation,
-          primaryColor: primaryColor,
-          items: navigationItems,
-          fabConfig: fabConfig,
-        ),
-        floatingActionButton: fabConfig != null
-          ? EcoceFloatingActionButton(
-              onPressed: fabConfig.onPressed,
-              icon: fabConfig.icon,
-              backgroundColor: primaryColor,
-              tooltip: fabConfig.tooltip,
-            )
-          : null,
-        floatingActionButtonLocation: fabConfig != null
-          ? FloatingActionButtonLocation.centerDocked
-          : null,
         ),
       ),
     );
