@@ -90,6 +90,59 @@ class _MaestroUtilitiesScreenState extends State<MaestroUtilitiesScreen> {
     }
   }
 
+  Future<void> _createMissingIndexes() async {
+    // Confirmar acción
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Crear Índices Faltantes'),
+        content: const Text(
+          'Esta acción creará índices en la colección ecoce_profiles para todos los usuarios '
+          'aprobados que no tengan un índice. Esto es necesario para que la búsqueda por folio funcione.\n\n'
+          '¿Deseas continuar?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: BioWayColors.info,
+            ),
+            child: const Text('Crear Índices'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() {
+      _isLoading = true;
+      _lastResult = '';
+    });
+
+    try {
+      final results = await _profileService.createMissingIndexes();
+      setState(() {
+        _lastResult = 'Índices creados exitosamente:\n'
+            '- Índices creados: ${results['created']}\n'
+            '- Índices ya existentes: ${results['existing']}\n'
+            '- Errores: ${results['errors']}';
+      });
+    } catch (e) {
+      setState(() {
+        _lastResult = 'Error al crear índices: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
   Future<void> _runCleanup() async {
     // Confirmar acción
     final confirm = await showDialog<bool>(
@@ -312,6 +365,61 @@ Limpieza completada:
                         label: const Text('Ejecutar Limpieza'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: BioWayColors.warning,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // Sección de Crear Índices Faltantes
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.build_circle, color: BioWayColors.info),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Crear Índices Faltantes',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Crea índices en la colección ecoce_profiles para todos los usuarios '
+                      'aprobados que no tengan un índice. Esto permite la búsqueda por folio.',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _isLoading ? null : _createMissingIndexes,
+                        icon: const Icon(Icons.add_circle_outline),
+                        label: const Text('Crear Índices Faltantes'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: BioWayColors.info,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),

@@ -132,8 +132,14 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
   }
   
   String _getTipoPredominante(Map<String, double>? tipoPoli) {
-    if (tipoPoli == null || tipoPoli.isEmpty) return 'N/A';
+    if (tipoPoli == null || tipoPoli.isEmpty) return 'Mixto';
     
+    // Si solo hay un tipo de material, retornarlo
+    if (tipoPoli.length == 1) {
+      return tipoPoli.keys.first;
+    }
+    
+    // Buscar el tipo predominante
     String tipoPredominante = '';
     double maxPorcentaje = 0;
     
@@ -144,7 +150,13 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
       }
     });
     
-    return tipoPredominante.isEmpty ? 'N/A' : tipoPredominante;
+    // Si todos tienen el mismo porcentaje, mostrar "Mixto"
+    if (tipoPredominante.isEmpty || 
+        tipoPoli.values.every((p) => p == tipoPoli.values.first)) {
+      return 'Mixto';
+    }
+    
+    return tipoPredominante;
   }
 
   Color _getTabColor() {

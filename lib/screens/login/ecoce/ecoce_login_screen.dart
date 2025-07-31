@@ -49,7 +49,8 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
 
   // Instancia del servicio de autenticación
   final AuthService _authService = AuthService();
-  final EcoceProfileService _profileService = EcoceProfileService();
+  late EcoceProfileService _profileService;
+  bool _firebaseInitialized = false;
 
   @override
   void initState() {
@@ -63,6 +64,13 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
     try {
       // Inicializar Firebase para ECOCE
       await _authService.initializeForPlatform(FirebasePlatform.ecoce);
+      
+      // Crear el servicio de perfiles después de inicializar Firebase
+      _profileService = EcoceProfileService();
+      
+      setState(() {
+        _firebaseInitialized = true;
+      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -177,6 +185,15 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
     FocusScope.of(context).unfocus();
 
     if (_formKey.currentState!.validate()) {
+      // Verificar que Firebase esté inicializado
+      if (!_firebaseInitialized) {
+        _showErrorDialog(
+          'Sistema no disponible',
+          'Por favor espere un momento e intente nuevamente',
+        );
+        return;
+      }
+      
       setState(() {
         _isLoading = true;
       });
@@ -193,6 +210,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
         final folioPattern = RegExp(r'^[A-Z]\d{7}$');
         if (folioPattern.hasMatch(userInput.toUpperCase())) {
           // Es un folio, buscar el email asociado
+          print('🔐 Login con folio: ${userInput.toUpperCase()}');
           final emailFromFolio = await _profileService.getEmailByFolio(userInput.toUpperCase());
           if (emailFromFolio == null) {
             setState(() {
@@ -205,6 +223,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
             return;
           }
           email = emailFromFolio;
+          print('📧 Email encontrado: $email');
         } else if (!userInput.contains('@')) {
           // No es un email ni un folio válido
           setState(() {
@@ -215,6 +234,8 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
             'Por favor ingresa un correo electrónico válido o un folio (ej: A0000001)',
           );
           return;
+        } else {
+          print('🔐 Login con email: $email');
         }
 
         // Intentar autenticación con Firebase Auth primero

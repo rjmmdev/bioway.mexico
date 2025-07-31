@@ -153,6 +153,9 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
           'ecoce_lotes_totales_recibidos': currentTotal + widget.totalLotes,
         });
 
+        // Calcular tipo de polímero de todos los lotes escaneados
+        final tipoPoli = await _loteService.calcularTipoPolimeroPredominante(widget.lotIds);
+
         // Para cada lote transportista, actualizar su estado y crear lote de reciclador
         for (String loteId in widget.lotIds) {
           // Obtener información del lote
@@ -169,6 +172,7 @@ class _RecicladorFormularioEntradaState extends State<RecicladorFormularioEntrad
             userId: currentUser.uid,
             conjuntoLotes: [loteId], // Add to conjunto
             loteEntrada: loteId,
+            tipoPoli: tipoPoli, // Agregar el tipo de polímero calculado
             pesoBruto: _pesoTotalOriginal, // Use the calculated weight
             pesoNeto: double.parse(_pesoNetoController.text),
             nombreOpeEntrada: _operadorController.text,

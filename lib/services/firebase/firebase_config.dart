@@ -6,6 +6,7 @@ import 'firebase_manager.dart';
 class FirebaseConfig {
   /// Obtiene las opciones de Firebase para una plataforma específica
   static FirebaseOptions getOptionsForPlatform(FirebasePlatform platform) {
+    print('🔧 Obteniendo configuración Firebase para: ${platform.name}');
     switch (platform) {
       case FirebasePlatform.ecoce:
         return _getEcoceOptions();

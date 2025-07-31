@@ -97,22 +97,41 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
       
       final firestore = FirebaseFirestore.instanceFor(app: app);
       
-      // Buscar en el índice de perfiles
-      final querySnapshot = await firestore
+      // Buscar por folio en el campo 'folio' si los documentos no usan el folio como ID
+      // Primero intentar búsqueda por ID del documento
+      final exactQuerySnapshot = await firestore
           .collection('ecoce_profiles')
           .where(FieldPath.documentId, isGreaterThanOrEqualTo: query)
           .where(FieldPath.documentId, isLessThan: query + '\uf8ff')
-          .limit(10)
+          .limit(20)
           .get();
       
-      final suggestions = <Map<String, dynamic>>[];
+      // Si no hay resultados por ID, buscar por campo folio
+      QuerySnapshot folioQuerySnapshot;
+      if (exactQuerySnapshot.docs.isEmpty) {
+        folioQuerySnapshot = await firestore
+            .collection('ecoce_profiles')
+            .where('folio', isGreaterThanOrEqualTo: query)
+            .where('folio', isLessThan: query + '\uf8ff')
+            .limit(20)
+            .get();
+      } else {
+        folioQuerySnapshot = exactQuerySnapshot;
+      }
       
-      for (final doc in querySnapshot.docs) {
-        final profileData = doc.data();
-        final profilePath = profileData['path'] as String?;
+      final suggestions = <Map<String, dynamic>>[];
+      final processedFolios = <String>{};
+      
+      // Procesar coincidencias exactas del prefijo
+      for (final doc in folioQuerySnapshot.docs) {
+        final profileData = doc.data() as Map<String, dynamic>?;
+        if (profileData == null) continue;
         
-        if (profilePath != null) {
-          // Obtener datos completos del usuario
+        final profilePath = profileData['path'] as String?;
+        final docFolio = profileData['folio'] as String? ?? doc.id;
+        
+        if (profilePath != null && !processedFolios.contains(doc.id)) {
+          processedFolios.add(doc.id);
           final userDoc = await firestore.doc(profilePath).get();
           
           if (userDoc.exists) {
@@ -132,23 +151,114 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
             }
             
             suggestions.add({
-              'folio': doc.id,
+              'folio': docFolio,
               'nombre': userData['nombre'] ?? userData['ecoce_nombre'] ?? 'Sin nombre',
               'tipo': tipoUsuario,
               'tipo_label': tipoLabel,
               'direccion': _buildDireccion(userData),
+              'score': 100, // Máxima puntuación para coincidencias exactas del prefijo
             });
           }
         }
       }
       
+      // Si no hay suficientes resultados, buscar más ampliamente
+      if (suggestions.length < 5) {
+        // Buscar todos los usuarios sin importar el tipo
+        final allUsersQuery = await firestore
+            .collection('ecoce_profiles')
+            .orderBy(FieldPath.documentId)
+            .limit(50)
+            .get();
+        
+        for (final doc in allUsersQuery.docs) {
+          // Verificar si el folio o ID contiene el query
+          final docData = doc.data() as Map<String, dynamic>?;
+          if (docData == null) continue;
+          
+          final docFolio = docData['folio'] as String? ?? doc.id;
+          if ((docFolio.toUpperCase().contains(query) || 
+               doc.id.toUpperCase().contains(query)) &&
+              !processedFolios.contains(doc.id) && 
+              suggestions.length < 10) {
+            
+            processedFolios.add(doc.id);
+            final profilePath = docData['path'] as String?;
+            
+            if (profilePath != null) {
+              final userDoc = await firestore.doc(profilePath).get();
+              
+              if (userDoc.exists) {
+                final userData = userDoc.data()!;
+                String tipoUsuario = 'Desconocido';
+                String tipoLabel = 'Desconocido';
+                
+                // Determinar tipo de usuario de todos los posibles
+                if (profilePath.contains('origen')) {
+                  tipoUsuario = profilePath.contains('centro_acopio') ? 'A' : 'P';
+                  tipoLabel = profilePath.contains('centro_acopio') ? 'Centro de Acopio' : 'Planta de Separación';
+                } else if (profilePath.contains('reciclador')) {
+                  tipoUsuario = 'R';
+                  tipoLabel = 'Reciclador';
+                } else if (profilePath.contains('laboratorio')) {
+                  tipoUsuario = 'L';
+                  tipoLabel = 'Laboratorio';
+                } else if (profilePath.contains('transformador')) {
+                  tipoUsuario = 'T';
+                  tipoLabel = 'Transformador';
+                } else if (profilePath.contains('transporte')) {
+                  tipoUsuario = 'V';
+                  tipoLabel = 'Transporte';
+                }
+                
+                // Calcular puntuación basada en similitud
+                int score = _calculateSimilarityScore(query, docFolio);
+                
+                suggestions.add({
+                  'folio': docFolio,
+                  'nombre': userData['nombre'] ?? userData['ecoce_nombre'] ?? 'Sin nombre',
+                  'tipo': tipoUsuario,
+                  'tipo_label': tipoLabel,
+                  'direccion': _buildDireccion(userData),
+                  'score': score,
+                });
+              }
+            }
+          }
+        }
+      }
+      
+      // Ordenar por puntuación (mayor a menor)
+      suggestions.sort((a, b) => (b['score'] as int).compareTo(a['score'] as int));
+      
+      // Limitar a 10 sugerencias
+      final finalSuggestions = suggestions.take(10).toList();
+      
       setState(() {
-        _suggestedUsers = suggestions;
-        _showSuggestions = suggestions.isNotEmpty;
+        _suggestedUsers = finalSuggestions;
+        _showSuggestions = finalSuggestions.isNotEmpty;
       });
     } catch (e) {
       print('Error buscando usuarios: $e');
     }
+  }
+  
+  int _calculateSimilarityScore(String query, String folio) {
+    // Puntuación basada en qué tan similar es el folio al query
+    if (folio.toUpperCase() == query) return 100;
+    if (folio.toUpperCase().startsWith(query)) return 90;
+    
+    // Puntuación basada en longitud común del prefijo
+    int commonPrefixLength = 0;
+    for (int i = 0; i < query.length && i < folio.length; i++) {
+      if (query[i] == folio.toUpperCase()[i]) {
+        commonPrefixLength++;
+      } else {
+        break;
+      }
+    }
+    
+    return (commonPrefixLength * 80 / query.length).round();
   }
   
   void _selectUser(Map<String, dynamic> user) {
@@ -161,7 +271,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
   }
   
   Future<void> _buscarUsuario() async {
-    final folio = _idDestinoController.text.trim();
+    final folio = _idDestinoController.text.trim().toUpperCase();
     
     if (folio.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -176,6 +286,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
     setState(() {
       _isSearchingUser = true;
       _destinatarioInfo = null;
+      _showSuggestions = false; // Ocultar sugerencias al buscar
     });
     
     try {
@@ -186,50 +297,141 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
       }
       final firestore = FirebaseFirestore.instanceFor(app: app);
       
-      // Buscar en ecoce_profiles
+      // Primero intentar búsqueda exacta por ID del documento
       final profileDoc = await firestore
           .collection('ecoce_profiles')
           .doc(folio)
           .get();
       
+      // Si no existe por ID, buscar por campo folio
+      DocumentSnapshot? foundDoc;
       if (!profileDoc.exists) {
-        throw Exception('Usuario no encontrado');
+        final folioQuery = await firestore
+            .collection('ecoce_profiles')
+            .where('folio', isEqualTo: folio)
+            .limit(1)
+            .get();
+        
+        if (folioQuery.docs.isNotEmpty) {
+          foundDoc = folioQuery.docs.first;
+        }
+      } else {
+        foundDoc = profileDoc;
       }
       
-      final profileData = profileDoc.data()!;
-      final profilePath = profileData['path'] as String;
-      
-      // Obtener datos completos del usuario
-      final userDoc = await firestore.doc(profilePath).get();
-      
-      if (!userDoc.exists) {
-        throw Exception('Datos del usuario no encontrados');
+      if (foundDoc == null || !foundDoc.exists) {
+        // Si no existe exacto, buscar coincidencias similares
+        final querySnapshot = await firestore
+            .collection('ecoce_profiles')
+            .where(FieldPath.documentId, isGreaterThanOrEqualTo: folio)
+            .where(FieldPath.documentId, isLessThan: folio + '\uf8ff')
+            .limit(1)
+            .get();
+        
+        if (querySnapshot.docs.isEmpty) {
+          // Buscar con prefijo más corto
+          if (folio.length > 2) {
+            final shortQuery = folio.substring(0, folio.length - 1);
+            final shortQuerySnapshot = await firestore
+                .collection('ecoce_profiles')
+                .where(FieldPath.documentId, isGreaterThanOrEqualTo: shortQuery)
+                .where(FieldPath.documentId, isLessThan: shortQuery + '\uf8ff')
+                .limit(5)
+                .get();
+            
+            if (shortQuerySnapshot.docs.isNotEmpty) {
+              // Mostrar sugerencias de folios similares
+              final similarFolios = shortQuerySnapshot.docs.map((doc) => doc.id).join(', ');
+              throw Exception('Usuario no encontrado. Folios similares: $similarFolios');
+            }
+          }
+          throw Exception('Usuario no encontrado');
+        }
+        
+        // Usar el primer resultado encontrado
+        final foundDoc = querySnapshot.docs.first;
+        final profileData = foundDoc.data();
+        final profilePath = profileData['path'] as String;
+        
+        // Obtener datos completos del usuario
+        final userDoc = await firestore.doc(profilePath).get();
+        
+        if (!userDoc.exists) {
+          throw Exception('Datos del usuario no encontrados');
+        }
+        
+        // Determinar el tipo de usuario basado en el path
+        String tipoUsuario = 'Desconocido';
+        if (profilePath.contains('reciclador')) {
+          tipoUsuario = 'R';
+        } else if (profilePath.contains('laboratorio')) {
+          tipoUsuario = 'L';
+        } else if (profilePath.contains('transformador')) {
+          tipoUsuario = 'T';
+        }
+        
+        setState(() {
+          _destinatarioInfo = {
+            'folio': foundDoc.id,
+            'nombre': userDoc.data()?['nombre'] ?? userDoc.data()?['ecoce_nombre'] ?? 'Sin nombre',
+            'tipo': tipoUsuario,
+            'tipo_label': _getTipoLabel(tipoUsuario),
+            'direccion': _buildDireccion(userDoc.data() ?? {}),
+          };
+          // Actualizar el campo con el folio correcto
+          _idDestinoController.text = foundDoc.id;
+        });
+        
+        // Mostrar mensaje de que se encontró un folio similar
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Se encontró el folio: ${foundDoc.id}'),
+              backgroundColor: BioWayColors.info,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        // Procesar el resultado exacto
+        final profileData = foundDoc.data() as Map<String, dynamic>;
+        final profilePath = profileData['path'] as String;
+        final docFolio = profileData['folio'] as String? ?? foundDoc.id;
+        
+        // Obtener datos completos del usuario
+        final userDoc = await firestore.doc(profilePath).get();
+        
+        if (!userDoc.exists) {
+          throw Exception('Datos del usuario no encontrados');
+        }
+        
+        // Determinar el tipo de usuario basado en el path
+        String tipoUsuario = 'Desconocido';
+        if (profilePath.contains('reciclador')) {
+          tipoUsuario = 'R';
+        } else if (profilePath.contains('laboratorio')) {
+          tipoUsuario = 'L';
+        } else if (profilePath.contains('transformador')) {
+          tipoUsuario = 'T';
+        }
+        
+        setState(() {
+          _destinatarioInfo = {
+            'folio': docFolio,
+            'nombre': userDoc.data()?['nombre'] ?? userDoc.data()?['ecoce_nombre'] ?? 'Sin nombre',
+            'tipo': tipoUsuario,
+            'tipo_label': _getTipoLabel(tipoUsuario),
+            'direccion': _buildDireccion(userDoc.data() ?? {}),
+          };
+          // Actualizar el campo con el folio correcto
+          _idDestinoController.text = docFolio;
+        });
       }
-      
-      // Determinar el tipo de usuario basado en el path
-      String tipoUsuario = 'Desconocido';
-      if (profilePath.contains('reciclador')) {
-        tipoUsuario = 'R';
-      } else if (profilePath.contains('laboratorio')) {
-        tipoUsuario = 'L';
-      } else if (profilePath.contains('transformador')) {
-        tipoUsuario = 'T';
-      }
-      
-      setState(() {
-        _destinatarioInfo = {
-          'folio': folio,
-          'nombre': userDoc.data()?['nombre'] ?? userDoc.data()?['ecoce_nombre'] ?? 'Sin nombre',
-          'tipo': tipoUsuario,
-          'tipo_label': _getTipoLabel(tipoUsuario),
-          'direccion': _buildDireccion(userDoc.data() ?? {}),
-        };
-      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al buscar usuario: ${e.toString()}'),
+            content: Text('Error: ${e.toString().replaceAll('Exception: ', '')}'),
             backgroundColor: BioWayColors.error,
           ),
         );
@@ -262,6 +464,14 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
         return 'Laboratorio';
       case 'T':
         return 'Transformador';
+      case 'V':
+        return 'Transporte';
+      case 'A':
+        return 'Centro de Acopio';
+      case 'P':
+        return 'Planta de Separación';
+      case 'O':
+        return 'Origen';
       default:
         return 'Desconocido';
     }
@@ -1239,6 +1449,14 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
         return const Color(0xFF2196F3); // Azul para Laboratorio
       case 'T':
         return const Color(0xFF9C27B0); // Púrpura para Transformador
+      case 'V':
+        return const Color(0xFFFF9800); // Naranja para Transporte
+      case 'A':
+        return const Color(0xFF00BCD4); // Cyan para Centro de Acopio
+      case 'P':
+        return const Color(0xFF3F51B5); // Indigo para Planta de Separación
+      case 'O':
+        return const Color(0xFF009688); // Teal para Origen
       default:
         return const Color(0xFF757575); // Gris para otros
     }
