@@ -8,6 +8,45 @@ import '../../../../widgets/common/simple_map_widget.dart';
 import 'material_selector.dart';
 import 'document_uploader.dart';
 
+/// Formateador personalizado para números de teléfono (formato: 442-380-5682)
+class PhoneInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // Remover todos los caracteres que no sean números
+    final digitsOnly = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    
+    // Limitar a 10 dígitos
+    final truncated = digitsOnly.length > 10 ? digitsOnly.substring(0, 10) : digitsOnly;
+    
+    // Aplicar formato
+    final formatted = StringBuffer();
+    for (int i = 0; i < truncated.length; i++) {
+      if (i == 3 || i == 6) {
+        formatted.write('-');
+      }
+      formatted.write(truncated[i]);
+    }
+    
+    // Calcular la nueva posición del cursor
+    int cursorPosition = formatted.length;
+    
+    // Si el usuario está borrando, ajustar la posición del cursor
+    if (oldValue.text.length > newValue.text.length) {
+      if (cursorPosition > 0 && (cursorPosition == 4 || cursorPosition == 8)) {
+        cursorPosition--;
+      }
+    }
+    
+    return TextEditingValue(
+      text: formatted.toString(),
+      selection: TextSelection.collapsed(offset: cursorPosition),
+    );
+  }
+}
+
 /// Header reutilizable para pantallas de registro con indicador de progreso
 class RegisterHeader extends StatelessWidget {
   final int currentStep;
@@ -470,11 +509,11 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
       return false;
     }
     
-    // Validar formato de RFC (básico)
+    // Validar formato de RFC (12 o 13 caracteres)
     final rfc = widget.controllers['rfc']!.text.trim();
-    if (rfc.length != 12 && rfc.length != 13) {
+    if (rfc.length < 12 || rfc.length > 13) {
       setState(() {
-        _errorMessage = 'El RFC debe tener 12 o 13 caracteres';
+        _errorMessage = 'El RFC debe tener 12 o 13 caracteres. Persona Moral o Persona Física respectivamente.';
       });
       return false;
     }
@@ -493,13 +532,25 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
       return false;
     }
     
-    // Validar formato de teléfono básico (al menos 10 dígitos)
+    // Validar formato de teléfono (exactamente 10 dígitos)
     final telefono = widget.controllers['telefono']!.text.replaceAll(RegExp(r'[^0-9]'), '');
-    if (telefono.length < 10) {
+    if (telefono.length != 10) {
       setState(() {
-        _errorMessage = 'El teléfono debe tener al menos 10 dígitos';
+        _errorMessage = 'El teléfono debe tener exactamente 10 dígitos';
       });
       return false;
+    }
+    
+    // Validar teléfono de oficina si se proporciona
+    final telefonoOficina = widget.controllers['telefonoOficina']!.text.trim();
+    if (telefonoOficina.isNotEmpty) {
+      final telefonoOficinaDigits = telefonoOficina.replaceAll(RegExp(r'[^0-9]'), '');
+      if (telefonoOficinaDigits.length != 10) {
+        setState(() {
+          _errorMessage = 'El teléfono de oficina debe tener exactamente 10 dígitos';
+        });
+        return false;
+      }
     }
     
     return true;
@@ -559,13 +610,12 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
               child: buildTextField(
                 controller: widget.controllers['telefono']!,
                 label: 'Teléfono Móvil *',
-                hint: '10 dígitos',
+                hint: '442-380-5682',
                 icon: Icons.phone_android,
                 keyboardType: TextInputType.phone,
                 showError: _showFieldErrors,
                 inputFormatters: [
-                  LengthLimitingTextInputFormatter(15),
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9+\-\s()]')),
+                  PhoneInputFormatter(),
                 ],
               ),
             ),
@@ -574,12 +624,11 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
               child: buildTextField(
                 controller: widget.controllers['telefonoOficina']!,
                 label: 'Teléfono Oficina',
-                hint: 'Opcional',
+                hint: '442-380-5682',
                 icon: Icons.phone,
                 keyboardType: TextInputType.phone,
                 inputFormatters: [
-                  LengthLimitingTextInputFormatter(15),
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9+\-\s()]')),
+                  PhoneInputFormatter(),
                 ],
               ),
             ),

@@ -161,10 +161,12 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // Prevenir que el botón atrás cierre la sesión
-        return false;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        // Navegar a inicio en lugar de prevenir navegación
+        Navigator.pushReplacementNamed(context, '/origen_inicio');
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFF8F9FA),
@@ -386,15 +388,6 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
           tooltip: 'Nuevo Lote',
         ),
       ),
-
-      // Floating Action Button
-      floatingActionButton: EcoceFloatingActionButton(
-        onPressed: _navigateToNewLot,
-        icon: Icons.add,
-        backgroundColor: _primaryColor,
-        tooltip: 'Nuevo Lote',
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
   }

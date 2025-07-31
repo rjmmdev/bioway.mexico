@@ -284,7 +284,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                     ),
                     // Contenido
                     Padding(
-                      padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 16, 20, 24),
+                      padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 20, 20, 24),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -644,15 +644,6 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
           tooltip: 'Nuevo Lote',
         ),
       ),
-      
-      // Floating Action Button
-      floatingActionButton: EcoceFloatingActionButton(
-        onPressed: _navigateToNewLot,
-        icon: Icons.add,
-        backgroundColor: _primaryColor,
-        tooltip: 'Nuevo Lote',
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
   }
