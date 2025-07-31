@@ -144,7 +144,7 @@ class EcoceProfileService {
     );
   }
 
-  // Generar folio único según el subtipo para usuarios origen
+  // Generar folio secuencial según el subtipo para usuarios origen
   Future<String> _generateFolio(String tipoActor, String? subtipo) async {
     String prefix;
     
@@ -187,43 +187,93 @@ class EcoceProfileService {
     }
 
     try {
-      // Para usuarios origen, buscar por el prefijo del folio
-      // Para otros tipos, buscar por tipo de actor
-      QuerySnapshot query;
+      // Buscar en TODAS las subcolecciones para obtener el último folio
+      List<String> allFolios = [];
       
-      if (tipoActor == 'O') {
-        // Buscar folios que empiecen con el prefijo específico (A o P)
-        query = await _profilesCollection
-            .where('ecoce_folio', isGreaterThanOrEqualTo: prefix)
-            .where('ecoce_folio', isLessThan: '${prefix}z')
-            .orderBy('ecoce_folio', descending: true)
-            .limit(1)
-            .get();
-      } else {
-        // Buscar por tipo de actor para otros tipos
-        query = await _profilesCollection
-            .where('ecoce_tipo_actor', isEqualTo: tipoActor)
-            .orderBy('ecoce_folio', descending: true)
-            .limit(1)
-            .get();
-      }
-
-      int nextNumber = 1;
-      if (query.docs.isNotEmpty) {
-        final lastFolio = query.docs.first.data() as Map<String, dynamic>;
-        final folioStr = lastFolio['ecoce_folio'] as String;
-        // Extraer el número del folio (ej: A0000001 -> 1)
-        final numberStr = folioStr.replaceAll(RegExp(r'[^0-9]'), '');
-        if (numberStr.isNotEmpty) {
-          nextNumber = int.parse(numberStr) + 1;
+      // Lista de todas las subcolecciones posibles
+      final subcollections = [
+        'origen/centro_acopio',
+        'origen/planta_separacion',
+        'reciclador/usuarios',
+        'transformador/usuarios',
+        'transporte/usuarios',
+        'laboratorio/usuarios',
+        'maestro/usuarios',
+      ];
+      
+      // Buscar en cada subcolección folios que empiecen con el prefijo
+      for (final subcollection in subcollections) {
+        try {
+          final query = await _profilesCollection
+              .doc(subcollection.split('/')[0])
+              .collection(subcollection.split('/')[1])
+              .where('ecoce_folio', isGreaterThanOrEqualTo: prefix)
+              .where('ecoce_folio', isLessThan: '${prefix}z')
+              .orderBy('ecoce_folio', descending: true)
+              .limit(5) // Obtener los últimos 5 para asegurar
+              .get();
+          
+          for (final doc in query.docs) {
+            final data = doc.data();
+            final folio = data['ecoce_folio'] as String?;
+            if (folio != null && folio.startsWith(prefix)) {
+              allFolios.add(folio);
+            }
+          }
+        } catch (e) {
+          // Continuar con la siguiente subcolección si hay error
+          continue;
         }
       }
-
-      return '$prefix${nextNumber.toString().padLeft(7, '0')}';
+      
+      // También buscar en solicitudes aprobadas para evitar duplicados
+      try {
+        final solicitudesQuery = await _solicitudesCollection
+            .where('estado', isEqualTo: 'aprobada')
+            .where('folio_asignado', isGreaterThanOrEqualTo: prefix)
+            .where('folio_asignado', isLessThan: '${prefix}z')
+            .orderBy('folio_asignado', descending: true)
+            .limit(5)
+            .get();
+        
+        for (final doc in solicitudesQuery.docs) {
+          final data = doc.data() as Map<String, dynamic>?;
+          if (data != null) {
+            final folio = data['folio_asignado'] as String?;
+            if (folio != null && folio.startsWith(prefix)) {
+              allFolios.add(folio);
+            }
+          }
+        }
+      } catch (e) {
+        // Ignorar error si la colección no existe
+      }
+      
+      // Encontrar el número más alto
+      int maxNumber = 0;
+      for (final folio in allFolios) {
+        final numberStr = folio.replaceAll(RegExp(r'[^0-9]'), '');
+        if (numberStr.isNotEmpty) {
+          final number = int.tryParse(numberStr) ?? 0;
+          if (number > maxNumber) {
+            maxNumber = number;
+          }
+        }
+      }
+      
+      // El próximo número es el máximo + 1
+      final nextNumber = maxNumber + 1;
+      final newFolio = '$prefix${nextNumber.toString().padLeft(7, '0')}';
+      
+      print('Generando nuevo folio: $newFolio (basado en ${allFolios.length} folios existentes)');
+      
+      return newFolio;
     } catch (e) {
-      // Si hay error (por ejemplo, índice no creado), usar número aleatorio
-      final randomNumber = DateTime.now().millisecondsSinceEpoch % 1000000;
-      return '$prefix${randomNumber.toString().padLeft(7, '0')}';
+      // Si hay error general, usar timestamp para evitar duplicados
+      print('Error generando folio secuencial: $e');
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final uniqueNumber = (timestamp % 9999999) + 1; // Asegurar que no sea 0
+      return '$prefix${uniqueNumber.toString().padLeft(7, '0')}';
     }
   }
 
@@ -320,7 +370,7 @@ class EcoceProfileService {
           'ecoce_tipo_actor': tipoActor,
           'ecoce_subtipo': subtipo,
           'ecoce_nombre': nombre,
-          'ecoce_folio': 'PENDIENTE',
+          'ecoce_folio': 'PENDIENTE', // NO se asigna folio hasta la aprobación
           'ecoce_rfc': rfc,
           'ecoce_nombre_contacto': nombreContacto,
           'ecoce_correo_contacto': email,
@@ -451,6 +501,7 @@ class EcoceProfileService {
     required String approvedById,
     String? comments,
   }) async {
+    UserCredential? userCredential;
     try {
       // Obtener datos de la solicitud
       final solicitudDoc = await _solicitudesCollection.doc(solicitudId).get();
@@ -462,7 +513,7 @@ class EcoceProfileService {
       final datosPerfil = solicitudData['datos_perfil'] as Map<String, dynamic>;
       
       // Crear usuario en Auth
-      final userCredential = await _auth.createUserWithEmailAndPassword(
+      userCredential = await _auth.createUserWithEmailAndPassword(
         email: solicitudData['email'],
         password: solicitudData['password'],
       );
@@ -518,16 +569,34 @@ class EcoceProfileService {
       // Actualizar nombre del usuario
       await userCredential.user!.updateDisplayName(datosPerfil['ecoce_nombre']);
       
-      // Actualizar estado de la solicitud
-      await _solicitudesCollection.doc(solicitudId).update({
-        'estado': 'aprobada',
-        'fecha_revision': FieldValue.serverTimestamp(),
-        'revisado_por': approvedById,
-        'comentarios_revision': comments,
-        'usuario_creado_id': userId,
-        'folio_asignado': folio,
+      // Eliminar la solicitud de la colección solicitudes_cuentas
+      // ya que el usuario ya fue creado y aprobado
+      await _solicitudesCollection.doc(solicitudId).delete();
+      
+      // Registrar la aprobación en el audit log
+      await _firestore.collection('audit_logs').add({
+        'action': 'account_approved',
+        'solicitudId': solicitudId,
+        'userId': userId,
+        'userEmail': solicitudData['email'],
+        'userFolio': folio,
+        'userName': datosPerfil['ecoce_nombre'],
+        'approvedBy': approvedById,
+        'approvedAt': FieldValue.serverTimestamp(),
+        'comments': comments,
       });
+      
+      print('Usuario aprobado exitosamente: ${datosPerfil['ecoce_nombre']} con folio: $folio');
     } catch (e) {
+      // Si hay error, intentar limpiar lo que se haya creado
+      try {
+        // Si se creó el usuario en Auth pero falló algo después
+        if (userCredential != null && userCredential.user != null) {
+          await userCredential.user!.delete();
+        }
+      } catch (cleanupError) {
+        print('Error al limpiar usuario parcialmente creado: $cleanupError');
+      }
       rethrow;
     }
   }
@@ -934,7 +1003,7 @@ class EcoceProfileService {
         })
       );
       
-      // Marcar para eliminación en Auth
+      // Marcar para eliminación en Auth - LA CLOUD FUNCTION SE ACTIVARÁ AUTOMÁTICAMENTE
       deletionTasks.add(
         _firestore.collection('users_pending_deletion').doc(userId).set({
           'userId': userId,
@@ -953,10 +1022,18 @@ class EcoceProfileService {
       // 4. Limpiar el usuario del caché
       _userPathCache.remove(userId);
       
-      // El usuario no podrá acceder al sistema aunque exista en Auth porque:
-      // 1. No tiene perfil en ecoce_profiles
-      // 2. No tiene solicitud aprobada
-      // 3. La Cloud Function lo eliminará de Auth cuando se ejecute
+      // 5. Intentar eliminar el usuario de Auth directamente (si es posible)
+      try {
+        // NOTA: Esto solo funcionará si usamos Admin SDK
+        // En producción, la Cloud Function se encargará de esto
+        await _auth.currentUser?.delete();
+      } catch (e) {
+        // Ignorar error - la Cloud Function se encargará
+        print('No se pudo eliminar directamente de Auth (esperado): $e');
+      }
+      
+      // El usuario será eliminado de Auth por la Cloud Function
+      // Mientras tanto, no podrá acceder porque no tiene perfil
       
     } catch (e) {
       rethrow;
@@ -1025,7 +1102,6 @@ class EcoceProfileService {
       
       for (final doc in pendingDeletions.docs) {
         final data = doc.data();
-        final userId = data['userId'] as String;
         
         try {
           // Intentar eliminar el usuario de Firebase Auth
@@ -1604,7 +1680,6 @@ class EcoceProfileService {
             
             // Obtener la subcolección correspondiente
             final subcollection = _getProfileSubcollection(tipoActor, subtipo);
-            final collectionPath = getProfileCollectionPath(tipoActor, subtipo);
             
             // Verificar si ya existe en la subcolección
             final existingDoc = await subcollection.doc(userId).get();
