@@ -636,7 +636,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
       bottomNavigationBar: EcoceBottomNavigation(
         selectedIndex: _selectedIndex,
         onItemTapped: _onBottomNavTapped,
-        primaryColor: BioWayColors.ecoceGreen,
+        primaryColor: _primaryColor,
         items: EcoceNavigationConfigs.origenItems,
         fabConfig: FabConfig(
           icon: Icons.add,
@@ -644,6 +644,13 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
           tooltip: 'Nuevo Lote',
         ),
       ),
+      floatingActionButton: EcoceFloatingActionButton(
+        onPressed: _navigateToNewLot,
+        icon: Icons.add,
+        backgroundColor: _primaryColor,
+        tooltip: 'Nuevo Lote',
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
   }

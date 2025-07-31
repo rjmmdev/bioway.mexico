@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import '../../../models/lotes/lote_unificado_model.dart';
+import '../../../models/ecoce/ecoce_profile_model.dart';
 import '../../../services/lote_service.dart';
 import '../../../services/lote_unificado_service.dart';
+import '../../../services/user_session_service.dart';
 import 'origen_lote_detalle_screen.dart';
 import 'origen_crear_lote_screen.dart';
 import 'widgets/origen_lote_unificado_card.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
-import 'origen_config.dart';
 
 class OrigenLotesScreen extends StatefulWidget {
   const OrigenLotesScreen({super.key});
@@ -21,8 +22,21 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
   // Índice para la navegación del bottom bar
   final int _selectedIndex = 1; // Lotes está seleccionado
 
-  Color get _primaryColor => OrigenUserConfig.current.color;
   final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
+  final UserSessionService _sessionService = UserSessionService();
+  
+  // Datos del usuario
+  EcoceProfileModel? _userProfile;
+  
+  // Color primario basado en el tipo de usuario
+  Color get _primaryColor {
+    if (_userProfile?.ecoceSubtipo == 'A') {
+      return BioWayColors.darkGreen;
+    } else if (_userProfile?.ecoceSubtipo == 'P') {
+      return BioWayColors.ppPurple;
+    }
+    return BioWayColors.ecoceGreen;
+  }
 
   // Filtros
   String _filtroMaterial = 'Todos';
@@ -72,7 +86,21 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
   @override
   void initState() {
     super.initState();
+    _loadUserData();
     _loadLotes();
+  }
+  
+  Future<void> _loadUserData() async {
+    try {
+      final profile = await _sessionService.getCurrentUserProfile();
+      if (mounted) {
+        setState(() {
+          _userProfile = profile;
+        });
+      }
+    } catch (e) {
+      // En caso de error, continuar con el color por defecto
+    }
   }
   
   void _loadLotes() {
@@ -171,9 +199,9 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF8F9FA),
         body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
+          bottom: false,
+          child: Column(
+            children: [
             // Header minimalista
             Container(
               color: Colors.white,
@@ -193,7 +221,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                                 style: TextStyle(
                                   fontSize: 32,
                                   fontWeight: FontWeight.w800,
-                                  color: BioWayColors.darkGreen,
+                                  color: _primaryColor,
                                   height: 1.1,
                                 ),
                               ),
@@ -374,20 +402,26 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
             ),
           ],
         ),
-      ),
-
-      // Bottom Navigation Bar con FAB
-      bottomNavigationBar: EcoceBottomNavigation(
-        selectedIndex: _selectedIndex,
-        onItemTapped: _onBottomNavTapped,
-        primaryColor: BioWayColors.ecoceGreen,
-        items: EcoceNavigationConfigs.origenItems,
-        fabConfig: FabConfig(
-          icon: Icons.add,
+        ),
+        // Bottom Navigation Bar con FAB
+        bottomNavigationBar: EcoceBottomNavigation(
+          selectedIndex: _selectedIndex,
+          onItemTapped: _onBottomNavTapped,
+          primaryColor: _primaryColor,
+          items: EcoceNavigationConfigs.origenItems,
+          fabConfig: FabConfig(
+            icon: Icons.add,
+            onPressed: _navigateToNewLot,
+            tooltip: 'Nuevo Lote',
+          ),
+        ),
+        floatingActionButton: EcoceFloatingActionButton(
           onPressed: _navigateToNewLot,
+          icon: Icons.add,
+          backgroundColor: _primaryColor,
           tooltip: 'Nuevo Lote',
         ),
-      ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
   }

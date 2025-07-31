@@ -346,6 +346,7 @@ class EcoceProfileService {
     double? longitud,
     List<String>? actividadesAutorizadas,
     Map<String, Map<String, dynamic>>? documentosInfo,
+    String? usuarioId, // ID del usuario ya creado en Auth
   }) async {
     try {
       // Inicializar Firebase para ECOCE si no está inicializado
@@ -401,7 +402,7 @@ class EcoceProfileService {
       // Debug: imprimir documentos recibidos
       debugPrint('Documentos recibidos en createAccountRequest:');
       documentos?.forEach((key, value) {
-        debugPrint('  $key: ${value != null ? 'URL presente' : 'null'}');
+        debugPrint('  $key: ${value != null ? 'URL presente (${value.substring(0, 50)}...)' : 'null'}');
       });
       
       // Crear documento de solicitud
@@ -463,37 +464,16 @@ class EcoceProfileService {
         debugPrint('  $field: ${datosPerfilDebug[field] != null ? 'URL presente' : 'null'}');
       });
 
-      // Crear usuario en Firebase Auth DURANTE EL REGISTRO
-      // Esto evita el problema de cambio de sesión durante la aprobación
-      UserCredential? userCredential;
-      String? userId;
-      
-      try {
-        userCredential = await _auth.createUserWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
-        
-        userId = userCredential.user!.uid;
-        
-        // Actualizar el nombre del usuario
-        await userCredential.user!.updateDisplayName(nombre);
-        
-        // IMPORTANTE: Cerrar sesión inmediatamente después de crear el usuario
-        // para que no quede autenticado hasta que sea aprobado
-        await _auth.signOut();
-        
-        // Actualizar solicitudData con el ID del usuario creado
-        solicitudData['usuario_creado_id'] = userId;
+      // El usuario ya fue creado en Auth antes de llamar este método
+      // Solo necesitamos guardar el ID en la solicitud
+      if (usuarioId != null) {
+        solicitudData['usuario_creado_id'] = usuarioId;
         solicitudData['auth_creado'] = true;
-        
-        debugPrint('✅ Usuario creado en Auth con ID: $userId');
-      } catch (authError) {
-        debugPrint('⚠️ Error creando usuario en Auth: $authError');
-        // Si falla la creación en Auth, continuar sin el usuario
-        // El maestro deberá crearlo manualmente durante la aprobación
+        debugPrint('✅ Usuario ya creado en Auth con ID: $usuarioId');
+      } else {
+        // Si por alguna razón no se pasó el usuarioId, marcar como no creado
         solicitudData['auth_creado'] = false;
-        solicitudData['auth_error'] = authError.toString();
+        debugPrint('⚠️ ADVERTENCIA: No se recibió usuarioId');
       }
       
       // Guardar solicitud en Firestore (con o sin usuario Auth creado)
