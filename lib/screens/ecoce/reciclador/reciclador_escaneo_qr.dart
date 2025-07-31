@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/qr_utils.dart';
 import '../shared/widgets/qr_scanner_widget.dart';
 import 'reciclador_lotes_registro.dart';
 
@@ -13,17 +14,20 @@ class RecicladorEscaneoQR extends StatelessWidget {
     this.isAddingMore = false,
   });
 
-  void _handleCodeScanned(BuildContext context, String code) {
+  void _handleCodeScanned(BuildContext context, String qrCode) {
+    // Extraer el ID del lote del código QR
+    final loteId = QRUtils.extractLoteIdFromQR(qrCode);
+    
     if (isAddingMore) {
-      // Si estamos agregando más lotes, devolver el código
-      Navigator.pop(context, code);
+      // Si estamos agregando más lotes, devolver el ID
+      Navigator.pop(context, loteId);
     } else {
       // Si es el primer lote, navegar a la pantalla de registro
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => ScannedLotsScreen(
-            initialScannedCode: code,
+            initialScannedCode: loteId,
           ),
         ),
       );

@@ -4,7 +4,7 @@ import '../../../utils/colors.dart';
 import '../../../services/lote_service.dart';
 import '../shared/utils/dialog_utils.dart';
 import 'qr_scanner_screen.dart';
-import 'reciclador_formulario_entrada.dart';
+// import 'reciclador_formulario_entrada.dart'; // This file has been removed
 import 'widgets/reciclador_lote_card.dart';
 
 // Modelo temporal para representar un lote
@@ -237,16 +237,27 @@ class _ScannedLotsScreenState extends State<ScannedLotsScreen> {
 
     HapticFeedback.mediumImpact();
 
-    // Navegar a la tercera pantalla (formulario)
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => RecicladorFormularioEntrada(
-          lotIds: _scannedLots.map((lot) => lot.id).toList(),
-          totalLotes: _scannedLots.length,
+    // TODO: This screen needs to be updated to use the new unified reception flow
+    // The old RecicladorFormularioEntrada has been removed
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Esta función está siendo actualizada al nuevo flujo de recepción'),
+        backgroundColor: BioWayColors.warning,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
         ),
       ),
     );
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(
+    //     builder: (context) => RecicladorFormularioEntrada(
+    //       lotIds: _scannedLots.map((lot) => lot.id).toList(),
+    //       totalLotes: _scannedLots.length,
+    //     ),
+    //   ),
+    // );
   }
 
   @override

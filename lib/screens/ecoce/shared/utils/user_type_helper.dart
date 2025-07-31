@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../utils/colors.dart';
 import '../../../../models/ecoce/ecoce_profile_model.dart';
 import '../widgets/ecoce_bottom_navigation.dart';
+import '../screens/receptor_recepcion_pasos_screen.dart';
+import '../../laboratorio/laboratorio_escaneo.dart';
 
 /// Helper class for user type related operations
 class UserTypeHelper {
@@ -26,7 +28,7 @@ class UserTypeHelper {
       case 'V':
         return BioWayColors.petBlue; // Transporte
       case 'T':
-        return BioWayColors.ecoceGreen; // Transformador
+        return Colors.orange; // Transformador
       case 'L':
         return BioWayColors.otherPurple; // Laboratorio
       case 'M':
@@ -76,21 +78,42 @@ class UserTypeHelper {
       case 'R':
         return FabConfig(
           icon: Icons.add,
-          onPressed: () => Navigator.pushNamed(context, '/reciclador_escaneo'),
-          tooltip: 'Escanear Lote',
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ReceptorRecepcionPasosScreen(
+                userType: 'reciclador',
+              ),
+            ),
+          ),
+          tooltip: 'Recibir lote',
         );
       case 'V':
         return null; // Transportista no tiene FAB
       case 'T':
         return FabConfig(
           icon: Icons.add,
-          onPressed: () => Navigator.pushNamed(context, '/transformador_recibir_lote'),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ReceptorRecepcionPasosScreen(
+                userType: 'transformador',
+              ),
+            ),
+          ),
           tooltip: 'Recibir Lote',
         );
       case 'L':
         return FabConfig(
           icon: Icons.add,
-          onPressed: () => Navigator.pushNamed(context, '/laboratorio_gestion_muestras'),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const LaboratorioEscaneoScreen(),
+              ),
+            );
+          },
           tooltip: 'Nueva Muestra',
         );
       case 'M':

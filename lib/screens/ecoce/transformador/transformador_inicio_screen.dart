@@ -12,6 +12,10 @@ import '../shared/widgets/unified_stat_card.dart';
 import '../shared/utils/material_utils.dart';
 import '../shared/utils/user_type_helper.dart';
 import 'transformador_lote_detalle_screen.dart';
+import '../shared/screens/usuario_qr_screen.dart';
+import '../shared/screens/receptor_recepcion_pasos_screen.dart';
+import 'utils/transformador_navigation_helper.dart';
+import 'transformador_main_screen.dart';
 
 class TransformadorInicioScreen extends StatefulWidget {
   const TransformadorInicioScreen({super.key});
@@ -38,18 +42,23 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
 
   void _navigateToRecibirLotes() {
     HapticFeedback.lightImpact();
-    Navigator.pushNamed(context, '/transformador_recibir_lote');
+    // Usar el flujo de recepción por pasos igual que el reciclador
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ReceptorRecepcionPasosScreen(
+          userType: 'transformador',
+        ),
+      ),
+    );
   }
 
   void _navigateToDocumentacion() {
     HapticFeedback.lightImpact();
-    // Navegar a la pantalla de producción con la pestaña de documentación seleccionada (tab 0)
-    Navigator.pushReplacementNamed(
-      context, 
-      '/transformador_produccion',
-      arguments: {'initialTab': 0},
-    );
+    // Navegar a la pantalla de producción con la pestaña de documentación seleccionada
+    TransformadorNavigationHelper.navigateToDocumentation(context, replacement: true);
   }
+  
 
   void _actualizarDocumentacion(String loteId, LoteTransformadorModel lote) {
     HapticFeedback.lightImpact();
@@ -66,17 +75,31 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
   }
 
   void _onBottomNavTapped(int index) {
-    UserTypeHelper.handleNavigation(
-      context,
-      _userProfile?.ecoceTipoActor,
-      index,
-      0, // Current index (inicio)
+    if (index == 0) return; // Ya estamos en inicio
+    
+    // Usar navegación optimizada para mantener estado
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => TransformadorMainScreen(
+          initialIndex: index,
+        ),
+        transitionDuration: Duration.zero, // Sin animación para mayor fluidez
+        reverseTransitionDuration: Duration.zero,
+      ),
     );
   }
 
   void _onAddPressed() {
     HapticFeedback.lightImpact();
-    Navigator.pushNamed(context, '/transformador_recibir_lote');
+    // Usar el flujo de recepción por pasos igual que el reciclador
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ReceptorRecepcionPasosScreen(
+          userType: 'transformador',
+        ),
+      ),
+    );
   }
 
   void _navigateToLoteDetalle(LoteTransformadorModel lote) {
@@ -325,7 +348,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                   SizedBox(width: isCompact ? 8 : 12),
                   Container(
                     decoration: BoxDecoration(
-                      color: BioWayColors.ecoceGreen,
+                      color: Colors.orange,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Material(
@@ -475,7 +498,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
     } else if (producto.toLowerCase().contains('ps') || producto.toLowerCase().contains('poliestireno')) {
       return Colors.orange;
     } else {
-      return BioWayColors.ecoceGreen;
+      return Colors.orange;
     }
   }
 
@@ -570,8 +593,8 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      BioWayColors.ecoceGreen,
-                      BioWayColors.ecoceGreen.withValues(alpha: 0.8),
+                      Colors.orange,
+                      Colors.orange.withValues(alpha: 0.8),
                     ],
                   ),
                 ),
@@ -678,7 +701,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                                     Icon(
                                       Icons.factory,
                                       size: 16,
-                                      color: BioWayColors.ecoceGreen,
+                                      color: Colors.orange,
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
@@ -686,7 +709,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
-                                        color: BioWayColors.ecoceGreen,
+                                        color: Colors.orange,
                                       ),
                                     ),
                                   ],
@@ -699,7 +722,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: BioWayColors.ecoceGreen,
+                                  color: Colors.orange,
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
@@ -753,7 +776,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                                   value: '$_materialProcesado',
                                   unit: 'ton',
                                   icon: Icons.scale,
-                                  color: BioWayColors.ecoceGreen,
+                                  color: Colors.orange,
                                   height: 70,
                                 ),
                               ),
@@ -793,14 +816,14 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              BioWayColors.ecoceGreen,
-                              BioWayColors.ecoceGreen.withValues(alpha: 0.8),
+                              Colors.orange,
+                              Colors.orange.withValues(alpha: 0.8),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
+                              color: Colors.orange.withValues(alpha: 0.3),
                               blurRadius: 12,
                               offset: const Offset(0, 6),
                             ),
@@ -876,7 +899,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                           onPressed: _navigateToDocumentacion,
                           icon: Icon(
                             Icons.description_outlined,
-                            color: BioWayColors.ecoceGreen,
+                            color: Colors.orange,
                           ),
                           label: const Text(
                             'Gestionar Documentación',
@@ -886,9 +909,9 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                             ),
                           ),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: BioWayColors.ecoceGreen,
+                            foregroundColor: Colors.orange,
                             side: BorderSide(
-                              color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
+                              color: Colors.orange.withValues(alpha: 0.3),
                               width: 1.5,
                             ),
                             shape: RoundedRectangleBorder(
@@ -920,7 +943,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(vertical: 40),
                                   child: CircularProgressIndicator(
-                                    color: BioWayColors.ecoceGreen,
+                                    color: Colors.orange,
                                   ),
                                 ),
                               );
@@ -980,7 +1003,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
       bottomNavigationBar: EcoceBottomNavigation(
         selectedIndex: _selectedIndex,
         onItemTapped: _onBottomNavTapped,
-        primaryColor: BioWayColors.ecoceGreen,
+        primaryColor: Colors.orange,
         items: EcoceNavigationConfigs.transformadorItems,
         fabConfig: FabConfig(
           icon: Icons.add,
@@ -992,7 +1015,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
       floatingActionButton: EcoceFloatingActionButton(
         onPressed: _onAddPressed,
         icon: Icons.add,
-        backgroundColor: BioWayColors.ecoceGreen,
+        backgroundColor: Colors.orange,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),

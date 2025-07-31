@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'laboratorio_registro_muestras.dart';
-import '../shared/widgets/qr_scanner_widget.dart';
-import '../../../utils/colors.dart';
+import '../shared/widgets/shared_qr_scanner_screen.dart';
+import '../../../utils/qr_utils.dart';
 
-class LaboratorioEscaneoScreen extends StatelessWidget {
+class LaboratorioEscaneoScreen extends StatefulWidget {
   final bool isAddingMore;
 
   const LaboratorioEscaneoScreen({
@@ -11,32 +12,82 @@ class LaboratorioEscaneoScreen extends StatelessWidget {
     this.isAddingMore = false,
   });
 
-  void _navigateToScannedMuestras(BuildContext context, String muestraId) {
-    // Si estamos agregando más muestras, devolver el ID
-    if (isAddingMore) {
-      Navigator.pop(context, muestraId);
-    } else {
-      // Si es la primera vez, navegar a la pantalla de muestras escaneadas
+  @override
+  State<LaboratorioEscaneoScreen> createState() => _LaboratorioEscaneoScreenState();
+}
+
+class _LaboratorioEscaneoScreenState extends State<LaboratorioEscaneoScreen> {
+  void _navigateToScannedMuestras(String qrCode) {
+    // Verificar si es un código QR de muestra de megalote
+    if (qrCode.startsWith('MUESTRA-MEGALOTE-')) {
+      // Es una muestra de megalote, procesarla directamente
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => LaboratorioRegistroMuestrasScreen(initialMuestraId: muestraId),
+          builder: (context) => LaboratorioRegistroMuestrasScreen(
+            initialMuestraId: qrCode, // Pasar el QR completo
+            isMegaloteSample: true,
+          ),
         ),
       );
+    } else {
+      // Es un lote normal, extraer el ID
+      final loteId = QRUtils.extractLoteIdFromQR(qrCode);
+      
+      // Si estamos agregando más muestras, devolver el ID
+      if (widget.isAddingMore) {
+        Navigator.pop(context, loteId);
+      } else {
+        // Si es la primera vez, navegar a la pantalla de muestras escaneadas
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LaboratorioRegistroMuestrasScreen(
+              initialMuestraId: loteId,
+              isMegaloteSample: false,
+            ),
+          ),
+        );
+      }
+    }
+  }
+  
+  Future<void> _scanQR() async {
+    HapticFeedback.lightImpact();
+    
+    final qrCode = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SharedQRScannerScreen(
+          isAddingMore: widget.isAddingMore,
+        ),
+      ),
+    );
+    
+    if (qrCode != null && mounted) {
+      _navigateToScannedMuestras(qrCode);
     }
   }
 
   @override
+  void initState() {
+    super.initState();
+    // Iniciar el escaneo automáticamente
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scanQR();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return SharedQRScannerScreen(
-      title: 'Registrar Nueva Muestra',
-      subtitle: 'Paso 1: Escanear muestra',
-      onCodeScanned: (code) => _navigateToScannedMuestras(context, code),
-      primaryColor: BioWayColors.ecoceGreen,
-      headerLabel: 'Laboratorio',
-      headerValue: 'L0000001',
-      userType: 'laboratorio',
-      isAddingMore: isAddingMore,
+    // Pantalla temporal mientras se abre el scanner
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF9333EA), // Morado para laboratorio
+        ),
+      ),
     );
   }
 }

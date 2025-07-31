@@ -29,6 +29,9 @@ class LoteService {
   static const String LOTES_RECICLADOR = 'lotes_reciclador';
   static const String LOTES_LABORATORIO = 'lotes_laboratorio';
   static const String LOTES_TRANSFORMADOR = 'lotes_transformador';
+  
+  // Nueva colección unificada
+  static const String LOTES = 'lotes';
 
   // === ORIGEN ===
   Future<String> crearLoteOrigen(LoteOrigenModel lote) async {
@@ -40,25 +43,182 @@ class LoteService {
     }
   }
 
+  // Obtener TODOS los lotes creados por el usuario Origen (para estadísticas)
+  Stream<Map<String, dynamic>> getEstadisticasOrigenCompletas() {
+    final userId = _currentUserId;
+    if (userId == null) return Stream.value({'totalLotes': 0, 'pesoTotal': 0.0});
+    
+    return _firestore
+        .collectionGroup('datos_generales')
+        .where('creado_por', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) {
+          int totalLotes = 0;
+          double pesoTotal = 0.0;
+          
+          for (var doc in snapshot.docs) {
+            final data = doc.data();
+            
+            // Contar TODOS los lotes creados, sin importar el proceso_actual
+            totalLotes++;
+            
+            // Sumar el peso inicial de cada lote
+            final peso = (data['peso'] as num?)?.toDouble() ?? 0.0;
+            pesoTotal += peso;
+          }
+          
+          return {
+            'totalLotes': totalLotes,
+            'pesoTotal': pesoTotal,
+          };
+        });
+  }
+
   Stream<List<LoteOrigenModel>> getLotesOrigen() {
     final userId = _currentUserId;
     if (userId == null) return Stream.value([]);
     
+    // Buscar en la nueva estructura unificada - simplificado para evitar índices complejos
     return _firestore
-        .collection(LOTES_ORIGEN)
-        .where('userId', isEqualTo: userId)
-        .orderBy('ecoce_origen_fecha_nace', descending: true)
+        .collectionGroup('datos_generales')
+        .where('creado_por', isEqualTo: userId)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => LoteOrigenModel.fromFirestore(doc))
-            .toList());
+        .asyncMap((snapshot) async {
+          List<LoteOrigenModel> lotes = [];
+          
+          for (var doc in snapshot.docs) {
+            final data = doc.data();
+            
+            // Filtrar solo lotes en proceso origen
+            if (data['proceso_actual'] != 'origen') continue;
+            
+            // Extraer el ID del lote del path del documento
+            final pathParts = doc.reference.path.split('/');
+            if (pathParts.length >= 2) {
+              final loteId = pathParts[pathParts.length - 3]; // lotes/[ID]/datos_generales/info
+              
+              try {
+                // Obtener los datos completos del proceso origen
+                final origenDoc = await _firestore
+                    .collection(LOTES)
+                    .doc(loteId)
+                    .collection('origen')
+                    .doc('data')
+                    .get();
+                    
+                if (origenDoc.exists) {
+                  final origenData = origenDoc.data()!;
+                  
+                  // Crear un LoteOrigenModel con todos los datos
+                  lotes.add(LoteOrigenModel(
+                    id: loteId,
+                    userId: userId,
+                    fechaNace: data['fecha_creacion'] != null 
+                        ? (data['fecha_creacion'] as Timestamp).toDate() 
+                        : DateTime.now(),
+                    direccion: origenData['direccion'] ?? 'Sin dirección',
+                    fuente: origenData['fuente'] ?? '',
+                    presentacion: origenData['presentacion'] ?? '',
+                    tipoPoli: origenData['tipo_poli'] ?? '',
+                    origen: origenData['origen'] ?? 'Post-consumo',
+                    pesoNace: (origenData['peso_nace'] as num?)?.toDouble() ?? 0.0,
+                    condiciones: origenData['condiciones'] ?? '',
+                    nombreOpe: origenData['nombre_operador'] ?? '',
+                    firmaOpe: origenData['firma_operador'],
+                    comentarios: origenData['comentarios'],
+                    eviFoto: List<String>.from(origenData['evidencias_foto'] ?? []),
+                  ));
+                }
+              } catch (e) {
+                // Si falla obtener los datos de origen, usar datos generales
+                lotes.add(LoteOrigenModel(
+                  id: loteId,
+                  userId: userId,
+                  fechaNace: data['fecha_creacion'] != null 
+                      ? (data['fecha_creacion'] as Timestamp).toDate() 
+                      : DateTime.now(),
+                  direccion: 'Sin dirección',
+                  fuente: data['material_fuente'] ?? '',
+                  presentacion: data['material_presentacion'] ?? '',
+                  tipoPoli: data['material_tipo'] ?? '',
+                  origen: 'Post-consumo',
+                  pesoNace: (data['peso'] as num?)?.toDouble() ?? 0.0,
+                  condiciones: '',
+                  nombreOpe: data['origen_nombre'] ?? '',
+                  eviFoto: [],
+                ));
+              }
+            }
+          }
+          
+          // Ordenar manualmente por fecha
+          lotes.sort((a, b) => b.fechaNace.compareTo(a.fechaNace));
+          
+          return lotes;
+        });
   }
 
   Future<LoteOrigenModel?> getLoteOrigenById(String id) async {
     try {
-      final doc = await _firestore.collection(LOTES_ORIGEN).doc(id).get();
-      if (doc.exists) {
-        return LoteOrigenModel.fromFirestore(doc);
+      // Buscar en la nueva estructura unificada
+      final datosDoc = await _firestore
+          .collection(LOTES)
+          .doc(id)
+          .collection('datos_generales')
+          .doc('info')
+          .get();
+          
+      if (datosDoc.exists) {
+        final data = datosDoc.data()!;
+        
+        // Obtener también los datos específicos del proceso origen
+        final origenDoc = await _firestore
+            .collection(LOTES)
+            .doc(id)
+            .collection('origen')
+            .doc('data')
+            .get();
+            
+        if (origenDoc.exists) {
+          final origenData = origenDoc.data()!;
+          
+          return LoteOrigenModel(
+            id: id,
+            userId: data['creado_por'] ?? _currentUserId ?? '',
+            fechaNace: data['fecha_creacion'] != null 
+                ? (data['fecha_creacion'] as Timestamp).toDate() 
+                : DateTime.now(),
+            direccion: origenData['direccion'] ?? 'Sin dirección',
+            fuente: origenData['fuente'] ?? '',
+            presentacion: origenData['presentacion'] ?? '',
+            tipoPoli: origenData['tipo_poli'] ?? '',
+            origen: origenData['origen'] ?? 'Post-consumo',
+            pesoNace: (origenData['peso_nace'] as num?)?.toDouble() ?? 0.0,
+            condiciones: origenData['condiciones'] ?? '',
+            nombreOpe: origenData['nombre_operador'] ?? '',
+            firmaOpe: origenData['firma_operador'],
+            comentarios: origenData['comentarios'],
+            eviFoto: List<String>.from(origenData['evidencias_foto'] ?? []),
+          );
+        } else {
+          // Si no hay datos de origen, usar solo datos generales
+          return LoteOrigenModel(
+            id: id,
+            userId: data['creado_por'] ?? _currentUserId ?? '',
+            fechaNace: data['fecha_creacion'] != null 
+                ? (data['fecha_creacion'] as Timestamp).toDate() 
+                : DateTime.now(),
+            direccion: 'Sin dirección',
+            fuente: data['material_fuente'] ?? '',
+            presentacion: data['material_presentacion'] ?? '',
+            tipoPoli: data['material_tipo'] ?? '',
+            origen: 'Post-consumo',
+            pesoNace: (data['peso'] as num?)?.toDouble() ?? 0.0,
+            condiciones: '',
+            nombreOpe: data['origen_nombre'] ?? '',
+            eviFoto: [],
+          );
+        }
       }
       return null;
     } catch (e) {
@@ -144,19 +304,145 @@ class LoteService {
     final userId = _currentUserId;
     if (userId == null) return Stream.value([]);
     
-    Query query = _firestore.collection(LOTES_RECICLADOR)
-        .where('userId', isEqualTo: userId);
-    
-    if (estado != null) {
-      query = query.where('estado', isEqualTo: estado);
+    // Usar collection group con índice ya creado
+    return _firestore
+        .collectionGroup('datos_generales')
+        .where('proceso_actual', isEqualTo: 'reciclador')
+        .snapshots()
+        .asyncMap((snapshot) async {
+      final lotes = <LoteRecicladorModel>[];
+      
+      for (final doc in snapshot.docs) {
+        try {
+          // Obtener el ID del lote desde la ruta del documento
+          final pathSegments = doc.reference.path.split('/');
+          final loteId = pathSegments[pathSegments.length - 3];
+          
+          final datosGenerales = doc.data();
+          
+          // Obtener el documento del proceso reciclador
+          final recicladorDoc = await _firestore
+              .collection('lotes')
+              .doc(loteId)
+              .collection('reciclador')
+              .doc('data')
+              .get();
+          
+          if (recicladorDoc.exists) {
+            final recicladorData = recicladorDoc.data()!;
+            
+            // Verificar que sea del usuario actual
+            // Primero intentar con reciclador_id, si no existe usar usuario_id
+            final recicladorId = recicladorData['reciclador_id'] ?? recicladorData['usuario_id'];
+            if (recicladorId != userId) continue;
+            
+            // Obtener el tipo de polímero del material
+            final tipoMaterial = datosGenerales['material_tipo'] ?? '';
+            Map<String, double> tipoPoliMap = {};
+            
+            // Crear mapa de tipo poli según el material
+            if (tipoMaterial.isNotEmpty) {
+              tipoPoliMap[tipoMaterial] = 100.0; // 100% del material especificado
+            }
+            
+            // Si no hay peso_neto, usar peso_recibido como peso neto
+            final pesoNeto = recicladorData['peso_neto'] ?? 
+                            recicladorData['peso_recibido'] ?? 
+                            recicladorData['peso_entrada'] ?? 
+                            0.0;
+            
+            // Crear modelo compatible con LoteRecicladorModel
+            final loteModel = LoteRecicladorModel(
+              id: loteId,
+              userId: recicladorData['usuario_id'] ?? '',
+              conjuntoLotes: [loteId], // Por ahora solo el lote actual
+              loteEntrada: loteId,
+              tipoPoli: tipoPoliMap.isNotEmpty ? tipoPoliMap : null,
+              pesoBruto: (recicladorData['peso_entrada'] ?? 0.0).toDouble(),
+              pesoNeto: pesoNeto.toDouble(),
+              nombreOpeEntrada: recicladorData['operador_nombre'] ?? '',
+              firmaEntrada: recicladorData['firma_operador'],
+              // Datos de salida
+              pesoResultante: (recicladorData['peso_neto_salida'] ?? 0.0).toDouble(),
+              merma: (recicladorData['merma'] ?? 0.0).toDouble(),
+              procesos: recicladorData['procesos_aplicados'] != null 
+                  ? List<String>.from(recicladorData['procesos_aplicados']) 
+                  : [],
+              nombreOpeSalida: recicladorData['operador_salida_nombre'],
+              firmaSalida: recicladorData['firma_salida'],
+              eviFoto: recicladorData['evidencias_foto_salida'] != null 
+                  ? List<String>.from(recicladorData['evidencias_foto_salida']) 
+                  : [],
+              observaciones: recicladorData['comentarios_salida'],
+              // Documentación
+              fTecnicaPellet: recicladorData['f_tecnica_pellet'],
+              repResultReci: recicladorData['rep_result_reci'],
+              // Estado
+              estado: _mapearEstadoReciclador(recicladorData),
+            );
+            
+            // Aplicar filtro de estado si se especifica
+            if (estado == null || loteModel.estado == estado) {
+              lotes.add(loteModel);
+            }
+          }
+        } catch (e) {
+          print('Error procesando lote del sistema unificado: $e');
+        }
+      }
+      
+      // Ordenar por fecha (usar fecha_creacion de datos_generales o ID como fallback)
+      lotes.sort((a, b) {
+        // Intentar usar el ID que contiene timestamp
+        final timeA = a.id?.split('-').last ?? '';
+        final timeB = b.id?.split('-').last ?? '';
+        return timeB.compareTo(timeA);
+      });
+      
+      return lotes;
+    });
+  }
+  
+  // Método auxiliar para mapear el estado del reciclador
+  String _mapearEstadoReciclador(Map<String, dynamic> data) {
+    // Si tiene documentación completa, está finalizado
+    if ((data['f_tecnica_pellet'] != null && data['f_tecnica_pellet'] != '') && 
+        (data['rep_result_reci'] != null && data['rep_result_reci'] != '')) {
+      return 'finalizado';
     }
     
-    return query
-        .orderBy('fecha_creacion', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => LoteRecicladorModel.fromFirestore(doc))
-            .toList());
+    // Si tiene formulario de salida completo (todos los campos requeridos), está en documentación
+    if (data['peso_neto_salida'] != null && data['peso_neto_salida'] > 0 &&
+        data['operador_salida_nombre'] != null && data['operador_salida_nombre'] != '' &&
+        data['firma_salida'] != null && data['firma_salida'] != '' &&
+        data['procesos_aplicados'] != null && (data['procesos_aplicados'] as List).isNotEmpty &&
+        data['tipo_poli_salida'] != null && data['tipo_poli_salida'] != '' &&
+        data['presentacion_salida'] != null && data['presentacion_salida'] != '') {
+      return 'documentado';
+    }
+    
+    // Si solo tiene documentación parcial, sigue en documentación
+    if (data['f_tecnica_pellet'] != null || data['rep_result_reci'] != null) {
+      return 'documentado';
+    }
+    
+    // Si tiene algún dato de salida (formulario parcial), está en salida
+    if (data['peso_neto_salida'] != null || 
+        data['operador_salida_nombre'] != null ||
+        data['firma_salida'] != null ||
+        data['procesos_aplicados'] != null ||
+        data['tipo_poli_salida'] != null ||
+        data['presentacion_salida'] != null) {
+      return 'salida';
+    }
+    
+    // Si es un lote recién recibido (solo tiene datos de entrada), va a salida
+    if (data['peso_bruto'] != null || data['peso_neto'] != null || data['peso_entrada'] != null) {
+      return 'salida';
+    }
+    
+    // Por defecto, salida (para lotes recién transferidos)
+    return 'salida';
   }
 
   // === LABORATORIO ===

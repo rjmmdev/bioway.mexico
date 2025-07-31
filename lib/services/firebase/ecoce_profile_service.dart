@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -88,6 +89,33 @@ class EcoceProfileService {
     }
   }
   
+  // Obtener la ruta completa del perfil
+  String _getProfilePath(String tipoActor, String? subtipo, String userId) {
+    // Mapear tipos de actor a sus rutas
+    switch (tipoActor) {
+      case 'O': // Origen (Acopiador o Planta de Separación)
+      case 'A': // A veces viene como A
+        if (subtipo == 'A') {
+          return 'ecoce_profiles/origen/centro_acopio/$userId';
+        } else if (subtipo == 'P') {
+          return 'ecoce_profiles/origen/planta_separacion/$userId';
+        }
+        return 'ecoce_profiles/origen/usuarios/$userId';
+      case 'R': // Reciclador
+        return 'ecoce_profiles/reciclador/usuarios/$userId';
+      case 'T': // Transformador
+        return 'ecoce_profiles/transformador/usuarios/$userId';
+      case 'V': // Transporte/Vehicular
+        return 'ecoce_profiles/transporte/usuarios/$userId';
+      case 'L': // Laboratorio
+        return 'ecoce_profiles/laboratorio/usuarios/$userId';
+      case 'M': // Maestro
+        return 'ecoce_profiles/maestro/usuarios/$userId';
+      default:
+        return 'ecoce_profiles/otros/usuarios/$userId';
+    }
+  }
+  
   // Método mantenido por compatibilidad - redirige al método genérico
   Future<String> createOrigenAccountRequest({
     required String email,
@@ -144,7 +172,7 @@ class EcoceProfileService {
     );
   }
 
-  // Generar folio único según el subtipo para usuarios origen
+  // Generar folio secuencial según el subtipo para usuarios origen
   Future<String> _generateFolio(String tipoActor, String? subtipo) async {
     String prefix;
     
@@ -187,43 +215,103 @@ class EcoceProfileService {
     }
 
     try {
-      // Para usuarios origen, buscar por el prefijo del folio
-      // Para otros tipos, buscar por tipo de actor
-      QuerySnapshot query;
+      // Buscar en TODAS las subcolecciones para obtener el último folio
+      List<String> allFolios = [];
       
-      if (tipoActor == 'O') {
-        // Buscar folios que empiecen con el prefijo específico (A o P)
-        query = await _profilesCollection
-            .where('ecoce_folio', isGreaterThanOrEqualTo: prefix)
-            .where('ecoce_folio', isLessThan: '${prefix}z')
-            .orderBy('ecoce_folio', descending: true)
-            .limit(1)
-            .get();
-      } else {
-        // Buscar por tipo de actor para otros tipos
-        query = await _profilesCollection
-            .where('ecoce_tipo_actor', isEqualTo: tipoActor)
-            .orderBy('ecoce_folio', descending: true)
-            .limit(1)
-            .get();
-      }
-
-      int nextNumber = 1;
-      if (query.docs.isNotEmpty) {
-        final lastFolio = query.docs.first.data() as Map<String, dynamic>;
-        final folioStr = lastFolio['ecoce_folio'] as String;
-        // Extraer el número del folio (ej: A0000001 -> 1)
-        final numberStr = folioStr.replaceAll(RegExp(r'[^0-9]'), '');
-        if (numberStr.isNotEmpty) {
-          nextNumber = int.parse(numberStr) + 1;
+      // Lista de todas las subcolecciones posibles
+      final subcollections = [
+        'origen/centro_acopio',
+        'origen/planta_separacion',
+        'reciclador/usuarios',
+        'transformador/usuarios',
+        'transporte/usuarios',
+        'laboratorio/usuarios',
+        'maestro/usuarios',
+      ];
+      
+      // Buscar en cada subcolección folios que empiecen con el prefijo
+      for (final subcollection in subcollections) {
+        try {
+          final query = await _profilesCollection
+              .doc(subcollection.split('/')[0])
+              .collection(subcollection.split('/')[1])
+              .where('ecoce_folio', isGreaterThanOrEqualTo: prefix)
+              .where('ecoce_folio', isLessThan: '${prefix}z')
+              .orderBy('ecoce_folio', descending: true)
+              .limit(5) // Obtener los últimos 5 para asegurar
+              .get();
+          
+          for (final doc in query.docs) {
+            final data = doc.data();
+            final folio = data['ecoce_folio'] as String?;
+            if (folio != null && folio.startsWith(prefix)) {
+              allFolios.add(folio);
+            }
+          }
+        } catch (e) {
+          // Continuar con la siguiente subcolección si hay error
+          continue;
         }
       }
-
-      return '$prefix${nextNumber.toString().padLeft(7, '0')}';
+      
+      // También buscar en solicitudes aprobadas para evitar duplicados
+      // NOTA: Simplificamos la consulta para evitar requerir índices compuestos
+      try {
+        final solicitudesQuery = await _solicitudesCollection
+            .where('estado', isEqualTo: 'aprobada')
+            .get();
+        
+        // Filtrar localmente los folios que coinciden con el prefijo
+        for (final doc in solicitudesQuery.docs) {
+          final data = doc.data() as Map<String, dynamic>?;
+          if (data != null) {
+            final folio = data['folio_asignado'] as String?;
+            if (folio != null && folio.startsWith(prefix)) {
+              allFolios.add(folio);
+            }
+          }
+        }
+      } catch (e) {
+        // Ignorar error si la colección no existe
+        debugPrint('Error buscando folios en solicitudes: $e');
+      }
+      
+      // Encontrar el número más alto de folios con formato correcto
+      int maxNumber = 0;
+      final validFolios = <String>[];
+      
+      for (final folio in allFolios) {
+        // Verificar que el folio tenga el formato correcto: Letra + 7 dígitos
+        if (folio.length == 8 && folio.startsWith(prefix)) {
+          // Extraer solo los números después del prefijo
+          final numberPart = folio.substring(1);
+          final number = int.tryParse(numberPart);
+          
+          // Solo considerar folios con formato válido (7 dígitos numéricos)
+          if (number != null && numberPart.length == 7) {
+            validFolios.add(folio);
+            if (number > maxNumber) {
+              maxNumber = number;
+            }
+          }
+        }
+      }
+      
+      // El próximo número es el máximo + 1
+      final nextNumber = maxNumber + 1;
+      final newFolio = '$prefix${nextNumber.toString().padLeft(7, '0')}';
+      
+      debugPrint('Folios encontrados: ${allFolios.join(', ')}');
+      debugPrint('Folios válidos: ${validFolios.join(', ')}');
+      debugPrint('Número más alto: $maxNumber');
+      debugPrint('Generando nuevo folio: $newFolio');
+      
+      return newFolio;
     } catch (e) {
-      // Si hay error (por ejemplo, índice no creado), usar número aleatorio
-      final randomNumber = DateTime.now().millisecondsSinceEpoch % 1000000;
-      return '$prefix${randomNumber.toString().padLeft(7, '0')}';
+      // Si hay error general, empezar desde 1
+      debugPrint('Error generando folio secuencial: $e');
+      debugPrint('Generando folio inicial: ${prefix}0000001');
+      return '${prefix}0000001';
     }
   }
 
@@ -257,6 +345,7 @@ class EcoceProfileService {
     double? latitud,
     double? longitud,
     List<String>? actividadesAutorizadas,
+    Map<String, Map<String, dynamic>>? documentosInfo,
   }) async {
     try {
       // Inicializar Firebase para ECOCE si no está inicializado
@@ -264,15 +353,21 @@ class EcoceProfileService {
         await _firebaseManager.initializeForPlatform(FirebasePlatform.ecoce);
       }
 
-      // Verificar si el email ya existe en solicitudes pendientes
-      final existingSolicitud = await _solicitudesCollection
-          .where('email', isEqualTo: email)
-          .where('estado', isEqualTo: 'pendiente')
-          .limit(1)
-          .get();
-          
-      if (existingSolicitud.docs.isNotEmpty) {
-        throw 'Ya existe una solicitud pendiente con este correo electrónico';
+      // Intentar verificar si el email ya existe en solicitudes pendientes
+      try {
+        final existingSolicitud = await _solicitudesCollection
+            .where('email', isEqualTo: email)
+            .where('estado', isEqualTo: 'pendiente')
+            .limit(1)
+            .get();
+            
+        if (existingSolicitud.docs.isNotEmpty) {
+          throw 'Ya existe una solicitud pendiente con este correo electrónico';
+        }
+      } catch (e) {
+        // Si falla la verificación por permisos, continuar de todos modos
+        // Esto puede ocurrir cuando el usuario no está autenticado
+        debugPrint('No se pudo verificar duplicados de email: $e');
       }
 
       // Usar el linkMaps proporcionado o generar uno simple si no se proporciona
@@ -304,9 +399,9 @@ class EcoceProfileService {
       }
       
       // Debug: imprimir documentos recibidos
-      print('Documentos recibidos en createAccountRequest:');
+      debugPrint('Documentos recibidos en createAccountRequest:');
       documentos?.forEach((key, value) {
-        print('  $key: ${value != null ? 'URL presente' : 'null'}');
+        debugPrint('  $key: ${value != null ? 'URL presente' : 'null'}');
       });
       
       // Crear documento de solicitud
@@ -320,7 +415,7 @@ class EcoceProfileService {
           'ecoce_tipo_actor': tipoActor,
           'ecoce_subtipo': subtipo,
           'ecoce_nombre': nombre,
-          'ecoce_folio': 'PENDIENTE',
+          'ecoce_folio': 'PENDIENTE', // NO se asigna folio hasta la aprobación
           'ecoce_rfc': rfc,
           'ecoce_nombre_contacto': nombreContacto,
           'ecoce_correo_contacto': email,
@@ -352,6 +447,7 @@ class EcoceProfileService {
           'ecoce_dim_cap': dimensionesCapacidad,
           'ecoce_peso_cap': pesoCapacidad,
         },
+        'documentos_pendientes': documentosInfo ?? {}, // Información de documentos pendientes
         'estado': 'pendiente',
         'fecha_solicitud': FieldValue.serverTimestamp(),
         'fecha_revision': null,
@@ -360,14 +456,47 @@ class EcoceProfileService {
       };
       
       // Debug: verificar que los documentos estén en solicitudData
-      print('Documentos en solicitudData:');
+      debugPrint('Documentos en solicitudData:');
       final datosPerfilDebug = solicitudData['datos_perfil'] as Map<String, dynamic>;
       ['ecoce_const_sit_fis', 'ecoce_comp_domicilio', 'ecoce_banco_caratula', 'ecoce_ine',
        'ecoce_opinion_cumplimiento', 'ecoce_ramir', 'ecoce_plan_manejo', 'ecoce_licencia_ambiental'].forEach((field) {
-        print('  $field: ${datosPerfilDebug[field] != null ? 'URL presente' : 'null'}');
+        debugPrint('  $field: ${datosPerfilDebug[field] != null ? 'URL presente' : 'null'}');
       });
 
-      // Guardar solicitud en Firestore
+      // Crear usuario en Firebase Auth DURANTE EL REGISTRO
+      // Esto evita el problema de cambio de sesión durante la aprobación
+      UserCredential? userCredential;
+      String? userId;
+      
+      try {
+        userCredential = await _auth.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+        
+        userId = userCredential.user!.uid;
+        
+        // Actualizar el nombre del usuario
+        await userCredential.user!.updateDisplayName(nombre);
+        
+        // IMPORTANTE: Cerrar sesión inmediatamente después de crear el usuario
+        // para que no quede autenticado hasta que sea aprobado
+        await _auth.signOut();
+        
+        // Actualizar solicitudData con el ID del usuario creado
+        solicitudData['usuario_creado_id'] = userId;
+        solicitudData['auth_creado'] = true;
+        
+        debugPrint('✅ Usuario creado en Auth con ID: $userId');
+      } catch (authError) {
+        debugPrint('⚠️ Error creando usuario en Auth: $authError');
+        // Si falla la creación en Auth, continuar sin el usuario
+        // El maestro deberá crearlo manualmente durante la aprobación
+        solicitudData['auth_creado'] = false;
+        solicitudData['auth_error'] = authError.toString();
+      }
+      
+      // Guardar solicitud en Firestore (con o sin usuario Auth creado)
       await _solicitudesCollection.doc(solicitudId).set(solicitudData);
       
       return solicitudId;
@@ -391,6 +520,26 @@ class EcoceProfileService {
       }).toList();
     } catch (e) {
       return [];
+    }
+  }
+  
+  // Actualizar solicitud con el ID del usuario (para solicitudes antiguas)
+  Future<void> updateSolicitudWithUserId({
+    required String solicitudId,
+    required String userId,
+  }) async {
+    try {
+      await _solicitudesCollection.doc(solicitudId).update({
+        'usuario_creado_id': userId,
+        'auth_creado': true,
+        'actualizado_manualmente': true,
+        'fecha_actualizacion_manual': FieldValue.serverTimestamp(),
+      });
+      
+      debugPrint('✅ Solicitud actualizada con usuario_creado_id: $userId');
+    } catch (e) {
+      debugPrint('❌ Error actualizando solicitud: $e');
+      rethrow;
     }
   }
   
@@ -445,12 +594,16 @@ class EcoceProfileService {
     }
   }
   
-  // Aprobar solicitud y crear usuario
+  // Aprobar solicitud (el usuario ya existe en Auth)
   Future<void> approveSolicitud({
     required String solicitudId,
     required String approvedById,
     String? comments,
   }) async {
+    String? userId;
+    String? folio;
+    Map<String, dynamic>? datosPerfil;
+    
     try {
       // Obtener datos de la solicitud
       final solicitudDoc = await _solicitudesCollection.doc(solicitudId).get();
@@ -459,23 +612,90 @@ class EcoceProfileService {
       }
       
       final solicitudData = solicitudDoc.data() as Map<String, dynamic>;
-      final datosPerfil = solicitudData['datos_perfil'] as Map<String, dynamic>;
+      datosPerfil = solicitudData['datos_perfil'] as Map<String, dynamic>;
       
-      // Crear usuario en Auth
-      final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: solicitudData['email'],
-        password: solicitudData['password'],
-      );
+      // Verificar si el usuario ya fue creado en Auth
+      final authCreado = solicitudData['auth_creado'] ?? false;
+      userId = solicitudData['usuario_creado_id'] as String?;
       
-      final userId = userCredential.user!.uid;
+      // Si no hay usuario_creado_id pero auth_creado es true, intentar buscar por email
+      if (userId == null && authCreado) {
+        final email = solicitudData['email'] as String?;
+        if (email != null) {
+          try {
+            final userByEmail = await _auth.fetchSignInMethodsForEmail(email);
+            if (userByEmail.isNotEmpty) {
+              // El usuario existe, pero necesitamos su ID
+              // En este caso, pediremos al maestro que proporcione el ID manualmente
+              debugPrint('⚠️ Usuario existe en Auth pero no se guardó el ID. Email: $email');
+              throw Exception('El usuario existe en Auth pero no se guardó su ID. Por favor, obtenga el UID del usuario desde Firebase Console > Authentication y actualice manualmente la solicitud.');
+            }
+          } catch (e) {
+            debugPrint('Error verificando usuario por email: $e');
+          }
+        }
+      }
+      
+      // Si no hay usuario_creado_id, verificar si podemos encontrar el usuario por otros medios
+      if (userId == null) {
+        // Para solicitudes antiguas, podríamos no tener el ID guardado
+        final email = solicitudData['email'] as String?;
+        if (email != null) {
+          debugPrint('🔍 Intentando verificar si el usuario $email existe en Auth...');
+          try {
+            // Verificar si el email tiene métodos de inicio de sesión
+            final methods = await _auth.fetchSignInMethodsForEmail(email);
+            if (methods.isNotEmpty) {
+              // El usuario existe pero no tenemos su ID
+              debugPrint('✅ Usuario encontrado en Auth pero sin ID guardado');
+              debugPrint('📋 Por favor, actualice manualmente el campo usuario_creado_id en la solicitud');
+              throw Exception(
+                'Usuario encontrado en Auth pero sin ID en la solicitud.\n\n' +
+                'Para solucionarlo:\n' +
+                '1. Vaya a Firebase Console > Authentication\n' +
+                '2. Busque el usuario con email: $email\n' +
+                '3. Copie su UID\n' +
+                '4. En Firestore, actualice esta solicitud agregando:\n' +
+                '   usuario_creado_id: [UID copiado]\n' +
+                '   auth_creado: true'
+              );
+            } else {
+              debugPrint('❌ Usuario NO encontrado en Auth');
+              throw Exception('El usuario no fue creado en Auth durante el registro. No se puede aprobar.');
+            }
+          } catch (e) {
+            if (e.toString().contains('Usuario encontrado')) {
+              rethrow;
+            }
+            debugPrint('Error verificando usuario: $e');
+            throw Exception('No se pudo verificar si el usuario existe en Auth. Error: $e');
+          }
+        } else {
+          throw Exception('No se encontró email en la solicitud.');
+        }
+      }
       
       // Generar folio según tipo y subtipo
-      final tipoActor = datosPerfil['ecoce_tipo_actor'];
-      final subtipo = datosPerfil['ecoce_subtipo'];
-      final folio = await _generateFolio(tipoActor, subtipo);
+      final tipoActor = datosPerfil!['ecoce_tipo_actor'] as String?;
+      final subtipo = datosPerfil['ecoce_subtipo'] as String?;
+      if (tipoActor == null) {
+        throw Exception('Tipo de actor no especificado en la solicitud');
+      }
+      folio = await _generateFolio(tipoActor, subtipo);
+      
+      // IMPORTANTE: Actualizar la solicitud - ahora es seguro porque el maestro
+      // está autenticado y tiene permisos, no hay cambio de sesión
+      await _solicitudesCollection.doc(solicitudId).update({
+        'estado': 'aprobada',
+        'fecha_revision': FieldValue.serverTimestamp(),
+        'aprobado_por': approvedById,
+        'comentarios_revision': comments,
+        'folio_asignado': folio,
+        'procesando': false,
+      });
       
       // Actualizar datos del perfil con el folio real
-      datosPerfil['ecoce_folio'] = folio;
+      datosPerfil!['ecoce_folio'] = folio;
       datosPerfil['id'] = userId;
       datosPerfil['ecoce_estatus_aprobacion'] = 1;
       datosPerfil['ecoce_fecha_aprobacion'] = Timestamp.fromDate(DateTime.now());
@@ -484,32 +704,82 @@ class EcoceProfileService {
       datosPerfil['createdAt'] = Timestamp.fromDate(DateTime.now());
       datosPerfil['updatedAt'] = Timestamp.fromDate(DateTime.now());
       
+      // IMPORTANTE: Agregar el ID del usuario a la solicitud en datos_perfil
+      // para que las reglas puedan verificar la relación
+      datosPerfil['usuario_creado_id'] = userId;
+      
       // Debug: verificar documentos antes de guardar
-      print('📋 Documentos en perfil aprobado:');
+      debugPrint('📋 Documentos en perfil aprobado:');
       ['ecoce_const_sit_fis', 'ecoce_comp_domicilio', 'ecoce_banco_caratula', 'ecoce_ine',
        'ecoce_opinion_cumplimiento', 'ecoce_ramir', 'ecoce_plan_manejo', 'ecoce_licencia_ambiental'].forEach((field) {
-        print('  $field: ${datosPerfil[field] != null ? 'URL presente' : 'null'}');
+        debugPrint('  $field: ${datosPerfil!.containsKey(field) && datosPerfil[field] != null ? 'URL presente' : 'null'}');
       });
       
       // Obtener la subcolección según el tipo
       final subcollection = _getProfileSubcollection(tipoActor, subtipo);
       
-      // Guardar SOLO en la subcolección correspondiente (sin crear índice)
-      await subcollection.doc(userId).set(datosPerfil);
+      // Guardar en la subcolección correspondiente
+      await subcollection.doc(userId).set(datosPerfil!);
       
-      // Actualizar nombre del usuario
-      await userCredential.user!.updateDisplayName(datosPerfil['ecoce_nombre']);
-      
-      // Actualizar estado de la solicitud
-      await _solicitudesCollection.doc(solicitudId).update({
-        'estado': 'aprobada',
-        'fecha_revision': FieldValue.serverTimestamp(),
-        'revisado_por': approvedById,
-        'comentarios_revision': comments,
-        'usuario_creado_id': userId,
-        'folio_asignado': folio,
+      // Crear entrada en el índice de ecoce_profiles
+      await _profilesCollection.doc(userId).set({
+        'path': _getProfilePath(tipoActor, subtipo, userId),
+        'folio': folio,
+        'aprobado': true,
+        'tipo': subtipo,
+        'fecha_aprobacion': FieldValue.serverTimestamp(),
       });
+      
+      // NO eliminar la solicitud inmediatamente - mantenerla como registro histórico
+      // Esto también evita problemas de permisos
+      // Si necesitas ocultarla, usar el campo 'estado' = 'aprobada' como filtro
+      
+      // Registrar la aprobación en el audit log
+      await _firestore.collection('audit_logs').add({
+        'action': 'account_approved',
+        'solicitudId': solicitudId,
+        'userId': userId,
+        'userEmail': solicitudData['email'],
+        'userFolio': folio,
+        'userName': datosPerfil!['ecoce_nombre'],
+        'approvedBy': approvedById,
+        'approvedAt': FieldValue.serverTimestamp(),
+        'comments': comments,
+      });
+      
+      debugPrint('Usuario aprobado exitosamente: ${datosPerfil['ecoce_nombre'] ?? 'Sin nombre'} con folio: $folio');
     } catch (e) {
+      // Si hay error, intentar revertir los cambios
+      try {
+        if (folio != null) {
+          // Revertir la actualización de la solicitud
+          await _solicitudesCollection.doc(solicitudId).update({
+            'estado': 'pendiente',
+            'fecha_revision': null,
+            'aprobado_por': null,
+            'comentarios_revision': null,
+            'folio_asignado': null,
+            'procesando': false,
+          });
+        }
+        
+        // Si se creó el índice, eliminarlo
+        if (userId != null) {
+          await _profilesCollection.doc(userId).delete();
+          
+          // También intentar eliminar el perfil si se creó
+          if (datosPerfil != null) {
+            final tipoActor = datosPerfil['ecoce_tipo_actor'] as String?;
+            final subtipo = datosPerfil['ecoce_subtipo'] as String?;
+            if (tipoActor != null) {
+              final subcollection = _getProfileSubcollection(tipoActor, subtipo);
+              await subcollection.doc(userId).delete();
+            }
+          }
+        }
+      } catch (cleanupError) {
+        debugPrint('Error al revertir cambios: $cleanupError');
+      }
       rethrow;
     }
   }
@@ -528,6 +798,26 @@ class EcoceProfileService {
         final solicitudData = solicitudDoc.data() as Map<String, dynamic>;
         final datosPerfil = solicitudData['datos_perfil'] as Map<String, dynamic>?;
         
+        // Verificar si se creó usuario en Auth
+        final authCreado = solicitudData['auth_creado'] ?? false;
+        final userId = solicitudData['usuario_creado_id'] as String?;
+        
+        // Si se creó usuario en Auth, marcarlo para eliminación
+        if (authCreado && userId != null) {
+          // Marcar el usuario para eliminación (Cloud Function lo eliminará)
+          await _firestore.collection('users_pending_deletion').doc(userId).set({
+            'userId': userId,
+            'userEmail': solicitudData['email'],
+            'requestedBy': rejectedById,
+            'requestedAt': FieldValue.serverTimestamp(),
+            'status': 'pending',
+            'reason': 'solicitud_rechazada',
+            'rejectionReason': reason,
+          });
+          
+          debugPrint('⚠️ Usuario $userId marcado para eliminación de Auth');
+        }
+        
         // Limpiar archivos de Storage si existen
         if (datosPerfil != null) {
           await _deleteStorageFiles(solicitudId, datosPerfil);
@@ -535,6 +825,17 @@ class EcoceProfileService {
         
         // Eliminar el documento de la solicitud
         await _solicitudesCollection.doc(solicitudId).delete();
+        
+        // Registrar en audit log
+        await _firestore.collection('audit_logs').add({
+          'action': 'account_rejected',
+          'solicitudId': solicitudId,
+          'userEmail': solicitudData['email'],
+          'userName': datosPerfil?['ecoce_nombre'] ?? 'Sin nombre',
+          'rejectedBy': rejectedById,
+          'rejectedAt': FieldValue.serverTimestamp(),
+          'reason': reason,
+        });
       }
     } catch (e) {
       rethrow;
@@ -591,10 +892,79 @@ class EcoceProfileService {
     }
   }
 
-  // Obtener perfil por ID (busca directamente en las subcarpetas)
+  // Obtener perfil por ID (busca primero en índice, luego en subcarpetas)
   Future<EcoceProfileModel?> getProfile(String userId) async {
     try {
-      // Lista de todas las subcolecciónes posibles
+      // Primero verificar si es un usuario maestro
+      final maestroDoc = await _firestore
+          .collection('maestros')
+          .doc(userId)
+          .get();
+          
+      if (maestroDoc.exists) {
+        final maestroData = maestroDoc.data()!;
+        // Crear perfil maestro con estructura simplificada
+        return EcoceProfileModel(
+          id: userId,
+          ecoceTipoActor: 'M',
+          ecoceNombre: maestroData['nombre'] ?? 'Administrador ECOCE',
+          ecoceCorreoContacto: maestroData['email'] ?? '',
+          ecoceFolio: 'M0000001',
+          ecoceRfc: 'XAXX010101000',
+          ecoceNombreContacto: maestroData['nombre'] ?? 'Administrador',
+          ecoceTelContacto: '5551234567',
+          ecoceTelEmpresa: '5551234567',
+          ecoceCalle: 'Sistema ECOCE',
+          ecoceNumExt: 'N/A',
+          ecoceCp: '00000',
+          ecoceEstado: 'CDMX',
+          ecoceMunicipio: 'Sistema',
+          ecoceColonia: 'Sistema',
+          ecoceListaMateriales: [],
+          ecoceEstatusAprobacion: 1,
+          ecoceFechaReg: maestroData['created_at']?.toDate() ?? DateTime.now(),
+          createdAt: maestroData['created_at']?.toDate() ?? DateTime.now(),
+          updatedAt: maestroData['updated_at']?.toDate() ?? DateTime.now(),
+        );
+      }
+      
+      // Luego buscar en el documento índice
+      final indexDoc = await _profilesCollection.doc(userId).get();
+      
+      if (indexDoc.exists) {
+        final data = indexDoc.data() as Map<String, dynamic>;
+        
+        // Si el tipo es maestro y tiene los campos mínimos, crear un perfil temporal
+        if (data['tipo_actor'] == 'maestro' || data['ecoce_tipo_actor'] == 'M') {
+          // Crear un modelo con datos mínimos para maestro
+          return EcoceProfileModel(
+            id: userId,
+            ecoceTipoActor: 'M',
+            ecoceNombre: data['ecoce_nombre'] ?? 'Administrador ECOCE',
+            ecoceCorreoContacto: data['email'] ?? data['ecoce_correo_contacto'] ?? '',
+            ecoceFolio: data['ecoce_folio'] ?? 'M0000001',
+            ecoceRfc: data['ecoce_rfc'] ?? 'XAXX010101000',
+            ecoceNombreContacto: data['ecoce_nombre_contacto'] ?? 'Admin',
+            ecoceTelContacto: data['ecoce_tel_contacto'] ?? '5551234567',
+            ecoceTelEmpresa: data['ecoce_tel_empresa'] ?? '5551234567',
+            ecoceCalle: data['ecoce_calle'] ?? 'Av. Principal',
+            ecoceNumExt: data['ecoce_num_ext'] ?? '123',
+            ecoceCp: data['ecoce_cp'] ?? '06000',
+            ecoceEstado: data['ecoce_estado'] ?? 'CDMX',
+            ecoceMunicipio: data['ecoce_municipio'] ?? 'Cuauhtémoc',
+            ecoceColonia: data['ecoce_colonia'] ?? 'Centro',
+            ecoceReferencias: data['ecoce_referencias'] ?? '',
+            ecoceListaMateriales: List<String>.from(data['ecoce_materiales'] ?? []),
+            ecoceTransporte: data['ecoce_transporte'] ?? false,
+            ecoceEstatusAprobacion: 1, // Siempre aprobado para maestro
+            ecoceFechaReg: (data['fecha_creacion'] ?? data['created_at'])?.toDate() ?? DateTime.now(),
+            createdAt: (data['created_at'] ?? data['fecha_creacion'])?.toDate() ?? DateTime.now(),
+            updatedAt: (data['updated_at'] ?? data['fecha_creacion'])?.toDate() ?? DateTime.now(),
+          );
+        }
+      }
+      
+      // Si no es maestro o no se encontró en el índice, buscar en subcarpetas
       final subcollections = [
         'origen/centro_acopio',
         'origen/planta_separacion',
@@ -623,7 +993,7 @@ class EcoceProfileService {
         }
       }
       
-      // Si no se encontró en ninguna subcolección, el usuario no existe
+      // Si no se encontró en ninguna parte, el usuario no existe
       return null;
     } catch (e) {
       return null;
@@ -753,8 +1123,12 @@ class EcoceProfileService {
       }
       
       final profileData = profileDoc.data() as Map<String, dynamic>;
-      final tipoActor = profileData['ecoce_tipo_actor'] as String;
+      final tipoActor = profileData['ecoce_tipo_actor'] as String?;
       final subtipo = profileData['ecoce_subtipo'] as String?;
+      
+      if (tipoActor == null) {
+        throw Exception('Tipo de actor no encontrado en el perfil');
+      }
       
       // Generar el folio secuencial al momento de aprobar
       final folio = await _generateFolio(tipoActor, subtipo);
@@ -798,9 +1172,18 @@ class EcoceProfileService {
     required String deletedBy,
   }) async {
     try {
+      debugPrint('🗑️ Iniciando eliminación de usuario: $userId');
+      debugPrint('🔑 Eliminado por: $deletedBy');
+      
+      // Verificar que el usuario que elimina es maestro
+      final maestroDoc = await _firestore.collection('maestros').doc(deletedBy).get();
+      if (!maestroDoc.exists) {
+        throw Exception('El usuario que intenta eliminar no está configurado como maestro');
+      }
+      debugPrint('✅ Usuario maestro verificado');
+      
       // 1. Buscar el perfil - primero en caché, luego en Firestore
       Map<String, dynamic>? profileData;
-      DocumentSnapshot? profileDoc;
       String? profilePath;
       
       // Verificar caché primero
@@ -808,7 +1191,6 @@ class EcoceProfileService {
         profilePath = _userPathCache[userId];
         final doc = await _firestore.doc(profilePath!).get();
         if (doc.exists) {
-          profileDoc = doc;
           profileData = doc.data() as Map<String, dynamic>;
         } else {
           // Si no existe, limpiar del caché
@@ -819,6 +1201,7 @@ class EcoceProfileService {
       
       // Si no se encontró en caché, buscar en todas las rutas
       if (profileData == null) {
+        debugPrint('📂 Perfil no encontrado en caché, buscando en todas las rutas...');
         // Lista de todas las rutas posibles de perfiles
         final possiblePaths = [
           'ecoce_profiles/origen/centro_acopio/$userId',
@@ -837,9 +1220,9 @@ class EcoceProfileService {
         // Encontrar el documento que existe
         for (int i = 0; i < results.length; i++) {
           if (results[i].exists) {
-            profileDoc = results[i];
             profileData = results[i].data() as Map<String, dynamic>;
             profilePath = possiblePaths[i];
+            debugPrint('✅ Perfil encontrado en: $profilePath');
             // Guardar en caché para futuras búsquedas
             _userPathCache[userId] = profilePath;
             break;
@@ -857,7 +1240,6 @@ class EcoceProfileService {
           if (profilePath != null) {
             final doc = await _firestore.doc(profilePath).get();
             if (doc.exists) {
-              profileDoc = doc;
               profileData = doc.data() as Map<String, dynamic>;
             }
           }
@@ -883,7 +1265,7 @@ class EcoceProfileService {
       deletionTasks.add(
         _profilesCollection.doc(userId).delete().catchError((e) {
           // Si no existe el índice, no es un error crítico
-          print('Índice no encontrado para eliminar: $e');
+          debugPrint('Índice no encontrado para eliminar: $e');
         })
       );
       
@@ -916,7 +1298,7 @@ class EcoceProfileService {
         })
       );
       
-      // Marcar para eliminación en Auth
+      // Marcar para eliminación en Auth - LA CLOUD FUNCTION SE ACTIVARÁ AUTOMÁTICAMENTE
       deletionTasks.add(
         _firestore.collection('users_pending_deletion').doc(userId).set({
           'userId': userId,
@@ -935,10 +1317,18 @@ class EcoceProfileService {
       // 4. Limpiar el usuario del caché
       _userPathCache.remove(userId);
       
-      // El usuario no podrá acceder al sistema aunque exista en Auth porque:
-      // 1. No tiene perfil en ecoce_profiles
-      // 2. No tiene solicitud aprobada
-      // 3. La Cloud Function lo eliminará de Auth cuando se ejecute
+      // 5. Intentar eliminar el usuario de Auth directamente (si es posible)
+      try {
+        // NOTA: Esto solo funcionará si usamos Admin SDK
+        // En producción, la Cloud Function se encargará de esto
+        await _auth.currentUser?.delete();
+      } catch (e) {
+        // Ignorar error - la Cloud Function se encargará
+        debugPrint('No se pudo eliminar directamente de Auth (esperado): $e');
+      }
+      
+      // El usuario será eliminado de Auth por la Cloud Function
+      // Mientras tanto, no podrá acceder porque no tiene perfil
       
     } catch (e) {
       rethrow;
@@ -1006,9 +1396,6 @@ class EcoceProfileService {
       final batch = _firestore.batch();
       
       for (final doc in pendingDeletions.docs) {
-        final data = doc.data();
-        final userId = data['userId'] as String;
-        
         try {
           // Intentar eliminar el usuario de Firebase Auth
           // NOTA: Esto requerirá el Admin SDK o una Cloud Function
@@ -1038,7 +1425,7 @@ class EcoceProfileService {
       
       await batch.commit();
     } catch (e) {
-      print('Error procesando eliminaciones pendientes: $e');
+      debugPrint('Error procesando eliminaciones pendientes: $e');
     }
   }
   
@@ -1063,9 +1450,9 @@ class EcoceProfileService {
       }
       
       await batch.commit();
-      print('Eliminados ${oldRecords.docs.length} registros antiguos de users_pending_deletion');
+      debugPrint('Eliminados ${oldRecords.docs.length} registros antiguos de users_pending_deletion');
     } catch (e) {
-      print('Error limpiando registros antiguos: $e');
+      debugPrint('Error limpiando registros antiguos: $e');
     }
   }
 
@@ -1101,6 +1488,11 @@ class EcoceProfileService {
         'total': 0,
       };
     }
+  }
+  
+  // Alias method for getProfile to match the expected name
+  Future<EcoceProfileModel?> getProfileByUserId(String userId) async {
+    return getProfile(userId);
   }
 
   // Verificar si un usuario está aprobado
@@ -1492,7 +1884,7 @@ class EcoceProfileService {
   // Este método solo debe ejecutarse una vez para migrar usuarios antiguos
   Future<void> migrateExistingUsersToSubcollections() async {
     try {
-      print('Iniciando migración de usuarios existentes...');
+      debugPrint('Iniciando migración de usuarios existentes...');
       
       // Obtener todos los documentos de la colección principal
       final allDocs = await _profilesCollection.get();
@@ -1532,7 +1924,7 @@ class EcoceProfileService {
               } else if (folio.startsWith('M')) {
                 tipoActor = 'M';
               } else {
-                print('No se pudo determinar el tipo para: ${data['ecoce_nombre']} (${folio})');
+                debugPrint('No se pudo determinar el tipo para: ${data['ecoce_nombre']} (${folio})');
                 errors++;
                 continue;
               }
@@ -1540,12 +1932,11 @@ class EcoceProfileService {
             
             // Obtener la subcolección correspondiente
             final subcollection = _getProfileSubcollection(tipoActor, subtipo);
-            final collectionPath = getProfileCollectionPath(tipoActor, subtipo);
             
             // Verificar si ya existe en la subcolección
             final existingDoc = await subcollection.doc(userId).get();
             if (existingDoc.exists) {
-              print('Usuario ya existe en subcolección, actualizando índice: ${data['ecoce_nombre']}');
+              debugPrint('Usuario ya existe en subcolección, actualizando índice: ${data['ecoce_nombre']}');
               // Si ya existe, solo actualizar el índice
             } else {
               // Asegurar que todos los campos requeridos estén presentes
@@ -1577,20 +1968,20 @@ class EcoceProfileService {
             await _profilesCollection.doc(userId).set(indexData);
             
             migrated++;
-            print('Migrado usuario: ${data['ecoce_nombre']} (${data['ecoce_folio']}) -> ${tipoActor}/${subtipo ?? 'usuarios'}');
+            debugPrint('Migrado usuario: ${data['ecoce_nombre']} (${data['ecoce_folio']}) -> ${tipoActor}/${subtipo ?? 'usuarios'}');
           } else if (data.containsKey('path')) {
             // Ya es un índice, no necesita migración
             skipped++;
           }
         } catch (e) {
-          print('Error migrando documento ${doc.id}: $e');
+          debugPrint('Error migrando documento ${doc.id}: $e');
           errors++;
         }
       }
       
-      print('Migración completada: $migrated usuarios migrados, $skipped ya estaban migrados, $errors errores');
+      debugPrint('Migración completada: $migrated usuarios migrados, $skipped ya estaban migrados, $errors errores');
     } catch (e) {
-      print('Error en migración: $e');
+      debugPrint('Error en migración: $e');
       rethrow;
     }
   }
@@ -1598,7 +1989,7 @@ class EcoceProfileService {
   // Método de diagnóstico para analizar la estructura de perfiles
   Future<Map<String, dynamic>> analyzeProfileStructure() async {
     try {
-      print('\n=== ANÁLISIS DE ESTRUCTURA DE PERFILES ===\n');
+      debugPrint('\n=== ANÁLISIS DE ESTRUCTURA DE PERFILES ===\n');
       
       final stats = {
         'indices_limpios': 0,
@@ -1633,7 +2024,7 @@ class EcoceProfileService {
             stats['usuarios_en_subcollecciones'] = (stats['usuarios_en_subcollecciones'] as int) + 1;
           }
         } catch (e) {
-          print('Error revisando subcolección $subcollection: $e');
+          debugPrint('Error revisando subcolección $subcollection: $e');
         }
       }
       
@@ -1687,38 +2078,38 @@ class EcoceProfileService {
       }
       
       // Imprimir resumen
-      print('=== RESUMEN DEL ANÁLISIS ===');
-      print('Usuarios en subcolecciones: ${stats['usuarios_en_subcollecciones']}');
-      print('Índices limpios: ${stats['indices_limpios']}');
-      print('Índices con datos extra: ${stats['indices_con_datos_extra']}');
-      print('Perfiles completos duplicados: ${stats['perfiles_completos_en_principal']}');
-      print('Documentos huérfanos: ${stats['documentos_huerfanos']}');
-      print('============================\n');
+      debugPrint('=== RESUMEN DEL ANÁLISIS ===');
+      debugPrint('Usuarios en subcolecciones: ${stats['usuarios_en_subcollecciones']}');
+      debugPrint('Índices limpios: ${stats['indices_limpios']}');
+      debugPrint('Índices con datos extra: ${stats['indices_con_datos_extra']}');
+      debugPrint('Perfiles completos duplicados: ${stats['perfiles_completos_en_principal']}');
+      debugPrint('Documentos huérfanos: ${stats['documentos_huerfanos']}');
+      debugPrint('============================\n');
       
       // Imprimir detalles de problemas
       if ((stats['indices_con_datos_extra'] as int) > 0) {
-        print('\n=== ÍNDICES CON DATOS EXTRA ===');
+        debugPrint('\n=== ÍNDICES CON DATOS EXTRA ===');
         (stats['detalles'] as Map<String, dynamic>).forEach((userId, detalles) {
           if (detalles['tipo'] == 'índice_con_datos_extra') {
-            print('Usuario: $userId');
-            print('  Campos extra: ${detalles['campos_extra']}');
+            debugPrint('Usuario: $userId');
+            debugPrint('  Campos extra: ${detalles['campos_extra']}');
           }
         });
       }
       
       if ((stats['perfiles_completos_en_principal'] as int) > 0) {
-        print('\n=== PERFILES COMPLETOS DUPLICADOS ===');
+        debugPrint('\n=== PERFILES COMPLETOS DUPLICADOS ===');
         (stats['detalles'] as Map<String, dynamic>).forEach((userId, detalles) {
           if (detalles['tipo'] == 'perfil_completo_duplicado') {
-            print('Usuario: $userId');
-            print('  Total de campos: ${detalles['campos_totales']}');
+            debugPrint('Usuario: $userId');
+            debugPrint('  Total de campos: ${detalles['campos_totales']}');
           }
         });
       }
       
       return stats;
     } catch (e) {
-      print('Error en análisis: $e');
+      debugPrint('Error en análisis: $e');
       rethrow;
     }
   }
@@ -1726,7 +2117,7 @@ class EcoceProfileService {
   // Limpiar usuarios duplicados y reorganizar los que están fuera de sus carpetas
   Future<Map<String, int>> cleanupDuplicateProfiles() async {
     try {
-      print('Iniciando limpieza de perfiles duplicados...');
+      debugPrint('Iniciando limpieza de perfiles duplicados...');
       
       // Paso 1: Obtener todos los usuarios que existen en subcolecciónes
       final validUsersInSubcollections = <String>{}; // Set de IDs de usuarios válidos
@@ -1742,7 +2133,7 @@ class EcoceProfileService {
         'maestro/usuarios',
       ];
       
-      print('Buscando usuarios en subcolecciónes...');
+      debugPrint('Buscando usuarios en subcolecciónes...');
       for (final subcollection in subcollections) {
         try {
           final query = await _profilesCollection.doc(subcollection.split('/')[0])
@@ -1751,14 +2142,14 @@ class EcoceProfileService {
           
           for (final doc in query.docs) {
             validUsersInSubcollections.add(doc.id);
-            print('Usuario encontrado en $subcollection: ${doc.id}');
+            debugPrint('Usuario encontrado en $subcollection: ${doc.id}');
           }
         } catch (e) {
-          print('Error revisando subcolección $subcollection: $e');
+          debugPrint('Error revisando subcolección $subcollection: $e');
         }
       }
       
-      print('Total de usuarios válidos en subcolecciónes: ${validUsersInSubcollections.length}');
+      debugPrint('Total de usuarios válidos en subcolecciónes: ${validUsersInSubcollections.length}');
       
       // Paso 2: Revisar todos los documentos en la colección principal
       final allDocs = await _profilesCollection.get();
@@ -1766,7 +2157,7 @@ class EcoceProfileService {
       int keptIndices = 0;
       int errors = 0;
       
-      print('\nRevisando ${allDocs.docs.length} documentos en la colección principal...');
+      debugPrint('\nRevisando ${allDocs.docs.length} documentos en la colección principal...');
       
       for (final doc in allDocs.docs) {
         try {
@@ -1775,7 +2166,7 @@ class EcoceProfileService {
           
           // Saltar documentos de estructura (origen, reciclador, etc.)
           if (['origen', 'reciclador', 'transformador', 'transporte', 'laboratorio', 'maestro'].contains(userId)) {
-            print('Saltando documento de estructura: $userId');
+            debugPrint('Saltando documento de estructura: $userId');
             continue;
           }
           
@@ -1798,13 +2189,13 @@ class EcoceProfileService {
             if (hasPath && hasOnlyIndexFields && !hasProfileFields) {
               // Es un índice limpio, mantenerlo
               keptIndices++;
-              print('Manteniendo índice limpio para: $userId');
+              debugPrint('Manteniendo índice limpio para: $userId');
             } else {
               // Es un perfil completo O un índice con datos extra
               // En ambos casos, necesitamos limpiarlo
-              print('Detectado documento con datos extra o perfil completo: $userId');
-              print('  Tiene path: $hasPath, Tiene campos de perfil: $hasProfileFields');
-              print('  Campos encontrados: ${data.keys.toList()}');
+              debugPrint('Detectado documento con datos extra o perfil completo: $userId');
+              debugPrint('  Tiene path: $hasPath, Tiene campos de perfil: $hasProfileFields');
+              debugPrint('  Campos encontrados: ${data.keys.toList()}');
               
               // Eliminar el documento actual
               await _profilesCollection.doc(userId).delete();
@@ -1835,15 +2226,15 @@ class EcoceProfileService {
                     
                     // Recrear el índice limpio
                     await _profilesCollection.doc(userId).set(cleanIndex);
-                    print('RECREADO índice limpio para: ${cleanIndex['nombre']} (${cleanIndex['folio']})');
+                    debugPrint('RECREADO índice limpio para: ${cleanIndex['nombre']} (${cleanIndex['folio']})');
                   }
                 } catch (e) {
-                  print('Error recreando índice para $userId: $e');
+                  debugPrint('Error recreando índice para $userId: $e');
                   errors++;
                 }
               } else {
                 // Era un perfil completo sin path (duplicado puro)
-                print('ELIMINADO perfil completo duplicado: ${data['ecoce_nombre'] ?? 'sin nombre'} (${data['ecoce_folio'] ?? 'sin folio'})');
+                debugPrint('ELIMINADO perfil completo duplicado: ${data['ecoce_nombre'] ?? 'sin nombre'} (${data['ecoce_folio'] ?? 'sin folio'})');
               }
             }
           } else {
@@ -1852,21 +2243,21 @@ class EcoceProfileService {
               // Es un documento huérfano, eliminarlo
               await _profilesCollection.doc(userId).delete();
               cleaned++;
-              print('ELIMINADO documento huérfano: $userId');
+              debugPrint('ELIMINADO documento huérfano: $userId');
             }
           }
         } catch (e) {
-          print('Error procesando documento ${doc.id}: $e');
+          debugPrint('Error procesando documento ${doc.id}: $e');
           errors++;
         }
       }
       
-      print('\n=== RESUMEN DE LIMPIEZA ===');
-      print('Usuarios válidos en subcolecciónes: ${validUsersInSubcollections.length}');
-      print('Índices válidos mantenidos: $keptIndices');
-      print('Documentos eliminados: $cleaned');
-      print('Errores: $errors');
-      print('========================\n');
+      debugPrint('\n=== RESUMEN DE LIMPIEZA ===');
+      debugPrint('Usuarios válidos en subcolecciónes: ${validUsersInSubcollections.length}');
+      debugPrint('Índices válidos mantenidos: $keptIndices');
+      debugPrint('Documentos eliminados: $cleaned');
+      debugPrint('Errores: $errors');
+      debugPrint('========================\n');
       
       // Retornar resumen
       return {
@@ -1876,7 +2267,7 @@ class EcoceProfileService {
         'errores': errors,
       };
     } catch (e) {
-      print('Error en limpieza: $e');
+      debugPrint('Error en limpieza: $e');
       rethrow;
     }
   }

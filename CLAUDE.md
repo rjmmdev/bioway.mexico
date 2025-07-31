@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 BioWay México is a dual-platform Flutter mobile application for recycling and waste management supporting both BioWay and ECOCE systems. The app implements a complete supply chain tracking system for recyclable materials with role-based access and multi-tenant Firebase architecture.
 
+**Current Status**: ECOCE platform is in production. BioWay platform pending Firebase configuration.
+
 ### Key Features
 - **Dual Platform Support**: BioWay and ECOCE in a single application
 - **Multi-Tenant Firebase**: Separate projects per platform
@@ -16,6 +18,7 @@ BioWay México is a dual-platform Flutter mobile application for recycling and w
 - **QR Code System**: Generation and scanning for batch tracking
 - **Document Management**: Upload and management with compression
 - **Geolocation**: Location selection without GPS permissions required
+- **Cloud Functions**: Automatic user deletion and scheduled cleanup tasks
 
 ## Commands
 
@@ -88,14 +91,41 @@ flutter pub outdated
 flutter pub upgrade
 ```
 
-### Automation Scripts (Windows)
-```powershell
-# Build and run APK
-.\build_and_run.ps1
+### Firebase Functions
+```bash
+# Deploy functions (use Google Cloud Shell for Windows)
+cd functions
+firebase deploy --only functions
 
-# Quick run (uses existing build)
-.\run_app.ps1
+# View function logs
+firebase functions:log
+
+# Test locally with emulators
+firebase emulators:start --only functions
 ```
+
+### Firebase Rules
+```bash
+# Deploy Firestore rules
+firebase deploy --only firestore:rules
+
+# Deploy Storage rules
+firebase deploy --only storage:rules
+
+# Deploy both
+firebase deploy --only firestore:rules,storage:rules
+```
+
+### Package Dependencies
+Key dependencies (from pubspec.yaml):
+- **Flutter SDK**: ^3.8.1
+- **Firebase**: cloud_firestore, firebase_auth, firebase_storage, firebase_core, firebase_analytics
+- **QR/Scanning**: mobile_scanner ^7.0.1, qr_flutter ^4.1.0
+- **Image handling**: image_picker ^1.0.7, flutter_image_compress ^2.1.0
+- **Documents**: pdf ^3.11.0, printing ^5.13.0, file_picker ^8.0.0+1
+- **Location**: google_maps_flutter ^2.9.0, geolocator ^13.0.2, geocoding ^3.0.0
+- **UI/UX**: timeline_tile ^2.0.0, photo_view ^0.15.0
+- **Utilities**: rxdart ^0.27.7, intl ^0.19.0, url_launcher ^6.2.0, share_plus ^10.1.0
 
 ## Architecture
 
@@ -126,6 +156,7 @@ lib/
 │   ├── document_service.dart         # Document upload/compression
 │   ├── image_service.dart           # Image compression (50KB target)
 │   ├── lote_service.dart            # Lot management across all user types
+│   ├── lote_unificado_service.dart  # Unified lot system service
 │   └── user_session_service.dart    # User session management
 ├── models/                          # Data models
 ├── utils/                           # Utilities (colors, formats, etc.)
@@ -160,7 +191,8 @@ solicitudes_cuentas/           # Account requests pending approval
 ├── [solicitudId]
 │   ├── estado: "pendiente"/"aprobada"/"rechazada"
 │   ├── datos_perfil: {...}
-│   └── documentos: {...}
+│   ├── documentos: {...}
+│   └── usuario_id: string    # Added for aprobación flow
 
 ecoce_profiles/                # User profiles index
 ├── [userId]
@@ -176,15 +208,33 @@ ecoce_profiles/[type]/usuarios/  # Profile data by type
 ├── transporte/usuarios/
 └── laboratorio/usuarios/
 
-lotes_origen/                  # Origin lots (collection centers)
-lotes_transportista/          # Transport lots
-lotes_reciclador/            # Recycler lots
-lotes_laboratorio/           # Laboratory samples
-lotes_transformador/         # Transformer lots
+lotes/                         # Unified lot collection
+├── [loteId]/
+│   ├── datos_generales/      # General lot information (doc: 'info')
+│   ├── origen/               # Origin process data (doc: 'data')
+│   ├── transporte/           # Transport phases (docs: 'fase_1', 'fase_2')
+│   ├── reciclador/          # Recycler process data (doc: 'data')
+│   ├── analisis_laboratorio/ # Laboratory analysis (parallel process)
+│   └── transformador/        # Transformer process data (doc: 'data')
 
-users_pending_deletion/        # Users marked for Auth deletion
+transformaciones/              # Megalotes and sublotes system
+├── [transformacionId]/
+│   ├── datos_generales/      # General transformation info (doc: 'info')
+│   │   ├── usuario_id: string # NOT usuarioId - critical field name
+│   │   ├── peso_total_entrada: number
+│   │   └── lotes_entrada: [{lote_id: string, ...}]
+│   ├── sublotes/             # Generated sublotes
+│   └── documentacion/        # Technical sheets and reports
+
+users_pending_deletion/        # Users marked for Auth deletion (Cloud Function trigger)
 ├── [userId]
-│   └── status: "pending"/"completed"/"failed"
+│   ├── status: "pending"/"completed"/"failed"
+│   ├── created_at: timestamp
+│   └── reason: string
+
+material_reciclable/           # Material configurations
+firmas/                        # Digital signatures storage
+audit_logs/                    # System audit trail from Cloud Functions
 ```
 
 ## ECOCE System
@@ -210,11 +260,111 @@ users_pending_deletion/        # Users marked for Auth deletion
 - **Laboratorio**: Sample types
 
 ### QR Code Flow Architecture
-1. **Origin creates lot** → QR contains lot ID
-2. **Transport scans lots** → Creates new transport lot → QR contains transport lot ID
-3. **Recycler scans transport lot** → Creates recycler lot with reference
-4. **Laboratory takes samples** → References source lot
-5. **Transformer processes** → Final product tracking
+1. **Origin creates lot** → QR format: `LOTE-TIPOMATERIAL-ID`
+2. **Transport scans lots** → Creates cargo with multiple lots
+3. **Transport delivers** → Creates delivery QR: `ENTREGA-ID`
+4. **Recycler scans delivery** → Receives lots automatically
+5. **Laboratory takes samples** → Parallel process, no ownership transfer
+
+### Lot Visibility Rules
+Lots appear in user screens based on `proceso_actual` field:
+- **Origin**: Shows lots where `proceso_actual == 'origen'`
+- **Transport**: Shows lots where `proceso_actual == 'transporte'`
+- **Recycler**: Shows lots where `proceso_actual == 'reciclador'`
+- **Transformer**: Shows lots where `proceso_actual == 'transformador'`
+
+When a lot is successfully transferred (both delivery and reception completed), the `proceso_actual` updates and the lot moves to the new user's screen.
+
+Special cases:
+- **Consumed lots**: Marked with `consumido_en_transformacion: true` are hidden from Exit tab
+- **Sublots**: Only visible in Recycler's Completed tab when `proceso_actual == 'reciclador'`
+- **Laboratory samples**: Don't change `proceso_actual` (parallel process)
+
+### Weight Tracking System
+The system uses dynamic weight calculation through the `pesoActual` getter:
+- **Origin**: Uses initial weight (`pesoNace`)
+- **After Transport Phase 1**: Uses delivered or picked weight
+- **Recycler**: Uses processed weight (`pesoProcesado`) minus laboratory samples
+- **After Transport Phase 2**: Uses delivered or picked weight  
+- **Transformer**: Uses output weight or input weight
+
+**Important**: Laboratory samples are automatically subtracted from recycler's weight. The laboratory must take samples BEFORE transport picks up the lot.
+
+## Transformation System (Megalotes & Sublotes)
+
+### Overview
+The transformation system allows recyclers to process multiple lots together as "megalotes" and split them into "sublotes":
+- **Megalote**: Virtual container for processing multiple lots together
+- **Sublote**: New lot created from megalote with specific weight
+- **Automatic deletion**: Megalotes are removed when `pesoDisponible == 0` AND documentation is uploaded
+
+### Key Implementation
+```dart
+// Megalote deletion logic in transformacion_model.dart
+bool get debeSerEliminada => pesoDisponible <= 0 && tieneDocumentacion;
+
+// Creating sublotes
+await _transformacionService.crearSublote(
+  transformacionId: transformacion.id,
+  peso: peso,
+);
+```
+
+### Documentation Requirements
+- **Ficha Técnica de Pellet** (f_tecnica_pellet)
+- **Reporte de Resultado de Reciclador** (rep_result_reci)
+
+## Unified Lot System
+
+### Key Concepts
+- **Immutable ID**: Each lot has a single ID throughout its lifecycle
+- **Transport Phases**: Map structure for multiple transport phases
+- **Laboratory Process**: List of analyses without ownership transfer
+- **Automatic Phase Detection**: System determines transport phase based on current process
+
+### LoteUnificadoModel Structure
+```dart
+class LoteUnificadoModel {
+  final String id;                                    // Immutable unique ID
+  final DatosGeneralesLote datosGenerales;          // General information
+  final ProcesoOrigenData? origen;                   // Origin data
+  final Map<String, ProcesoTransporteData> transporteFases; // Transport phases
+  final ProcesoRecicladorData? reciclador;          // Recycler data
+  final List<AnalisisLaboratorioData> analisisLaboratorio; // Lab analyses
+  final ProcesoTransformadorData? transformador;     // Transformer data
+}
+```
+
+### Transport Phases
+- **fase_1**: Origin → Recycler
+- **fase_2**: Recycler → Transformer
+- Automatically determined based on `proceso_actual`
+
+### QR Code Handling
+```dart
+// Use QRUtils for consistent QR code handling
+import 'package:app/utils/qr_utils.dart';
+
+// Extract lot ID from QR code
+final loteId = QRUtils.extractLoteIdFromQR(qrCode);
+
+// Generate QR code
+final qrCode = QRUtils.generateLoteQR(tipoPoli, loteId);
+```
+
+### QR Scanner Implementation
+The app uses a unified full-screen QR scanner (`SharedQRScannerScreen`) for all user types:
+```dart
+// Navigate to scanner
+final qrCode = await Navigator.push<String>(
+  context,
+  MaterialPageRoute(
+    builder: (context) => SharedQRScannerScreen(
+      isAddingMore: widget.isAddingMore,
+    ),
+  ),
+);
+```
 
 ## Critical Implementation Patterns
 
@@ -241,9 +391,19 @@ void _scanAnotherLot() async {
 ### Firebase Field Naming
 Always check actual Firebase field names in models:
 ```dart
-// Example: LoteTransportistaModel uses specific field names
-'ecoce_transportista_lotes_entrada' // NOT 'lotes'
-'ecoce_transportista_peso_recibido' // NOT 'peso_total'
+// Example: Transport phases use specific field names
+'transporteFases' // Map<String, ProcesoTransporteData>
+'analisisLaboratorio' // List<AnalisisLaboratorioData>
+```
+
+### Route Arguments Pattern
+Always pass route arguments as Map<String, dynamic>:
+```dart
+// CORRECT
+Navigator.pushNamed(context, '/reciclador_lotes', arguments: {'initialTab': 1});
+
+// WRONG - Will cause type casting error
+Navigator.pushNamed(context, '/reciclador_lotes', arguments: 1);
 ```
 
 ### Navigation After Success
@@ -257,6 +417,76 @@ Navigator.of(context).pushNamedAndRemoveUntil(
 
 // WRONG - Goes to login screen
 Navigator.of(context).popUntil((route) => route.isFirst);
+```
+
+### Transport Phase Document Verification
+When verifying lot transfers involving Transport, always check the correct phase document:
+```dart
+// CORRECT - Check phase document for Transport
+if (procesoDestino == PROCESO_TRANSPORTE) {
+  String faseDestino = procesoOrigen == PROCESO_RECICLADOR ? 'fase_2' : 'fase_1';
+  destinoDoc = await loteRef.collection(PROCESO_TRANSPORTE).doc(faseDestino).get();
+}
+
+// WRONG - Transport doesn't use 'data' document
+destinoDoc = await loteRef.collection(PROCESO_TRANSPORTE).doc('data').get();
+```
+
+### Bidirectional Transfer System
+Lot transfers require both parties to complete their parts:
+1. **Sender**: Marks lot as delivered with `entrega_completada: true` and `firma_salida`
+2. **Receiver**: Marks lot as received with `recepcion_completada: true`
+3. **System**: Updates `proceso_actual` only when both are complete
+
+Use `verificarYActualizarTransferencia` to ensure transfers are completed:
+```dart
+await _loteUnificadoService.verificarYActualizarTransferencia(
+  loteId: loteId,
+  procesoOrigen: 'reciclador',
+  procesoDestino: 'transporte',
+);
+```
+
+### Laboratory Sample Flow
+Laboratory operates as a parallel process without transferring lot ownership:
+```dart
+// Laboratory takes samples from recycler lots
+await _loteUnificadoService.registrarAnalisisLaboratorio(
+  loteId: loteId,
+  pesoMuestra: peso,
+  certificado: null, // Added later
+  firmaOperador: firma,
+  evidenciasFoto: fotos,
+);
+```
+
+To get lots with laboratory analyses:
+```dart
+// Stream of lots where current user has taken samples
+_loteService.obtenerLotesConAnalisisLaboratorio()
+```
+
+### Transformation System (Megalotes)
+Megalotes are created when recycler processes materials. Critical deletion logic:
+```dart
+// TransformacionModel deletion criteria
+bool get debeSerEliminada => pesoDisponible <= 0 && tieneDocumentacion;
+
+// NEVER auto-complete transformations when uploading docs
+// Let the user explicitly mark as complete
+```
+
+### Merma Calculation Display
+Always wrap merma calculations in setState for UI updates:
+```dart
+void _calcularMerma() {
+  setState(() {
+    final pesoOriginal = double.tryParse(_pesoOriginalController.text) ?? 0;
+    final pesoProcesado = double.tryParse(_pesoProcesadoController.text) ?? 0;
+    _merma = pesoOriginal - pesoProcesado;
+    _mermaController.text = _merma.toStringAsFixed(2);
+  });
+}
 ```
 
 ### Signature Widget Pattern
@@ -292,63 +522,47 @@ AspectRatio(
 )
 ```
 
-## Dependencies
+### WillPopScope/PopScope Pattern
+All main screens should prevent back button from logging out. Use PopScope for newer Flutter versions:
+```dart
+@override
+Widget build(BuildContext context) {
+  return PopScope(
+    canPop: false,
+    onPopInvokedWithResult: (didPop, result) async {
+      if (didPop) return;
+      // Handle back button action
+    },
+    child: Scaffold(
+      // ... screen content
+    ),
+  );
+}
+```
 
-### Core UI
-- `cupertino_icons: ^1.0.8`
-- `flutter_svg: ^2.0.10+1`
-- `smooth_page_indicator: ^1.2.0+3`
-- `carousel_slider: ^5.0.0`
-- `fl_chart: ^0.69.0`
-
-### Media & Files
-- `image_picker: ^1.1.2`
-- `flutter_image_compress: ^2.3.0`
-- `screenshot: ^3.0.0`
-- `photo_view: ^0.15.0`
-- `gal: ^2.3.0`
-- `file_picker: ^8.1.2`
-- `path_provider: ^2.1.4`
-
-### QR & Scanning
-- `qr_flutter: ^4.1.0`
-- `mobile_scanner: ^6.0.2`
-
-### Maps & Location
-- `google_maps_flutter: ^2.9.0`
-- `geocoding: ^3.0.0`
-- `geolocator: ^13.0.1`
-
-### Firebase Suite
-- `firebase_core: ^3.3.0`
-- `firebase_auth: ^5.1.4`
-- `cloud_firestore: ^5.2.1`
-- `firebase_storage: ^12.1.3`
-
-### Sharing & Export
-- `share_plus: ^10.0.2`
-- `printing: ^5.13.3`
-- `pdf: ^3.11.1`
-
-### Platform Integration
-- `permission_handler: ^11.3.1`
-- `url_launcher: ^6.3.0`
-- `package_info_plus: ^8.0.2`
-
-## Project Configuration
-
-### Package Information
-- **Name**: `app`
-- **Version**: `1.0.0+1`
-- **Dart SDK**: `^3.8.1`
-- **Android Package**: `com.biowaymexico.app`
-
-### Important Files
-- `android/app/google-services.json` - Combined Firebase config for all projects
-- `ios/Runner/GoogleService-Info.plist` - iOS Firebase config (per platform)
-- `lib/config/google_maps_config.dart` - Google Maps API keys
-- `lib/utils/colors.dart` - All color constants
-- `docs/` - Solution documentation for implemented fixes
+### Adaptive UI for Overflow Prevention
+When displaying multiple items in rows, use Expanded widgets:
+```dart
+Row(
+  children: [
+    Expanded(
+      flex: 2,
+      child: Text(
+        'Long text here',
+        overflow: TextOverflow.ellipsis,
+      ),
+    ),
+    Expanded(
+      flex: 3,
+      child: Text(
+        'Another long text',
+        textAlign: TextAlign.end,
+        overflow: TextOverflow.ellipsis,
+      ),
+    ),
+  ],
+)
+```
 
 ## Code Patterns
 
@@ -395,6 +609,32 @@ Future<void> _initializeForm() async {
 }
 ```
 
+### Document Opening Pattern
+```dart
+// Use DocumentUtils for consistent document opening
+await DocumentUtils.openDocument(
+  context: context,
+  url: documentUrl,
+  documentName: 'Constancia de Situación Fiscal',
+);
+```
+
+### Scrollable Content Pattern
+For filters and statistics that should scroll with content:
+```dart
+ListView(
+  physics: const BouncingScrollPhysics(),
+  children: [
+    // Filters container
+    Container(...),
+    // Statistics container  
+    Container(...),
+    // List items
+    ...items.map((item) => ItemWidget(item)),
+  ],
+)
+```
+
 ## Naming Conventions
 
 ### Files
@@ -426,18 +666,40 @@ Future<void> _initializeForm() async {
 - `/origen_inicio` - Origin home
 - `/maestro_inicio` - Master admin home
 
+## Project Configuration
+
+### Package Information
+- **Name**: `app`
+- **Version**: `1.0.0+1`
+- **Dart SDK**: `^3.8.1`
+- **Android Package**: `com.biowaymexico.app`
+
+### Important Files
+- `android/app/google-services.json` - Combined Firebase config for all projects
+- `ios/Runner/GoogleService-Info.plist` - iOS Firebase config (per platform)
+- `lib/config/google_maps_config.dart` - Google Maps API keys
+- `lib/utils/colors.dart` - All color constants
+- `docs/` - Solution documentation for implemented fixes
+
+### Firebase Storage Rules
+Documents require proper Firebase Storage rules to be accessible:
+```javascript
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /ecoce/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+  }
+}
+```
+
 ## State Management
 Currently using StatefulWidget + setState(). No external state management libraries.
 
 ## Error Handling
 Always wrap Firebase operations in try-catch blocks and show user-friendly error messages using DialogUtils.
-
-## Responsive Design
-```dart
-final screenWidth = MediaQuery.of(context).size.width;
-final isTablet = screenWidth > 600;
-final isCompact = screenWidth < 360;
-```
 
 ## Color Usage
 NEVER hardcode colors. Always use `BioWayColors` constants:
@@ -460,13 +722,206 @@ NEVER hardcode colors. Always use `BioWayColors` constants:
 ### Technical Limitations
 1. Google Maps API keys need to be configured
 2. iOS build not tested (no GoogleService-Info.plist)
-3. User deletion requires Cloud Function (see `docs/CLOUD_FUNCTION_DELETE_USERS.md`)
+3. Cloud Functions deployment blocked on Windows Git Bash conflict
+   - Solution: Use Google Cloud Shell (see `docs/DEPLOY_FUNCTIONS_CLOUD_SHELL.md`)
 4. Default emulator is `emulator-5554`
+5. Firebase Storage rules must be configured for document access
 
-## Recent Fixes Applied
-1. Multi-lot QR scanning navigation issue (double pop prevented)
-2. Transport delivery QR automatic lot creation
-3. Recycler scanner field mapping corrections
-4. Recycler form weight calculations (gross = sum, net = user input)
-5. Signature widget positioning with proportional scaling
-6. Navigation after form completion (avoid logout)
+### Permissions Issues
+1. **Megalotes Visibility**: May not appear across devices with same account
+   - Root cause: Firestore security rules with user filters
+   - Solution documented in `docs/PROBLEMA_VISUALIZACION_MEGALOTES.md`
+
+### Testing Considerations
+- No unit tests currently implemented
+- Integration tests require real device or emulator
+- Firebase emulator suite not configured
+
+### Performance Considerations
+- Image compression target: ~50KB
+- PDF size limit: 5MB
+- Signature dimensions: 300x120 with AspectRatio 2.5
+- Use `collectionGroup` queries without user filters for better cross-device compatibility
+
+## Recent Critical Fixes
+
+### Transfer System
+- **Reciclador→Transportista Transfer** (2025-07-25): Changed from bidirectional to unidirectional confirmation
+  - Files: `lote_unificado_service.dart`, `carga_transporte_service.dart`
+  - When Transport scans from Recycler, `proceso_actual` updates immediately
+
+### UI/UX Improvements
+- **Signature Display**: Fixed AspectRatio to 2.5 with 300x120 dimensions
+- **Origin Statistics**: Shows ALL lots created (using `creado_por` field)
+- **Back Button**: All main screens use PopScope to prevent accidental logout
+- **Document Viewing**: Simplified approach with DocumentUtils and external browser
+- **Pixel Overflow**: Fixed in Recycler exit form with adaptive UI components
+- **Scrollable Statistics**: Made filters and statistics scrollable in lot management screens
+
+### Weight Tracking
+- Dynamic weight calculation through `pesoActual` getter
+- Laboratory samples automatically subtracted from recycler weight
+- Transport uses actual weight, not initial weight
+
+### QR Code System
+- Unified scanner implementation across all user types
+- Debounce logic to prevent duplicate scans
+- QRUtils for consistent QR code handling
+
+### Recent UI Updates (2025-07-27)
+- **Merma Display**: Fixed merma calculation display in Recycler reception form
+- **Scanner Messages**: Unified error messages in Transport receiver scanning
+- **Statistics Optimization**: Removed polymer statistics, reduced statistics space
+- **Adaptive Layouts**: Fixed pixel overflow in multi-lot processing sections
+
+### Critical Fixes (2025-07-27)
+
+#### Megalote Deletion Issue
+- **Problem**: Megalotes were being deleted without using all weight or uploading documentation
+- **Solution**: Modified `debeSerEliminada` getter in `transformacion_model.dart` to only check weight and documentation
+- **Files Modified**: 
+  - `lib/models/lotes/transformacion_model.dart` - Changed deletion logic
+  - `lib/screens/ecoce/reciclador/reciclador_transformacion_documentacion.dart` - Removed automatic completion
+
+#### Android Back Button Navigation
+- **Problem**: Back button was logging users out instead of navigating to home screen
+- **Solution**: Implemented PopScope with proper navigation handling
+- **Files Modified**:
+  - All Origin screens: Added PopScope to navigate to home instead of logout
+  - All Transporter screens: Replaced deprecated WillPopScope with PopScope
+  - Shared screens (profile, help): Updated to use PopScope
+
+#### UI/UX Improvements
+- **Merma Calculation**: Wrapped calculation in setState() for proper UI updates
+- **Scrollable Statistics**: Changed Column to ListView in lot management screens
+- **Adaptive Multi-lot Display**: Used Expanded widgets with flex ratios to prevent overflow
+- **Empty State Handling**: Ensured filters/statistics remain visible when no lots exist
+
+#### Code Cleanup
+- **Removed Unused Imports**: Cleaned up unused imports across Origin and Transporter screens
+- **Fixed Deprecated Methods**: Replaced withOpacity with withValues(alpha:)
+- **Added Missing Dependency**: Added pdf package (^3.11.0) to pubspec.yaml
+
+### Critical Fixes (2025-07-28)
+
+#### Type Casting Error in Recycler Exit Form
+- **Problem**: `'int' is not a subtype of type 'Map<String, dynamic>?' in type cast` error when completing exit form
+- **Root Cause**: Route argument was passed as integer instead of Map in `reciclador_formulario_salida.dart`
+- **Solution**: 
+  - Changed `arguments: 1` to `arguments: {'initialTab': 1}`
+  - Updated `main.dart` routing to handle both int and Map arguments for backward compatibility
+- **Files Modified**:
+  - `lib/screens/ecoce/reciclador/reciclador_formulario_salida.dart` - Fixed route argument format
+  - `lib/main.dart` - Added robust argument handling for `/reciclador_lotes` route
+
+#### Consumed Lots Not Disappearing from Exit Tab
+- **Problem**: Lots used to create megalotes were not being removed from the "Salida" (Exit) tab
+- **Root Cause**: Document name inconsistency - `datos_generales` collection uses `'info'` document, but transformation service was updating `'data'`
+- **Solution**: Updated document references to use consistent naming
+- **Files Modified**:
+  - `lib/services/transformacion_service.dart` - Changed `.doc('data')` to `.doc('info')` for datos_generales updates
+  - `lib/services/lote_unificado_service.dart` - Fixed inconsistent document reference in line 1760
+
+#### Recycler Lots Tab Improvements
+- **Sublots Visibility**: Fixed sublots not appearing in Completed tab by updating filters
+- **Tab Navigation**: User now stays on Completed tab after creating sublots
+- **Sample Button**: Disabled when megalote has no available weight
+- **Megalote Filtering**: Only show megalotes with available weight or pending documentation
+
+### Database Document Structure Clarification
+- **datos_generales**: Uses document name `'info'`
+- **Other processes** (origen, reciclador, transformador): Use document name `'data'`
+- **transporte**: Uses phase names ('fase_1', 'fase_2') as document names
+
+### Recent Critical Fixes (2025-01-28) - Reciclador Final Implementation
+
+#### Estadísticas del Reciclador Mostrando 0
+- **Problem**: Statistics showed 0 despite having data (megalotes and processed lots)
+- **Root Cause**: 
+  - Field name mismatch: searching for `usuarioId` instead of `usuario_id`
+  - Searching in empty `lotes` collection (lots were consumed in transformations)
+- **Solution**: 
+  - Changed query field from `usuarioId` to `usuario_id`
+  - New strategy: count unique lots from transformations instead of lotes collection
+  - Simplified stream to use single query instead of rxdart CombineLatestStream
+- **Files Modified**:
+  - `lib/services/lote_unificado_service.dart` - New statistics methods
+  - `lib/screens/ecoce/reciclador/reciclador_inicio.dart` - Updated field names
+
+#### Sistema de Transformaciones y Sublotes Completo
+- **Features Implemented**:
+  - Multiple lot selection in "Salida" tab
+  - Megalote creation with weight loss (merma) tracking
+  - On-demand sublot creation from available weight
+  - Automatic megalote deletion when weight=0 AND documentation complete
+  - Complete traceability from sublots to original lots
+- **Key Files**:
+  - `lib/services/transformacion_service.dart` - Core transformation logic
+  - `lib/screens/ecoce/reciclador/reciclador_formulario_salida.dart` - Multi-lot processing
+  - `lib/screens/ecoce/reciclador/reciclador_administracion_lotes.dart` - Sublot creation UI
+
+#### Laboratory Module Implementation (2025-01-28)
+- **Problem**: Laboratory signature and photo evidence not working
+- **Solution**: Replicated exact implementation from functional Recycler forms
+- **Files Modified**:
+  - `lib/screens/ecoce/laboratorio/laboratorio_toma_muestra_megalote_screen.dart` - Fixed signature and photo widgets
+
+#### Megalotes Visibility Issue (PENDING)
+- **Problem**: Megalotes not visible on different devices with same account
+- **Root Cause**: Transformaciones use `where('usuario_id', isEqualTo: uid)` filter that requires specific permissions
+- **Current Behavior**:
+  - Lotes: Use `collectionGroup` without user filter (work correctly)
+  - Transformaciones: Use `where` with user filter (blocked by permissions)
+- **Status**: Identified but pending implementation
+- **Documentation**: `docs/PROBLEMA_VISUALIZACION_MEGALOTES.md`
+
+#### Important Field Names in Firebase
+- **Transformaciones collection**: 
+  - User field: `usuario_id` (NOT `usuarioId`)
+  - Weight field: `peso_total_entrada`
+  - Lots array: `lotes_entrada` with objects containing `lote_id`
+- **Lotes consumed**: Marked with `consumido_en_transformacion: true` in datos_generales/info
+
+## Cloud Functions
+
+### Implemented Functions
+1. **deleteAuthUser**: Automatically deletes Firebase Auth users when accounts are rejected
+2. **cleanupOldDeletionRecords**: Daily cleanup of deletion records older than 30 days
+3. **manualDeleteUser**: Callable function for manual user deletion by administrators
+4. **healthCheck**: HTTP endpoint to verify functions are deployed and running
+
+### Deployment
+```bash
+# Use Google Cloud Shell for Windows users
+cd functions
+npm install
+firebase deploy --only functions
+```
+
+For detailed deployment instructions, see `docs/DEPLOY_FUNCTIONS_CLOUD_SHELL.md`
+
+## Documentation Index
+
+### Implementation Guides
+- `docs/RECICLADOR_ESTADISTICAS_SOLUCION.md` - Statistics fix details
+- `docs/RECICLADOR_TRANSFORMACIONES_IMPLEMENTACION.md` - Complete transformation system
+- `docs/SISTEMA_TRANSFORMACIONES_SUBLOTES.md` - Megalotes and sublotes architecture
+- `docs/RESUMEN_CLOUD_FUNCTIONS_IMPLEMENTACION.md` - Cloud Functions summary
+
+### Troubleshooting
+- `docs/PROBLEMA_VISUALIZACION_MEGALOTES.md` - Megalotes visibility issue analysis
+- `docs/MISMO_USUARIO_MULTIPLES_DISPOSITIVOS.md` - Multi-device same account usage
+- `docs/FIREBASE_RULES_TRANSFORMACIONES_SOLUTION.md` - Firebase security rules
+- `docs/TROUBLESHOOTING_GUIDE.md` - General troubleshooting guide
+
+### Deployment & Configuration
+- `docs/DEPLOY_FUNCTIONS_CLOUD_SHELL.md` - Cloud Functions deployment
+- `docs/DEPLOY_FIRESTORE_RULES_FIX.md` - Firestore rules deployment
+- `docs/HABILITAR_APIS_CLOUD_FUNCTIONS.md` - Enable required Google Cloud APIs
+- `docs/CONFIGURACION_TECNICA_COMPLETA.md` - Complete technical configuration
+
+### Recent Fixes
+- `docs/OPTIMIZACION_REGISTRO_PROVEEDORES.md` - Provider registration optimization
+- `docs/FIX_FOLIO_FORMAT.md` - Folio format standardization
+- `docs/FIX_MISSING_USER_ID_IN_SOLICITUD.md` - User ID in account requests
+- `docs/ECOCE_PROFILE_SERVICE_FIXES.md` - Profile service improvements

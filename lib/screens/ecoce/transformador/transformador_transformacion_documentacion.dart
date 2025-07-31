@@ -1,0 +1,230 @@
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../utils/colors.dart';
+import '../../../services/transformacion_service.dart';
+import '../../../services/firebase/firebase_storage_service.dart';
+import '../../../models/lotes/transformacion_model.dart';
+import '../shared/widgets/document_upload_per_requirement_widget.dart';
+import '../shared/widgets/dialog_utils.dart';
+
+class TransformadorTransformacionDocumentacion extends StatefulWidget {
+  final String transformacionId;
+  
+  const TransformadorTransformacionDocumentacion({
+    super.key,
+    required this.transformacionId,
+  });
+  
+  @override
+  State<TransformadorTransformacionDocumentacion> createState() => _TransformadorTransformacionDocumentacionState();
+}
+
+class _TransformadorTransformacionDocumentacionState extends State<TransformadorTransformacionDocumentacion> {
+  final TransformacionService _transformacionService = TransformacionService();
+  final FirebaseStorageService _storageService = FirebaseStorageService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  
+  TransformacionModel? _transformacion;
+  bool _isLoading = true;
+  bool _hasDocuments = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadTransformacionData();
+  }
+  
+  Future<void> _loadTransformacionData() async {
+    try {
+      final transformacion = await _transformacionService.obtenerTransformacion(widget.transformacionId);
+      
+      if (transformacion != null) {
+        // Verificar si ya tiene documentos
+        _hasDocuments = transformacion.documentosAsociados.isNotEmpty;
+      }
+      
+      if (mounted) {
+        setState(() {
+          _transformacion = transformacion;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        DialogUtils.showErrorDialog(
+          context,
+          title: 'Error',
+          message: 'Error al cargar la transformación: $e',
+        );
+      }
+    }
+  }
+
+  Widget _buildDocumentUploadContent() {
+    if (_hasDocuments) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.check_circle,
+              size: 80,
+              color: BioWayColors.success,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Documentación ya enviada',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Los documentos de este megalote ya fueron cargados',
+              style: TextStyle(
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.arrow_back),
+              label: const Text('Regresar'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Usar el widget sin su propio AppBar/Scaffold
+    return DocumentUploadPerRequirementWidget(
+      title: 'Documentación del Megalote',
+      subtitle: 'Carga la documentación técnica del proceso de transformación',
+      lotId: widget.transformacionId, // Usar el ID de la transformación
+      requiredDocuments: const {
+        'ficha_tecnica_pellet': 'Ficha técnica del pellet reciclado recibido',
+        'resultados_mezcla_inicial': 'Resultados de prueba de mezcla inicial',
+        'reporte_transformacion': 'Reporte del proceso de transformación',
+        'ficha_tecnica_mezcla_final': 'Ficha técnica de la mezcla final utilizada (opcional)',
+      },
+      optionalRequirements: const ['ficha_tecnica_mezcla_final'],
+      onDocumentsSubmitted: _onDocumentsSubmitted,
+      primaryColor: Colors.orange,
+      userType: 'transformador_transformacion',
+      showAppBar: false,
+    );
+  }
+
+  void _onDocumentsSubmitted(Map<String, DocumentInfo> documents) async {
+    try {
+      // Mostrar loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+      
+      // Subir documentos a Firebase Storage
+      Map<String, String> documentUrls = {};
+      for (var entry in documents.entries) {
+        if (entry.value.file != null) {
+          final url = await _storageService.uploadFile(
+            entry.value.file!,
+            'transformaciones/${widget.transformacionId}/documentos',
+          );
+          if (url != null) {
+            documentUrls[entry.key] = url;
+          }
+        }
+      }
+      
+      // Actualizar la transformación con los documentos y cambiar estado a completado
+      await _firestore.collection('transformaciones').doc(widget.transformacionId).update({
+        'documentos_asociados': documentUrls,
+        'fecha_documentacion': FieldValue.serverTimestamp(),
+        'documentacion_completada': true,
+        'estado': 'completado', // Cambiar estado a completado
+        'fecha_completado': FieldValue.serverTimestamp(),
+      });
+      
+      if (!mounted) return;
+      
+      // Cerrar loading
+      Navigator.pop(context);
+      
+      // Mostrar éxito
+      DialogUtils.showSuccessDialog(
+        context,
+        title: 'Documentación Cargada',
+        message: 'Los documentos se han guardado correctamente. El megalote ha sido completado.',
+        onAccept: () {
+          Navigator.pop(context); // Cerrar diálogo
+          Navigator.pop(context, true); // Regresar a la pantalla anterior con resultado true
+        },
+      );
+      
+    } catch (e) {
+      if (!mounted) return;
+      
+      // Cerrar loading si está abierto
+      Navigator.pop(context);
+      
+      DialogUtils.showErrorDialog(
+        context,
+        title: 'Error',
+        message: 'Error al cargar documentación: $e',
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: AppBar(
+        backgroundColor: Colors.orange,
+        title: const Text(
+          'Documentación del Megalote',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(),
+            )
+          : _transformacion == null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Transformación no encontrada',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ],
+                  ),
+                )
+              : _buildDocumentUploadContent(),
+    );
+  }
+}

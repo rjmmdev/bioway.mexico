@@ -275,39 +275,67 @@ class _PhotoEvidenceWidgetState extends State<PhotoEvidenceWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Título
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                const Text(
-                  '📷',
-                  style: TextStyle(fontSize: 24),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  widget.title,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: BioWayColors.darkGreen,
+        // Título - Only show if title is not empty
+        if (widget.title.isNotEmpty) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    '📷',
+                    style: TextStyle(fontSize: 24),
                   ),
-                ),
-                if (widget.isRequired) ...[
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 10),
                   Text(
-                    '*',
+                    widget.title,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: BioWayColors.error,
+                      color: BioWayColors.darkGreen,
                     ),
                   ),
+                  if (widget.isRequired) ...[
+                    const SizedBox(width: 4),
+                    Text(
+                      '*',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: BioWayColors.error,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
-            ),
-            if (widget.showCounter)
+              ),
+              if (widget.showCounter)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _hasMinimumPhotos
+                        ? BioWayColors.success.withValues(alpha: 0.1)
+                        : BioWayColors.warning.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${_photos.length}/${widget.maxPhotos}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: _hasMinimumPhotos
+                          ? BioWayColors.success
+                          : BioWayColors.warning,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 20),
+        ] else if (widget.showCounter) ...[
+          // If no title but counter is shown, display counter at the top
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
@@ -327,9 +355,10 @@ class _PhotoEvidenceWidgetState extends State<PhotoEvidenceWidget> {
                   ),
                 ),
               ),
-          ],
-        ),
-        const SizedBox(height: 20),
+            ],
+          ),
+          const SizedBox(height: 20),
+        ],
         
         // Indicador de optimización
         if (_isOptimizing)

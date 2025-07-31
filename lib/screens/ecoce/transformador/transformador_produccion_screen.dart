@@ -1,13 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../utils/colors.dart';
-import '../../../services/user_session_service.dart';
-import '../../../services/lote_service.dart';
-import '../../../models/ecoce/ecoce_profile_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../models/lotes/lote_transformador_model.dart';
+import '../../../models/lotes/lote_unificado_model.dart';
+import '../../../models/lotes/transformacion_model.dart';
+import '../../../services/lote_service.dart';
+import '../../../services/lote_unificado_service.dart';
+import '../../../services/transformacion_service.dart';
+import '../../../services/user_session_service.dart';
+import '../../../utils/colors.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
+import '../shared/widgets/weight_input_widget.dart';
+import '../../../utils/format_utils.dart';
+import '../shared/utils/dialog_utils.dart';
+import '../shared/utils/material_utils.dart';
 import '../shared/utils/user_type_helper.dart';
+import '../shared/screens/receptor_recepcion_pasos_screen.dart';
+import 'transformador_escaneo_screen.dart';
+import 'transformador_formulario_salida.dart';
+import 'transformador_documentacion_screen.dart';
 import 'transformador_lote_detalle_screen.dart';
+import 'transformador_documentacion_megalote_screen.dart';
+import 'utils/transformador_navigation_helper.dart';
+import 'widgets/selection_panel.dart';
 
 class TransformadorProduccionScreen extends StatefulWidget {
   final int? initialTab;
@@ -18,145 +33,656 @@ class TransformadorProduccionScreen extends StatefulWidget {
   State<TransformadorProduccionScreen> createState() => _TransformadorProduccionScreenState();
 }
 
-class _TransformadorProduccionScreenState extends State<TransformadorProduccionScreen> 
+class _TransformadorProduccionScreenState extends State<TransformadorProduccionScreen>
     with SingleTickerProviderStateMixin {
-  final UserSessionService _sessionService = UserSessionService();
-  final LoteService _loteService = LoteService();
-  final int _selectedIndex = 1; // Producción está en índice 1
   late TabController _tabController;
-  int _selectedTabIndex = 0;
+  final LoteService _loteService = LoteService();
+  final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
+  final UserSessionService _userSession = UserSessionService();
+  final TransformacionService _transformacionService = TransformacionService();
+
+  // Listas de lotes
+  List<LoteUnificadoModel> _lotesPendientes = [];
+  List<LoteUnificadoModel> _lotesConDocumentacion = [];
+  List<LoteUnificadoModel> _lotesCompletados = [];
+  List<TransformacionModel> _transformaciones = [];
   
-  EcoceProfileModel? _userProfile;
+  // Estados
   bool _isLoading = true;
+  bool _isRefreshing = false;
+  bool _mostrarSoloMegalotes = false;
+  bool _isSelectionMode = false;
+  bool _autoSelectionMode = false; // Para el tab de Salida
+  Set<String> _selectedLotes = {};
   
   // Filtros
-  String _selectedPolimero = 'Todos';
-  String _selectedTiempo = 'Este Mes';
-  List<String> _selectedProcesos = [];
+  String _filtroMaterial = 'Todos';
+  DateTime? _filtroFechaInicio;
+  DateTime? _filtroFechaFin;
   
-  // Datos desde Firebase
-  List<LoteTransformadorModel> _todosLotes = [];
-  
-  // Métricas calculadas
-  double get _capacidadUtilizada {
-    // Calcular capacidad basada en lotes en proceso
-    final lotesEnProceso = _todosLotes.where((l) => l.estado == 'procesando').toList();
-    if (lotesEnProceso.isEmpty) return 0;
-    // Asumir capacidad máxima de 2000 kg
-    final pesoEnProceso = lotesEnProceso.fold(0.0, (sum, lote) => sum + (lote.pesoIngreso ?? 0));
-    return (pesoEnProceso / 2000) * 100;
-  }
-  
-  double get _materialProcesado {
-    // Material procesado en las últimas 24 horas
-    final ahora = DateTime.now();
-    final ayer = ahora.subtract(const Duration(hours: 24));
-    final lotesRecientes = _todosLotes.where((lote) {
-      final fecha = lote.fechaCreacion ?? DateTime.now();
-      return fecha.isAfter(ayer) && lote.estado == 'completado';
-    }).toList();
-    return lotesRecientes.fold(0.0, (sum, lote) => sum + (lote.pesoIngreso ?? 0)) / 1000; // En toneladas
-  }
+  // Estadísticas
+  int _totalLotes = 0;
+  double _pesoTotal = 0.0;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 2, 
+      length: 3, 
       vsync: this,
       initialIndex: widget.initialTab ?? 0,
     );
-    _selectedTabIndex = widget.initialTab ?? 0;
+    // Activar modo de selección automática si iniciamos en el tab de Salida
+    _autoSelectionMode = (widget.initialTab ?? 0) == 0;
     _tabController.addListener(() {
       setState(() {
-        _selectedTabIndex = _tabController.index;
+        // Forzar actualización del UI cuando cambia el tab para actualizar colores
+        if (_tabController.indexIsChanging || _tabController.index != _tabController.previousIndex) {
+          // Activar modo de selección automática solo en el tab de Salida (índice 0)
+          _autoSelectionMode = _tabController.index == 0;
+          // Limpiar selecciones al cambiar de tab
+          _selectedLotes.clear();
+          // Solo mantener el modo de selección manual si NO estamos en el tab de Salida
+          if (_tabController.index != 0) {
+            _isSelectionMode = false;
+          }
+        }
       });
     });
-    _loadUserProfile();
     _loadLotes();
+    _loadTransformaciones();
   }
   
-  Future<void> _loadUserProfile() async {
-    try {
-      final profile = await _sessionService.getCurrentUserProfile();
-      if (mounted) {
-        setState(() {
-          _userProfile = profile;
-        });
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Check if we need to update the tab based on navigation arguments
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map<String, dynamic>) {
+      // Handle initial tab
+      if (args['initialTab'] != null) {
+        final tabIndex = args['initialTab'] as int;
+        if (tabIndex >= 0 && tabIndex < 3 && _tabController.index != tabIndex) {
+          _tabController.animateTo(tabIndex);
+          // Force refresh when changing tabs via navigation
+          _loadLotes();
+          _loadTransformaciones();
+        }
       }
-    } catch (e) {
-      if (mounted) {
+      
+      // Handle show megalotes flag
+      if (args['showMegalotes'] == true && !_mostrarSoloMegalotes) {
         setState(() {
-          _isLoading = false;
+          _mostrarSoloMegalotes = true;
         });
       }
     }
   }
   
-  void _loadLotes() {
-    _loteService.getLotesTransformador().listen((lotes) {
-      if (mounted) {
-        setState(() {
-          _todosLotes = lotes;
-          _isLoading = false;
-        });
-      }
-    });
-  }
-  
-  List<LoteTransformadorModel> get _lotesFiltrados {
-    final estadoFiltro = _selectedTabIndex == 0 ? 'procesando' : 'completado';
+  // Helper para obtener el estado de un lote
+  String _getEstadoLote(LoteUnificadoModel lote) {
+    // Buscar estado en especificaciones del transformador
+    // Si el transformador tiene especificaciones, buscar ahí el estado
+    if (lote.transformador?.especificaciones != null && 
+        lote.transformador!.especificaciones!.containsKey('estado')) {
+      final estado = lote.transformador!.especificaciones!['estado'] as String;
+      return estado;
+    }
     
-    return _todosLotes.where((lote) {
-      // Filtrar por estado
-      if (lote.estado != estadoFiltro) return false;
+    // Si no se encuentra, usar 'pendiente' como valor por defecto
+    return 'pendiente';
+  }
+
+  Future<void> _loadLotes() async {
+    try {
+      final stream = _loteUnificadoService.obtenerLotesPorProceso('transformador');
+
+      stream.listen((lotes) {
+        if (mounted) {
+          setState(() {
+            // Aplicar filtros
+            var lotesFiltrados = _aplicarFiltros(lotes);
+            
+            _lotesPendientes = lotesFiltrados.where((lote) {
+              final estado = _getEstadoLote(lote);
+              return estado == 'pendiente';
+            }).toList();
+
+            _lotesConDocumentacion = lotesFiltrados.where((lote) {
+              final estado = _getEstadoLote(lote);
+              return estado == 'documentacion';
+            }).toList();
+
+            _lotesCompletados = lotesFiltrados.where((lote) {
+              final estado = _getEstadoLote(lote);
+              return estado == 'completado';
+            }).toList();
+
+            // Calcular estadísticas
+            _calcularEstadisticas();
+            _isLoading = false;
+          });
+        }
+      });
+    } catch (e) {
+      print('Error al cargar lotes: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadTransformaciones() async {
+    try {
+      // Get transformations of type 'agrupacion_transformador' only
+      final userData = _userSession.getUserData();
+      final userId = userData?['userId'] ?? userData?['uid'];
+      if (userId == null) return;
       
-      // Filtrar por polímero
-      if (_selectedPolimero != 'Todos' && lote.tipoPolimero != _selectedPolimero) return false;
+      final stream = FirebaseFirestore.instance
+          .collection('transformaciones')
+          .where('tipo', isEqualTo: 'agrupacion_transformador')
+          .where('usuario_id', isEqualTo: userId)
+          .snapshots();
       
-      // Filtrar por procesos aplicados
-      if (_selectedProcesos.isNotEmpty) {
-        final procesosLote = lote.procesosAplicados ?? [];
-        if (!_selectedProcesos.every((p) => procesosLote.contains(p))) return false;
+      stream.listen((snapshot) {
+        if (mounted) {
+          final transformaciones = snapshot.docs.map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            return TransformacionModel.fromMap(data, doc.id);
+          }).toList();
+          
+          setState(() {
+            _transformaciones = transformaciones;
+          });
+        }
+      });
+    } catch (e) {
+      print('Error al cargar transformaciones: $e');
+    }
+  }
+
+  List<LoteUnificadoModel> _aplicarFiltros(List<LoteUnificadoModel> lotes) {
+    return lotes.where((lote) {
+      // Filtro por material
+      if (_filtroMaterial != 'Todos') {
+        final material = lote.datosGenerales.tipoMaterial;
+        if (!material.toLowerCase().contains(_filtroMaterial.toLowerCase())) {
+          return false;
+        }
       }
       
-      // Filtrar por tiempo
-      final ahora = DateTime.now();
-      final fecha = lote.fechaCreacion ?? DateTime.now();
-      switch (_selectedTiempo) {
-        case 'Esta Semana':
-          final inicioSemana = ahora.subtract(Duration(days: ahora.weekday - 1));
-          return fecha.isAfter(inicioSemana);
-        case 'Este Mes':
-          return fecha.month == ahora.month && fecha.year == ahora.year;
-        case 'Últimos tres meses':
-          final haceTresMeses = ahora.subtract(const Duration(days: 90));
-          return fecha.isAfter(haceTresMeses);
-        case 'Este Año':
-          return fecha.year == ahora.year;
+      // Filtro por fecha
+      if (_filtroFechaInicio != null || _filtroFechaFin != null) {
+        final fechaCreacion = lote.datosGenerales.fechaCreacion;
+        if (_filtroFechaInicio != null && fechaCreacion.isBefore(_filtroFechaInicio!)) {
+          return false;
+        }
+        if (_filtroFechaFin != null && fechaCreacion.isAfter(_filtroFechaFin!)) {
+          return false;
+        }
       }
       
       return true;
     }).toList();
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  void _calcularEstadisticas() {
+    _totalLotes = _lotesPendientes.length + _lotesConDocumentacion.length + _lotesCompletados.length;
+    _pesoTotal = 0.0;
+    
+    for (var lote in [..._lotesPendientes, ..._lotesConDocumentacion, ..._lotesCompletados]) {
+      _pesoTotal += lote.pesoActual;
+    }
+  }
+
+  void _toggleSelectionMode() {
+    setState(() {
+      _isSelectionMode = !_isSelectionMode;
+      if (!_isSelectionMode) {
+        _selectedLotes.clear();
+      }
+    });
+  }
+
+  void _toggleLoteSelection(String loteId) {
+    setState(() {
+      if (_selectedLotes.contains(loteId)) {
+        _selectedLotes.remove(loteId);
+      } else {
+        _selectedLotes.add(loteId);
+      }
+    });
+  }
+
+
+  void _procesarLotesSeleccionados() async {
+    if (_selectedLotes.isEmpty) return;
+    
+    // Navigate to the form with selected lots
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TransformadorFormularioSalida(
+          lotesIds: _selectedLotes.toList(),
+        ),
+      ),
+    );
+    
+    // Clear selection after processing
+    setState(() {
+      _isSelectionMode = false;
+      _selectedLotes.clear();
+    });
+  }
+
+  Widget _buildTransformacionCard(TransformacionModel transformacion) {
+    final estado = transformacion.datos['estado'] ?? 'en_proceso';
+    final bool hasDocumentation = transformacion.tieneDocumentacion;
+    final productoFabricado = transformacion.datos['producto_fabricado'] ?? 'Sin especificar';
+    final cantidadProducto = transformacion.datos['cantidad_producto'] ?? 0.0;
+    final tipoPolimero = transformacion.datos['tipo_polimero'] ?? '';
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.orange.withValues(alpha: 0.3),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            // View megalote details
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.orange,
+                            Colors.orange.withValues(alpha: 0.8),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.merge_type,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'MEGALOTE ${transformacion.id.substring(0, 8)}',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange,
+                            ),
+                          ),
+                          Text(
+                            FormatUtils.formatDateTime(transformacion.fechaInicio),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    _buildTransformacionEstadoChip(estado),
+                  ],
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Product info
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.factory, size: 16, color: Colors.grey[600]),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              productoFabricado,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: MaterialUtils.getMaterialColor(tipoPolimero).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  tipoPolimero,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: MaterialUtils.getMaterialColor(tipoPolimero),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '${cantidadProducto.toStringAsFixed(2)} kg',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Stats row
+                Row(
+                  children: [
+                    Icon(Icons.inventory_2, size: 16, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${transformacion.lotesEntrada.length} lotes procesados',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    if (estado == 'completado') ...[
+                      const SizedBox(width: 16),
+                      Icon(Icons.check_circle, size: 16, color: BioWayColors.success),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Completado',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: BioWayColors.success,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Action button
+                if (estado == 'documentacion') ...[
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _uploadDocumentacion(transformacion),
+                      icon: const Icon(Icons.upload_file, size: 18),
+                      label: const Text('Cargar Documentación'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.orange,
+                        side: const BorderSide(color: Colors.orange),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _createSublote(TransformacionModel transformacion) async {
+    final TextEditingController pesoController = TextEditingController();
+    
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.cut,
+                      color: Colors.orange,
+                      size: 28,
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Crear Sublote',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.scale, color: Colors.orange),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Peso disponible: ${transformacion.pesoDisponible.toStringAsFixed(2)} kg',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                
+                WeightInputWidget(
+                  controller: pesoController,
+                  label: 'Peso del sublote (kg)',
+                  primaryColor: Colors.orange,
+                  quickAddValues: const [10, 25, 50, 100],
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Ingrese el peso';
+                    }
+                    final peso = double.tryParse(value);
+                    if (peso == null || peso <= 0) {
+                      return 'Peso inválido';
+                    }
+                    if (peso > transformacion.pesoDisponible) {
+                      return 'Peso excede el disponible';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+                
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancelar'),
+                    ),
+                    const SizedBox(width: 12),
+                    StatefulBuilder(
+                      builder: (context, setState) {
+                        bool isLoading = false;
+                        
+                        return ElevatedButton(
+                          onPressed: isLoading
+                              ? null
+                              : () async {
+                                  final peso = double.tryParse(pesoController.text);
+                                  if (peso == null || peso <= 0 || peso > transformacion.pesoDisponible) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Por favor ingrese un peso válido'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  
+                                  setState(() => isLoading = true);
+                                  
+                                  try {
+                                    await _transformacionService.crearSublote(
+                                      transformacionId: transformacion.id,
+                                      peso: peso,
+                                    );
+                                    
+                                    if (mounted) {
+                                      Navigator.pop(context);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Sublote creado exitosamente'),
+                                          backgroundColor: BioWayColors.success,
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    setState(() => isLoading = false);
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Error: ${e.toString()}'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : const Text('Crear'),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _uploadDocumentacion(TransformacionModel transformacion) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TransformadorDocumentacionMegaloteScreen(
+          transformacionId: transformacion.id,
+          transformacion: transformacion,
+        ),
+      ),
+    ).then((result) {
+      // Refresh transformaciones after returning
+      _loadTransformaciones();
+    });
+  }
+
+  // Obtener color según el tab actual para indicar urgencia
+  Color _getTabColor() {
+    switch (_tabController.index) {
+      case 0: // Salida - Urgente (Rojo)
+        return BioWayColors.error;
+      case 1: // Documentación - Medio (Naranja)
+        return Colors.orange;
+      case 2: // Completados - Bajo (Verde)
+        return BioWayColors.success;
+      default:
+        return Colors.orange;
+    }
   }
 
   void _onBottomNavTapped(int index) {
     HapticFeedback.lightImpact();
     
-    if (index == _selectedIndex) return;
+    if (index == 1) return; // Ya estamos en producción
     
     switch (index) {
       case 0:
         Navigator.pushReplacementNamed(context, '/transformador_inicio');
-        break;
-      case 1:
-        // Ya estamos en producción
         break;
       case 2:
         Navigator.pushNamed(context, '/transformador_ayuda');
@@ -168,208 +694,759 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
   }
 
   @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // Prevenir que el botón atrás cierre la sesión
-        return false;
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        body: Center(
+          child: CircularProgressIndicator(
+            color: Colors.orange,
+          ),
+        ),
+      );
+    }
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        Navigator.pushReplacementNamed(context, '/transformador_inicio');
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F5F5),
-        body: SafeArea(
-          child: CustomScrollView(
-            slivers: [
-              // Header moderno con gradiente (igual que la pantalla de inicio)
-              SliverToBoxAdapter(
-                child: Container(
-                  height: 280,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        BioWayColors.ecoceGreen,
-                        BioWayColors.ecoceGreen.withValues(alpha: 0.8),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          title: const Text(
+            'Gestión de Producción',
+            style: TextStyle(
+              color: Colors.black87,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          actions: [
+            if (!_autoSelectionMode && _tabController.index == 0)
+              IconButton(
+                icon: const Icon(Icons.checklist, color: Colors.grey),
+                onPressed: _toggleSelectionMode,
+              ),
+          ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(48),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.grey.shade200,
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                indicatorColor: _getTabColor(),
+                indicatorWeight: 3,
+                labelColor: _getTabColor(),
+                unselectedLabelColor: Colors.grey,
+                labelStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+                tabs: [
+                  Tab(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Salida',
+                          style: TextStyle(fontSize: 14),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: _lotesPendientes.isNotEmpty
+                                ? BioWayColors.error.withValues(alpha: 0.2)
+                                : Colors.grey.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '${_lotesPendientes.length}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: _lotesPendientes.isNotEmpty
+                                  ? BioWayColors.error
+                                  : Colors.grey,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  child: Stack(
-                    children: [
-                      // Patrón de fondo
-                      Positioned(
-                        right: -50,
-                        top: -50,
-                        child: Container(
-                          width: 200,
-                          height: 200,
+                  Tab(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Docs',
+                          style: TextStyle(fontSize: 14),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: 0.1),
+                            color: _lotesConDocumentacion.isNotEmpty
+                                ? BioWayColors.warning.withValues(alpha: 0.2)
+                                : Colors.grey.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '${_lotesConDocumentacion.length}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: _lotesConDocumentacion.isNotEmpty
+                                  ? BioWayColors.warning
+                                  : Colors.grey,
+                            ),
                           ),
                         ),
-                      ),
-                      Positioned(
-                        left: -30,
-                        bottom: -30,
-                        child: Container(
-                          width: 150,
-                          height: 150,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: 0.05),
-                          ),
-                        ),
-                      ),
-                      // Contenido
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Título y botón de actualizar
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Producción',
-                                  style: TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.refresh,
-                                    color: Colors.white,
-                                  ),
-                                  onPressed: () {
-                                    HapticFeedback.lightImpact();
-                                    _loadLotes();
-                                  },
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            // Indicadores en tiempo real
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildStatusCard(
-                                    icon: Icons.speed,
-                                    label: 'Capacidad Utilizada',
-                                    value: '${_capacidadUtilizada.toStringAsFixed(1)}%',
-                                    color: _capacidadUtilizada > 80 ? BioWayColors.error : BioWayColors.success,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _buildStatusCard(
-                                    icon: Icons.factory,
-                                    label: 'Material Procesado (24h)',
-                                    value: '${_materialProcesado.toStringAsFixed(2)} Ton',
-                                    color: BioWayColors.info,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            // Tabs
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: TabBar(
-                                controller: _tabController,
-                                indicatorColor: Colors.white,
-                                indicatorWeight: 3,
-                                labelColor: Colors.white,
-                                unselectedLabelColor: Colors.white60,
-                                indicator: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                ),
-                                tabs: [
-                                  Tab(
-                                    text: 'En Proceso (${_todosLotes.where((l) => l.estado == 'procesando').length})',
-                                  ),
-                                  Tab(
-                                    text: 'Completados (${_todosLotes.where((l) => l.estado == 'completado').length})',
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              // Contenido principal
-              SliverFillRemaining(
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF5F5F5),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30),
+                      ],
                     ),
                   ),
-                  child: _isLoading
-                      ? const Center(
-                          child: CircularProgressIndicator(color: BioWayColors.ecoceGreen),
-                        )
-                      : TabBarView(
-                          controller: _tabController,
-                          children: [
-                            _buildProcesoContent(),
-                            _buildCompletadosContent(),
-                          ],
+                  Tab(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            'Completos',
+                            style: TextStyle(fontSize: 14),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: _lotesCompletados.isNotEmpty
+                                ? BioWayColors.success.withValues(alpha: 0.2)
+                                : Colors.grey.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '${_lotesCompletados.length}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: _lotesCompletados.isNotEmpty
+                                  ? BioWayColors.success
+                                  : Colors.grey,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
+        ),
+        body: Column(
+          children: [
+            // Panel de selección múltiple
+            if ((_isSelectionMode || _autoSelectionMode) && _selectedLotes.isNotEmpty && _tabController.index == 0)
+              SelectionPanel(
+                selectedLoteIds: _selectedLotes,
+                allLotes: _lotesPendientes,
+                onCancel: () {
+                  setState(() {
+                    _isSelectionMode = false;
+                    _selectedLotes.clear();
+                  });
+                },
+                onProcess: _procesarLotesSeleccionados,
+              ),
+            // Contenido con TabBarView
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildTabContent(_lotesPendientes),
+                  _buildTabContent(_lotesConDocumentacion),
+                  _buildCompletadosTab(),
+                ],
+              ),
+            ),
+          ],
         ),
         bottomNavigationBar: EcoceBottomNavigation(
-          selectedIndex: _selectedIndex,
+          selectedIndex: 1, // Producción está en índice 1
           onItemTapped: _onBottomNavTapped,
-          primaryColor: BioWayColors.ecoceGreen,
+          primaryColor: Colors.orange,
           items: EcoceNavigationConfigs.transformadorItems,
-          fabConfig: FabConfig(
-            icon: Icons.add,
-            onPressed: () {
-              HapticFeedback.lightImpact();
-              Navigator.pushNamed(context, '/transformador_recibir_lote');
-            },
-          ),
+          fabConfig: UserTypeHelper.getFabConfig('T', context),
         ),
-        floatingActionButton: EcoceFloatingActionButton(
-          onPressed: () {
-            HapticFeedback.lightImpact();
-            Navigator.pushNamed(context, '/transformador_recibir_lote');
-          },
-          icon: Icons.add,
-          backgroundColor: BioWayColors.ecoceGreen,
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: _tabController.index == 0 && (_isSelectionMode || _autoSelectionMode) && _selectedLotes.isNotEmpty
+          ? FloatingActionButton.extended(
+              onPressed: _procesarLotesSeleccionados,
+              backgroundColor: Colors.orange,
+              icon: Icon(
+                Icons.merge_type, 
+                color: Colors.white,
+              ),
+              label: Text(
+                _selectedLotes.length > 1 
+                    ? 'Procesar ${_selectedLotes.length} lotes'
+                    : 'Procesar 1 lote',
+                style: TextStyle(
+                  color: Colors.white,
+                ),
+              ),
+            )
+          : EcoceFloatingActionButton(
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                // Usar el flujo de recepción por pasos igual que el reciclador
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ReceptorRecepcionPasosScreen(
+                      userType: 'transformador',
+                    ),
+                  ),
+                );
+              },
+              icon: Icons.add,
+              backgroundColor: Colors.orange,
+              tooltip: 'Recibir Lote',
+            ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
   }
 
-  Widget _buildStatusCard({
-    required IconData icon,
+  Widget _buildTabContent(List<LoteUnificadoModel> lotes) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        HapticFeedback.mediumImpact();
+        setState(() {
+          _isRefreshing = true;
+        });
+        
+        // Simular un pequeño delay para que el usuario vea que se está refrescando
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        // Recargar los datos
+        _loadLotes();
+        _loadTransformaciones();
+        
+        // Esperar un poco más para asegurar que los listeners se actualicen
+        await Future.delayed(const Duration(milliseconds: 300));
+        
+        setState(() {
+          _isRefreshing = false;
+        });
+      },
+      color: Colors.orange,
+      backgroundColor: Colors.white,
+      strokeWidth: 2.5,
+      displacement: 40.0,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        children: [
+        // Filters container
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // Show megalotes toggle for documentation tab
+              if (_tabController.index == 1) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _mostrarSoloMegalotes = !_mostrarSoloMegalotes;
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _mostrarSoloMegalotes
+                                ? Colors.orange.withValues(alpha: 0.1)
+                                : Colors.grey[100],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: _mostrarSoloMegalotes
+                                  ? Colors.orange
+                                  : Colors.grey[300]!,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _mostrarSoloMegalotes
+                                    ? Icons.check_box
+                                    : Icons.check_box_outline_blank,
+                                color: _mostrarSoloMegalotes
+                                    ? Colors.orange
+                                    : Colors.grey,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Mostrar Megalotes',
+                                style: TextStyle(
+                                  color: _mostrarSoloMegalotes
+                                      ? Colors.orange
+                                      : Colors.grey[700],
+                                  fontWeight: _mostrarSoloMegalotes
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                              const Spacer(),
+                              Icon(
+                                Icons.merge_type,
+                                color: _mostrarSoloMegalotes
+                                    ? Colors.orange
+                                    : Colors.grey,
+                                size: 20,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
+              
+              if (!_mostrarSoloMegalotes || _tabController.index != 1) ...[
+                // Material filter chips for individual lots
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    children: [
+                      _buildFilterChip(
+                        label: 'Todos',
+                        isSelected: _filtroMaterial == 'Todos',
+                        onSelected: (selected) {
+                          setState(() {
+                            _filtroMaterial = 'Todos';
+                          });
+                          _loadLotes();
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        label: 'PEBD',
+                        isSelected: _filtroMaterial == 'PEBD',
+                        onSelected: (selected) {
+                          setState(() {
+                            _filtroMaterial = selected ? 'PEBD' : 'Todos';
+                          });
+                          _loadLotes();
+                        },
+                        color: BioWayColors.pebdPink,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        label: 'PP',
+                        isSelected: _filtroMaterial == 'PP',
+                        onSelected: (selected) {
+                          setState(() {
+                            _filtroMaterial = selected ? 'PP' : 'Todos';
+                          });
+                          _loadLotes();
+                        },
+                        color: BioWayColors.ppPurple,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        label: 'Multilaminado',
+                        isSelected: _filtroMaterial == 'Multilaminado',
+                        onSelected: (selected) {
+                          setState(() {
+                            _filtroMaterial = selected ? 'Multilaminado' : 'Todos';
+                          });
+                          _loadLotes();
+                        },
+                        color: BioWayColors.multilaminadoBrown,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        
+        // Statistics container
+        if (_tabController.index == 1 && _mostrarSoloMegalotes)
+          _buildMegaloteStatistics()
+        else
+          _buildStatistics(),
+        
+        // List items
+        if (_tabController.index == 1 && _mostrarSoloMegalotes) ...[
+          // Show megalotes with estado 'documentacion'
+          if (_filterTransformacionesByState().isEmpty)
+            _buildEmptyStateMegalotes()
+          else
+            ..._filterTransformacionesByState().map(
+              (transformacion) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildTransformacionCard(transformacion),
+              ),
+            ),
+        ] else ...[
+          // Show individual lots
+          if (lotes.isEmpty)
+            _buildEmptyState()
+          else
+            ...lotes.map((lote) => _buildLoteCard(lote)),
+        ],
+        
+        const SizedBox(height: 100), // Space for FAB
+      ],
+    ),
+    );
+  }
+
+  Widget _buildCompletadosTab() {
+    return RefreshIndicator(
+      onRefresh: () async {
+        HapticFeedback.mediumImpact();
+        setState(() {
+          _isRefreshing = true;
+        });
+        
+        // Simular un pequeño delay para que el usuario vea que se está refrescando
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        // Recargar los datos
+        _loadLotes();
+        _loadTransformaciones();
+        
+        // Esperar un poco más para asegurar que los listeners se actualicen
+        await Future.delayed(const Duration(milliseconds: 300));
+        
+        setState(() {
+          _isRefreshing = false;
+        });
+      },
+      color: BioWayColors.success,
+      backgroundColor: Colors.white,
+      strokeWidth: 2.5,
+      displacement: 40.0,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        children: [
+        // Filters container with megalote toggle
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // Toggle for megalotes
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          _mostrarSoloMegalotes = !_mostrarSoloMegalotes;
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _mostrarSoloMegalotes
+                              ? _getTabColor().withValues(alpha: 0.1)
+                              : Colors.grey[100],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: _mostrarSoloMegalotes
+                                ? _getTabColor()
+                                : Colors.grey[300]!,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _mostrarSoloMegalotes
+                                  ? Icons.check_box
+                                  : Icons.check_box_outline_blank,
+                              color: _mostrarSoloMegalotes
+                                  ? _getTabColor()
+                                  : Colors.grey,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Mostrar solo Megalotes',
+                              style: TextStyle(
+                                color: _mostrarSoloMegalotes
+                                    ? _getTabColor()
+                                    : Colors.grey[700],
+                                fontWeight: _mostrarSoloMegalotes
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                            const Spacer(),
+                            Icon(
+                              Icons.merge_type,
+                              color: _mostrarSoloMegalotes
+                                  ? _getTabColor()
+                                  : Colors.grey,
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              
+              if (!_mostrarSoloMegalotes) ...[
+                const SizedBox(height: 12),
+                // Material filter chips
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    children: [
+                      _buildFilterChip(
+                        label: 'Todos',
+                        isSelected: _filtroMaterial == 'Todos',
+                        onSelected: (selected) {
+                          setState(() {
+                            _filtroMaterial = 'Todos';
+                          });
+                          _loadLotes();
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        label: 'PEBD',
+                        isSelected: _filtroMaterial == 'PEBD',
+                        onSelected: (selected) {
+                          setState(() {
+                            _filtroMaterial = selected ? 'PEBD' : 'Todos';
+                          });
+                          _loadLotes();
+                        },
+                        color: BioWayColors.pebdPink,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        label: 'PP',
+                        isSelected: _filtroMaterial == 'PP',
+                        onSelected: (selected) {
+                          setState(() {
+                            _filtroMaterial = selected ? 'PP' : 'Todos';
+                          });
+                          _loadLotes();
+                        },
+                        color: BioWayColors.ppPurple,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        label: 'Multilaminado',
+                        isSelected: _filtroMaterial == 'Multilaminado',
+                        onSelected: (selected) {
+                          setState(() {
+                            _filtroMaterial = selected ? 'Multilaminado' : 'Todos';
+                          });
+                          _loadLotes();
+                        },
+                        color: BioWayColors.multilaminadoBrown,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        
+        // Statistics container
+        if (_mostrarSoloMegalotes)
+          _buildMegaloteStatistics()
+        else
+          _buildStatistics(),
+        
+        // List items for completed tab - show megalotes
+        if (_tabController.index == 2) ...[
+          // Toggle between individual lots and megalotes
+          if (_mostrarSoloMegalotes) ...[
+          if (_transformaciones.isEmpty)
+            _buildEmptyStateMegalotes()
+          else
+            ..._filterTransformacionesByState().map(
+              (transformacion) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildTransformacionCard(transformacion),
+              ),
+            ),
+          ] else ...[
+            if (_lotesCompletados.isEmpty)
+              _buildEmptyState()
+            else
+              ..._lotesCompletados.map((lote) => _buildLoteCard(lote)),
+          ],
+        ] else ...[
+          // For tabs 0 and 1, only show individual lots
+          if (_lotesCompletados.isEmpty)
+            _buildEmptyState()
+          else
+            ..._lotesCompletados.map((lote) => _buildLoteCard(lote)),
+        ],
+        
+        const SizedBox(height: 100),
+      ],
+    ),
+    );
+  }
+
+  Widget _buildFilterChip({
     required String label,
+    required bool isSelected,
+    required Function(bool) onSelected,
+    Color? color,
+  }) {
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: onSelected,
+      selectedColor: (color ?? Colors.orange).withValues(alpha: 0.2),
+      checkmarkColor: color ?? Colors.orange,
+      labelStyle: TextStyle(
+        color: isSelected ? (color ?? Colors.orange) : Colors.grey[700],
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      ),
+      side: BorderSide(
+        color: isSelected ? (color ?? Colors.orange) : Colors.grey[300]!,
+      ),
+    );
+  }
+
+  Widget _buildStatistics() {
+    final estadisticas = _calcularEstadisticasTab();
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.inventory_2,
+              value: estadisticas['total'].toString(),
+              label: 'Lotes',
+              color: _getTabColor(),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.scale,
+              value: '${(estadisticas['peso'] / 1000).toStringAsFixed(1)}',
+              label: 'Toneladas',
+              color: _getTabColor(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMegaloteStatistics() {
+    final transformacionesVisibles = _transformaciones.where((t) => !t.debeSerEliminada).toList();
+    final totalMegalotes = transformacionesVisibles.length;
+    final pesoDisponible = transformacionesVisibles.fold(0.0, (sum, t) => sum + t.pesoDisponible);
+    final totalSublotes = transformacionesVisibles.fold(0, (sum, t) => sum + t.sublotesGenerados.length);
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  icon: Icons.merge_type,
+                  value: totalMegalotes.toString(),
+                  label: 'Megalotes',
+                  color: Colors.orange,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildStatCard(
+                  icon: Icons.cut,
+                  value: totalSublotes.toString(),
+                  label: 'Sublotes',
+                  color: Colors.purple,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _buildStatCard(
+            icon: Icons.scale,
+            value: '${pesoDisponible.toStringAsFixed(2)} kg',
+            label: 'Peso disponible total',
+            color: BioWayColors.success,
+            fullWidth: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
     required String value,
+    required String label,
     required Color color,
+    bool fullWidth = false,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -381,35 +1458,35 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: 20),
+            child: Icon(icon, color: color, size: 18),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 Text(
                   label,
                   style: TextStyle(
                     fontSize: 11,
                     color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
                   ),
                 ),
               ],
@@ -420,356 +1497,500 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
     );
   }
 
-  Widget _buildProcesoContent() {
-    return Column(
-      children: [
-        // Filtros
-        _buildFilterSection(),
-        
-        // Lista de lotes
-        Expanded(
-          child: _lotesFiltrados.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.factory_outlined,
-                        size: 80,
-                        color: Colors.grey[300],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No hay lotes en proceso',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/transformador_escaneo');
-                        },
-                        child: const Text('Recibir nuevo lote'),
-                      ),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _lotesFiltrados.length,
-                  itemBuilder: (context, index) {
-                    final lote = _lotesFiltrados[index];
-                    return _buildLoteCard(lote);
-                  },
-                ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCompletadosContent() {
-    return Column(
-      children: [
-        // Filtros
-        _buildFilterSection(),
-        
-        // Lista de lotes
-        Expanded(
-          child: _lotesFiltrados.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.check_circle_outline,
-                        size: 80,
-                        color: Colors.grey[300],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No hay lotes completados',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _lotesFiltrados.length,
-                  itemBuilder: (context, index) {
-                    final lote = _lotesFiltrados[index];
-                    return _buildLoteCard(lote);
-                  },
-                ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFilterSection() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          // Filtro de polímeros
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: ['Todos', 'PEBD', 'PP', 'Multilaminado'].map((polimero) {
-                final isSelected = _selectedPolimero == polimero;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(polimero),
-                    selected: isSelected,
-                    selectedColor: BioWayColors.ecoceGreen.withValues(alpha: 0.2),
-                    labelStyle: TextStyle(
-                      color: isSelected ? BioWayColors.ecoceGreen : Colors.grey[700],
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
-                    onSelected: (_) {
-                      setState(() {
-                        _selectedPolimero = polimero;
-                      });
-                    },
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Filtro de tiempo
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: BioWayColors.backgroundGrey,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _selectedTiempo,
-                isDense: true,
-                isExpanded: true,
-                icon: Icon(Icons.arrow_drop_down, color: BioWayColors.darkGreen),
-                items: ['Esta Semana', 'Este Mes', 'Últimos tres meses', 'Este Año'].map((tiempo) {
-                  return DropdownMenuItem(
-                    value: tiempo,
-                    child: Text(tiempo, style: const TextStyle(fontSize: 14)),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedTiempo = value!;
-                  });
-                },
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLoteCard(LoteTransformadorModel lote) {
-    final bool esEnProceso = lote.estado == 'procesando';
-    final Color estadoColor = esEnProceso ? Colors.blue : BioWayColors.success;
+  Widget _buildLoteCard(LoteUnificadoModel lote) {
+    final bool isSelected = _selectedLotes.contains(lote.id);
+    final estado = _getEstadoLote(lote);
+    final canSelect = _tabController.index == 0 && estado == 'pendiente';
+    final bool esSublote = lote.esSublote;
+    // Mostrar checkboxes por defecto en el tab de Salida
+    final bool showCheckbox = _autoSelectionMode && canSelect;
     
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      elevation: 2,
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TransformadorLoteDetalleScreen(
-                firebaseId: lote.id!,
-                peso: lote.pesoIngreso ?? 0.0,
-                tiposAnalisis: lote.tiposAnalisis ?? [],
-                productoFabricado: lote.productoFabricado ?? 'En proceso',
-                composicionMaterial: lote.composicionMaterial ?? 'Por definir',
-                fechaCreacion: lote.fechaCreacion,
-                procesosAplicados: lote.procesosAplicados,
-                comentarios: lote.comentarios,
-                tipoPolimero: lote.tipoPolimero,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        elevation: isSelected ? 3 : 1,
+        shadowColor: isSelected ? Colors.orange.withValues(alpha: 0.25) : Colors.black12,
+        child: InkWell(
+          onTap: () {
+            if ((showCheckbox || _isSelectionMode) && canSelect) {
+              _toggleLoteSelection(lote.id);
+            } else if (!_isSelectionMode && !showCheckbox) {
+              _navigateToLoteDetail(lote);
+            }
+          },
+          onLongPress: canSelect && !_autoSelectionMode
+              ? () {
+                  if (!_isSelectionMode) {
+                    _toggleSelectionMode();
+                    _toggleLoteSelection(lote.id);
+                  }
+                }
+              : null,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected 
+                    ? Colors.orange 
+                    : (esSublote 
+                        ? Colors.purple.withValues(alpha: 0.3)
+                        : Colors.transparent),
+                width: isSelected ? 2 : (esSublote ? 1.5 : 0),
               ),
             ),
-          );
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header con ID y estado
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    lote.id ?? 'Sin ID',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: BioWayColors.darkGreen,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: estadoColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: estadoColor, width: 1),
-                    ),
-                    child: Text(
-                      esEnProceso ? 'EN PROCESO' : 'COMPLETADO',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: estadoColor,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              
-              // Información del producto
-              Row(
-                children: [
-                  Icon(Icons.category, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      lote.productoFabricado ?? 'En proceso',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              
-              // Tipo de polímero y peso
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _getPolimerColor(lote.tipoPolimero ?? '').withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      lote.tipoPolimero ?? 'N/A',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: _getPolimerColor(lote.tipoPolimero ?? ''),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Icon(Icons.scale, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${lote.pesoIngreso?.toStringAsFixed(1) ?? '0.0'} kg',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[700],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              
-              // Procesos aplicados
-              if ((lote.procesosAplicados ?? []).isNotEmpty) ...[
-                Text(
-                  'Procesos aplicados:',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  children: (lote.procesosAplicados ?? []).map((proceso) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        proceso,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: BioWayColors.ecoceGreen,
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header row
+                Row(
+                  children: [
+                    if ((showCheckbox || _isSelectionMode) && canSelect) ...[
+                      Checkbox(
+                        value: isSelected,
+                        onChanged: (_) => _toggleLoteSelection(lote.id),
+                        activeColor: Colors.orange,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
                         ),
                       ),
-                    );
-                  }).toList(),
+                      const SizedBox(width: 12),
+                    ],
+                    Expanded(
+                      child: Row(
+                        children: [
+                          if (esSublote) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.purple.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: Colors.purple.withValues(alpha: 0.3),
+                                  width: 0.5,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.cut,
+                                    size: 10,
+                                    color: Colors.purple,
+                                  ),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    'SUBLOTE',
+                                    style: TextStyle(
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.purple,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                          ],
+                          Expanded(
+                            child: Text(
+                              'Lote ${lote.id}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    _buildEstadoChip(estado),
+                  ],
                 ),
                 const SizedBox(height: 8),
-              ],
-              
-              // Fecha y botón
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _formatDateTime(lote.fechaCreacion ?? DateTime.now()),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
+                
+                // Material and weight info
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: MaterialUtils.getMaterialColor(
+                          lote.datosGenerales.tipoMaterial
+                        ).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        lote.datosGenerales.tipoMaterial,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: MaterialUtils.getMaterialColor(
+                            lote.datosGenerales.tipoMaterial
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                  TextButton.icon(
-                    onPressed: null,
-                    icon: const Icon(Icons.arrow_forward, size: 16),
-                    label: const Text('Ver detalles'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: BioWayColors.ecoceGreen,
+                    const SizedBox(width: 8),
+                    Icon(Icons.scale, size: 14, color: Colors.grey[600]),
+                    const SizedBox(width: 3),
+                    Text(
+                      '${lote.pesoActual.toStringAsFixed(2)} kg',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[700],
+                      ),
                     ),
+                    const Spacer(),
+                    Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
+                    const SizedBox(width: 3),
+                    Text(
+                      FormatUtils.formatDate(lote.datosGenerales.fechaCreacion),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+                
+                // Action buttons for specific states (hide when checkboxes are shown)
+                if (!showCheckbox && !_isSelectionMode && _tabController.index == 0) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 32,
+                          child: OutlinedButton.icon(
+                            onPressed: () => _procesarLote(lote),
+                            icon: const Icon(Icons.play_arrow, size: 16),
+                            label: const Text('Procesar', style: TextStyle(fontSize: 12)),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: _getTabColor(),
+                              side: BorderSide(color: _getTabColor()),
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
-              ),
-            ],
+                
+                if (!_isSelectionMode && _tabController.index == 1) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 32,
+                          child: OutlinedButton.icon(
+                            onPressed: () => _cargarDocumentacion(lote),
+                            icon: const Icon(Icons.upload_file, size: 16),
+                            label: const Text('Cargar Documentos', style: TextStyle(fontSize: 12)),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: BioWayColors.warning,
+                              side: BorderSide(color: BioWayColors.warning),
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Color _getPolimerColor(String polimero) {
-    switch (polimero) {
-      case 'PEBD':
-        return BioWayColors.pebdPink;
-      case 'PP':
-        return BioWayColors.ppPurple;
-      case 'Multilaminado':
-        return BioWayColors.multilaminadoBrown;
+  Widget _buildEstadoChip(String estado) {
+    Color color;
+    String texto;
+    IconData icon;
+    
+    switch (estado) {
+      case 'pendiente':
+        color = Colors.orange;
+        texto = 'Pendiente';
+        icon = Icons.pending;
+        break;
+      case 'documentacion':
+        color = BioWayColors.warning;
+        texto = 'Documentación';
+        icon = Icons.description;
+        break;
+      case 'completado':
+        color = BioWayColors.success;
+        texto = 'Completado';
+        icon = Icons.check_circle;
+        break;
       default:
-        return Colors.grey;
+        color = Colors.grey;
+        texto = estado;
+        icon = Icons.help_outline;
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color, width: 0.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 3),
+          Text(
+            texto,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    String message;
+    IconData icon;
+    
+    switch (_tabController.index) {
+      case 0:
+        message = 'No hay lotes pendientes de procesar';
+        icon = Icons.pending_actions;
+        break;
+      case 1:
+        message = 'No hay lotes esperando documentación';
+        icon = Icons.description_outlined;
+        break;
+      case 2:
+        message = 'No hay lotes completados';
+        icon = Icons.check_circle_outline;
+        break;
+      default:
+        message = 'No hay lotes';
+        icon = Icons.inventory_2_outlined;
+    }
+    
+    return Container(
+      height: 300,
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            size: 80,
+            color: Colors.grey[300],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyStateMegalotes() {
+    return Container(
+      height: 300,
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.merge_type,
+            size: 80,
+            color: Colors.grey[300],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No hay megalotes disponibles',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Los megalotes procesados aparecerán aquí',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[400],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper methods
+  List<LoteUnificadoModel> _getCurrentTabLotes() {
+    switch (_tabController.index) {
+      case 0:
+        return _lotesPendientes;
+      case 1:
+        return _lotesConDocumentacion;
+      case 2:
+        return _lotesCompletados;
+      default:
+        return [];
     }
   }
 
-  String _formatDateTime(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  double _calcularPesoSeleccionado() {
+    double peso = 0.0;
+    final lotes = _getCurrentTabLotes();
+    for (final lote in lotes) {
+      if (_selectedLotes.contains(lote.id)) {
+        peso += lote.pesoActual;
+      }
+    }
+    return peso;
   }
+
+  Map<String, dynamic> _calcularEstadisticasTab() {
+    final lotes = _getCurrentTabLotes();
+    final total = lotes.length;
+    final peso = lotes.fold(0.0, (sum, lote) => sum + lote.pesoActual);
+    
+    return {
+      'total': total,
+      'peso': peso,
+    };
+  }
+
+  void _navigateToLoteDetail(LoteUnificadoModel lote) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TransformadorLoteDetalleScreen(
+          firebaseId: lote.id,
+          peso: lote.pesoActual,
+          tiposAnalisis: (lote.transformador?.especificaciones?['tipos_analisis'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+          productoFabricado: lote.transformador?.especificaciones?['producto_fabricado'] ?? 'Sin especificar',
+          composicionMaterial: lote.transformador?.especificaciones?['composicion_material'] ?? 'Sin especificar',
+          fechaCreacion: lote.datosGenerales.fechaCreacion,
+          tipoPolimero: lote.datosGenerales.tipoMaterial,
+        ),
+      ),
+    );
+  }
+
+  void _procesarLote(LoteUnificadoModel lote) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TransformadorFormularioSalida(
+          loteId: lote.id,
+          peso: lote.pesoActual,
+          tipoPolimero: lote.datosGenerales.tipoMaterial,
+        ),
+      ),
+    );
+  }
+
+  void _cargarDocumentacion(LoteUnificadoModel lote) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TransformadorDocumentacionScreen(
+          loteId: lote.id,
+          material: lote.datosGenerales.tipoMaterial,
+          peso: lote.pesoActual,
+        ),
+      ),
+    ).then((result) {
+      if (result == true) {
+        // Refresh after successful documentation upload
+        _loadLotes();
+      }
+    });
+  }
+
+  Widget _buildTransformacionEstadoChip(String estado) {
+    Color color;
+    String texto;
+    IconData icon;
+    
+    switch (estado) {
+      case 'en_proceso':
+        color = Colors.blue;
+        texto = 'En Proceso';
+        icon = Icons.pending;
+        break;
+      case 'documentacion':
+        color = Colors.orange;
+        texto = 'Documentación';
+        icon = Icons.description;
+        break;
+      case 'completado':
+        color = BioWayColors.success;
+        texto = 'Completado';
+        icon = Icons.check_circle;
+        break;
+      default:
+        color = Colors.grey;
+        texto = estado;
+        icon = Icons.help_outline;
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 4),
+          Text(
+            texto,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<TransformacionModel> _filterTransformacionesByState() {
+    final estado = _tabController.index == 1 ? 'documentacion' : 'completado';
+    return _transformaciones.where((t) {
+      return t.estado == estado;
+    }).toList();
+  }
+
 }

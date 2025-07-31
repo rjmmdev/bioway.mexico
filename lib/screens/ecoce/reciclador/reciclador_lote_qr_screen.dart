@@ -17,6 +17,7 @@ class RecicladorLoteQRScreen extends StatefulWidget {
   final Map<String, dynamic>? datosFormularioSalida;
   final List<String>? documentosCargados;
   final bool mostrarMensajeExito;
+  final double? pesoMuestrasLaboratorio;
 
   const RecicladorLoteQRScreen({
     super.key,
@@ -31,6 +32,7 @@ class RecicladorLoteQRScreen extends StatefulWidget {
     this.datosFormularioSalida,
     this.documentosCargados,
     this.mostrarMensajeExito = false,
+    this.pesoMuestrasLaboratorio,
   });
 
   @override
@@ -295,6 +297,50 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
                 ),
               ),
 
+              // Mostrar nota sobre muestras de laboratorio si existen
+              if (widget.pesoMuestrasLaboratorio != null && widget.pesoMuestrasLaboratorio! > 0) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue[200]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.science, color: Colors.blue[700], size: 24),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Nota: Peso ajustado por muestras de laboratorio',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue[700],
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Se han tomado ${widget.pesoMuestrasLaboratorio!.toStringAsFixed(2)} kg en muestras. '
+                              'El peso mostrado ya refleja esta reducción.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.blue[600],
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               // Código QR usando el widget compartido
               QRCodeDisplayWidget(
                 loteId: widget.loteId,
@@ -316,6 +362,7 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
                   'estadoFinal': 'Completado',
                   'certificado': true,
                   if (widget.datosFormularioSalida != null) ...widget.datosFormularioSalida!,
+                  if (widget.pesoMuestrasLaboratorio != null) 'pesoMuestrasLaboratorio': widget.pesoMuestrasLaboratorio,
                 },
                 onDescargar: _descargarCodigoQR,
                 onImprimir: _imprimirEtiqueta,

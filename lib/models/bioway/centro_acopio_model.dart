@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+=======
+>>>>>>> cabe8f1f3af68c346d1354cdabc8decc624748c0
 class CentroAcopioModel {
   final String id;
   final String nombre;
@@ -15,7 +18,11 @@ class CentroAcopioModel {
   final double comisionBioWay;
   final double reputacion;
   final int totalRecepcionesMes;
+<<<<<<< HEAD
   final Map<String, dynamic> inventarioActual;
+=======
+  final Map<String, double> inventarioActual;
+>>>>>>> cabe8f1f3af68c346d1354cdabc8decc624748c0
   final DateTime fechaRegistro;
   final bool activo;
 
@@ -39,6 +46,7 @@ class CentroAcopioModel {
     required this.activo,
   });
 
+<<<<<<< HEAD
   factory CentroAcopioModel.fromJson(Map<String, dynamic> map) {
     return CentroAcopioModel(
       id: map['id'] ?? '',
@@ -66,6 +74,33 @@ class CentroAcopioModel {
   }
 
   Map<String, dynamic> toMap() {
+=======
+  factory CentroAcopioModel.fromJson(Map<String, dynamic> json) {
+    return CentroAcopioModel(
+      id: json['id'] ?? '',
+      nombre: json['nombre'] ?? '',
+      direccion: json['direccion'] ?? '',
+      estado: json['estado'] ?? '',
+      municipio: json['municipio'] ?? '',
+      codigoPostal: json['codigoPostal'] ?? '',
+      latitud: (json['latitud'] ?? 0.0).toDouble(),
+      longitud: (json['longitud'] ?? 0.0).toDouble(),
+      telefono: json['telefono'] ?? '',
+      responsable: json['responsable'] ?? '',
+      saldoPrepago: (json['saldoPrepago'] ?? 0.0).toDouble(),
+      comisionBioWay: (json['comisionBioWay'] ?? 0.10).toDouble(),
+      reputacion: (json['reputacion'] ?? 5.0).toDouble(),
+      totalRecepcionesMes: json['totalRecepcionesMes'] ?? 0,
+      inventarioActual: Map<String, double>.from(json['inventarioActual'] ?? {}),
+      fechaRegistro: json['fechaRegistro'] != null
+          ? DateTime.parse(json['fechaRegistro'])
+          : DateTime.now(),
+      activo: json['activo'] ?? true,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+>>>>>>> cabe8f1f3af68c346d1354cdabc8decc624748c0
     return {
       'id': id,
       'nombre': nombre,
@@ -82,7 +117,11 @@ class CentroAcopioModel {
       'reputacion': reputacion,
       'totalRecepcionesMes': totalRecepcionesMes,
       'inventarioActual': inventarioActual,
+<<<<<<< HEAD
       'fechaRegistro': Timestamp.fromDate(fechaRegistro),
+=======
+      'fechaRegistro': fechaRegistro.toIso8601String(),
+>>>>>>> cabe8f1f3af68c346d1354cdabc8decc624748c0
       'activo': activo,
     };
   }

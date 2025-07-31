@@ -1,0 +1,252 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============ FUNCIONES AUXILIARES ============
+    
+    // Función para verificar si el usuario está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Función para verificar si es el propio usuario
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Función para verificar si es maestro
+    function isMaestro() {
+      return request.auth != null && 
+             exists(/databases/$(database)/documents/maestros/$(request.auth.uid));
+    }
+    
+    
+    // ============ COLECCIONES PRINCIPALES ============
+    
+    // Colección de maestros
+    match /maestros/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isMaestro();
+      allow delete: if false;
+    }
+    
+    // Perfiles ECOCE (índice principal)
+    match /ecoce_profiles/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId) || isMaestro();
+      allow update: if isOwner(userId) || isMaestro();
+      allow delete: if isMaestro();
+    }
+    
+    // Perfiles ECOCE por tipo (subcarpetas)
+    match /ecoce_profiles/{tipo}/{subtipo}/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId) || isMaestro();
+      allow update: if isOwner(userId) || isMaestro();
+      allow delete: if isMaestro();
+    }
+    
+    // Solicitudes de cuentas
+    match /solicitudes_cuentas/{solicitudId} {
+      allow create: if true; // Cualquiera puede crear solicitud
+      
+      // Permitir lectura:
+      // 1. Para verificar duplicados sin auth (consultas específicas)
+      // 2. Para usuarios autenticados (todas las lecturas)
+      allow read: if (
+        // Permitir consultas de verificación de duplicados sin auth
+        request.auth == null && 
+        request.query != null &&
+        request.query.limit <= 1
+      ) || isAuthenticated();
+      
+      // Permitir actualizar:
+      // 1. Sin autenticación solo para documentos (flujo de registro)
+      // 2. Si es maestro (todas las actualizaciones)
+      allow update: if (
+        // Permitir actualización sin auth solo para documentos
+        request.auth == null && 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['documentos']) 
+      ) || isMaestro();
+      
+      allow delete: if isMaestro();
+    }
+    
+    // ============ LOTES Y TRAZABILIDAD ============
+    
+    // Colección principal de lotes
+    match /lotes/{loteId} {
+      // Lectura: usuarios autenticados pueden leer cualquier lote
+      // (la app filtra por proceso_actual y otros campos)
+      allow read: if isAuthenticated();
+      
+      // Crear: solo usuarios autenticados
+      allow create: if isAuthenticated();
+      
+      // Actualizar: usuarios autenticados
+      allow update: if isAuthenticated();
+      
+      // Eliminar: nunca
+      allow delete: if false;
+      
+      // Subcolecciones dentro de lotes
+      match /{document=**} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update: if isAuthenticated();
+        allow delete: if false;
+      }
+    }
+    
+    // ============ CONSULTAS AGREGADAS (COLLECTION GROUP) ============
+    
+    // CRÍTICO: Permitir consultas de collectionGroup para datos_generales
+    match /{path=**}/datos_generales/{docId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if false;
+    }
+    
+    // Permitir consultas de collectionGroup para procesos
+    match /{path=**}/reciclador/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    match /{path=**}/origen/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    match /{path=**}/transporte/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    match /{path=**}/transformador/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    match /{path=**}/laboratorio/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    match /{path=**}/analisis_laboratorio/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // ============ TRANSPORTE Y ENTREGAS ============
+    
+    // Cargas de transporte
+    match /cargas_transporte/{cargaId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if false;
+    }
+    
+    // Entregas de transporte
+    match /entregas_transporte/{entregaId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // ============ TRANSFORMACIONES Y SUBLOTES - REGLAS ACTUALIZADAS ============
+    
+    // TRANSFORMACIONES (MEGALOTES) - REGLA MEJORADA
+    match /transformaciones/{transformacionId} {
+      // Permitir lectura a usuarios autenticados
+      allow read: if isAuthenticated();
+      
+      // CAMBIO CRÍTICO: Permitir crear si está autenticado
+      // La validación del usuario_id se hace en el código, no en las reglas
+      allow create: if isAuthenticated() && 
+        request.resource.data.keys().hasAll(['usuario_id', 'tipo', 'estado']) &&
+        request.resource.data.usuario_id is string &&
+        request.resource.data.usuario_id.size() > 0;
+      
+      // Actualizar: permitir si es el dueño o si solo se actualizan ciertos campos
+      allow update: if isAuthenticated() && (
+        // Es el dueño de la transformación
+        (resource.data.keys().hasAll(['usuario_id']) && 
+         resource.data.usuario_id == request.auth.uid) ||
+        // O solo se están actualizando documentos (para compatibilidad)
+        (request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['documentos_asociados', 'fecha_documentacion', 'documentacion_completada'])) ||
+        // O solo se están modificando campos de laboratorio
+        (request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['muestras_laboratorio', 'peso_disponible'])) ||
+        // O solo se están creando sublotes (actualiza peso_disponible y sublotes_generados)
+        (request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['peso_disponible', 'sublotes_generados']))
+      );
+      
+      // Eliminar: nunca
+      allow delete: if false;
+    }
+    
+    // Sublotes
+    match /sublotes/{subloteId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if false;
+    }
+    
+    // ============ COLECCIONES LEGACY ============
+    
+    // Lotes por tipo de usuario (para compatibilidad)
+    match /lotes_origen/{loteId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    match /lotes_transportista/{loteId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    match /lotes_reciclador/{loteId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    match /lotes_laboratorio/{loteId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    match /lotes_transformador/{loteId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // ============ OTRAS COLECCIONES ============
+    
+    // Usuarios pendientes de eliminación
+    match /users_pending_deletion/{userId} {
+      allow read: if isMaestro();
+      allow create: if isMaestro();
+      allow update: if isMaestro();
+      allow delete: if isMaestro();
+    }
+    
+    // Logs de auditoría
+    match /audit_logs/{logId} {
+      allow read: if isMaestro();
+      allow create: if isMaestro(); // Permitir que maestros creen logs
+      allow update: if false; // No se pueden actualizar logs
+      allow delete: if false; // No se pueden eliminar logs
+    }
+    
+    // ============ REGLA TEMPORAL DE DEPURACIÓN ============
+    // IMPORTANTE: Remover después de confirmar que funciona
+    
+    // Regla temporal para depuración - permite todas las operaciones en transformaciones
+    // match /transformaciones/{document=**} {
+    //   allow read, write: if isAuthenticated();
+    // }
+  }
+}

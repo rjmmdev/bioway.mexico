@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import '../../../services/lote_service.dart';
+import '../../../services/lote_unificado_service.dart';
 import '../shared/utils/dialog_utils.dart';
 import '../shared/utils/material_utils.dart';
 import 'transformador_escaneo_screen.dart';
-import 'transformador_recibir_lote_screen.dart';
 
 // Modelo temporal para representar un lote
 class ScannedLot {
@@ -38,7 +38,7 @@ class TransformadorLotesRegistroScreen extends StatefulWidget {
 
 class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesRegistroScreen> {
   // Lista de lotes escaneados
-  List<ScannedLot> _scannedLots = [];
+  final List<ScannedLot> _scannedLots = [];
   final LoteService _loteService = LoteService();
   bool _isLoading = false;
 
@@ -57,10 +57,10 @@ class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesReg
     });
     
     try {
-      // Buscar el lote en Firebase
-      final lotesInfo = await _loteService.getLotesInfo([lotId]);
+      // Buscar el lote en Firebase usando el servicio unificado
+      final loteUnificado = await LoteUnificadoService().obtenerLotePorId(lotId);
       
-      if (lotesInfo.isEmpty) {
+      if (loteUnificado == null) {
         if (mounted) {
           DialogUtils.showErrorDialog(
             context: context,
@@ -71,57 +71,38 @@ class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesReg
         return;
       }
 
-      final loteInfo = lotesInfo.first;
+      // Verificar que el lote esté en proceso de transporte (para ser recibido por transformador)
+      final procesoActual = loteUnificado.datosGenerales.procesoActual;
       
-      // Transformador puede recibir lotes de laboratorio o de transporte
-      final tipoLoteValido = loteInfo['tipo_lote'] == 'lotes_laboratorio' || 
-                           loteInfo['tipo_lote'] == 'lotes_transportista';
-      
-      if (!tipoLoteValido) {
+      if (procesoActual != 'transporte') {
         if (mounted) {
           DialogUtils.showErrorDialog(
             context: context,
-            title: 'Tipo de lote no válido',
-            message: 'Solo se pueden recibir lotes que hayan sido analizados por el laboratorio o estén en tránsito',
+            title: 'Lote no disponible',
+            message: 'Este lote no está disponible para recepción. Estado actual: $procesoActual',
           );
         }
         return;
       }
       
       // Extraer información del lote
-      String material = 'Desconocido';
-      double peso = 0.0;
-      String origen = 'Desconocido';
+      final material = loteUnificado.datosGenerales.tipoMaterial;
+      final peso = loteUnificado.pesoActual; // Usar peso actual que considera sublotes y procesamiento
       
-      if (loteInfo['tipo_lote'] == 'lotes_laboratorio') {
-        material = loteInfo['ecoce_laboratorio_tipo_material'] ?? 'Sin especificar';
-        peso = (loteInfo['ecoce_laboratorio_peso_muestra'] ?? 0).toDouble();
-        origen = loteInfo['ecoce_laboratorio_proveedor'] ?? 'Laboratorio';
-        
-        // Si viene del laboratorio, buscar el peso del lote original
-        final loteOrigen = loteInfo['ecoce_laboratorio_lote_origen'];
-        if (loteOrigen != null) {
-          final loteOriginalInfo = await _loteService.getLotesInfo([loteOrigen]);
-          if (loteOriginalInfo.isNotEmpty) {
-            // Usar el peso del lote original si es de reciclador
-            if (loteOriginalInfo.first['tipo_lote'] == 'lotes_reciclador') {
-              peso = (loteOriginalInfo.first['ecoce_reciclador_peso_resultante'] ?? peso).toDouble();
-            }
-          }
-        }
-      } else if (loteInfo['tipo_lote'] == 'lotes_transportista') {
-        // Si viene de transportista, buscar el material predominante
-        final lotesTransportados = loteInfo['ecoce_transportista_lotes'] as List<dynamic>? ?? [];
-        if (lotesTransportados.isNotEmpty) {
-          final tiposPoli = await _loteService.calcularTipoPolimeroPredominante(
-            lotesTransportados.map((e) => e.toString()).toList()
-          );
-          if (tiposPoli.isNotEmpty) {
-            material = tiposPoli.entries.reduce((a, b) => a.value > b.value ? a : b).key;
-          }
-        }
-        peso = (loteInfo['ecoce_transportista_peso_total'] ?? 0).toDouble();
-        origen = loteInfo['ecoce_transportista_proveedor'] ?? 'Transportista';
+      // Determinar origen
+      String origen = 'Desconocido';
+      if (loteUnificado.reciclador != null) {
+        origen = loteUnificado.reciclador!.usuarioFolio ?? 'Reciclador';
+      } else if (loteUnificado.origen != null) {
+        origen = loteUnificado.origen!.usuarioFolio ?? 'Origen';
+      }
+      
+      // Verificar si es un sublote
+      final esSublote = loteUnificado.datosGenerales.tipoLote == 'derivado' || 
+                       loteUnificado.datosGenerales.qrCode.startsWith('SUBLOTE-');
+      
+      if (esSublote) {
+        origen = 'Sublote - $origen';
       }
       
       final newLot = ScannedLot(
@@ -150,20 +131,6 @@ class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesReg
     }
   }
 
-  // Métodos temporales para simular datos
-  String _getMaterialForDemo(String id) {
-    final materials = ['PEBD', 'PP', 'Multilaminado'];
-    return materials[id.length % materials.length];
-  }
-
-  double _getWeightForDemo() {
-    return 100 + (DateTime.now().millisecondsSinceEpoch % 200);
-  }
-
-  String _getOrigenForDemo() {
-    final origenes = ['RECICLADOR PLASTICOS DEL NORTE', 'PLANTA DE RECICLAJE INDUSTRIAL', 'CENTRO DE ACOPIO SUSTENTABLE'];
-    return origenes[DateTime.now().millisecondsSinceEpoch % origenes.length];
-  }
 
   void _removeLot(int index) {
     HapticFeedback.lightImpact();
@@ -219,13 +186,14 @@ class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesReg
 
     HapticFeedback.mediumImpact();
 
-    // Navegar al formulario con los lotes escaneados
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TransformadorRecibirLoteScreen(
-          lotIds: _scannedLots.map((lot) => lot.id).toList(),
-          totalLotes: _scannedLots.length,
+    // For now, just show a message since this screen is not being used in the current flow
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Esta funcionalidad está en desarrollo. Por favor use el flujo de recepción estándar.'),
+        backgroundColor: BioWayColors.info,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
         ),
       ),
     );
@@ -311,8 +279,8 @@ class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesReg
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  BioWayColors.ecoceGreen,
-                  BioWayColors.ecoceGreen.withValues(alpha: 0.8),
+                  Colors.orange,
+                  Colors.orange.withValues(alpha: 0.8),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -320,7 +288,7 @@ class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesReg
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
+                  color: Colors.orange.withValues(alpha: 0.3),
                   blurRadius: 15,
                   offset: const Offset(0, 8),
                 ),
@@ -407,19 +375,19 @@ class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesReg
                   onPressed: _addMoreLots,
                   icon: Icon(
                     Icons.add,
-                    color: BioWayColors.ecoceGreen,
+                    color: Colors.orange,
                     size: 20,
                   ),
                   label: Text(
                     'Agregar',
                     style: TextStyle(
-                      color: BioWayColors.ecoceGreen,
+                      color: Colors.orange,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    backgroundColor: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
+                    backgroundColor: Colors.orange.withValues(alpha: 0.1),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -455,7 +423,7 @@ class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesReg
                     child: Text(
                       'Escanear o ingresar primer lote',
                       style: TextStyle(
-                        color: BioWayColors.ecoceGreen,
+                        color: Colors.orange,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -579,7 +547,7 @@ class _TransformadorLotesRegistroScreenState extends State<TransformadorLotesReg
       floatingActionButton: _scannedLots.isNotEmpty
           ? FloatingActionButton.extended(
         onPressed: _continueWithLots,
-        backgroundColor: BioWayColors.ecoceGreen,
+        backgroundColor: Colors.orange,
         elevation: 4,
         icon: const Icon(Icons.arrow_forward, color: Colors.white),
         label: const Text(

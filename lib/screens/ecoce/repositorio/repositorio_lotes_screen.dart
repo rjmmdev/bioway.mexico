@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
 import '../shared/utils/navigation_utils.dart';
-import '../shared/utils/material_utils.dart';
 import '../shared/widgets/lote_card_unified.dart';
 import 'widgets/dashboard_stats.dart';
 import 'widgets/filters_sheet.dart';
@@ -19,7 +18,8 @@ import '../reciclador/reciclador_administracion_lotes.dart';
 // import '../transporte/transporte_delivery_screen.dart';
 import '../shared/widgets/qr_scanner_widget.dart';
 import '../../../services/lote_service.dart';
-import '../../../utils/format_utils.dart';
+import '../../../services/lote_unificado_service.dart';
+import '../../../models/lotes/lote_unificado_model.dart';
 
 class RepositorioLotesScreen extends StatefulWidget {
   final Color primaryColor;
@@ -55,7 +55,8 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
   
   // Servicios
   final LoteService _loteService = LoteService();
-  Stream<List<Map<String, dynamic>>>? _lotesStream;
+  final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
+  Stream<List<LoteUnificadoModel>>? _lotesStream;
 
   @override
   void initState() {
@@ -88,10 +89,10 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
       _isLoading = true;
     });
     
-    _lotesStream = _loteService.buscarLotesRepositorio(
+    _lotesStream = _loteUnificadoService.obtenerTodosLotesRepositorio(
       searchQuery: _searchController.text.isEmpty ? null : _searchController.text,
       tipoMaterial: _selectedMaterial,
-      tipoActor: _selectedTipoActor,
+      procesoActual: _selectedTipoActor,
       fechaInicio: _fechaInicio,
       fechaFin: _fechaFin,
     );
@@ -99,22 +100,39 @@ class _RepositorioLotesScreenState extends State<RepositorioLotesScreen>
     _lotesStream!.listen((lotes) {
       setState(() {
         _allLotes = lotes.map((lote) => {
-          'id': lote['id'],
-          'firebaseId': lote['id'],
-          'material': lote['material'] ?? 'Sin especificar',
-          'peso': lote['peso'] ?? 0.0,
-          'origen': lote['tipo_actor'] ?? 'Desconocido',
-          'fechaCreacion': lote['fecha_creacion'] ?? DateTime.now(),
-          'estado': lote['data']['estado'] ?? 'activo',
-          'ubicacionActual': lote['tipo_actor'] ?? 'En proceso',
-          'data': lote['data'],
-          'tipo_coleccion': lote['tipo_coleccion'] ?? lote['data']['tipo_coleccion'],
+          'id': lote.id,
+          'firebaseId': lote.id,
+          'material': lote.datosGenerales.tipoMaterial ?? 'Sin especificar',
+          'peso': lote.pesoActual,
+          'origen': _getOrigenFromProceso(lote.datosGenerales.procesoActual),
+          'fechaCreacion': lote.datosGenerales.fechaCreacion,
+          'estado': lote.datosGenerales.estadoActual ?? 'activo',
+          'ubicacionActual': lote.datosGenerales.procesoActual ?? 'En proceso',
+          'data': lote,
+          'tipo_coleccion': 'lotes', // Sistema unificado
         }).toList();
         _filteredLotes = List.from(_allLotes);
         _isLoading = false;
       });
       _calculateItemsPerPage();
     });
+  }
+  
+  String _getOrigenFromProceso(String? proceso) {
+    switch (proceso) {
+      case 'origen':
+        return 'Centro de Acopio';
+      case 'transporte':
+        return 'Transportista';
+      case 'reciclador':
+        return 'Reciclador';
+      case 'laboratorio':
+        return 'Laboratorio';
+      case 'transformador':
+        return 'Transformador';
+      default:
+        return 'Desconocido';
+    }
   }
 
   void _handleSearch(String query) {

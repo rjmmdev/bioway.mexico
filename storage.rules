@@ -1,0 +1,50 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // REGLAS TEMPORALES MÁS PERMISIVAS PARA DESARROLLO
+    
+    // Permitir todo a usuarios autenticados
+    match /{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    
+    // Reglas específicas adicionales (estas tienen prioridad sobre la regla general)
+    
+    // Permitir subida de documentos para solicitudes sin autenticación
+    match /ecoce/solicitudes/{solicitudId}/{document=**} {
+      allow write: if true; // Cualquiera puede escribir solicitudes
+      allow read: if request.auth != null; // Solo autenticados pueden leer
+    }
+    
+    // Permitir subida de documentos temporales para registro (sin autenticación)
+    match /ecoce/documentos/{solicitudId}/{document=**} {
+      allow write: if true; // Cualquiera puede subir durante registro
+      allow read: if request.auth != null; // Solo autenticados pueden leer
+    }
+    
+    // Archivos de lotes - RUTAS ESPECÍFICAS
+    match /lotes/{tipoLote}/{tipoArchivo}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    
+    // Ruta específica para firmas de origen
+    match /lotes/origen/firmas/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    
+    // Ruta específica para evidencias de origen
+    match /lotes/origen/evidencias/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    
+    // Archivos de usuarios ECOCE
+    match /ecoce/usuarios/{userId}/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

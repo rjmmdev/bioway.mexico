@@ -1,7 +1,9 @@
 import 'dart:typed_data';
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path_provider/path_provider.dart';
 import '../services/firebase/firebase_manager.dart';
 
 class DocumentService {
@@ -540,5 +542,10 @@ class DocumentService {
     print('  Documentos copiados: ${newUrls.length}');
     
     return newUrls;
+  }
+  
+  // Obtener directorio temporal
+  Future<Directory> getTempDirectory() async {
+    return await getTemporaryDirectory();
   }
 }

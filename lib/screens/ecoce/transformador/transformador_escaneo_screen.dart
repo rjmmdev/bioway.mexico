@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'transformador_lotes_registro_screen.dart';
 import '../shared/widgets/qr_scanner_widget.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/qr_utils.dart';
 
 class TransformadorEscaneoScreen extends StatelessWidget {
   final bool isAddingMore;
@@ -11,7 +12,10 @@ class TransformadorEscaneoScreen extends StatelessWidget {
     this.isAddingMore = false,
   });
 
-  void _navigateToScannedLots(BuildContext context, String lotId) {
+  void _navigateToScannedLots(BuildContext context, String qrCode) {
+    // Extraer el ID del lote del código QR
+    final lotId = QRUtils.extractLoteIdFromQR(qrCode);
+    
     // Si estamos agregando más lotes, devolver el ID
     if (isAddingMore) {
       Navigator.pop(context, lotId);
@@ -32,7 +36,7 @@ class TransformadorEscaneoScreen extends StatelessWidget {
       title: 'Recibir Lotes',
       subtitle: 'Paso 1: Escanear o ingresar ID',
       onCodeScanned: (code) => _navigateToScannedLots(context, code),
-      primaryColor: BioWayColors.ecoceGreen,
+      primaryColor: Colors.orange,
       headerLabel: 'Transformador',
       headerValue: 'V0000001',
       userType: 'transformador',

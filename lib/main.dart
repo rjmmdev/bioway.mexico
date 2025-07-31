@@ -13,6 +13,7 @@ import 'screens/ecoce/reciclador/reciclador_inicio.dart';
 import 'screens/ecoce/reciclador/reciclador_administracion_lotes.dart';
 import 'screens/ecoce/reciclador/reciclador_escaneo_qr.dart';
 import 'screens/ecoce/reciclador/reciclador_documentacion.dart';
+import 'screens/ecoce/reciclador/reciclador_formulario_recepcion.dart';
 
 // Screens - Transporte
 import 'screens/ecoce/transporte/transporte_inicio_screen.dart';
@@ -27,8 +28,9 @@ import 'screens/ecoce/shared/ecoce_ayuda_screen.dart';
 // Screens - Transformador
 import 'screens/ecoce/transformador/transformador_inicio_screen.dart';
 import 'screens/ecoce/transformador/transformador_produccion_screen.dart';
-import 'screens/ecoce/transformador/transformador_recibir_lote_screen.dart';
 import 'screens/ecoce/transformador/transformador_documentacion_screen.dart';
+import 'screens/ecoce/transformador/transformador_formulario_recepcion.dart';
+import 'screens/ecoce/transformador/transformador_main_screen.dart';
 
 // Screens - Laboratorio
 import 'screens/ecoce/laboratorio/laboratorio_inicio.dart';
@@ -37,35 +39,36 @@ import 'screens/ecoce/laboratorio/laboratorio_gestion_muestras.dart';
 // Screens - Maestro
 import 'screens/ecoce/maestro/maestro_unified_screen.dart';
 
-void main() async {
-  // Asegurar que los widgets estén inicializados
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // Firebase NO se inicializa aquí
-  // Se inicializará dinámicamente según la plataforma seleccionada
-  // Ver FirebaseManager para más detalles-init
-  
-  // Desactivar animaciones del teclado
-  SystemChannels.textInput.invokeMethod('TextInput.setClientFeatures', <String, dynamic>{
-    'enableAnimations': false,
-  });
+// Screens - Repositorio
+import 'screens/ecoce/repositorio/repositorio_inicio_screen.dart';
+import 'screens/ecoce/repositorio/repositorio_debug_screen.dart';
 
-  // Configurar la orientación de la app (solo vertical)
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-
-  // Configurar el estilo de la barra de estado
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      statusBarBrightness: Brightness.light,
-    ),
-  );
-
+void main() {
+  // Configuración mínima inicial
   runApp(const BioWayApp());
+  
+  // Configuraciones adicionales en background después de mostrar la UI
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Desactivar animaciones del teclado
+    SystemChannels.textInput.invokeMethod('TextInput.setClientFeatures', <String, dynamic>{
+      'enableAnimations': false,
+    });
+
+    // Configurar la orientación de la app (solo vertical)
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+
+    // Configurar el estilo de la barra de estado
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+    );
+  });
 }
 
 class BioWayApp extends StatelessWidget {
@@ -224,9 +227,20 @@ class BioWayApp extends StatelessWidget {
         // Rutas de Reciclador
         '/reciclador_inicio': (context) => const RecicladorInicio(),
         '/reciclador_lotes': (context) {
-          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          final arguments = ModalRoute.of(context)?.settings.arguments;
+          int initialTab = 0;
+          
+          if (arguments != null) {
+            if (arguments is Map<String, dynamic>) {
+              initialTab = arguments['initialTab'] ?? 0;
+            } else if (arguments is int) {
+              // Compatibilidad con código antiguo que pasaba int directamente
+              initialTab = arguments;
+            }
+          }
+          
           return RecicladorAdministracionLotes(
-            initialTab: args?['initialTab'] ?? 0,
+            initialTab: initialTab,
           );
         },
         '/reciclador_escaneo': (context) => const RecicladorEscaneoQR(),
@@ -236,6 +250,13 @@ class BioWayApp extends StatelessWidget {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
           return RecicladorDocumentacion(lotId: args?['lotId'] ?? 'UNKNOWN');
         },
+        '/reciclador_formulario_recepcion': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          return RecicladorFormularioRecepcion(
+            lotes: args?['lotes'] ?? [],
+            datosEntrega: args?['datosEntrega'] ?? {},
+          );
+        },
         
         // Rutas de Transporte
         '/transporte_inicio': (context) => const TransporteInicioScreen(),
@@ -244,16 +265,22 @@ class BioWayApp extends StatelessWidget {
         '/transporte_perfil': (context) => const TransportePerfilScreen(),
         
         // Rutas de Transformador
-        '/transformador_inicio': (context) => const TransformadorInicioScreen(),
+        '/transformador_inicio': (context) => const TransformadorMainScreen(initialIndex: 0),
         '/transformador_produccion': (context) {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-          return TransformadorProduccionScreen(
-            initialTab: args?['initialTab'] as int?,
+          return TransformadorMainScreen(
+            initialIndex: 1,
           );
         },
-        '/transformador_ayuda': (context) => const EcoceAyudaScreen(),
-        '/transformador_perfil': (context) => const EcocePerfilScreen(),
-        '/transformador_recibir_lote': (context) => const TransformadorRecibirLoteScreen(),
+        '/transformador_ayuda': (context) => const TransformadorMainScreen(initialIndex: 2),
+        '/transformador_perfil': (context) => const TransformadorMainScreen(initialIndex: 3),
+        '/transformador_formulario_recepcion': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          return TransformadorFormularioRecepcion(
+            lotes: args?['lotes'] ?? [],
+            datosEntrega: args ?? {},
+          );
+        },
         '/transformador_documentacion': (context) => const TransformadorDocumentacionScreen(),
         
         // Rutas de Planta de Separación
@@ -274,6 +301,13 @@ class BioWayApp extends StatelessWidget {
           // Importar la pantalla dinámicamente para evitar problemas de importación circular
           return const MaestroUnifiedScreen();
         },
+        
+        // Rutas de Repositorio
+        '/repositorio_inicio': (context) => const RepositorioInicioScreen(),
+        '/repositorio_debug': (context) => const RepositorioDebugScreen(),
+        '/repositorio_reportes': (context) => const EcoceAyudaScreen(), // TODO: Create reports screen
+        '/repositorio_ayuda': (context) => const EcoceAyudaScreen(),
+        '/repositorio_perfil': (context) => const EcocePerfilScreen(),
       },
     );
   }

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../utils/colors.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
+import '../../../services/firebase/firebase_manager.dart';
 import '../shared/widgets/loading_indicator.dart';
 import '../shared/utils/dialog_utils.dart';
 import 'widgets/maestro_solicitud_card.dart';
@@ -30,8 +33,8 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
   final List<String> _filtrosTipoUsuario = [];
   int _selectedIndex = 0; // 0: Aprobación, 1: Administración
   
-  // ID del usuario maestro (por ahora hardcodeado, luego se obtendría del usuario actual)
-  final String _maestroUserId = 'ECOCE_ADMIN_001';
+  // ID del usuario maestro
+  String _maestroUserId = '';
 
   @override
   void initState() {
@@ -39,6 +42,7 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
     WidgetsBinding.instance.addObserver(this);
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_handleTabChange);
+    _ensureMaestroSetup(); // Configurar usuario maestro si es necesario
     _loadSolicitudes();
   }
   
@@ -46,6 +50,56 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
     if (_tabController.indexIsChanging) return;
     // Recargar datos cuando se cambia de pestaña
     _loadSolicitudes();
+  }
+  
+  Future<void> _ensureMaestroSetup() async {
+    try {
+      // Obtener el usuario actual
+      final firebaseManager = FirebaseManager();
+      final app = firebaseManager.currentApp;
+      if (app == null) return;
+      
+      final auth = FirebaseAuth.instanceFor(app: app);
+      final firestore = FirebaseFirestore.instanceFor(app: app);
+      final currentUser = auth.currentUser;
+      
+      if (currentUser == null) {
+        print('No hay usuario autenticado');
+        return;
+      }
+      
+      final uid = currentUser.uid;
+      print('Verificando configuración del maestro con UID: $uid');
+      
+      // Guardar el UID para uso posterior
+      setState(() {
+        _maestroUserId = uid;
+      });
+      
+      // Verificar si existe en la colección maestros
+      final maestroDoc = firestore.collection('maestros').doc(uid);
+      final docSnapshot = await maestroDoc.get();
+      
+      if (!docSnapshot.exists) {
+        print('Creando documento en colección maestros para el usuario...');
+        await maestroDoc.set({
+          'activo': true,
+          'nombre': currentUser.displayName ?? 'Maestro ECOCE',
+          'email': currentUser.email,
+          'fecha_creacion': FieldValue.serverTimestamp(),
+          'permisos': {
+            'aprobar_solicitudes': true,
+            'eliminar_usuarios': true,
+            'gestionar_sistema': true,
+          }
+        });
+        print('✅ Usuario maestro configurado correctamente');
+      } else {
+        print('✅ Usuario maestro ya está configurado');
+      }
+    } catch (e) {
+      print('Error al configurar usuario maestro: $e');
+    }
   }
 
   @override
@@ -222,87 +276,85 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
     
     final datosPerfil = solicitud['datos_perfil'] as Map<String, dynamic>;
     
-    // Usar un Completer para manejar el resultado del diálogo de forma más segura
-    String? reason;
-    try {
-      reason = await showDialog<String>(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext dialogContext) {
-          final TextEditingController controller = TextEditingController();
-          
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: const Text('Rechazar Cuenta'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Por favor, indica el motivo del rechazo para ${datosPerfil['ecoce_nombre']}:'),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: controller,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    hintText: 'Motivo del rechazo',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  autofocus: true,
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(dialogContext).pop(null);
-                },
-                child: const Text('Cancelar'),
+    // Mostrar diálogo de confirmación simple
+    final bool? confirmar = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text('Rechazar Solicitud'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('¿Está seguro que desea rechazar la solicitud de ${datosPerfil['ecoce_nombre']}?'),
+              const SizedBox(height: 16),
+              const Text(
+                'Esta acción eliminará:',
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(dialogContext).pop(controller.text);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BioWayColors.error,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text(
-                  'Rechazar',
-                  style: TextStyle(color: Colors.white),
-                ),
+              const SizedBox(height: 8),
+              const Text('• La solicitud de registro'),
+              const Text('• Los documentos subidos'),
+              const Text('• El usuario de autenticación (si existe)'),
+              const SizedBox(height: 16),
+              const Text(
+                'Esta acción no se puede deshacer.',
+                style: TextStyle(color: Colors.red, fontSize: 12),
               ),
             ],
-          );
-        },
-      );
-    } catch (e) {
-      // Si hay algún error con el diálogo, simplemente retornar
-      return;
-    }
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: BioWayColors.error,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'Rechazar',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
 
     if (!mounted) return;
     
-    if (reason != null && reason.isNotEmpty) {
+    if (confirmar == true) {
+      // Mostrar indicador de carga
+      DialogUtils.showLoadingDialog(
+        context: context,
+        message: 'Eliminando solicitud...',
+      );
+      
       try {
         await _profileService.rejectSolicitud(
           solicitudId: solicitud['solicitud_id'],
           rejectedById: _maestroUserId,
-          reason: reason,
+          reason: 'Rechazado por el administrador', // Razón genérica
         );
         
         if (mounted) {
+          Navigator.of(context).pop(); // Cerrar diálogo de carga
           _showSuccessMessage('Solicitud rechazada y eliminada correctamente');
           _loadSolicitudes();
         }
       } catch (e) {
         if (mounted) {
-          _showErrorMessage('Error al rechazar la solicitud');
+          Navigator.of(context).pop(); // Cerrar diálogo de carga
+          _showErrorMessage('Error al rechazar la solicitud: ${e.toString()}');
         }
       }
     }
@@ -493,9 +545,14 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: SafeArea(
+    return WillPopScope(
+      onWillPop: () async {
+        // Prevenir que el botón atrás cierre la sesión
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        body: SafeArea(
         child: Column(
           children: [
             // Header con gradiente
@@ -542,6 +599,14 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                         ),
                         Row(
                           children: [
+                            // Botón de repositorio
+                            IconButton(
+                              icon: const Icon(Icons.inventory_2, color: Colors.white),
+                              tooltip: 'Repositorio de Lotes',
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/repositorio_inicio');
+                              },
+                            ),
                             // Botón de utilidades
                             IconButton(
                               icon: const Icon(Icons.build, color: Colors.white),
@@ -553,6 +618,69 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                                     builder: (context) => const MaestroUtilitiesScreen(),
                                   ),
                                 );
+                              },
+                            ),
+                            // Botón de cerrar sesión
+                            IconButton(
+                              icon: const Icon(Icons.logout, color: Colors.white),
+                              tooltip: 'Cerrar Sesión',
+                              onPressed: () async {
+                                // Mostrar diálogo de confirmación
+                                final shouldLogout = await showDialog<bool>(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      title: const Text('Cerrar Sesión'),
+                                      content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.of(context).pop(false),
+                                          child: const Text('Cancelar'),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () => Navigator.of(context).pop(true),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: BioWayColors.error,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                          child: const Text(
+                                            'Cerrar Sesión',
+                                            style: TextStyle(color: Colors.white),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                                
+                                if (shouldLogout == true) {
+                                  try {
+                                    // Cerrar sesión en Firebase
+                                    final firebaseManager = FirebaseManager();
+                                    final app = firebaseManager.currentApp;
+                                    if (app != null) {
+                                      final auth = FirebaseAuth.instanceFor(app: app);
+                                      await auth.signOut();
+                                    }
+                                    
+                                    // Navegar a la pantalla de login
+                                    if (mounted) {
+                                      Navigator.of(context).pushNamedAndRemoveUntil(
+                                        '/ecoce_login',
+                                        (route) => false,
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (mounted) {
+                                      _showErrorMessage('Error al cerrar sesión: ${e.toString()}');
+                                    }
+                                  }
+                                }
                               },
                             ),
                             const SizedBox(width: 8),
@@ -847,6 +975,7 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
         ),
       ),
       // Removed bottom navigation since ECOCE user only needs the dashboard
+      ),
     );
   }
 

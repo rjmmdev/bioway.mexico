@@ -103,6 +103,7 @@ class UserSessionService {
     if (_currentUserProfile == null) return null;
     
     return {
+      'uid': _currentUserProfile!.id,
       'nombre': _currentUserProfile!.ecoceNombre,
       'folio': _currentUserProfile!.ecoceFolio,
       'email': _currentUserProfile!.ecoceCorreoContacto,
@@ -128,7 +129,7 @@ class UserSessionService {
       'tipo': profile.tipoActorLabel,
       'tipoActor': profile.ecoceTipoActor,
       'subtipo': profile.ecoceSubtipo,
-      'direccion': profile.ecoceDireccion,
+      'direccion': '${profile.ecoceCalle} ${profile.ecoceNumExt}${profile.ecoceNumInt != null ? ' Int. ${profile.ecoceNumInt}' : ''}, ${profile.ecoceColonia ?? ''}, ${profile.ecoceMunicipio ?? ''}, ${profile.ecoceEstado ?? ''}, CP ${profile.ecoceCp}'.trim(),
       'telefono': profile.ecoceTelefono,
       'rfc': profile.ecoceRfc,
       'nombreComercial': profile.ecoceNombreComercial,

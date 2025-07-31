@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launch screen for dark mode -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Fondo con gradiente idéntico al splash screen de Flutter -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#90EE80"
+                android:centerColor="#C3FACC"
+                android:endColor="#3FD9FF"
+                android:angle="270"
+                android:type="linear" />
+        </shape>
+    </item>
+</layer-list>

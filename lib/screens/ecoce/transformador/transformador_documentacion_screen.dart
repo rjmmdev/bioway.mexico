@@ -1,17 +1,32 @@
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
+import '../../../services/firebase/firebase_storage_service.dart';
+import '../../../services/lote_unificado_service.dart';
 
 class TransformadorDocumentacionScreen extends StatefulWidget {
-  const TransformadorDocumentacionScreen({super.key});
+  final String? loteId;
+  final String? material;
+  final double? peso;
+  
+  const TransformadorDocumentacionScreen({
+    super.key,
+    this.loteId,
+    this.material,
+    this.peso,
+  });
 
   @override
   State<TransformadorDocumentacionScreen> createState() => _TransformadorDocumentacionScreenState();
 }
 
 class _TransformadorDocumentacionScreenState extends State<TransformadorDocumentacionScreen> {
+  final FirebaseStorageService _storageService = FirebaseStorageService();
+  final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
+  
   // Mapa para almacenar archivos por tipo de documento
   final Map<String, List<PlatformFile>> _archivosPorDocumento = {
     'ficha_tecnica_pellet': [],
@@ -128,7 +143,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
   }
 
   int get _totalArchivos {
-    return _archivosPorDocumento.values.fold(0, (sum, archivos) => sum + archivos.length);
+    return _archivosPorDocumento.values.fold(0, (total, archivos) => total + archivos.length);
   }
 
   void _confirmarDocumentacion() async {
@@ -146,26 +161,75 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
       _isLoading = true;
     });
 
-    // Simular carga
-    await Future.delayed(const Duration(seconds: 2));
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Documentación guardada exitosamente'),
-          backgroundColor: BioWayColors.success,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+    try {
+      // Upload documents to Firebase Storage
+      Map<String, List<String>> documentUrls = {};
       
-      Navigator.pop(context);
+      for (var entry in _archivosPorDocumento.entries) {
+        if (entry.value.isNotEmpty) {
+          List<String> urls = [];
+          for (var file in entry.value) {
+            if (file.path != null) {
+              // Convert file path to File object for upload
+              final fileToUpload = File(file.path!);
+              final url = await _storageService.uploadFile(
+                fileToUpload,
+                'transformador/${widget.loteId}/documentos/${entry.key}',
+              );
+              if (url != null) {
+                urls.add(url);
+              }
+            }
+          }
+          documentUrls[entry.key] = urls;
+        }
+      }
+      
+      // Update lot status to 'completado' and save document URLs using Unified System
+      if (widget.loteId != null) {
+        await _loteUnificadoService.actualizarProcesoTransformador(
+          loteId: widget.loteId!,
+          datosTransformador: {
+            'estado': 'completado',
+            'documentos': documentUrls,
+            'fecha_documentacion': DateTime.now(),
+          },
+        );
+      }
+      
+      if (mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Documentación cargada exitosamente. El lote ha sido completado.'),
+            backgroundColor: BioWayColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+        
+        // Wait for snackbar to show
+        await Future.delayed(const Duration(seconds: 2));
+        
+        // Pop back with success result
+        if (mounted) {
+          Navigator.pop(context, true); // Return true when documentation is completed
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar documentación: ${e.toString()}'),
+            backgroundColor: BioWayColors.error,
+          ),
+        );
+      }
     }
   }
 
@@ -201,13 +265,13 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
                 height: 40,
                 decoration: BoxDecoration(
                   color: tieneArchivos 
-                      ? BioWayColors.ecoceGreen.withValues(alpha: 0.1)
+                      ? Colors.orange.withValues(alpha: 0.1)
                       : Colors.grey.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   icono,
-                  color: tieneArchivos ? BioWayColors.ecoceGreen : Colors.grey,
+                  color: tieneArchivos ? Colors.orange : Colors.grey,
                   size: 24,
                 ),
               ),
@@ -245,7 +309,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
                         '${archivos.length} archivo${archivos.length > 1 ? 's' : ''} cargado${archivos.length > 1 ? 's' : ''}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: BioWayColors.ecoceGreen,
+                          color: Colors.orange,
                         ),
                       ),
                     ] else if (esObligatorio) ...[
@@ -265,7 +329,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
               if (tieneArchivos)
                 Icon(
                   Icons.check_circle,
-                  color: BioWayColors.ecoceGreen,
+                  color: Colors.orange,
                   size: 24,
                 ),
             ],
@@ -292,7 +356,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
                 children: [
                   Icon(
                     Icons.add_circle_outline,
-                    color: BioWayColors.ecoceGreen,
+                    color: Colors.orange,
                     size: 20,
                   ),
                   const SizedBox(width: 8),
@@ -301,7 +365,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: BioWayColors.ecoceGreen,
+                      color: Colors.orange,
                     ),
                   ),
                 ],
@@ -372,7 +436,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
                   ],
                 ),
               );
-            }).toList(),
+            }),
           ],
         ],
       ),
@@ -396,7 +460,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context, false), // Return false when backing out
         ),
         actions: [
           Center(
@@ -405,7 +469,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: _todosDocumentosCargados 
-                    ? BioWayColors.ecoceGreen.withValues(alpha: 0.1)
+                    ? Colors.orange.withValues(alpha: 0.1)
                     : Colors.grey.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -415,7 +479,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
                     Icons.cloud_upload,
                     size: 16,
                     color: _todosDocumentosCargados 
-                        ? BioWayColors.ecoceGreen
+                        ? Colors.orange
                         : Colors.grey,
                   ),
                   const SizedBox(width: 4),
@@ -425,7 +489,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: _todosDocumentosCargados 
-                          ? BioWayColors.ecoceGreen
+                          ? Colors.orange
                           : Colors.grey,
                     ),
                   ),
@@ -441,6 +505,61 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Lot info if available
+              if (widget.loteId != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: BioWayColors.info.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: BioWayColors.info.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: BioWayColors.info,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Lote: ${widget.loteId}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (widget.material != null)
+                              Text(
+                                'Material: ${widget.material}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                            if (widget.peso != null)
+                              Text(
+                                'Peso: ${widget.peso} kg',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+              
               // Título de la sección
               const Text(
                 'Documentos de Evidencia',
@@ -452,7 +571,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
               ),
               const SizedBox(height: 8),
               Text(
-                'Carga los documentos relacionados con el proceso de transformación',
+                'Carga los documentos relacionados con el proceso de transformación. Puede saltar este paso si es necesario.',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[600],
@@ -502,7 +621,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
                           ? 0 
                           : _documentosObligatorios.where((doc) => _archivosPorDocumento[doc]!.isNotEmpty).length / _documentosObligatorios.length,
                       backgroundColor: Colors.grey[200],
-                      valueColor: AlwaysStoppedAnimation<Color>(BioWayColors.ecoceGreen),
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
                       minHeight: 6,
                     ),
                   ],
@@ -514,7 +633,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
               // Secciones de documentos
               ..._archivosPorDocumento.keys.map((tipoDocumento) => 
                 _buildDocumentSection(tipoDocumento)
-              ).toList(),
+              ),
 
               const SizedBox(height: 12),
 
@@ -560,7 +679,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
                       ? null 
                       : _confirmarDocumentacion,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: BioWayColors.ecoceGreen,
+                    backgroundColor: Colors.orange,
                     disabledBackgroundColor: Colors.grey[300],
                     elevation: 0,
                     shape: RoundedRectangleBorder(

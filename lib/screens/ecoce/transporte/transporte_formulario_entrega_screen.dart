@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -8,25 +7,30 @@ import 'package:path_provider/path_provider.dart';
 import '../../../utils/colors.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
-import '../../../services/firebase/auth_service.dart';
-import '../../../services/lote_service.dart';
+import '../../../services/lote_unificado_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
-import '../../../services/image_service.dart';
+import '../../../services/carga_transporte_service.dart';
 import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/form_widgets.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
+import '../shared/widgets/required_field_label.dart';
+import '../shared/widgets/unified_container.dart';
+import '../shared/widgets/field_label.dart' as field_label;
+import '../shared/utils/shared_input_decorations.dart';
 
 class TransporteFormularioEntregaScreen extends StatefulWidget {
   final List<Map<String, dynamic>> lotes;
   final String qrData;
   final String nuevoLoteId;
+  final Map<String, dynamic>? datosReceptor;
   
   const TransporteFormularioEntregaScreen({
     super.key,
     required this.lotes,
     required this.qrData,
     required this.nuevoLoteId,
+    this.datosReceptor,
   });
 
   @override
@@ -37,14 +41,14 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
   final _formKey = GlobalKey<FormState>();
   final UserSessionService _userSession = UserSessionService();
   final FirebaseManager _firebaseManager = FirebaseManager();
-  final AuthService _authService = AuthService();
-  final LoteService _loteService = LoteService();
+  final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
   final FirebaseStorageService _storageService = FirebaseStorageService();
+  final CargaTransporteService _cargaService = CargaTransporteService();
   
   // Controladores
   final TextEditingController _idDestinoController = TextEditingController();
-  final TextEditingController _pesoEntregadoController = TextEditingController();
   final TextEditingController _comentariosController = TextEditingController();
+  final TextEditingController _operadorController = TextEditingController();
   
   // Estados
   bool _isLoading = false;
@@ -63,18 +67,47 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
     _idDestinoController.addListener(_onFolioChanged);
   }
   
+  // Variable para almacenar el peso total
+  double _pesoTotal = 0.0;
+  
   void _initializeForm() {
     // Calcular peso total
-    double pesoTotal = widget.lotes.fold(0.0, (total, lote) => total + (lote['peso'] as double));
-    _pesoEntregadoController.text = pesoTotal.toStringAsFixed(1);
+    _pesoTotal = widget.lotes.fold(0.0, (total, lote) => total + (lote['peso'] as double));
+    
+    // Si ya tenemos datos del receptor desde el QR, usarlos
+    if (widget.datosReceptor != null) {
+      _idDestinoController.text = widget.datosReceptor!['folio'] ?? '';
+      
+      // Formatear los datos del receptor para mostrarlos correctamente
+      _destinatarioInfo = {
+        ...widget.datosReceptor!,
+        'tipo_label': _getTipoLabel(widget.datosReceptor!['tipo'] ?? ''),
+      };
+      
+      // No necesitamos buscar porque ya tenemos la información
+      _showSuggestions = false;
+    }
+  }
+  
+  String _getTipoLabel(String tipo) {
+    switch (tipo.toLowerCase()) {
+      case 'reciclador':
+        return 'Reciclador';
+      case 'laboratorio':
+        return 'Laboratorio';
+      case 'transformador':
+        return 'Transformador';
+      default:
+        return tipo;
+    }
   }
   
   @override
   void dispose() {
     _idDestinoController.removeListener(_onFolioChanged);
     _idDestinoController.dispose();
-    _pesoEntregadoController.dispose();
     _comentariosController.dispose();
+    _operadorController.dispose();
     super.dispose();
   }
   
@@ -147,7 +180,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
         _showSuggestions = suggestions.isNotEmpty;
       });
     } catch (e) {
-      print('Error buscando usuarios: $e');
+      debugPrint('Error buscando usuarios: $e');
     }
   }
   
@@ -254,50 +287,10 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
     return parts.isEmpty ? 'Sin dirección registrada' : parts.join(', ');
   }
   
-  String _getTipoLabel(String tipo) {
-    switch (tipo) {
-      case 'R':
-        return 'Reciclador';
-      case 'L':
-        return 'Laboratorio';
-      case 'T':
-        return 'Transformador';
-      default:
-        return 'Desconocido';
-    }
-  }
-  
-  Future<void> _pickImage() async {
-    try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? photo = await picker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 80,
-      );
-      
-      if (photo != null) {
-        final compressedImage = await ImageService.optimizeImageForDatabase(File(photo.path));
-        
-        setState(() {
-          _evidenciaFoto = compressedImage;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al capturar imagen: $e'),
-            backgroundColor: BioWayColors.error,
-          ),
-        );
-      }
-    }
-  }
-  
   void _showSignatureDialog() {
     SignatureDialog.show(
       context: context,
-      title: 'Firma del Receptor',
+      title: 'Firma del Operador',
       initialSignature: _firmaRecibe,
       onSignatureSaved: (signature) {
         setState(() {
@@ -333,10 +326,20 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
       return;
     }
     
+    if (_operadorController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor ingrese el nombre del operador'),
+          backgroundColor: BioWayColors.error,
+        ),
+      );
+      return;
+    }
+    
     if (_firmaRecibe.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Por favor capture la firma del receptor'),
+          content: Text('Por favor capture la firma del operador'),
           backgroundColor: BioWayColors.error,
         ),
       );
@@ -372,25 +375,88 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
         }
       }
       
-      // Actualizar el lote de transportista con los datos de entrega
-      await _loteService.actualizarLoteTransportista(
-        widget.nuevoLoteId,
-        {
-          'ecoce_transportista_direccion_destino': _destinatarioInfo!['direccion'],
-          'ecoce_transportista_destinatario': _destinatarioInfo!['folio'],
-          'ecoce_transportista_fecha_entrega': Timestamp.fromDate(DateTime.now()),
-          'ecoce_transportista_peso_entregado': double.parse(_pesoEntregadoController.text),
-          'ecoce_transportista_firma_recibe': firmaUrl,
-          'ecoce_transportista_evi_foto_entrega': photoUrls,
-          'ecoce_transportista_comentarios_entrega': _comentariosController.text.trim(),
-          'estado': 'entregado',
-        },
-      );
+      // Obtener datos del usuario actual
+      final userProfile = await _userSession.getUserProfile();
+      if (userProfile == null) {
+        throw Exception('No se pudo obtener el perfil del usuario');
+      }
+      
+      // Obtener el carga_id del primer lote (todos deberían tener el mismo)
+      String? cargaId;
+      
+      // Actualizar cada lote individualmente en el sistema unificado
+      for (final lote in widget.lotes) {
+        final loteId = lote['id'] as String;
+        
+        // Obtener información del transporte para conseguir el carga_id
+        if (cargaId == null) {
+          final transporteActivo = await _loteUnificadoService.obtenerTransporteActivo(loteId);
+          if (transporteActivo != null && transporteActivo['carga_id'] != null) {
+            cargaId = transporteActivo['carga_id'];
+          }
+        }
+        
+        // Primero actualizar los datos del transporte con la información de entrega
+        await _loteUnificadoService.actualizarProcesoTransporte(
+          loteId: loteId,
+          datos: {
+            'fecha_salida': FieldValue.serverTimestamp(),
+            'destino_entrega': _destinatarioInfo!['folio'],
+            'nombre_operador_entrega': _operadorController.text.trim(),
+            'firma_entrega': firmaUrl,
+            'evidencias_foto_entrega': photoUrls,
+            'comentarios_entrega': _comentariosController.text.trim(),
+            'entrega_completada': true, // Marcar que el transportista completó su parte
+          },
+        );
+        
+        // Determinar el proceso destino
+        final tipoDestinatario = _destinatarioInfo!['tipo'];
+        String procesoDestino = 'reciclador'; // Por defecto
+        
+        if (tipoDestinatario == 'R') {
+          procesoDestino = 'reciclador';
+        } else if (tipoDestinatario == 'T') {
+          procesoDestino = 'transformador';
+        } else if (tipoDestinatario == 'L') {
+          procesoDestino = 'laboratorio';
+        }
+        
+        // Crear o actualizar el proceso destino con información parcial
+        await _loteUnificadoService.crearOActualizarProceso(
+          loteId: loteId,
+          proceso: procesoDestino,
+          datos: {
+            'transportista_folio': userProfile['folio'],
+            'transportista_id': userProfile['id'],
+            'peso_declarado': lote['peso'], // Usar el peso original del lote
+            'destinatario_folio': _destinatarioInfo!['folio'],
+            'destinatario_id': _destinatarioInfo!['id'],
+            'fecha_entrega_transportista': FieldValue.serverTimestamp(),
+          },
+        );
+        
+        // Verificar si la transferencia está completa (ambas partes han completado)
+        await _loteUnificadoService.transferirLote(
+          loteId: loteId,
+          procesoDestino: procesoDestino,
+          usuarioDestinoFolio: _destinatarioInfo!['folio'],
+          datosIniciales: {}, // Los datos ya se crearon/actualizaron arriba
+        );
+        
+        // Depurar el estado del lote después de la transferencia
+        await _loteUnificadoService.depurarEstadoLote(loteId);
+      }
+      
+      // Actualizar el estado de la carga si tenemos el carga_id
+      if (cargaId != null) {
+        await _cargaService.actualizarEstadoCarga(cargaId);
+      }
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lote ${widget.nuevoLoteId} entregado exitosamente'),
+          const SnackBar(
+            content: Text('Lotes entregados exitosamente al destinatario'),
             backgroundColor: BioWayColors.success,
           ),
         );
@@ -415,37 +481,128 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
     }
   }
   
-  void _onBottomNavTapped(int index) {
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, '/transporte_inicio');
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(context, '/transporte_entregar');
-        break;
-      case 2:
-        Navigator.pushNamed(context, '/transporte_ayuda');
-        break;
-      case 3:
-        Navigator.pushNamed(context, '/transporte_perfil');
-        break;
+  void _onBottomNavTapped(int index) async {
+    HapticFeedback.lightImpact();
+    
+    // Mostrar alerta antes de salir
+    final shouldLeave = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('¿Abandonar proceso?'),
+        content: const Text(
+          'Si sales ahora, se cancelará el proceso de entrega y deberás comenzar desde cero.\n\n¿Estás seguro de que deseas salir?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: BioWayColors.error,
+            ),
+            child: const Text('Salir'),
+          ),
+        ],
+      ),
+    );
+    
+    if (shouldLeave == true && mounted) {
+      switch (index) {
+        case 0:
+          Navigator.pushReplacementNamed(context, '/transporte_inicio');
+          break;
+        case 1:
+          Navigator.pushReplacementNamed(context, '/transporte_entregar');
+          break;
+        case 2:
+          Navigator.pushNamed(context, '/transporte_ayuda');
+          break;
+        case 3:
+          Navigator.pushNamed(context, '/transporte_perfil');
+          break;
+      }
     }
   }
   
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1490EE),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () {
-            HapticFeedback.lightImpact();
-            Navigator.pop(context);
-          },
-        ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        
+        // Mostrar la misma alerta al presionar el botón de retroceso
+        final shouldLeave = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: const Text('¿Abandonar proceso?'),
+            content: const Text(
+              'Si sales ahora, se cancelará el proceso de entrega y deberás comenzar desde cero.\n\n¿Estás seguro de que deseas salir?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: BioWayColors.error,
+                ),
+                child: const Text('Salir'),
+              ),
+            ],
+          ),
+        );
+        
+        if (shouldLeave == true && mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF1490EE),
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+            onPressed: () async {
+              HapticFeedback.lightImpact();
+              
+              // Mostrar alerta antes de salir
+              final shouldLeave = await showDialog<bool>(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => AlertDialog(
+                  title: const Text('¿Abandonar proceso?'),
+                  content: const Text(
+                    'Si sales ahora, se cancelará el proceso de entrega y deberás comenzar desde cero.\n\n¿Estás seguro de que deseas salir?',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text('Cancelar'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: BioWayColors.error,
+                      ),
+                      child: const Text('Salir'),
+                    ),
+                  ],
+                ),
+              );
+              
+              if (shouldLeave == true && mounted) {
+                Navigator.pop(context);
+              }
+            },
+          ),
         title: const Text(
           'Formulario de Entrega',
           style: TextStyle(
@@ -495,7 +652,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                'Peso total: ${_pesoEntregadoController.text} kg',
+                                'Peso total: ${_pesoTotal.toStringAsFixed(1)} kg',
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
@@ -572,81 +729,116 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                               style: TextStyle(fontSize: 24),
                             ),
                             const SizedBox(width: 10),
-                            Text(
-                              'Identificar Destinatario',
-                              style: TextStyle(
+                            RequiredFieldLabel(
+                              label: 'Identificar Destinatario',
+                              labelStyle: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: BioWayColors.darkGreen,
                               ),
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '*',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: BioWayColors.error,
-                              ),
-                            ),
                           ],
                         ),
                         const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: StandardTextField(
-                                controller: _idDestinoController,
-                                label: 'Folio del Destinatario',
-                                hint: 'Ej: R0000001',
-                                icon: Icons.badge,
-                                required: true,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9]')),
-                                  TextInputFormatter.withFunction((oldValue, newValue) => 
-                                    TextEditingValue(
-                                      text: newValue.text.toUpperCase(),
-                                      selection: newValue.selection,
+                        // Si ya tenemos datos del receptor, mostrar campo de solo lectura
+                        if (widget.datosReceptor != null) ...
+                          [
+                            StandardTextField(
+                              controller: _idDestinoController,
+                              label: 'Folio del Destinatario',
+                              hint: widget.datosReceptor!['folio'] ?? '',
+                              icon: Icons.badge,
+                              required: true,
+                              readOnly: true, // Campo de solo lectura
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: BioWayColors.info.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: BioWayColors.info.withValues(alpha: 0.3)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.info_outline,
+                                    size: 16,
+                                    color: BioWayColors.info,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Destinatario identificado mediante código QR',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: BioWayColors.info,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Container(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF1490EE),
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF1490EE).withValues(alpha: 0.3),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: IconButton(
-                                key: const Key('btn_buscar_usuario'),
-                                onPressed: _isSearchingUser ? null : _buscarUsuario,
-                                icon: _isSearchingUser 
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
+                          ]
+                        else ...
+                          // Si no tenemos datos, mostrar campo de búsqueda normal
+                          [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: StandardTextField(
+                                    controller: _idDestinoController,
+                                    label: 'Folio del Destinatario',
+                                    hint: 'Ej: R0000001',
+                                    icon: Icons.badge,
+                                    required: true,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9]')),
+                                      TextInputFormatter.withFunction((oldValue, newValue) => 
+                                        TextEditingValue(
+                                          text: newValue.text.toUpperCase(),
+                                          selection: newValue.selection,
                                         ),
-                                      )
-                                    : const Icon(Icons.search, color: Colors.white),
-                                padding: const EdgeInsets.all(12),
-                                constraints: const BoxConstraints(
-                                  minWidth: 48,
-                                  minHeight: 48,
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(width: 12),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1490EE),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF1490EE).withValues(alpha: 0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: IconButton(
+                                    key: const Key('btn_buscar_usuario'),
+                                    onPressed: _isSearchingUser ? null : _buscarUsuario,
+                                    icon: _isSearchingUser 
+                                        ? const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : const Icon(Icons.search, color: Colors.white),
+                                    padding: const EdgeInsets.all(12),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 48,
+                                      minHeight: 48,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
-                        ),
                         
                         // Mostrar sugerencias de usuarios
                         if (_showSuggestions && _suggestedUsers.isNotEmpty) ...[
@@ -806,51 +998,42 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                   
                   const SizedBox(height: 24),
                   
-                  // Firma del Receptor
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
+                  // Sección: Datos del Responsable
+                  SectionCard(
+                    icon: '👤',
+                    title: 'Datos del Responsable',
+                    isRequired: true,
+                    children: [
+                      // Nombre del Operador
+                      const field_label.FieldLabel(text: 'Nombre del Operador', isRequired: true),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _operadorController,
+                        maxLength: 50,
+                        keyboardType: TextInputType.name,
+                        textInputAction: TextInputAction.next,
+                        autocorrect: false,
+                        enableSuggestions: false,
+                        decoration: SharedInputDecorations.ecoceStyle(
+                          hintText: 'Ingresa el nombre completo',
+                          primaryColor: const Color(0xFF1490EE),
                         ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Text(
-                              '✍️',
-                              style: TextStyle(fontSize: 24),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Firma del Receptor',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: BioWayColors.darkGreen,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '*',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: BioWayColors.error,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Ingresa el nombre del operador';
+                          }
+                          if (value.length < 3) {
+                            return 'El nombre debe tener al menos 3 caracteres';
+                          }
+                          return null;
+                        },
+                      ),
+                      
+                      const SizedBox(height: 20),
+                      
+                      // Firma del Operador
+                      const field_label.FieldLabel(text: 'Firma del Operador', isRequired: true),
+                      const SizedBox(height: 8),
                         GestureDetector(
                           onTap: _firmaRecibe.isEmpty ? _showSignatureDialog : null,
                           child: AnimatedContainer(
@@ -991,8 +1174,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                   ),
                           ),
                         ),
-                      ],
-                    ),
+                    ],
                   ),
                   
                   const SizedBox(height: 24),
@@ -1045,6 +1227,36 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                     ),
                   ),
                   
+                  const SizedBox(height: 32),
+                  
+                  // Botón completar entrega
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _submitForm,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1490EE),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          elevation: 2,
+                        ),
+                        child: const Text(
+                          'Completar Entrega',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        key: const Key('btn_completar_entrega'),
+                      ),
+                    ),
+                  ),
+                  
                   const SizedBox(height: 100),
                 ],
               ),
@@ -1061,47 +1273,6 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
             ),
         ],
       ),
-      
-      // Botón completar fijo
-      bottomSheet: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _submitForm,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1490EE),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                elevation: 2,
-              ),
-              child: const Text(
-                'Completar Entrega',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              key: const Key('btn_completar_entrega'),
-            ),
-          ),
-        ),
-      ),
-      
       bottomNavigationBar: EcoceBottomNavigation(
         selectedIndex: 1,
         onItemTapped: _onBottomNavTapped,
@@ -1130,29 +1301,10 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
         ],
         fabConfig: null,
       ),
+      ),
     );
   }
   
-  Widget _buildSection({
-    required String title,
-    required List<Widget> children,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: BioWayColors.darkGreen,
-          ),
-        ),
-        const SizedBox(height: 16),
-        ...children,
-      ],
-    );
-  }
   
   Widget _buildInfoRow(String label, String value) {
     return Padding(
@@ -1226,7 +1378,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
       
       return null;
     } catch (e) {
-      print('Error al capturar firma: $e');
+      debugPrint('Error al capturar firma: $e');
       return null;
     }
   }

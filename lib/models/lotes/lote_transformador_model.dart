@@ -18,6 +18,20 @@ class LoteTransformadorModel {
   final String? tipoPolimero; // Tipo de polímero predominante
   final String? estado; // Estado del lote
   
+  // Campos de salida
+  final double? pesoSalida;
+  final String? productoGenerado;
+  final String? cantidadGenerada;
+  final String? operadorSalida;
+  final String? firmaSalida;
+  final List<String>? evidenciasSalida;
+  final String? comentariosSalida;
+  final DateTime? fechaSalida;
+  
+  // Campos de documentación
+  final Map<String, dynamic>? documentos;
+  final DateTime? fechaDocumentacion;
+  
   // Campos legacy para compatibilidad
   List<String> get lotes => lotesRecibidos ?? [];
   List<String> get procesos => tiposAnalisis ?? [];
@@ -49,6 +63,16 @@ class LoteTransformadorModel {
     this.comentarios,
     this.tipoPolimero,
     this.estado,
+    this.pesoSalida,
+    this.productoGenerado,
+    this.cantidadGenerada,
+    this.operadorSalida,
+    this.firmaSalida,
+    this.evidenciasSalida,
+    this.comentariosSalida,
+    this.fechaSalida,
+    this.documentos,
+    this.fechaDocumentacion,
   });
 
   Map<String, dynamic> toMap() {
@@ -68,6 +92,18 @@ class LoteTransformadorModel {
       'ecoce_transformador_comentarios': comentarios,
       'ecoce_transformador_tipo_polimero': tipoPolimero,
       'estado': estado,
+      // Campos de salida
+      'ecoce_transformador_peso_salida': pesoSalida,
+      'ecoce_transformador_producto_generado': productoGenerado,
+      'ecoce_transformador_cantidad_generada': cantidadGenerada,
+      'ecoce_transformador_operador_salida': operadorSalida,
+      'ecoce_transformador_firma_salida': firmaSalida,
+      'ecoce_transformador_evidencias_salida': evidenciasSalida,
+      'ecoce_transformador_comentarios_salida': comentariosSalida,
+      'fecha_salida': fechaSalida != null ? Timestamp.fromDate(fechaSalida!) : null,
+      // Campos de documentación
+      'ecoce_transformador_documentos': documentos,
+      'fecha_documentacion': fechaDocumentacion != null ? Timestamp.fromDate(fechaDocumentacion!) : null,
       // Legacy fields for compatibility
       'ecoce_transformador_lotes': lotes,
       'ecoce_transformador_procesos': procesos,
@@ -119,6 +155,24 @@ class LoteTransformadorModel {
       tipoPolimero: data['ecoce_transformador_tipo_polimero'] 
           ?? data['ecoce_transformador_tipo_poli'],
       estado: data['estado'],
+      // Campos de salida
+      pesoSalida: data['ecoce_transformador_peso_salida']?.toDouble(),
+      productoGenerado: data['ecoce_transformador_producto_generado'],
+      cantidadGenerada: data['ecoce_transformador_cantidad_generada'],
+      operadorSalida: data['ecoce_transformador_operador_salida'],
+      firmaSalida: data['ecoce_transformador_firma_salida'],
+      evidenciasSalida: data['ecoce_transformador_evidencias_salida'] != null 
+          ? List<String>.from(data['ecoce_transformador_evidencias_salida']) 
+          : null,
+      comentariosSalida: data['ecoce_transformador_comentarios_salida'],
+      fechaSalida: data['fecha_salida'] != null 
+          ? (data['fecha_salida'] as Timestamp).toDate() 
+          : null,
+      // Campos de documentación
+      documentos: data['ecoce_transformador_documentos'],
+      fechaDocumentacion: data['fecha_documentacion'] != null 
+          ? (data['fecha_documentacion'] as Timestamp).toDate() 
+          : null,
     );
   }
 
@@ -139,6 +193,16 @@ class LoteTransformadorModel {
     String? comentarios,
     String? tipoPolimero,
     String? estado,
+    double? pesoSalida,
+    String? productoGenerado,
+    String? cantidadGenerada,
+    String? operadorSalida,
+    String? firmaSalida,
+    List<String>? evidenciasSalida,
+    String? comentariosSalida,
+    DateTime? fechaSalida,
+    Map<String, dynamic>? documentos,
+    DateTime? fechaDocumentacion,
   }) {
     return LoteTransformadorModel(
       id: id ?? this.id,
@@ -157,6 +221,16 @@ class LoteTransformadorModel {
       comentarios: comentarios ?? this.comentarios,
       tipoPolimero: tipoPolimero ?? this.tipoPolimero,
       estado: estado ?? this.estado,
+      pesoSalida: pesoSalida ?? this.pesoSalida,
+      productoGenerado: productoGenerado ?? this.productoGenerado,
+      cantidadGenerada: cantidadGenerada ?? this.cantidadGenerada,
+      operadorSalida: operadorSalida ?? this.operadorSalida,
+      firmaSalida: firmaSalida ?? this.firmaSalida,
+      evidenciasSalida: evidenciasSalida ?? this.evidenciasSalida,
+      comentariosSalida: comentariosSalida ?? this.comentariosSalida,
+      fechaSalida: fechaSalida ?? this.fechaSalida,
+      documentos: documentos ?? this.documentos,
+      fechaDocumentacion: fechaDocumentacion ?? this.fechaDocumentacion,
     );
   }
 

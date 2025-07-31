@@ -3,18 +3,21 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
 import '../../../services/lote_service.dart';
+import '../../../services/lote_unificado_service.dart';
 import '../../../services/user_session_service.dart';
 import 'laboratorio_documentacion.dart';
 import 'laboratorio_gestion_muestras.dart';
 
 class LaboratorioFormulario extends StatefulWidget {
   final String muestraId;
-  final double peso;
+  final String transformacionId; // Para el sistema de megalotes
+  final Map<String, dynamic> datosMuestra;
 
   const LaboratorioFormulario({
     super.key,
     required this.muestraId,
-    required this.peso,
+    required this.transformacionId,
+    required this.datosMuestra,
   });
 
   @override
@@ -26,6 +29,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
   
   // Servicios
   final LoteService _loteService = LoteService();
+  final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
   final UserSessionService _userSession = UserSessionService();
   
   // Controladores para los campos
@@ -120,27 +124,41 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
       // Obtener datos del usuario
       final userProfile = await _userSession.getUserProfile();
       
-      // Actualizar el lote de laboratorio con los resultados del análisis
-      await _loteService.actualizarLoteLaboratorio(
-        widget.muestraId,
-        {
-          'ecoce_laboratorio_humedad': double.parse(_humedadController.text),
-          'ecoce_laboratorio_pellets_gramo': double.parse(_pelletsController.text),
-          'ecoce_laboratorio_tipo_polimero': _tipoPolimeroController.text.trim(),
-          'ecoce_laboratorio_temperatura_fusion': temperaturaData,
-          'ecoce_laboratorio_contenido_organico': double.parse(_contenidoOrganicoController.text),
-          'ecoce_laboratorio_contenido_inorganico': double.parse(_contenidoInorganicoController.text),
-          'ecoce_laboratorio_oit': _oitController.text.trim(),
-          'ecoce_laboratorio_mfi': _mfiController.text.trim(),
-          'ecoce_laboratorio_densidad': _densidadController.text.trim(),
-          'ecoce_laboratorio_norma': _normaController.text.trim(),
-          'ecoce_laboratorio_observaciones': _observacionesController.text.trim(),
-          'ecoce_laboratorio_cumple_requisitos': _cumpleRequisitos,
-          'ecoce_laboratorio_analista': userProfile?['ecoceNombre'] ?? 'Sin nombre',
-          'ecoce_laboratorio_fecha_analisis': Timestamp.fromDate(DateTime.now()),
-          'estado': 'documentacion',
-        },
-      );
+      // Preparar datos del análisis
+      final datosAnalisis = {
+        'humedad': double.parse(_humedadController.text),
+        'pellets_gramo': double.parse(_pelletsController.text),
+        'tipo_polimero': _tipoPolimeroController.text.trim(),
+        'temperatura_fusion': temperaturaData,
+        'contenido_organico': double.parse(_contenidoOrganicoController.text),
+        'contenido_inorganico': double.parse(_contenidoInorganicoController.text),
+        'oit': _oitController.text.trim(),
+        'mfi': _mfiController.text.trim(),
+        'densidad': _densidadController.text.trim(),
+        'norma': _normaController.text.trim(),
+        'observaciones': _observacionesController.text.trim(),
+        'cumple_requisitos': _cumpleRequisitos,
+        'analista': userProfile?['ecoceNombre'] ?? 'Sin nombre',
+      };
+      
+      // Si hay transformacionId, es un megalote
+      if (widget.transformacionId != null) {
+        await _loteUnificadoService.actualizarAnalisisMuestraMegalote(
+          transformacionId: widget.transformacionId!,
+          muestraId: widget.muestraId,
+          datosAnalisis: datosAnalisis,
+        );
+      } else {
+        // Sistema antiguo (por compatibilidad)
+        await _loteService.actualizarLoteLaboratorio(
+          widget.muestraId,
+          {
+            ...datosAnalisis.map((key, value) => MapEntry('ecoce_laboratorio_$key', value)),
+            'ecoce_laboratorio_fecha_analisis': Timestamp.fromDate(DateTime.now()),
+            'estado': 'documentacion',
+          },
+        );
+      }
 
       if (mounted) {
         // Mostrar diálogo de confirmación
@@ -192,6 +210,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                     MaterialPageRoute(
                       builder: (context) => LaboratorioDocumentacion(
                         muestraId: widget.muestraId,
+                        transformacionId: widget.transformacionId,
                       ),
                     ),
                   );
@@ -648,7 +667,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            '${widget.peso} kg',
+                            '${(widget.datosMuestra['peso_muestra'] ?? 0.0).toStringAsFixed(2)} kg',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
