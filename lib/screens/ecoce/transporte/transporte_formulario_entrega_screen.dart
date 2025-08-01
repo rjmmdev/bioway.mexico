@@ -1000,13 +1000,54 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                   const SizedBox(height: 24),
                   
                   // Sección: Datos del Responsable
-                  SectionCard(
-                    icon: '👤',
-                    title: 'Datos del Responsable',
-                    isRequired: true,
-                    children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text(
+                              '👤',
+                              style: TextStyle(fontSize: 24),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Datos del Responsable que Recibe el Material',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: BioWayColors.darkGreen,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              '*',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: BioWayColors.error,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
                       // Nombre del Operador
-                      const field_label.FieldLabel(text: 'Nombre del Operador', isRequired: true),
+                      const field_label.FieldLabel(text: 'Nombre', isRequired: true),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _operadorController,
@@ -1021,7 +1062,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Ingresa el nombre del operador';
+                            return 'Ingresa el nombre';
                           }
                           if (value.length < 3) {
                             return 'El nombre debe tener al menos 3 caracteres';
@@ -1033,7 +1074,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                       const SizedBox(height: 20),
                       
                       // Firma del Operador
-                      const field_label.FieldLabel(text: 'Firma del Operador', isRequired: true),
+                      const field_label.FieldLabel(text: 'Firma', isRequired: true),
                       const SizedBox(height: 8),
                         GestureDetector(
                           onTap: _firmaRecibe.isEmpty ? _showSignatureDialog : null,
@@ -1175,7 +1216,8 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                   ),
                           ),
                         ),
-                    ],
+                      ],
+                    ),
                   ),
                   
                   const SizedBox(height: 24),
