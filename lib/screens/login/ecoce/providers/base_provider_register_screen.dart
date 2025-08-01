@@ -83,7 +83,6 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
   final AuthService _authService = AuthService();
   final DocumentService _documentService = DocumentService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseManager _firebaseManager = FirebaseManager();
 
   // Animación
   late AnimationController _animationController;
@@ -177,6 +176,10 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
     });
     
     try {
+      // Asegurar que Firebase esté inicializado para ECOCE
+      print('🔥 Verificando inicialización de Firebase...');
+      await _authService.initializeForPlatform(FirebasePlatform.ecoce);
+      print('✅ Firebase inicializado correctamente');
       // Obtener tipo de usuario y subtipo
       String tipoUsuario = _getTipoUsuario();
       String subtipo = _getSubtipo();
@@ -212,72 +215,35 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
       // Pequeña pausa para asegurar que el diálogo se muestre
       await Future.delayed(Duration(milliseconds: 100));
       
-      // PASO 1: Crear usuario en Firebase Auth PRIMERO
-      String? createdUserId;
-      try {
-        debugPrint('\n🔐 CREANDO USUARIO EN FIREBASE AUTH...');
-        
-        // Inicializar Firebase para ECOCE
-        await _firebaseManager.initializeForPlatform(FirebasePlatform.ecoce);
-        
-        final userCredential = await _authService.createUserWithEmailAndPassword(
-          email: _controllers['email']!.text.trim(),
-          password: _controllers['password']!.text,
-        );
-        
-        createdUserId = userCredential.user?.uid;
-        
-        if (createdUserId == null) {
-          throw Exception('No se pudo crear el usuario');
-        }
-        
-        debugPrint('✅ Usuario creado con UID: $createdUserId');
-        
-        // Actualizar el nombre del usuario
-        await userCredential.user!.updateDisplayName(_controllers['nombreComercial']!.text.trim());
-        
-      } catch (e) {
-        Navigator.of(context).pop(); // Cerrar diálogo de progreso
-        
-        String errorMessage = 'Error al crear la cuenta';
-        if (e.toString().contains('email-already-in-use')) {
-          errorMessage = 'Este correo electrónico ya está registrado';
-        } else if (e.toString().contains('weak-password')) {
-          errorMessage = 'La contraseña es muy débil';
-        } else if (e.toString().contains('invalid-email')) {
-          errorMessage = 'El correo electrónico no es válido';
-        }
-        
-        _showRegistrationErrorDialog(errorMessage);
-        return;
-      }
-      
-      // PASO 2: Subir documentos (ahora el usuario está autenticado)
+      // Primero subir documentos si existen
       final Map<String, String?> documentosSubidos = {};
       final hasDocuments = _platformFiles.values.any((file) => file != null);
+      String tempId = DateTime.now().millisecondsSinceEpoch.toString();
       
       if (hasDocuments) {
         debugPrint('\n🗂️ SUBIENDO DOCUMENTOS...');
         debugPrint('Total de documentos a subir: ${_platformFiles.values.where((f) => f != null).length}');
         
+        // Subir cada documento antes de crear la solicitud
         for (final entry in _platformFiles.entries) {
           if (entry.value != null) {
             final file = entry.value!;
             debugPrint('📎 Subiendo ${entry.key}: ${file.name} (${file.size} bytes)...');
             
             try {
+              // Usar un ID temporal para organizar los archivos
               final url = await _documentService.uploadDocument(
-                userId: createdUserId,
+                userId: tempId,
                 documentType: entry.key,
                 file: file,
-                solicitudId: createdUserId,
+                solicitudId: tempId,
               );
               
               if (url != null) {
                 documentosSubidos[entry.key] = url;
                 debugPrint('✅ ${entry.key} subido exitosamente');
               } else {
-                debugPrint('❌ Error: ${entry.key} no se pudo subir - URL es null');
+                debugPrint('❌ Error: ${entry.key} no se pudo subir');
               }
             } catch (e) {
               debugPrint('❌ Error subiendo ${entry.key}: $e');
@@ -290,10 +256,6 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
       
       // Crear solicitud de cuenta con los documentos ya subidos
       debugPrint('\n📝 CREANDO SOLICITUD DE CUENTA...');
-      debugPrint('Documentos a pasar a createAccountRequest:');
-      documentosSubidos.forEach((key, value) {
-        debugPrint('  $key: ${value != null ? 'URL presente (${value.substring(0, 50)}...)' : 'null'}');
-      });
       
       final solicitudId = await _profileService.createAccountRequest(
         tipoUsuario: tipoUsuario,
@@ -322,7 +284,6 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
         latitud: latitud,
         longitud: longitud,
         actividadesAutorizadas: _selectedActivities.toList(),
-        usuarioId: createdUserId, // Pasar el ID del usuario ya creado
       );
       
       debugPrint('✅ Solicitud creada con ID: $solicitudId');
@@ -367,14 +328,6 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
         debugPrint('  $key: ${value != null ? 'OK' : 'FALLO'}');
       });
       debugPrint('===========================');
-      
-      // PASO 3: Cerrar sesión del usuario (para que no quede autenticado hasta aprobación)
-      try {
-        await _authService.signOut();
-        debugPrint('✅ Sesión cerrada - Usuario debe esperar aprobación');
-      } catch (e) {
-        debugPrint('⚠️ Error cerrando sesión: $e');
-      }
       
       setState(() {
         _isLoading = false;
@@ -508,89 +461,6 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
           ),
         );
       },
-    );
-  }
-
-  void _showRegistrationErrorDialog(String errorMessage) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icono de error
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: BioWayColors.error.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.error_outline,
-                  size: 35,
-                  color: BioWayColors.error,
-                ),
-              ),
-              const SizedBox(height: 16),
-              
-              // Título
-              const Text(
-                'Error al crear cuenta',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: BioWayColors.darkGreen,
-                ),
-              ),
-              const SizedBox(height: 16),
-              
-              // Mensaje de error
-              Text(
-                errorMessage,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: BioWayColors.textGrey,
-                  height: 1.4,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              
-              // Botón
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: BioWayColors.primaryGreen,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Entendido',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 

@@ -128,15 +128,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
     super.dispose();
   }
 
-  void _showSignatureDialog() async {
-    // Primero ocultar el teclado
-    FocusScope.of(context).unfocus();
-    
-    // Esperar un breve momento para que el teclado se oculte completamente
-    await Future.delayed(const Duration(milliseconds: 300));
-    
-    if (!mounted) return;
-    
+  void _showSignatureDialog() {
     SignatureDialog.show(
       context: context,
       title: 'Firma del Operador',
@@ -356,10 +348,6 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                                 onChanged: (bool? value) {
                                   setState(() {
                                     _isPostConsumo = value ?? false;
-                                    // Si se selecciona Post-consumo, deseleccionar Pre-consumo
-                                    if (_isPostConsumo) {
-                                      _isPreConsumo = false;
-                                    }
                                   });
                                 },
                                 contentPadding: EdgeInsets.zero,
@@ -375,10 +363,6 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                                 onChanged: (bool? value) {
                                   setState(() {
                                     _isPreConsumo = value ?? false;
-                                    // Si se selecciona Pre-consumo, deseleccionar Post-consumo
-                                    if (_isPreConsumo) {
-                                      _isPostConsumo = false;
-                                    }
                                   });
                                 },
                                 contentPadding: EdgeInsets.zero,

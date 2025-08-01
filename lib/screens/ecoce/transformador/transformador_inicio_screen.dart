@@ -74,7 +74,33 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
     );
   }
 
+  void _onBottomNavTapped(int index) {
+    if (index == 0) return; // Ya estamos en inicio
+    
+    // Usar navegación optimizada para mantener estado
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => TransformadorMainScreen(
+          initialIndex: index,
+        ),
+        transitionDuration: Duration.zero, // Sin animación para mayor fluidez
+        reverseTransitionDuration: Duration.zero,
+      ),
+    );
+  }
 
+  void _onAddPressed() {
+    HapticFeedback.lightImpact();
+    // Usar el flujo de recepción por pasos igual que el reciclador
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ReceptorRecepcionPasosScreen(
+          userType: 'transformador',
+        ),
+      ),
+    );
+  }
 
   void _navigateToLoteDetalle(LoteTransformadorModel lote) {
     Navigator.push(
@@ -972,6 +998,26 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
           ],
         ),
       ),
+      
+      // Bottom Navigation Bar
+      bottomNavigationBar: EcoceBottomNavigation(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onBottomNavTapped,
+        primaryColor: Colors.orange,
+        items: EcoceNavigationConfigs.transformadorItems,
+        fabConfig: FabConfig(
+          icon: Icons.add,
+          onPressed: _onAddPressed,
+        ),
+      ),
+      
+      // Floating Action Button
+      floatingActionButton: EcoceFloatingActionButton(
+        onPressed: _onAddPressed,
+        icon: Icons.add,
+        backgroundColor: Colors.orange,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
   }

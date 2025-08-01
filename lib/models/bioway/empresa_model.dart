@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+=======
+>>>>>>> cabe8f1f3af68c346d1354cdabc8decc624748c0
 class EmpresaModel {
   final String id;
   final String nombre;
@@ -8,9 +12,14 @@ class EmpresaModel {
   final List<String> municipiosDisponibles;
   final bool rangoRestringido;
   final double? rangoMaximoKm;
+<<<<<<< HEAD
+  final DateTime fechaCreacion;
+  final bool activa;
+=======
   final bool activa;
   final DateTime fechaCreacion;
   final DateTime fechaActualizacion;
+>>>>>>> cabe8f1f3af68c346d1354cdabc8decc624748c0
 
   EmpresaModel({
     required this.id,
@@ -21,9 +30,14 @@ class EmpresaModel {
     required this.municipiosDisponibles,
     required this.rangoRestringido,
     this.rangoMaximoKm,
+<<<<<<< HEAD
+    required this.fechaCreacion,
+    required this.activa,
+=======
     required this.activa,
     required this.fechaCreacion,
     required this.fechaActualizacion,
+>>>>>>> cabe8f1f3af68c346d1354cdabc8decc624748c0
   });
 
   factory EmpresaModel.fromMap(Map<String, dynamic> map, String id) {
@@ -36,17 +50,20 @@ class EmpresaModel {
       municipiosDisponibles: List<String>.from(map['municipiosDisponibles'] ?? []),
       rangoRestringido: map['rangoRestringido'] ?? false,
       rangoMaximoKm: map['rangoMaximoKm']?.toDouble(),
-      activa: map['activa'] ?? true,
+<<<<<<< HEAD
       fechaCreacion: map['fechaCreacion'] != null 
-          ? (map['fechaCreacion'] is Timestamp
-              ? (map['fechaCreacion'] as Timestamp).toDate()
-              : DateTime.parse(map['fechaCreacion']))
+          ? (map['fechaCreacion'] as Timestamp).toDate()
+          : DateTime.now(),
+      activa: map['activa'] ?? true,
+=======
+      activa: map['activa'] ?? true,
+      fechaCreacion: map['fechaCreacion'] != null
+          ? DateTime.parse(map['fechaCreacion'])
           : DateTime.now(),
       fechaActualizacion: map['fechaActualizacion'] != null
-          ? (map['fechaActualizacion'] is Timestamp
-              ? (map['fechaActualizacion'] as Timestamp).toDate()
-              : DateTime.parse(map['fechaActualizacion']))
+          ? DateTime.parse(map['fechaActualizacion'])
           : DateTime.now(),
+>>>>>>> cabe8f1f3af68c346d1354cdabc8decc624748c0
     );
   }
 
@@ -59,9 +76,9 @@ class EmpresaModel {
       'municipiosDisponibles': municipiosDisponibles,
       'rangoRestringido': rangoRestringido,
       'rangoMaximoKm': rangoMaximoKm,
-      'activa': activa,
+<<<<<<< HEAD
       'fechaCreacion': Timestamp.fromDate(fechaCreacion),
-      'fechaActualizacion': Timestamp.fromDate(fechaActualizacion),
+      'activa': activa,
     };
   }
 
@@ -74,9 +91,8 @@ class EmpresaModel {
     List<String>? municipiosDisponibles,
     bool? rangoRestringido,
     double? rangoMaximoKm,
-    bool? activa,
     DateTime? fechaCreacion,
-    DateTime? fechaActualizacion,
+    bool? activa,
   }) {
     return EmpresaModel(
       id: id ?? this.id,
@@ -87,9 +103,15 @@ class EmpresaModel {
       municipiosDisponibles: municipiosDisponibles ?? this.municipiosDisponibles,
       rangoRestringido: rangoRestringido ?? this.rangoRestringido,
       rangoMaximoKm: rangoMaximoKm ?? this.rangoMaximoKm,
-      activa: activa ?? this.activa,
       fechaCreacion: fechaCreacion ?? this.fechaCreacion,
-      fechaActualizacion: fechaActualizacion ?? this.fechaActualizacion,
+      activa: activa ?? this.activa,
     );
   }
+=======
+      'activa': activa,
+      'fechaCreacion': fechaCreacion.toIso8601String(),
+      'fechaActualizacion': fechaActualizacion.toIso8601String(),
+    };
+  }
+>>>>>>> cabe8f1f3af68c346d1354cdabc8decc624748c0
 }

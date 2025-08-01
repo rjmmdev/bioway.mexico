@@ -45,13 +45,6 @@ class DocumentService {
       return null;
     }
   }
-  
-  // Validar tamaño del archivo
-  bool validateFileSize(PlatformFile file, {double maxSizeMB = 5.0}) {
-    if (file.size == 0) return false;
-    final sizeInMB = file.size / (1024 * 1024);
-    return sizeInMB <= maxSizeMB;
-  }
 
   // Comprimir PDF o imagen
   Future<Uint8List?> compressDocument(PlatformFile file) async {
@@ -337,6 +330,14 @@ class DocumentService {
       default:
         return 'application/octet-stream';
     }
+  }
+
+  // Validar tamaño del archivo
+  bool validateFileSize(PlatformFile file, {int maxSizeMB = 10}) {
+    if (file.bytes == null) return false;
+    
+    final sizeInMB = file.bytes!.length / (1024 * 1024);
+    return sizeInMB <= maxSizeMB;
   }
 
   // Obtener nombre formateado del tipo de documento

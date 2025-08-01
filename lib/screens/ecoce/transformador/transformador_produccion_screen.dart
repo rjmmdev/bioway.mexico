@@ -675,7 +675,24 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
     }
   }
 
-  
+  void _onBottomNavTapped(int index) {
+    HapticFeedback.lightImpact();
+    
+    if (index == 1) return; // Ya estamos en producción
+    
+    switch (index) {
+      case 0:
+        Navigator.pushReplacementNamed(context, '/transformador_inicio');
+        break;
+      case 2:
+        Navigator.pushNamed(context, '/transformador_ayuda');
+        break;
+      case 3:
+        Navigator.pushNamed(context, '/transformador_perfil');
+        break;
+    }
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -874,7 +891,14 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
             ),
           ],
         ),
-        floatingActionButton: _tabController.index == 0 && (_isSelectionMode || _autoSelectionMode) && _selectedLotes.isNotEmpty
+        bottomNavigationBar: EcoceBottomNavigation(
+          selectedIndex: 1, // Producción está en índice 1
+          onItemTapped: _onBottomNavTapped,
+          primaryColor: Colors.orange,
+          items: EcoceNavigationConfigs.transformadorItems,
+          fabConfig: UserTypeHelper.getFabConfig('T', context),
+        ),
+      floatingActionButton: _tabController.index == 0 && (_isSelectionMode || _autoSelectionMode) && _selectedLotes.isNotEmpty
           ? FloatingActionButton.extended(
               onPressed: _procesarLotesSeleccionados,
               backgroundColor: Colors.orange,
@@ -891,8 +915,24 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                 ),
               ),
             )
-          : null,
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+          : EcoceFloatingActionButton(
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                // Usar el flujo de recepción por pasos igual que el reciclador
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ReceptorRecepcionPasosScreen(
+                      userType: 'transformador',
+                    ),
+                  ),
+                );
+              },
+              icon: Icons.add,
+              backgroundColor: Colors.orange,
+              tooltip: 'Recibir Lote',
+            ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
   }

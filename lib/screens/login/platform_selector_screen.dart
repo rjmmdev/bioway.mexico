@@ -4,7 +4,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../utils/colors.dart';
 import '../../widgets/common/gradient_background.dart';
 import 'ecoce/ecoce_login_screen.dart'; // ACTUALIZADA
-import 'bioway/bioway_login_screen.dart'; // AGREGADO
 
 class PlatformSelectorScreen extends StatefulWidget {
   const PlatformSelectorScreen({super.key});
@@ -152,28 +151,7 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
 
   void _navigateToBioWay() {
     HapticFeedback.mediumImpact();
-    Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-        const BioWayLoginScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(1.0, 0.0);
-          const end = Offset.zero;
-          const curve = Curves.easeOutCubic;
-
-          var tween = Tween(begin: begin, end: end).chain(
-            CurveTween(curve: curve),
-          );
-
-          return SlideTransition(
-            position: animation.drive(tween),
-            child: child,
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 400),
-      ),
-    );
+    Navigator.pushNamed(context, '/bioway_login');
   }
 
   void _navigateToECOCE() {

@@ -356,15 +356,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
     }
   }
 
-  void _showSignatureDialog() async {
-    // Primero ocultar el teclado
-    FocusScope.of(context).unfocus();
-    
-    // Esperar un breve momento para que el teclado se oculte completamente
-    await Future.delayed(const Duration(milliseconds: 300));
-    
-    if (!mounted) return;
-    
+  void _showSignatureDialog() {
     SignatureDialog.show(
       context: context,
       title: 'Firma del Responsable',
