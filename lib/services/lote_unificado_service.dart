@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:app/services/firebase/auth_service.dart';
 import 'package:app/services/firebase/firebase_manager.dart';
 import 'package:app/services/firebase/firebase_storage_service.dart';
@@ -1891,23 +1892,24 @@ class LoteUnificadoService {
     }
 
     // Combinar el stream del perfil del usuario con las transformaciones
-    final perfilStream = _firestore
+    final Stream<int> perfilStream = _firestore
         .collection('ecoce_profiles/reciclador/usuarios')
         .doc(userId)
         .snapshots()
-        .map((doc) {
+        .map<int>((doc) {
           if (!doc.exists) return 0;
           final data = doc.data();
           // Usar el contador acumulativo del perfil
-          return data?['estadisticas']?['lotes_recibidos'] ?? 
-                 data?['ecoce_lotes_totales_recibidos'] ?? 0;
+          final lotesRecibidos = data?['estadisticas']?['lotes_recibidos'] ?? 
+                                data?['ecoce_lotes_totales_recibidos'] ?? 0;
+          return lotesRecibidos as int;
         });
     
-    final transformacionesStream = _firestore
+    final Stream<Map<String, dynamic>> transformacionesStream = _firestore
         .collection('transformaciones')
         .where('usuario_id', isEqualTo: userId)
         .snapshots()
-        .map((transformacionesSnapshot) {
+        .map<Map<String, dynamic>>((transformacionesSnapshot) {
           int megalotesCreados = 0;
           double materialProcesado = 0.0;
           
@@ -1928,14 +1930,14 @@ class LoteUnificadoService {
         });
     
     // Combinar ambos streams
-    return Rx.combineLatest2(
+    return Rx.combineLatest2<int, Map<String, dynamic>, Map<String, dynamic>>(
       perfilStream,
       transformacionesStream,
-      (int lotesRecibidos, Map<String, dynamic> stats) {
+      (lotesRecibidos, stats) {
         return {
           'lotesRecibidos': lotesRecibidos, // Usar el contador del perfil
-          'megalotesCreados': stats['megalotesCreados'],
-          'materialProcesado': stats['materialProcesado'],
+          'megalotesCreados': stats['megalotesCreados'] ?? 0,
+          'materialProcesado': stats['materialProcesado'] ?? 0.0,
         };
       },
     );

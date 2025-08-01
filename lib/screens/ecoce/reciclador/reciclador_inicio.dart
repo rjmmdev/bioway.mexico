@@ -101,7 +101,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
       print('=== CARGANDO ESTADÍSTICAS INICIALES RECICLADOR ===');
       
       // Obtener estadísticas del perfil del usuario (contador acumulativo)
-      final userProfile = await _userSession.getUserProfile();
+      final userProfile = await _sessionService.getUserProfile();
       final lotesRecibidosTotal = userProfile?['estadisticas']?['lotes_recibidos'] ?? 
                                   userProfile?['ecoce_lotes_totales_recibidos'] ?? 0;
       

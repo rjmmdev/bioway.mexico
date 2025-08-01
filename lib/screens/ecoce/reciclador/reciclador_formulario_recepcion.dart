@@ -9,6 +9,7 @@ import '../../../services/lote_unificado_service.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
 import '../../../services/firebase/auth_service.dart';
+import '../../../services/firebase/firebase_manager.dart';
 import '../../../services/carga_transporte_service.dart';
 import '../shared/widgets/weight_input_widget.dart';
 import '../shared/widgets/signature_dialog.dart';
@@ -68,6 +69,7 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
   final UserSessionService _userSession = UserSessionService();
   final FirebaseStorageService _storageService = FirebaseStorageService();
   final AuthService _authService = AuthService();
+  final FirebaseManager _firebaseManager = FirebaseManager();
 
   // Datos pre-cargados
   Map<String, dynamic>? _datosEntrega;
@@ -206,6 +208,10 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
         );
       }
 
+      // Obtener el ID del usuario actual (reciclador) antes del loop
+      final currentUserId = _authService.currentUser?.uid;
+      final currentUserData = _userSession.getUserData();
+      
       // Obtener el carga_id del primer lote (todos deberían tener el mismo)
       String? cargaId;
       
@@ -220,10 +226,6 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
             cargaId = transporteActivo['carga_id'];
           }
         }
-        
-        // Obtener el ID del usuario actual (reciclador)
-        final currentUserId = _authService.currentUser?.uid;
-        final currentUserData = _userSession.getUserData();
         
         debugPrint('=== DATOS DEL USUARIO RECICLADOR ===');
         debugPrint('User ID: $currentUserId');
