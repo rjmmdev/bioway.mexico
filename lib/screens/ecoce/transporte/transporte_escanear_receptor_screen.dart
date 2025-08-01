@@ -52,19 +52,19 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
     try {
       // Detectar si se escaneó un código de lote en lugar de usuario
       if (codigo.startsWith('LOTE-')) {
-        _mostrarError('Por favor escanea el código QR de identificación del receptor');
+        _mostrarError('Código incorrecto. Por favor escanea el código QR de identificación del receptor, no un lote');
         return;
       }
       
       // Detectar si se escaneó un código de entrega
       if (codigo.startsWith('ENTREGA-')) {
-        _mostrarError('Por favor escanea el código QR de identificación del receptor');
+        _mostrarError('Código incorrecto. Por favor escanea el código QR de identificación del receptor, no una entrega');
         return;
       }
       
       // Validar formato del código QR del usuario
       if (!codigo.startsWith('USER-')) {
-        _mostrarError('Por favor escanea el código QR de identificación del receptor');
+        _mostrarError('Código QR no válido. Debe escanear el código QR de identificación de un usuario receptor');
         return;
       }
       
