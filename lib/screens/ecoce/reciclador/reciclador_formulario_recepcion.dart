@@ -145,7 +145,15 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
     });
   }
 
-  void _captureSignature() {
+  void _captureSignature() async {
+    // Primero ocultar el teclado
+    FocusScope.of(context).unfocus();
+    
+    // Esperar un breve momento para que el teclado se oculte completamente
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    if (!mounted) return;
+    
     SignatureDialog.show(
       context: context,
       title: 'Firma del Operador',
