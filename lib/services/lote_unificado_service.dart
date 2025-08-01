@@ -1890,51 +1890,55 @@ class LoteUnificadoService {
       });
     }
 
-    // Stream solo de transformaciones ya que los lotes se cuentan desde ahí
-    return _firestore
+    // Combinar el stream del perfil del usuario con las transformaciones
+    final perfilStream = _firestore
+        .collection('ecoce_profiles/reciclador/usuarios')
+        .doc(userId)
+        .snapshots()
+        .map((doc) {
+          if (!doc.exists) return 0;
+          final data = doc.data();
+          // Usar el contador acumulativo del perfil
+          return data?['estadisticas']?['lotes_recibidos'] ?? 
+                 data?['ecoce_lotes_totales_recibidos'] ?? 0;
+        });
+    
+    final transformacionesStream = _firestore
         .collection('transformaciones')
         .where('usuario_id', isEqualTo: userId)
         .snapshots()
         .map((transformacionesSnapshot) {
-          int lotesRecibidos = 0;
           int megalotesCreados = 0;
           double materialProcesado = 0.0;
-          
-          Set<String> lotesUnicos = {};
           
           // Contar megalotes
           megalotesCreados = transformacionesSnapshot.docs.length;
           
-          // Contar lotes únicos y sumar material procesado
+          // Sumar material procesado
           for (final transformacionDoc in transformacionesSnapshot.docs) {
             final data = transformacionDoc.data();
-            
-            // Contar lotes únicos
-            final lotesEntrada = data['lotes_entrada'] as List<dynamic>?;
-            if (lotesEntrada != null) {
-              for (var lote in lotesEntrada) {
-                if (lote is Map<String, dynamic>) {
-                  final loteId = lote['lote_id'] as String?;
-                  if (loteId != null) {
-                    lotesUnicos.add(loteId);
-                  }
-                }
-              }
-            }
-            
-            // Sumar peso
             final pesoTotalEntrada = (data['peso_total_entrada'] as num?)?.toDouble() ?? 0.0;
             materialProcesado += pesoTotalEntrada;
           }
           
-          lotesRecibidos = lotesUnicos.length;
-          
           return {
-            'lotesRecibidos': lotesRecibidos,
             'megalotesCreados': megalotesCreados,
             'materialProcesado': materialProcesado,
           };
         });
+    
+    // Combinar ambos streams
+    return Rx.combineLatest2(
+      perfilStream,
+      transformacionesStream,
+      (int lotesRecibidos, Map<String, dynamic> stats) {
+        return {
+          'lotesRecibidos': lotesRecibidos, // Usar el contador del perfil
+          'megalotesCreados': stats['megalotesCreados'],
+          'materialProcesado': stats['materialProcesado'],
+        };
+      },
+    );
   }
   
   // ============= MÉTODOS PARA SISTEMA DE TRANSFORMACIONES =============

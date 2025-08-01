@@ -99,12 +99,20 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
   Future<void> _loadInitialStatistics() async {
     try {
       print('=== CARGANDO ESTADÍSTICAS INICIALES RECICLADOR ===');
+      
+      // Obtener estadísticas del perfil del usuario (contador acumulativo)
+      final userProfile = await _userSession.getUserProfile();
+      final lotesRecibidosTotal = userProfile?['estadisticas']?['lotes_recibidos'] ?? 
+                                  userProfile?['ecoce_lotes_totales_recibidos'] ?? 0;
+      
+      // Obtener otras estadísticas del servicio
       final stats = await _loteUnificadoService.obtenerEstadisticasReciclador();
       print('Estadísticas obtenidas: $stats');
+      print('Lotes recibidos del perfil: $lotesRecibidosTotal');
       
       if (mounted) {
         setState(() {
-          _lotesRecibidos = stats['lotesRecibidos'] ?? 0;
+          _lotesRecibidos = lotesRecibidosTotal; // Usar el contador del perfil
           _megalotesCreados = stats['megalotesCreados'] ?? 0;
           _materialProcesado = stats['materialProcesado'] ?? 0.0;
         });

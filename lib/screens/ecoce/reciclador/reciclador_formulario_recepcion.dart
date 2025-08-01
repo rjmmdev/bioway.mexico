@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
-import 'package:path_provider/path_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../utils/colors.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../services/user_session_service.dart';
@@ -157,7 +157,7 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
     
     SignatureDialog.show(
       context: context,
-      title: 'Firma del Operador',
+      title: 'Firma del Responsable',
       initialSignature: _signaturePoints,
       onSignatureSaved: (points) {
         setState(() {
@@ -284,11 +284,17 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
 
       // Actualizar estadísticas del usuario
       final userProfile = await _userSession.getUserProfile();
-      if (userProfile != null) {
-        final currentTotal = userProfile['ecoce_lotes_totales_recibidos'] ?? 0;
-        await _userSession.updateCurrentUserProfile({
-          'ecoce_lotes_totales_recibidos': currentTotal + _lotes.length,
-        });
+      if (userProfile != null && currentUserId != null) {
+        // Actualizar contador en el perfil del usuario
+        final firestore = FirebaseFirestore.instanceFor(app: _firebaseManager.currentApp!);
+        await firestore
+          .collection('ecoce_profiles/reciclador/usuarios')
+          .doc(currentUserId)
+          .update({
+            'estadisticas.lotes_recibidos': FieldValue.increment(_lotes.length),
+            'estadisticas.ultima_actualizacion': FieldValue.serverTimestamp(),
+            'ecoce_lotes_totales_recibidos': FieldValue.increment(_lotes.length), // Mantener compatibilidad
+          });
       }
 
       if (mounted) {
@@ -882,13 +888,54 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
               const SizedBox(height: 16),
               
               // Sección: Datos del Responsable
-              SectionCard(
-                icon: '👤',
-                title: 'Datos del Responsable',
-                isRequired: true,
-                children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          '👤',
+                          style: TextStyle(fontSize: 24),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Datos del Responsable que Recibe el Material',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: BioWayColors.darkGreen,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Text(
+                          '*',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: BioWayColors.error,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
                   // Nombre del Operador
-                  const field_label.FieldLabel(text: 'Nombre del Operador', isRequired: true),
+                  const field_label.FieldLabel(text: 'Nombre', isRequired: true),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _operadorController,
@@ -915,7 +962,7 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                   const SizedBox(height: 20),
                   
                   // Firma del Operador
-                  const field_label.FieldLabel(text: 'Firma del Operador', isRequired: true),
+                  const field_label.FieldLabel(text: 'Firma', isRequired: true),
                   const SizedBox(height: 8),
                     GestureDetector(
                       onTap: _signaturePoints.isEmpty ? _captureSignature : null,
@@ -962,7 +1009,7 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                                     padding: const EdgeInsets.all(12),
                                     child: Center(
                                       child: AspectRatio(
-                                        aspectRatio: 2.5,
+                                        aspectRatio: 2.0,
                                         child: Container(
                                           decoration: BoxDecoration(
                                             color: Colors.white,
@@ -978,9 +1025,8 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                                               fit: BoxFit.contain,
                                               child: SizedBox(
                                                 width: 300,
-                                                height: 120,
+                                                height: 300,
                                                 child: CustomPaint(
-                                                  size: const Size(300, 120),
                                                   painter: SignaturePainter(
                                                     points: _signaturePoints,
                                                     strokeWidth: 2.0,
@@ -1061,7 +1107,8 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                               ),
                       ),
                     ),
-                ],
+                  ],
+                ),
               ),
               
               const SizedBox(height: 16),

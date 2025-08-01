@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 import '../../../utils/colors.dart';
 import '../../../services/firebase/auth_service.dart';
@@ -9,15 +8,7 @@ import '../../../services/firebase/firebase_manager.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
 import '../../ecoce/shared/utils/dialog_utils.dart';
 import 'ecoce_tipo_proveedor_selector.dart';
-import '../../ecoce/reciclador/reciclador_inicio.dart';
-// TEMPORAL: Importar pantallas de inicio
-import '../../ecoce/origen/origen_inicio_screen.dart';
-import '../../ecoce/maestro/maestro_unified_screen.dart';
-import '../../ecoce/repositorio/repositorio_inicio_screen.dart';
 import '../../ecoce/shared/pending_approval_screen.dart';
-import '../../ecoce/laboratorio/laboratorio_inicio.dart';
-import '../../ecoce/transporte/transporte_inicio_screen.dart';
-import 'maestro_register_screen.dart';
 
 class ECOCELoginScreen extends StatefulWidget {
   const ECOCELoginScreen({super.key});
@@ -38,17 +29,14 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
   // Estados
   bool _obscurePassword = true;
   bool _isLoading = false;
-  bool _showUserTypeButtons = false; // Nuevo estado para mostrar/ocultar botones
 
   // Animaciones
   late AnimationController _logoController;
   late AnimationController _formController;
-  late AnimationController _userTypeController; // Nueva animación para botones
   late Animation<double> _logoScaleAnimation;
   late Animation<double> _logoFadeAnimation;
   late Animation<double> _formFadeAnimation;
   late Animation<Offset> _formSlideAnimation;
-  late Animation<double> _userTypeFadeAnimation; // Nueva animación
 
   // Instancia del servicio de autenticación
   final AuthService _authService = AuthService();
@@ -122,20 +110,6 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
       parent: _formController,
       curve: Curves.easeOutCubic,
     ));
-
-    // User type buttons animation
-    _userTypeController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-
-    _userTypeFadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _userTypeController,
-      curve: Curves.easeIn,
-    ));
   }
 
   void _startAnimations() async {
@@ -154,7 +128,6 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
     _passwordFocusNode.dispose();
     _logoController.dispose();
     _formController.dispose();
-    _userTypeController.dispose();
     super.dispose();
   }
 
@@ -163,17 +136,6 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
     Navigator.pop(context);
   }
 
-  void _toggleUserTypeButtons() {
-    setState(() {
-      _showUserTypeButtons = !_showUserTypeButtons;
-    });
-    
-    if (_showUserTypeButtons) {
-      _userTypeController.forward();
-    } else {
-      _userTypeController.reverse();
-    }
-  }
 
   Future<void> _handleLogin({bool goToRepository = false}) async {
     // Ocultar teclado
@@ -430,120 +392,6 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
     );
   }
 
-  void _handleUserTypeLogin(String userType, Color color) {
-    HapticFeedback.mediumImpact();
-
-    Widget? targetScreen;
-
-    switch (userType.toLowerCase()) {
-      case 'reciclador':
-        targetScreen = const RecicladorInicio();
-        break;
-      case 'acopiador':
-        targetScreen = const OrigenInicioScreen();
-        break;
-      case 'planta de separación':
-        targetScreen = const OrigenInicioScreen();
-        break;
-      case 'transformador':
-        targetScreen = const OrigenInicioScreen(); // TEMPORAL
-        break;
-      case 'transportista':
-        targetScreen = const TransporteInicioScreen();
-        break;
-      case 'laboratorio':
-        targetScreen = const LaboratorioInicioScreen();
-        break;
-      case 'repositorio':
-        targetScreen = const RepositorioInicioScreen();
-        break;
-      case 'maestro ecoce':
-        targetScreen = const MaestroUnifiedScreen();
-        break;
-    }
-
-    if (targetScreen != null) {
-      Navigator.push(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => targetScreen!,
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            const begin = Offset(0.0, 1.0);
-            const end = Offset.zero;
-            const curve = Curves.easeOutCubic;
-
-            var tween = Tween(begin: begin, end: end).chain(
-              CurveTween(curve: curve),
-            );
-
-            return SlideTransition(
-              position: animation.drive(tween),
-              child: child,
-            );
-          },
-          transitionDuration: const Duration(milliseconds: 400),
-        ),
-      );
-    } else {
-      // Si no hay pantalla definida, mostrar mensaje temporal
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Pantalla de $userType en desarrollo'),
-          backgroundColor: color,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-    }
-  }
-
-  IconData _getUserTypeIcon(String userType) {
-    switch (userType.toLowerCase()) {
-      case 'acopiador':
-        return Icons.warehouse;
-      case 'planta de separación':
-        return Icons.sort;
-      case 'reciclador':
-        return Icons.recycling;
-      case 'transformador':
-        return Icons.factory;
-      case 'transportista':
-        return Icons.local_shipping;
-      case 'laboratorio':
-        return Icons.science;
-      case 'repositorio':
-        return Icons.storage; // Icono específico para repositorio
-      case 'maestro ecoce':
-        return Icons.admin_panel_settings; // Icono para Usuario Maestro
-      default:
-        return Icons.business;
-    }
-  }
-
-  Color _getUserTypeColor(String userType) {
-    switch (userType.toLowerCase()) {
-      case 'acopiador':
-        return BioWayColors.petBlue;
-      case 'planta de separación':
-        return BioWayColors.hdpeGreen;
-      case 'reciclador':
-        return BioWayColors.ecoceGreen;
-      case 'transformador':
-        return BioWayColors.ppOrange;
-      case 'transportista':
-        return BioWayColors.info;
-      case 'laboratorio':
-        return BioWayColors.otherPurple;
-      case 'repositorio':
-        return BioWayColors.metalGrey; // Color gris metálico para repositorio
-      case 'maestro ecoce':
-        return BioWayColors.ecoceGreen; // Color verde ECOCE para Usuario Maestro
-      default:
-        return BioWayColors.ecoceGreen;
-    }
-  }
 
   void _showErrorDialog(String title, String message) {
     DialogUtils.showErrorDialog(
@@ -779,8 +627,6 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                                   _buildRegisterButton(),
                                   const SizedBox(height: 16),
 
-                                  // Botón para mostrar tipos de usuario (TEMPORAL)
-                                  _buildUserTypeToggleButton(),
 
                                   // Información adicional
                                   const SizedBox(height: 20),
@@ -791,124 +637,6 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                           ),
                         ),
 
-                        // Botones de tipos de usuario (TEMPORALES)
-                        if (_showUserTypeButtons)
-                          AnimatedBuilder(
-                            animation: _userTypeFadeAnimation,
-                            builder: (context, child) {
-                              return FadeTransition(
-                                opacity: _userTypeFadeAnimation,
-                                child: Container(
-                                  margin: const EdgeInsets.only(top: 20),
-                                  padding: const EdgeInsets.all(20),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: BioWayColors.warning.withValues(alpha: 0.3),
-                                      width: 2,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.1),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 10),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      // Advertencia
-                                      Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: BioWayColors.warning.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.admin_panel_settings,
-                                              color: BioWayColors.warning,
-                                              size: 20,
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: Text(
-                                                'Acceso exclusivo para administradores',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: BioWayColors.warning,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      
-                                      const Text(
-                                        'Acceso administrativo:',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: BioWayColors.darkGreen,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      
-                                      // Botones de administrador
-                                      _buildUserTypeButtonsGrid(),
-                                      const SizedBox(height: 16),
-                                      
-                                      // Botón temporal para registro de maestro
-                                      Container(
-                                        width: double.infinity,
-                                        decoration: BoxDecoration(
-                                          border: Border.all(
-                                            color: BioWayColors.error.withOpacity(0.5),
-                                            width: 2,
-                                          ),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: TextButton.icon(
-                                          onPressed: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) => const MaestroRegisterScreen(),
-                                              ),
-                                            );
-                                          },
-                                          icon: Icon(
-                                            Icons.person_add,
-                                            color: BioWayColors.error,
-                                            size: 20,
-                                          ),
-                                          label: Text(
-                                            'Crear Cuenta Maestro (TEMPORAL)',
-                                            style: TextStyle(
-                                              color: BioWayColors.error,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                          style: TextButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(vertical: 12),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(10),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
 
                         const SizedBox(height: 20),
                       ],
@@ -1255,78 +983,6 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
     );
   }
 
-  Widget _buildUserTypeToggleButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: _toggleUserTypeButtons,
-        icon: Icon(
-          _showUserTypeButtons ? Icons.expand_less : Icons.expand_more,
-          size: 20,
-        ),
-        label: Text(
-          _showUserTypeButtons ? 'Ocultar tipos de usuario' : 'Acceso por tipo de usuario',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: BioWayColors.warning,
-          side: BorderSide(
-            color: BioWayColors.warning.withValues(alpha: 0.5),
-            width: 1,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUserTypeButtonsGrid() {
-    final userTypes = [
-      'Repositorio',
-      'Maestro ECOCE',
-    ];
-
-    return Column(
-      children: userTypes.map((userType) {
-        final color = _getUserTypeColor(userType);
-        final icon = _getUserTypeIcon(userType);
-        
-        return Container(
-          width: double.infinity,
-          margin: const EdgeInsets.only(bottom: 12),
-          child: ElevatedButton.icon(
-            onPressed: () => _handleUserTypeLogin(userType, color),
-            icon: Icon(icon, size: 20),
-            label: Text(
-              userType,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: color,
-              foregroundColor: Colors.white,
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
 
   Widget _buildInfoSection() {
     return Container(
