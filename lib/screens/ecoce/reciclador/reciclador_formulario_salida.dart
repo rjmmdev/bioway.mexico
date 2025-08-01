@@ -356,7 +356,16 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
     }
   }
 
-  void _showSignatureDialog() {
+  Future<void> _showSignatureDialog() async {
+    // Dismiss keyboard
+    FocusScope.of(context).unfocus();
+    
+    // Wait for keyboard to hide
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // Check if still mounted
+    if (!mounted) return;
+    
     SignatureDialog.show(
       context: context,
       title: 'Firma del Responsable',

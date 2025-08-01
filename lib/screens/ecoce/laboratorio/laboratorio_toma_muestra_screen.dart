@@ -303,7 +303,16 @@ class _LaboratorioTomaMuestraScreenState extends State<LaboratorioTomaMuestraScr
         ),
         const SizedBox(height: 8),
         GestureDetector(
-          onTap: () {
+          onTap: () async {
+            // Dismiss keyboard
+            FocusScope.of(context).unfocus();
+            
+            // Wait for keyboard to hide
+            await Future.delayed(const Duration(milliseconds: 300));
+            
+            // Check if still mounted
+            if (!mounted) return;
+            
             SignatureDialog.show(
               context: context,
               title: 'Firma del Operador',

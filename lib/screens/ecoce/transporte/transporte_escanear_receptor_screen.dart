@@ -64,14 +64,14 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
       
       // Validar formato del código QR del usuario
       if (!codigo.startsWith('USER-')) {
-        _mostrarError('Código QR no válido. Debe escanear el código QR de identificación de un usuario receptor');
+        _mostrarError('Código QR no válido. Por favor escanea el código QR de identificación del receptor (Reciclador, Laboratorio o Transformador)');
         return;
       }
       
       // Extraer información del código
       final partes = codigo.split('-');
       if (partes.length < 3) {
-        _mostrarError('Formato de código QR inválido');
+        _mostrarError('Formato de código QR inválido. Se requiere un código de identificación de usuario');
         return;
       }
       
