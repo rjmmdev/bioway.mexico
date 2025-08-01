@@ -156,7 +156,13 @@ class _EcocePerfilScreenState extends State<EcocePerfilScreen> with SingleTicker
         canPop: false,
         onPopInvokedWithResult: (didPop, result) async {
           if (didPop) return;
-          // Prevent back navigation on profile screen
+          // Navigate to home screen based on user type
+          UserTypeHelper.handleNavigation(
+            context,
+            _userProfile?.ecoceTipoActor,
+            0, // Home index
+            3, // Current index (profile)
+          );
         },
         child: Scaffold(
           backgroundColor: const Color(0xFFF5F5F5),
@@ -268,24 +274,6 @@ class _EcocePerfilScreenState extends State<EcocePerfilScreen> with SingleTicker
             ],
           ),
         ),
-        bottomNavigationBar: EcoceBottomNavigation(
-          selectedIndex: 3,
-          onItemTapped: _handleNavigation,
-          primaryColor: primaryColor,
-          items: navigationItems,
-          fabConfig: fabConfig,
-        ),
-        floatingActionButton: fabConfig != null
-          ? EcoceFloatingActionButton(
-              onPressed: fabConfig.onPressed,
-              icon: fabConfig.icon,
-              backgroundColor: primaryColor,
-              tooltip: fabConfig.tooltip,
-            )
-          : null,
-        floatingActionButtonLocation: fabConfig != null
-          ? FloatingActionButtonLocation.centerDocked
-          : null,
         ),
       ),
     );

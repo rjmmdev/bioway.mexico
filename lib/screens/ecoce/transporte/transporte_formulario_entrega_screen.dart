@@ -130,49 +130,48 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
       
       final firestore = FirebaseFirestore.instanceFor(app: app);
       
-      // Buscar en el índice de perfiles
-      final querySnapshot = await firestore
-          .collection('ecoce_profiles')
-          .where(FieldPath.documentId, isGreaterThanOrEqualTo: query)
-          .where(FieldPath.documentId, isLessThan: query + '\uf8ff')
-          .limit(10)
-          .get();
-      
+      // Buscar directamente en las subcarpetas de destinos válidos
       final suggestions = <Map<String, dynamic>>[];
       
-      for (final doc in querySnapshot.docs) {
-        final profileData = doc.data();
-        final profilePath = profileData['path'] as String?;
-        
-        if (profilePath != null) {
-          // Obtener datos completos del usuario
-          final userDoc = await firestore.doc(profilePath).get();
+      // Lista de subcarpetas donde pueden estar los destinatarios
+      final subcollections = [
+        {'path': 'ecoce_profiles/reciclador/usuarios', 'tipo': 'R', 'label': 'Reciclador'},
+        {'path': 'ecoce_profiles/laboratorio/usuarios', 'tipo': 'L', 'label': 'Laboratorio'},
+        {'path': 'ecoce_profiles/transformador/usuarios', 'tipo': 'T', 'label': 'Transformador'},
+      ];
+      
+      // Buscar en cada subcolección
+      for (final subcol in subcollections) {
+        try {
+          final querySnapshot = await firestore
+              .collection(subcol['path'] as String)
+              .where('ecoce_folio', isGreaterThanOrEqualTo: query)
+              .where('ecoce_folio', isLessThan: query + '\uf8ff')
+              .where('ecoce_estatus_aprobacion', isEqualTo: 1)
+              .limit(5) // Limitar resultados por subcolección
+              .get();
           
-          if (userDoc.exists) {
-            final userData = userDoc.data()!;
-            String tipoUsuario = 'Desconocido';
-            String tipoLabel = 'Desconocido';
-            
-            if (profilePath.contains('reciclador')) {
-              tipoUsuario = 'R';
-              tipoLabel = 'Reciclador';
-            } else if (profilePath.contains('laboratorio')) {
-              tipoUsuario = 'L';
-              tipoLabel = 'Laboratorio';
-            } else if (profilePath.contains('transformador')) {
-              tipoUsuario = 'T';
-              tipoLabel = 'Transformador';
-            }
+          for (final doc in querySnapshot.docs) {
+            final userData = doc.data();
             
             suggestions.add({
-              'folio': doc.id,
-              'nombre': userData['nombre'] ?? userData['ecoce_nombre'] ?? 'Sin nombre',
-              'tipo': tipoUsuario,
-              'tipo_label': tipoLabel,
+              'folio': userData['ecoce_folio'] ?? '',
+              'nombre': userData['ecoce_nombre'] ?? 'Sin nombre',
+              'tipo': subcol['tipo'],
+              'tipo_label': subcol['label'],
               'direccion': _buildDireccion(userData),
+              'user_id': doc.id,
             });
           }
+        } catch (e) {
+          // Continuar con la siguiente subcolección si hay error
+          debugPrint('Error buscando en ${subcol['path']}: $e');
         }
+      }
+      
+      // Limitar total de sugerencias a 10
+      if (suggestions.length > 10) {
+        suggestions.removeRange(10, suggestions.length);
       }
       
       setState(() {
@@ -219,43 +218,57 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
       }
       final firestore = FirebaseFirestore.instanceFor(app: app);
       
-      // Buscar en ecoce_profiles
-      final profileDoc = await firestore
-          .collection('ecoce_profiles')
-          .doc(folio)
-          .get();
+      // Buscar directamente en las subcarpetas por folio
+      Map<String, dynamic>? userData;
+      String? tipoUsuario;
+      String? userId;
+      String? tipoLabel;
       
-      if (!profileDoc.exists) {
+      // Lista de subcarpetas donde buscar
+      final subcollections = [
+        {'path': 'ecoce_profiles/reciclador/usuarios', 'tipo': 'R', 'label': 'Reciclador'},
+        {'path': 'ecoce_profiles/laboratorio/usuarios', 'tipo': 'L', 'label': 'Laboratorio'},
+        {'path': 'ecoce_profiles/transformador/usuarios', 'tipo': 'T', 'label': 'Transformador'},
+      ];
+      
+      // Buscar en cada subcolección hasta encontrar el usuario
+      for (final subcol in subcollections) {
+        try {
+          final querySnapshot = await firestore
+              .collection(subcol['path'] as String)
+              .where('ecoce_folio', isEqualTo: folio)
+              .where('ecoce_estatus_aprobacion', isEqualTo: 1)
+              .limit(1)
+              .get();
+          
+          if (querySnapshot.docs.isNotEmpty) {
+            final doc = querySnapshot.docs.first;
+            userData = doc.data();
+            userId = doc.id;
+            tipoUsuario = subcol['tipo'] as String;
+            tipoLabel = subcol['label'] as String;
+            break;
+          }
+        } catch (e) {
+          debugPrint('Error buscando en ${subcol['path']}: $e');
+        }
+      }
+      
+      if (userData == null || tipoUsuario == null || tipoLabel == null || userId == null) {
         throw Exception('Usuario no encontrado');
       }
       
-      final profileData = profileDoc.data()!;
-      final profilePath = profileData['path'] as String;
-      
-      // Obtener datos completos del usuario
-      final userDoc = await firestore.doc(profilePath).get();
-      
-      if (!userDoc.exists) {
-        throw Exception('Datos del usuario no encontrados');
-      }
-      
-      // Determinar el tipo de usuario basado en el path
-      String tipoUsuario = 'Desconocido';
-      if (profilePath.contains('reciclador')) {
-        tipoUsuario = 'R';
-      } else if (profilePath.contains('laboratorio')) {
-        tipoUsuario = 'L';
-      } else if (profilePath.contains('transformador')) {
-        tipoUsuario = 'T';
-      }
+      // Ahora userData no es null, podemos usarlo de forma segura
+      final userDataNonNull = userData;
       
       setState(() {
         _destinatarioInfo = {
           'folio': folio,
-          'nombre': userDoc.data()?['nombre'] ?? userDoc.data()?['ecoce_nombre'] ?? 'Sin nombre',
+          'nombre': userDataNonNull['ecoce_nombre'] ?? 'Sin nombre',
           'tipo': tipoUsuario,
-          'tipo_label': _getTipoLabel(tipoUsuario),
-          'direccion': _buildDireccion(userDoc.data() ?? {}),
+          'tipo_label': tipoLabel,
+          'direccion': _buildDireccion(userDataNonNull),
+          'user_id': userId,
         };
       });
     } catch (e) {

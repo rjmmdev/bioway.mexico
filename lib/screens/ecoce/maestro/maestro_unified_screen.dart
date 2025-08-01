@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../utils/colors.dart';
@@ -10,6 +11,7 @@ import 'widgets/maestro_solicitud_card.dart';
 import 'widgets/delete_user_dialog.dart';
 import 'maestro_solicitud_details_screen.dart';
 import 'maestro_utilities_screen.dart';
+import '../../login/platform_selector_screen.dart';
 
 /// Pantalla unificada para la gestión de usuarios maestro ECOCE
 /// Combina la funcionalidad de aprobación y administración de usuarios
@@ -550,81 +552,142 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
         // Prevenir que el botón atrás cierre la sesión
         return false;
       },
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF5F5F5),
-        body: SafeArea(
-        child: Column(
-          children: [
-            // Header con gradiente
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    BioWayColors.ecoceGreen,
-                    BioWayColors.ecoceGreen.withValues(alpha: 0.8),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Column(
-                children: [
-                  // Título y badge
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                    child: Row(
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle(
+          statusBarColor: BioWayColors.ecoceGreen,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          body: CustomScrollView(
+          slivers: [
+            // Header con gradiente como SliverAppBar
+            SliverAppBar(
+              expandedHeight: 390,
+              floating: false,
+              pinned: true,
+              automaticallyImplyLeading: false,
+              backgroundColor: BioWayColors.ecoceGreen,
+              flexibleSpace: FlexibleSpaceBar(
+                collapseMode: CollapseMode.pin,
+                background: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        BioWayColors.ecoceGreen,
+                        BioWayColors.ecoceGreen.withValues(alpha: 0.8),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: SafeArea(
+                    child: SingleChildScrollView(
+                      physics: const NeverScrollableScrollPhysics(),
+                      child: Column(
+                        children: [
+                    // Título y badge
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Panel de Administración',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                'Gestión de usuarios ECOCE',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white70,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        // Fila superior con título y badge ADMIN
                         Row(
                           children: [
-                            // Botón de repositorio
-                            IconButton(
-                              icon: const Icon(Icons.inventory_2, color: Colors.white),
-                              tooltip: 'Repositorio de Lotes',
-                              onPressed: () {
-                                Navigator.pushNamed(context, '/repositorio_inicio');
-                              },
-                            ),
-                            // Botón de utilidades
-                            IconButton(
-                              icon: const Icon(Icons.build, color: Colors.white),
-                              tooltip: 'Utilidades del Sistema',
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const MaestroUtilitiesScreen(),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Panel de Administración',
+                                    style: TextStyle(
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
                                   ),
-                                );
-                              },
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Gestión de usuarios ECOCE',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.admin_panel_settings,
+                                    size: 16,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'ADMIN',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        // Fila de botones de acción
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            // Botón de repositorio
+                            Expanded(
+                              child: _buildActionButton(
+                                icon: Icons.inventory_2,
+                                label: 'Repositorio',
+                                onPressed: () {
+                                  Navigator.pushNamed(context, '/repositorio_inicio');
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Botón de utilidades
+                            Expanded(
+                              child: _buildActionButton(
+                                icon: Icons.build,
+                                label: 'Utilidades',
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const MaestroUtilitiesScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
                             // Botón de cerrar sesión
-                            IconButton(
-                              icon: const Icon(Icons.logout, color: Colors.white),
-                              tooltip: 'Cerrar Sesión',
-                              onPressed: () async {
+                            Expanded(
+                              child: _buildActionButton(
+                                icon: Icons.logout,
+                                label: 'Cerrar Sesión',
+                                onPressed: () async {
                                 // Mostrar diálogo de confirmación
                                 final shouldLogout = await showDialog<bool>(
                                   context: context,
@@ -668,10 +731,12 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                                       await auth.signOut();
                                     }
                                     
-                                    // Navegar a la pantalla de login
+                                    // Navegar a la pantalla de selección de plataforma
                                     if (mounted) {
-                                      Navigator.of(context).pushNamedAndRemoveUntil(
-                                        '/ecoce_login',
+                                      Navigator.of(context).pushAndRemoveUntil(
+                                        MaterialPageRoute(
+                                          builder: (context) => const PlatformSelectorScreen(),
+                                        ),
                                         (route) => false,
                                       );
                                     }
@@ -683,36 +748,7 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                                 }
                               },
                             ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.admin_panel_settings,
-                                    size: 16,
-                                    color: Colors.white,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'ADMIN',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white.withValues(alpha: 0.9),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                          ),
                           ],
                         ),
                       ],
@@ -855,7 +891,7 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                   
                   // Barra de búsqueda y filtros
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                     child: Row(
                       children: [
                         Expanded(
@@ -936,48 +972,59 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                       ],
                     ),
                   ),
-                ],
+                    ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
             
             // Contenido
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: LoadingIndicator())
-                  : _filteredSolicitudes.isEmpty
-                      ? _buildEmptyState()
-                      : ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-                          itemCount: _filteredSolicitudes.length,
-                          itemBuilder: (context, index) {
-                            final solicitud = _filteredSolicitudes[index];
-                            return MaestroSolicitudCard(
-                              solicitud: solicitud,
-                              onTap: () {
-                                if (mounted) _viewSolicitudDetails(solicitud);
-                              },
-                              onApprove: _selectedIndex == 0 ? () {
-                                if (mounted) _approveSolicitud(solicitud);
-                              } : null,
-                              onReject: _selectedIndex == 0 ? () {
-                                if (mounted) _rejectSolicitud(solicitud);
-                              } : null,
-                              onDelete: _selectedIndex == 1 ? () {
-                                if (mounted) _deleteUser(solicitud);
-                              } : null,
-                              showActions: true,
-                              showAdminInfo: _selectedIndex == 1,
-                            );
-                          },
+            _isLoading
+                ? SliverFillRemaining(
+                    child: const Center(child: LoadingIndicator()),
+                  )
+                : _filteredSolicitudes.isEmpty
+                    ? SliverFillRemaining(
+                        child: _buildEmptyState(),
+                      )
+                    : SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final solicitud = _filteredSolicitudes[index];
+                              return MaestroSolicitudCard(
+                                solicitud: solicitud,
+                                onTap: () {
+                                  if (mounted) _viewSolicitudDetails(solicitud);
+                                },
+                                onApprove: _selectedIndex == 0 ? () {
+                                  if (mounted) _approveSolicitud(solicitud);
+                                } : null,
+                                onReject: _selectedIndex == 0 ? () {
+                                  if (mounted) _rejectSolicitud(solicitud);
+                                } : null,
+                                onDelete: _selectedIndex == 1 ? () {
+                                  if (mounted) _deleteUser(solicitud);
+                                } : null,
+                                showActions: true,
+                                showAdminInfo: _selectedIndex == 1,
+                              );
+                            },
+                            childCount: _filteredSolicitudes.length,
+                          ),
                         ),
-            ),
+                      ),
           ],
         ),
-      ),
-      // Removed bottom navigation since ECOCE user only needs the dashboard
+        // Removed bottom navigation since ECOCE user only needs the dashboard
+        ),
       ),
     );
   }
+
 
   Widget _buildEmptyState() {
     return Center(
@@ -1025,6 +1072,50 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                color: Colors.white,
+                size: 24,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

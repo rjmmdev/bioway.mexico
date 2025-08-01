@@ -348,6 +348,10 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                                 onChanged: (bool? value) {
                                   setState(() {
                                     _isPostConsumo = value ?? false;
+                                    // Si se selecciona Post-consumo, deseleccionar Pre-consumo
+                                    if (_isPostConsumo) {
+                                      _isPreConsumo = false;
+                                    }
                                   });
                                 },
                                 contentPadding: EdgeInsets.zero,
@@ -363,6 +367,10 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                                 onChanged: (bool? value) {
                                   setState(() {
                                     _isPreConsumo = value ?? false;
+                                    // Si se selecciona Pre-consumo, deseleccionar Post-consumo
+                                    if (_isPreConsumo) {
+                                      _isPostConsumo = false;
+                                    }
                                   });
                                 },
                                 contentPadding: EdgeInsets.zero,

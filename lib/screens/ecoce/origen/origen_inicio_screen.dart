@@ -284,7 +284,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                     ),
                     // Contenido
                     Padding(
-                      padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 16, 20, 24),
+                      padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 20, 20, 24),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -636,7 +636,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
       bottomNavigationBar: EcoceBottomNavigation(
         selectedIndex: _selectedIndex,
         onItemTapped: _onBottomNavTapped,
-        primaryColor: BioWayColors.ecoceGreen,
+        primaryColor: _primaryColor,
         items: EcoceNavigationConfigs.origenItems,
         fabConfig: FabConfig(
           icon: Icons.add,
@@ -644,8 +644,6 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
           tooltip: 'Nuevo Lote',
         ),
       ),
-      
-      // Floating Action Button
       floatingActionButton: EcoceFloatingActionButton(
         onPressed: _navigateToNewLot,
         icon: Icons.add,

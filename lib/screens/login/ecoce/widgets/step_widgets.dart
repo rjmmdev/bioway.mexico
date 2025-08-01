@@ -5,8 +5,48 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../../utils/colors.dart';
 import '../../../../widgets/common/simple_map_widget.dart';
+import '../../../ecoce/shared/widgets/weight_input_widget.dart';
 import 'material_selector.dart';
 import 'document_uploader.dart';
+
+/// Formateador personalizado para números de teléfono (formato: 442-380-5682)
+class PhoneInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // Remover todos los caracteres que no sean números
+    final digitsOnly = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    
+    // Limitar a 10 dígitos
+    final truncated = digitsOnly.length > 10 ? digitsOnly.substring(0, 10) : digitsOnly;
+    
+    // Aplicar formato
+    final formatted = StringBuffer();
+    for (int i = 0; i < truncated.length; i++) {
+      if (i == 3 || i == 6) {
+        formatted.write('-');
+      }
+      formatted.write(truncated[i]);
+    }
+    
+    // Calcular la nueva posición del cursor
+    int cursorPosition = formatted.length;
+    
+    // Si el usuario está borrando, ajustar la posición del cursor
+    if (oldValue.text.length > newValue.text.length) {
+      if (cursorPosition > 0 && (cursorPosition == 4 || cursorPosition == 8)) {
+        cursorPosition--;
+      }
+    }
+    
+    return TextEditingValue(
+      text: formatted.toString(),
+      selection: TextSelection.collapsed(offset: cursorPosition),
+    );
+  }
+}
 
 /// Header reutilizable para pantallas de registro con indicador de progreso
 class RegisterHeader extends StatelessWidget {
@@ -470,11 +510,11 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
       return false;
     }
     
-    // Validar formato de RFC (básico)
+    // Validar formato de RFC (12 o 13 caracteres)
     final rfc = widget.controllers['rfc']!.text.trim();
-    if (rfc.length != 12 && rfc.length != 13) {
+    if (rfc.length < 12 || rfc.length > 13) {
       setState(() {
-        _errorMessage = 'El RFC debe tener 12 o 13 caracteres';
+        _errorMessage = 'El RFC debe tener 12 o 13 caracteres. Persona Moral o Persona Física respectivamente.';
       });
       return false;
     }
@@ -493,13 +533,25 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
       return false;
     }
     
-    // Validar formato de teléfono básico (al menos 10 dígitos)
+    // Validar formato de teléfono (exactamente 10 dígitos)
     final telefono = widget.controllers['telefono']!.text.replaceAll(RegExp(r'[^0-9]'), '');
-    if (telefono.length < 10) {
+    if (telefono.length != 10) {
       setState(() {
-        _errorMessage = 'El teléfono debe tener al menos 10 dígitos';
+        _errorMessage = 'El teléfono debe tener exactamente 10 dígitos';
       });
       return false;
+    }
+    
+    // Validar teléfono de oficina si se proporciona
+    final telefonoOficina = widget.controllers['telefonoOficina']!.text.trim();
+    if (telefonoOficina.isNotEmpty) {
+      final telefonoOficinaDigits = telefonoOficina.replaceAll(RegExp(r'[^0-9]'), '');
+      if (telefonoOficinaDigits.length != 10) {
+        setState(() {
+          _errorMessage = 'El teléfono de oficina debe tener exactamente 10 dígitos';
+        });
+        return false;
+      }
     }
     
     return true;
@@ -536,10 +588,10 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
           showError: _showFieldErrors,
           inputFormatters: [
             LengthLimitingTextInputFormatter(13),
-            FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9]')),
             TextInputFormatter.withFunction((oldValue, newValue) {
               return newValue.copyWith(text: newValue.text.toUpperCase());
             }),
+            FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9]')),
           ],
         ),
         const SizedBox(height: 20),
@@ -559,13 +611,12 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
               child: buildTextField(
                 controller: widget.controllers['telefono']!,
                 label: 'Teléfono Móvil *',
-                hint: '10 dígitos',
+                hint: '442-380-5682',
                 icon: Icons.phone_android,
                 keyboardType: TextInputType.phone,
                 showError: _showFieldErrors,
                 inputFormatters: [
-                  LengthLimitingTextInputFormatter(15),
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9+\-\s()]')),
+                  PhoneInputFormatter(),
                 ],
               ),
             ),
@@ -574,12 +625,11 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
               child: buildTextField(
                 controller: widget.controllers['telefonoOficina']!,
                 label: 'Teléfono Oficina',
-                hint: 'Opcional',
+                hint: '442-380-5682',
                 icon: Icons.phone,
                 keyboardType: TextInputType.phone,
                 inputFormatters: [
-                  LengthLimitingTextInputFormatter(15),
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9+\-\s()]')),
+                  PhoneInputFormatter(),
                 ],
               ),
             ),
@@ -1067,6 +1117,49 @@ class _LocationStepState extends State<LocationStep> {
         ),
         const SizedBox(height: 24),
 
+        // Mapa con marcador arrastrable (movido arriba)
+        SimpleMapWidget(
+          estado: widget.controllers['estado']!.text,
+          municipio: widget.controllers['municipio']!.text,
+          colonia: widget.controllers['colonia']!.text,
+          codigoPostal: widget.controllers['cp']!.text,
+          initialLocation: _selectedLocation,
+          onLocationSelected: _handleLocationSelected,
+        ),
+        const SizedBox(height: 16),
+        
+        // Aviso informativo (movido del campo Número Exterior)
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: BioWayColors.info.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: BioWayColors.info.withValues(alpha: 0.3),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: BioWayColors.info,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Los campos de dirección se llenan automáticamente al seleccionar ubicación en el mapa',
+                  style: TextStyle(
+                    color: BioWayColors.info,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
         // Dirección - Calle
         buildTextField(
           controller: widget.controllers['direccion']!,
@@ -1085,7 +1178,6 @@ class _LocationStepState extends State<LocationStep> {
           icon: Icons.numbers,
           showError: _showFieldErrors,
           inputFormatters: [LengthLimitingTextInputFormatter(10)],
-          helperText: 'Este campo se llena automáticamente al seleccionar ubicación en el mapa',
         ),
         const SizedBox(height: 20),
 
@@ -1099,16 +1191,6 @@ class _LocationStepState extends State<LocationStep> {
           showError: _showFieldErrors,
         ),
         const SizedBox(height: 24),
-
-        // Mapa con marcador arrastrable
-        SimpleMapWidget(
-          estado: widget.controllers['estado']!.text,
-          municipio: widget.controllers['municipio']!.text,
-          colonia: widget.controllers['colonia']!.text,
-          codigoPostal: widget.controllers['cp']!.text,
-          initialLocation: _selectedLocation,
-          onLocationSelected: _handleLocationSelected,
-        ),
         
         // Checkbox de confirmación si hay ubicación seleccionada
         if (_selectedLocation != null) ...[
@@ -1831,15 +1913,22 @@ class CapacitySection extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          buildTextField(
+          WeightInputWidget(
             controller: weightController,
-            label: 'Peso máximo (kg) *',
-            hint: 'Ej: 500.5',
-            icon: Icons.scale,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,3}')),
-            ],
+            label: 'Peso máximo (kg)',
+            primaryColor: BioWayColors.petBlue,
+            isRequired: true,
+            quickAddValues: const [100, 250, 500, 1000],
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Ingrese el peso máximo';
+              }
+              final peso = double.tryParse(value);
+              if (peso == null || peso <= 0) {
+                return 'Ingrese un peso válido';
+              }
+              return null;
+            },
           ),
         ],
       ),
@@ -2406,7 +2495,20 @@ class TermsSection extends StatelessWidget {
                         spacing: 16,
                         children: [
                           TextButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text('Función en desarrollo'),
+                                  backgroundColor: BioWayColors.warning,
+                                  duration: const Duration(seconds: 2),
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: const EdgeInsets.all(16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                              );
+                            },
                             style: TextButton.styleFrom(
                               padding: EdgeInsets.zero,
                               minimumSize: Size.zero,
@@ -2422,7 +2524,20 @@ class TermsSection extends StatelessWidget {
                             ),
                           ),
                           TextButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text('Función en desarrollo'),
+                                  backgroundColor: BioWayColors.warning,
+                                  duration: const Duration(seconds: 2),
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: const EdgeInsets.all(16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                              );
+                            },
                             style: TextButton.styleFrom(
                               padding: EdgeInsets.zero,
                               minimumSize: Size.zero,

@@ -26,7 +26,7 @@ android {
         applicationId = "com.biowaymexico.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdkVersion(23) // Updated to 23 for Firebase Auth compatibility
+        minSdkVersion(24) // Updated to 24 for geolocator_android compatibility
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

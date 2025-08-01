@@ -194,7 +194,13 @@ class _EcoceAyudaScreenState extends State<EcoceAyudaScreen> {
         canPop: false,
         onPopInvokedWithResult: (didPop, result) async {
           if (didPop) return;
-          // Prevent back navigation on help screen
+          // Navigate to home screen based on user type
+          UserTypeHelper.handleNavigation(
+            context,
+            _userProfile?.ecoceTipoActor,
+            0, // Home index
+            2, // Current index (help)
+          );
         },
         child: Scaffold(
           backgroundColor: const Color(0xFFF5F5F5),
@@ -340,24 +346,6 @@ class _EcoceAyudaScreenState extends State<EcoceAyudaScreen> {
             ],
           ),
         ),
-        bottomNavigationBar: EcoceBottomNavigation(
-          selectedIndex: 2,
-          onItemTapped: _handleNavigation,
-          primaryColor: primaryColor,
-          items: navigationItems,
-          fabConfig: fabConfig,
-        ),
-        floatingActionButton: fabConfig != null
-          ? EcoceFloatingActionButton(
-              onPressed: fabConfig.onPressed,
-              icon: fabConfig.icon,
-              backgroundColor: primaryColor,
-              tooltip: fabConfig.tooltip,
-            )
-          : null,
-        floatingActionButtonLocation: fabConfig != null
-          ? FloatingActionButtonLocation.centerDocked
-          : null,
         ),
       ),
     );
