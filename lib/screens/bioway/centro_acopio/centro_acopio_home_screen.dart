@@ -21,6 +21,7 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
   final MobileScannerController _scannerController = MobileScannerController();
   CentroAcopioModel? _centroAcopio;
   bool _isLoading = true;
+  bool _isScanning = false;
 
   @override
   void initState() {
@@ -85,6 +86,8 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
   }
 
   void _showQRScanner() {
+    setState(() => _isScanning = true);
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -160,7 +163,9 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
           ],
         ),
       ),
-    );
+    ).then((_) {
+      setState(() => _isScanning = false);
+    });
   }
 
   void _processQRCode(String code) {

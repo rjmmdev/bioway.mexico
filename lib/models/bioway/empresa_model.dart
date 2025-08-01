@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class EmpresaModel {
   final String id;
   final String nombre;
@@ -36,11 +38,15 @@ class EmpresaModel {
       rangoRestringido: map['rangoRestringido'] ?? false,
       rangoMaximoKm: map['rangoMaximoKm']?.toDouble(),
       activa: map['activa'] ?? true,
-      fechaCreacion: map['fechaCreacion'] != null
-          ? DateTime.parse(map['fechaCreacion'])
+      fechaCreacion: map['fechaCreacion'] != null 
+          ? (map['fechaCreacion'] is Timestamp
+              ? (map['fechaCreacion'] as Timestamp).toDate()
+              : DateTime.parse(map['fechaCreacion']))
           : DateTime.now(),
       fechaActualizacion: map['fechaActualizacion'] != null
-          ? DateTime.parse(map['fechaActualizacion'])
+          ? (map['fechaActualizacion'] is Timestamp
+              ? (map['fechaActualizacion'] as Timestamp).toDate()
+              : DateTime.parse(map['fechaActualizacion']))
           : DateTime.now(),
     );
   }
@@ -55,8 +61,36 @@ class EmpresaModel {
       'rangoRestringido': rangoRestringido,
       'rangoMaximoKm': rangoMaximoKm,
       'activa': activa,
-      'fechaCreacion': fechaCreacion.toIso8601String(),
-      'fechaActualizacion': fechaActualizacion.toIso8601String(),
+      'fechaCreacion': Timestamp.fromDate(fechaCreacion),
+      'fechaActualizacion': Timestamp.fromDate(fechaActualizacion),
     };
+  }
+
+  EmpresaModel copyWith({
+    String? id,
+    String? nombre,
+    String? descripcion,
+    List<String>? materialesRecolectan,
+    List<String>? estadosDisponibles,
+    List<String>? municipiosDisponibles,
+    bool? rangoRestringido,
+    double? rangoMaximoKm,
+    bool? activa,
+    DateTime? fechaCreacion,
+    DateTime? fechaActualizacion,
+  }) {
+    return EmpresaModel(
+      id: id ?? this.id,
+      nombre: nombre ?? this.nombre,
+      descripcion: descripcion ?? this.descripcion,
+      materialesRecolectan: materialesRecolectan ?? this.materialesRecolectan,
+      estadosDisponibles: estadosDisponibles ?? this.estadosDisponibles,
+      municipiosDisponibles: municipiosDisponibles ?? this.municipiosDisponibles,
+      rangoRestringido: rangoRestringido ?? this.rangoRestringido,
+      rangoMaximoKm: rangoMaximoKm ?? this.rangoMaximoKm,
+      activa: activa ?? this.activa,
+      fechaCreacion: fechaCreacion ?? this.fechaCreacion,
+      fechaActualizacion: fechaActualizacion ?? this.fechaActualizacion,
+    );
   }
 }

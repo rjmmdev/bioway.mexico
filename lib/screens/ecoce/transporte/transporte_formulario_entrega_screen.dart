@@ -130,50 +130,42 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
       
       final firestore = FirebaseFirestore.instanceFor(app: app);
       
-      // Buscar en el índice de perfiles
-      final querySnapshot = await firestore
-          .collection('ecoce_profiles')
-          .where(FieldPath.documentId, isGreaterThanOrEqualTo: query)
-          .where(FieldPath.documentId, isLessThan: query + '\uf8ff')
-          .limit(10)
-          .get();
+      // Lista de subcarpetas donde pueden estar los destinatarios
+      final subcollections = [
+        {'path': 'ecoce_profiles/reciclador/usuarios', 'tipo': 'R', 'label': 'Reciclador'},
+        {'path': 'ecoce_profiles/laboratorio/usuarios', 'tipo': 'L', 'label': 'Laboratorio'},
+        {'path': 'ecoce_profiles/transformador/usuarios', 'tipo': 'T', 'label': 'Transformador'},
+      ];
       
       final suggestions = <Map<String, dynamic>>[];
       
-      for (final doc in querySnapshot.docs) {
-        final profileData = doc.data();
-        final profilePath = profileData['path'] as String?;
-        
-        if (profilePath != null) {
-          // Obtener datos completos del usuario
-          final userDoc = await firestore.doc(profilePath).get();
+      // Buscar en cada subcolección
+      for (final subcollection in subcollections) {
+        try {
+          final querySnapshot = await firestore
+              .collection(subcollection['path']!)
+              .where('folio', isGreaterThanOrEqualTo: query)
+              .where('folio', isLessThan: query + '\uf8ff')
+              .limit(5) // Límite por colección para distribuir resultados
+              .get();
           
-          if (userDoc.exists) {
-            final userData = userDoc.data()!;
-            String tipoUsuario = 'Desconocido';
-            String tipoLabel = 'Desconocido';
-            
-            if (profilePath.contains('reciclador')) {
-              tipoUsuario = 'R';
-              tipoLabel = 'Reciclador';
-            } else if (profilePath.contains('laboratorio')) {
-              tipoUsuario = 'L';
-              tipoLabel = 'Laboratorio';
-            } else if (profilePath.contains('transformador')) {
-              tipoUsuario = 'T';
-              tipoLabel = 'Transformador';
-            }
-            
+          for (final doc in querySnapshot.docs) {
+            final userData = doc.data();
             suggestions.add({
-              'folio': doc.id,
+              'folio': userData['folio'] ?? doc.id,
               'nombre': userData['nombre'] ?? userData['ecoce_nombre'] ?? 'Sin nombre',
-              'tipo': tipoUsuario,
-              'tipo_label': tipoLabel,
+              'tipo': subcollection['tipo']!,
+              'tipo_label': subcollection['label']!,
               'direccion': _buildDireccion(userData),
             });
           }
+        } catch (e) {
+          debugPrint('Error buscando en ${subcollection['path']}: $e');
         }
       }
+      
+      // Ordenar por folio
+      suggestions.sort((a, b) => a['folio'].compareTo(b['folio']));
       
       setState(() {
         _suggestedUsers = suggestions;
@@ -219,43 +211,44 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
       }
       final firestore = FirebaseFirestore.instanceFor(app: app);
       
-      // Buscar en ecoce_profiles
-      final profileDoc = await firestore
-          .collection('ecoce_profiles')
-          .doc(folio)
-          .get();
+      // Lista de subcarpetas donde pueden estar los destinatarios
+      final subcollections = [
+        {'path': 'ecoce_profiles/reciclador/usuarios', 'tipo': 'R', 'label': 'Reciclador'},
+        {'path': 'ecoce_profiles/laboratorio/usuarios', 'tipo': 'L', 'label': 'Laboratorio'},
+        {'path': 'ecoce_profiles/transformador/usuarios', 'tipo': 'T', 'label': 'Transformador'},
+      ];
       
-      if (!profileDoc.exists) {
+      // Buscar en cada subcolección
+      Map<String, dynamic>? userData;
+      String? tipoUsuario;
+      String? tipoLabel;
+      
+      for (final subcollection in subcollections) {
+        final querySnapshot = await firestore
+            .collection(subcollection['path']!)
+            .where('folio', isEqualTo: folio)
+            .limit(1)
+            .get();
+        
+        if (querySnapshot.docs.isNotEmpty) {
+          userData = querySnapshot.docs.first.data();
+          tipoUsuario = subcollection['tipo']!;
+          tipoLabel = subcollection['label']!;
+          break;
+        }
+      }
+      
+      if (userData == null) {
         throw Exception('Usuario no encontrado');
-      }
-      
-      final profileData = profileDoc.data()!;
-      final profilePath = profileData['path'] as String;
-      
-      // Obtener datos completos del usuario
-      final userDoc = await firestore.doc(profilePath).get();
-      
-      if (!userDoc.exists) {
-        throw Exception('Datos del usuario no encontrados');
-      }
-      
-      // Determinar el tipo de usuario basado en el path
-      String tipoUsuario = 'Desconocido';
-      if (profilePath.contains('reciclador')) {
-        tipoUsuario = 'R';
-      } else if (profilePath.contains('laboratorio')) {
-        tipoUsuario = 'L';
-      } else if (profilePath.contains('transformador')) {
-        tipoUsuario = 'T';
       }
       
       setState(() {
         _destinatarioInfo = {
           'folio': folio,
-          'nombre': userDoc.data()?['nombre'] ?? userDoc.data()?['ecoce_nombre'] ?? 'Sin nombre',
-          'tipo': tipoUsuario,
-          'tipo_label': _getTipoLabel(tipoUsuario),
-          'direccion': _buildDireccion(userDoc.data() ?? {}),
+          'nombre': userData!['nombre'] ?? userData['ecoce_nombre'] ?? 'Sin nombre',
+          'tipo': tipoUsuario!,
+          'tipo_label': tipoLabel!,
+          'direccion': _buildDireccion(userData),
         };
       });
     } catch (e) {
@@ -287,7 +280,15 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
     return parts.isEmpty ? 'Sin dirección registrada' : parts.join(', ');
   }
   
-  void _showSignatureDialog() {
+  void _showSignatureDialog() async {
+    // Primero ocultar el teclado
+    FocusScope.of(context).unfocus();
+    
+    // Esperar un breve momento para que el teclado se oculte completamente
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    if (!mounted) return;
+    
     SignatureDialog.show(
       context: context,
       title: 'Firma del Operador',

@@ -86,7 +86,7 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
       final lote = await _loteService.obtenerLotePorId(loteId);
       
       if (lote == null) {
-        _mostrarError('Lote no encontrado');
+        _mostrarError('Código QR no válido. Por favor escanea un lote válido');
         return;
       }
       

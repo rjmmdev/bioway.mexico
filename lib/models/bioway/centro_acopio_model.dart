@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class CentroAcopioModel {
   final String id;
   final String nombre;
@@ -54,8 +56,10 @@ class CentroAcopioModel {
       reputacion: (json['reputacion'] ?? 5.0).toDouble(),
       totalRecepcionesMes: json['totalRecepcionesMes'] ?? 0,
       inventarioActual: Map<String, double>.from(json['inventarioActual'] ?? {}),
-      fechaRegistro: json['fechaRegistro'] != null
-          ? DateTime.parse(json['fechaRegistro'])
+      fechaRegistro: json['fechaRegistro'] != null 
+          ? (json['fechaRegistro'] is Timestamp 
+              ? (json['fechaRegistro'] as Timestamp).toDate()
+              : DateTime.parse(json['fechaRegistro']))
           : DateTime.now(),
       activo: json['activo'] ?? true,
     );
@@ -78,7 +82,7 @@ class CentroAcopioModel {
       'reputacion': reputacion,
       'totalRecepcionesMes': totalRecepcionesMes,
       'inventarioActual': inventarioActual,
-      'fechaRegistro': fechaRegistro.toIso8601String(),
+      'fechaRegistro': Timestamp.fromDate(fechaRegistro),
       'activo': activo,
     };
   }
