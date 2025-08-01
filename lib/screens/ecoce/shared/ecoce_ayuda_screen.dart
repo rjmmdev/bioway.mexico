@@ -194,13 +194,7 @@ class _EcoceAyudaScreenState extends State<EcoceAyudaScreen> {
         canPop: false,
         onPopInvokedWithResult: (didPop, result) async {
           if (didPop) return;
-          // Navigate to home screen based on user type
-          UserTypeHelper.handleNavigation(
-            context,
-            _userProfile?.ecoceTipoActor,
-            0, // Home index
-            2, // Current index (help)
-          );
+          // Prevent back navigation on help screen
         },
         child: Scaffold(
           backgroundColor: const Color(0xFFF5F5F5),
