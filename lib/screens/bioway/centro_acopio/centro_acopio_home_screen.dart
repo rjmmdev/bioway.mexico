@@ -21,10 +21,7 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
   final MobileScannerController _scannerController = MobileScannerController();
   CentroAcopioModel? _centroAcopio;
   bool _isLoading = true;
-<<<<<<< HEAD
   bool _isScanning = false;
-=======
->>>>>>> cabe8f1f3af68c346d1354cdabc8decc624748c0
 
   @override
   void initState() {
@@ -89,11 +86,7 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
   }
 
   void _showQRScanner() {
-<<<<<<< HEAD
     setState(() => _isScanning = true);
-    
-=======
->>>>>>> cabe8f1f3af68c346d1354cdabc8decc624748c0
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -169,13 +162,9 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
           ],
         ),
       ),
-<<<<<<< HEAD
     ).then((_) {
       setState(() => _isScanning = false);
     });
-=======
-    );
->>>>>>> cabe8f1f3af68c346d1354cdabc8decc624748c0
   }
 
   void _processQRCode(String code) {
@@ -295,13 +284,6 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
             onPressed: () async {
               UserSessionService().clearSession();
               await FirebaseAuth.instance.signOut();
-<<<<<<< HEAD
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/',
-                (route) => false,
-              );
-=======
               if (mounted) {
                 Navigator.pushNamedAndRemoveUntil(
                   context,
@@ -309,7 +291,6 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
                   (route) => false,
                 );
               }
->>>>>>> cabe8f1f3af68c346d1354cdabc8decc624748c0
             },
           ),
         ],
@@ -540,11 +521,7 @@ class _CentroAcopioHomeScreenState extends State<CentroAcopioHomeScreen> {
 
   double _calculateTotalInventory() {
     if (_centroAcopio == null) return 0.0;
-<<<<<<< HEAD
     return _centroAcopio!.inventarioActual.values.fold(0.0, (sum, value) => sum + value);
-=======
-    return _centroAcopio!.inventarioActual.values.fold(0.0, (total, value) => total + value);
->>>>>>> cabe8f1f3af68c346d1354cdabc8decc624748c0
   }
 
   @override

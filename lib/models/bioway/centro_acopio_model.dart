@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import 'package:cloud_firestore/cloud_firestore.dart';
-
-=======
->>>>>>> cabe8f1f3af68c346d1354cdabc8decc624748c0
 class CentroAcopioModel {
   final String id;
   final String nombre;
@@ -18,11 +14,7 @@ class CentroAcopioModel {
   final double comisionBioWay;
   final double reputacion;
   final int totalRecepcionesMes;
-<<<<<<< HEAD
-  final Map<String, dynamic> inventarioActual;
-=======
   final Map<String, double> inventarioActual;
->>>>>>> cabe8f1f3af68c346d1354cdabc8decc624748c0
   final DateTime fechaRegistro;
   final bool activo;
 
@@ -46,35 +38,6 @@ class CentroAcopioModel {
     required this.activo,
   });
 
-<<<<<<< HEAD
-  factory CentroAcopioModel.fromJson(Map<String, dynamic> map) {
-    return CentroAcopioModel(
-      id: map['id'] ?? '',
-      nombre: map['nombre'] ?? '',
-      direccion: map['direccion'] ?? '',
-      estado: map['estado'] ?? '',
-      municipio: map['municipio'] ?? '',
-      codigoPostal: map['codigoPostal'] ?? '',
-      latitud: (map['latitud'] ?? 0.0).toDouble(),
-      longitud: (map['longitud'] ?? 0.0).toDouble(),
-      telefono: map['telefono'] ?? '',
-      responsable: map['responsable'] ?? '',
-      saldoPrepago: (map['saldoPrepago'] ?? 0.0).toDouble(),
-      comisionBioWay: (map['comisionBioWay'] ?? 0.10).toDouble(),
-      reputacion: (map['reputacion'] ?? 5.0).toDouble(),
-      totalRecepcionesMes: map['totalRecepcionesMes'] ?? 0,
-      inventarioActual: map['inventarioActual'] ?? {},
-      fechaRegistro: map['fechaRegistro'] != null 
-          ? (map['fechaRegistro'] is Timestamp 
-              ? (map['fechaRegistro'] as Timestamp).toDate()
-              : DateTime.parse(map['fechaRegistro']))
-          : DateTime.now(),
-      activo: map['activo'] ?? true,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-=======
   factory CentroAcopioModel.fromJson(Map<String, dynamic> json) {
     return CentroAcopioModel(
       id: json['id'] ?? '',
@@ -92,15 +55,16 @@ class CentroAcopioModel {
       reputacion: (json['reputacion'] ?? 5.0).toDouble(),
       totalRecepcionesMes: json['totalRecepcionesMes'] ?? 0,
       inventarioActual: Map<String, double>.from(json['inventarioActual'] ?? {}),
-      fechaRegistro: json['fechaRegistro'] != null
-          ? DateTime.parse(json['fechaRegistro'])
+      fechaRegistro: json['fechaRegistro'] != null 
+          ? (json['fechaRegistro'] is Timestamp 
+              ? (json['fechaRegistro'] as Timestamp).toDate()
+              : DateTime.parse(json['fechaRegistro']))
           : DateTime.now(),
       activo: json['activo'] ?? true,
     );
   }
 
   Map<String, dynamic> toJson() {
->>>>>>> cabe8f1f3af68c346d1354cdabc8decc624748c0
     return {
       'id': id,
       'nombre': nombre,
@@ -117,11 +81,7 @@ class CentroAcopioModel {
       'reputacion': reputacion,
       'totalRecepcionesMes': totalRecepcionesMes,
       'inventarioActual': inventarioActual,
-<<<<<<< HEAD
       'fechaRegistro': Timestamp.fromDate(fechaRegistro),
-=======
-      'fechaRegistro': fechaRegistro.toIso8601String(),
->>>>>>> cabe8f1f3af68c346d1354cdabc8decc624748c0
       'activo': activo,
     };
   }
