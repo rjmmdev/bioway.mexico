@@ -17,7 +17,12 @@ class LaboratorioEscaneoScreen extends StatefulWidget {
 }
 
 class _LaboratorioEscaneoScreenState extends State<LaboratorioEscaneoScreen> {
-  void _navigateToScannedMuestras(String qrCode) {
+  void _navigateToScannedMuestras(String qrCode) async {
+    // Dar tiempo para que el escáner libere los recursos de la cámara
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    if (!mounted) return;
+    
     // Verificar si es un código QR de muestra de megalote
     if (qrCode.startsWith('MUESTRA-MEGALOTE-')) {
       // Es una muestra de megalote, procesarla directamente

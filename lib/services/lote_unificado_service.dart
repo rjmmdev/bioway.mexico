@@ -1301,7 +1301,8 @@ class LoteUnificadoService {
         ...muestrasLab[muestraIndex],
         ...datosAnalisis,
         'analisis_completado': true,
-        'fecha_analisis': FieldValue.serverTimestamp(),
+        'estado': 'analisis_completado', // Cambiar estado para que aparezca en pestaña Documentación
+        'fecha_analisis': DateTime.now().toIso8601String(), // Usar ISO string en lugar de serverTimestamp
       };
       
       // Actualizar en Firestore

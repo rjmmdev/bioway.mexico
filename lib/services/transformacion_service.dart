@@ -510,4 +510,70 @@ class TransformacionService {
       throw Exception('Error al crear muestra: $e');
     }
   }
+
+  /// Registra una toma de muestra en un megalote
+  Future<void> registrarTomaMuestra({
+    required String transformacionId,
+    required double pesoMuestra,
+    required String firmaOperador,
+    required List<String> evidenciasFoto,
+    required String operadorNombre,
+    required String usuarioId,
+    required String usuarioFolio,
+  }) async {
+    try {
+      // Obtener la transformación actual
+      final transformacionRef = _firestore
+          .collection('transformaciones')
+          .doc(transformacionId);
+      
+      final transformacionDoc = await transformacionRef.get();
+      
+      if (!transformacionDoc.exists) {
+        throw Exception('Transformación no encontrada');
+      }
+      
+      final transformacionData = transformacionDoc.data()!;
+      final pesoDisponible = transformacionData['peso_disponible'] ?? 0.0;
+      
+      // Verificar que hay peso suficiente
+      if (pesoMuestra > pesoDisponible) {
+        throw Exception('Peso de muestra excede el peso disponible');
+      }
+      
+      // Crear registro de la muestra
+      // IMPORTANTE: Usar DateTime.now().toIso8601String() en lugar de FieldValue.serverTimestamp()
+      // porque serverTimestamp() no se puede usar dentro de arrayUnion()
+      final muestraData = {
+        'fecha_toma': DateTime.now().toIso8601String(),
+        'peso_muestra': pesoMuestra,
+        'firma_operador': firmaOperador,
+        'evidencias_foto': evidenciasFoto,
+        'operador_nombre': operadorNombre,
+        'usuario_id': usuarioId,
+        'usuario_folio': usuarioFolio,
+        'laboratorio_id': usuarioId,
+        'estado': 'pendiente_analisis',
+      };
+      
+      // Actualizar la transformación
+      await transformacionRef.update({
+        'peso_disponible': FieldValue.increment(-pesoMuestra),
+        'muestras_laboratorio': FieldValue.arrayUnion([muestraData]),
+        'tiene_muestra_laboratorio': true,
+        'ultima_actualizacion': FieldValue.serverTimestamp(),
+      });
+      
+      // También registrar en el sistema de lotes unificado si es necesario
+      // Esto depende de cómo esté estructurado el sistema de análisis de laboratorio
+      
+      print('[TransformacionService] Muestra de laboratorio registrada exitosamente');
+      print('[TransformacionService] Peso muestra: $pesoMuestra kg');
+      print('[TransformacionService] Transformación ID: $transformacionId');
+      
+    } catch (e) {
+      print('[TransformacionService] Error al registrar muestra: $e');
+      throw Exception('Error al registrar toma de muestra: $e');
+    }
+  }
 }

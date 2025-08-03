@@ -6,7 +6,7 @@ import '../../../services/lote_unificado_service.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/firebase/auth_service.dart';
 import '../shared/utils/material_utils.dart';
-import 'laboratorio_escaneo.dart';
+import '../shared/widgets/shared_qr_scanner_screen.dart';
 import 'laboratorio_toma_muestra_screen.dart';
 import 'laboratorio_toma_muestra_megalote_screen.dart';
 import 'widgets/laboratorio_muestra_card.dart';
@@ -214,17 +214,24 @@ class _LaboratorioRegistroMuestrasScreenState extends State<LaboratorioRegistroM
   void _addMoreMuestras() async {
     HapticFeedback.lightImpact();
 
-    // Navegar al escáner indicando que estamos agregando más muestras
-    final result = await Navigator.push<String>(
+    // Navegar directamente al escáner QR compartido
+    final qrCode = await Navigator.push<String>(
       context,
       MaterialPageRoute(
-        builder: (context) => const LaboratorioEscaneoScreen(isAddingMore: true),
+        builder: (context) => const SharedQRScannerScreen(isAddingMore: true),
       ),
     );
 
-    // Si regresa con un ID, agregarlo
-    if (result != null && result.isNotEmpty) {
-      _addMuestraFromId(result);
+    // Si regresa con un código QR, procesarlo
+    if (qrCode != null && qrCode.isNotEmpty) {
+      if (qrCode.startsWith('MUESTRA-MEGALOTE-')) {
+        // Es una muestra de megalote, procesarla como tal
+        _processMegaloteSample(qrCode);
+      } else {
+        // Es un lote normal, extraer el ID y agregarlo
+        final loteId = qrCode.contains('-') ? qrCode.split('-').last : qrCode;
+        _addMuestraFromId(loteId);
+      }
     }
   }
 
@@ -309,6 +316,7 @@ class _LaboratorioRegistroMuestrasScreenState extends State<LaboratorioRegistroM
     });
     
     try {
+      // Ya no necesitamos delay porque venimos con navegación limpia
       // Navegar directamente a la pantalla de toma de muestra para megalote
       if (mounted) {
         Navigator.pushReplacement(

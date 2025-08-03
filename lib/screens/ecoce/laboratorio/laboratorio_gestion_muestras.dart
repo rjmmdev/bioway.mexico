@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/qr_utils.dart';
 import '../../../services/firebase/auth_service.dart';
-import 'laboratorio_escaneo.dart';
+import 'laboratorio_registro_muestras.dart';
+import 'laboratorio_toma_muestra_megalote_screen.dart';
 import 'laboratorio_formulario.dart';
 import 'laboratorio_documentacion.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
+import '../shared/widgets/shared_qr_scanner_screen.dart';
 
 class LaboratorioGestionMuestras extends StatefulWidget {
   final int initialTab;
@@ -63,45 +66,84 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
     
     try {
       final userId = _authService.currentUser?.uid;
-      if (userId == null) return;
+      if (userId == null) {
+        debugPrint('[LABORATORIO] No hay usuario autenticado');
+        return;
+      }
       
-      // Obtener muestras de megalotes tomadas por este laboratorio
+      debugPrint('[LABORATORIO] Cargando muestras para usuario: $userId');
+      
+      // Obtener TODAS las transformaciones que tengan el campo muestras_laboratorio
+      // Nota: No podemos filtrar por array-contains con objetos complejos en Firestore
       final transformacionesSnapshot = await _firestore
           .collection('transformaciones')
-          .where('muestras_laboratorio', isNotEqualTo: null)
           .get();
+      
+      debugPrint('[LABORATORIO] Transformaciones encontradas: ${transformacionesSnapshot.docs.length}');
       
       List<Map<String, dynamic>> todasLasMuestras = [];
       
       for (var doc in transformacionesSnapshot.docs) {
         final data = doc.data();
+        
+        // Verificar si tiene muestras_laboratorio y no está vacío
+        if (data['muestras_laboratorio'] == null || 
+            (data['muestras_laboratorio'] is List && (data['muestras_laboratorio'] as List).isEmpty)) {
+          continue;
+        }
+        
         final muestrasLab = List<Map<String, dynamic>>.from(data['muestras_laboratorio'] ?? []);
         
+        debugPrint('[LABORATORIO] Transformación ${doc.id} tiene ${muestrasLab.length} muestras');
+        
         for (var muestra in muestrasLab) {
-          if (muestra['usuario_id'] == userId) {
+          debugPrint('[LABORATORIO] Evaluando muestra:');
+          debugPrint('  - usuario_id: ${muestra['usuario_id']}');
+          debugPrint('  - laboratorio_id: ${muestra['laboratorio_id']}');
+          debugPrint('  - estado: ${muestra['estado']}');
+          debugPrint('  - comparando con userId actual: $userId');
+          
+          if (muestra['usuario_id'] == userId || muestra['laboratorio_id'] == userId) {
+            debugPrint('[LABORATORIO] ✓ Muestra coincide con el usuario');
+            // Generar un ID si no existe (usando fecha_toma como parte del ID único)
+            final muestraId = muestra['id'] ?? 
+                '${doc.id.substring(0, 8)}-${muestra['fecha_toma']?.toString().replaceAll(RegExp(r'[^0-9]'), '').substring(0, 6) ?? 'NODATE'}';
+            
             // Agregar información del megalote a la muestra
             todasLasMuestras.add({
               ...muestra,
+              'id': muestraId, // Asegurar que siempre haya un ID
               'transformacion_id': doc.id,
               'material_predominante': data['material_predominante'] ?? 'Mixto',
               'fecha_megalote': data['fecha_inicio'],
             });
+            
+            debugPrint('[LABORATORIO] ✓ Muestra agregada a la lista');
+          } else {
+            debugPrint('[LABORATORIO] ✗ Muestra no coincide con el usuario');
           }
         }
       }
       
+      debugPrint('[LABORATORIO] Total de muestras del usuario: ${todasLasMuestras.length}');
+      
       // Clasificar las muestras por estado
+      // Usar el campo 'estado' que se crea al registrar la muestra
       _muestrasAnalisis = todasLasMuestras.where((m) => 
-        m['analisis_completado'] != true && m['certificado'] == null
+        m['estado'] == 'pendiente_analisis'
       ).toList();
       
       _muestrasDocumentacion = todasLasMuestras.where((m) => 
-        m['analisis_completado'] == true && m['certificado'] == null
+        m['estado'] == 'analisis_completado'
       ).toList();
       
       _muestrasFinalizadas = todasLasMuestras.where((m) => 
-        m['certificado'] != null
+        m['estado'] == 'documentacion_completada'
       ).toList();
+      
+      debugPrint('[LABORATORIO] Muestras en Análisis: ${_muestrasAnalisis.length}');
+      debugPrint('[LABORATORIO] Muestras en Documentación: ${_muestrasDocumentacion.length}');
+      debugPrint('[LABORATORIO] Muestras Finalizadas: ${_muestrasFinalizadas.length}');
       
     } catch (e) {
       debugPrint('Error cargando muestras: $e');
@@ -271,14 +313,45 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
     }
   }
 
-  void _navigateToNewMuestra() {
+  void _navigateToNewMuestra() async {
     HapticFeedback.lightImpact();
-    Navigator.push(
+    
+    // Navegar directamente al escáner QR (como Reciclador y Transformador)
+    final qrCode = await Navigator.push<String>(
       context,
       MaterialPageRoute(
-        builder: (context) => const LaboratorioEscaneoScreen(),
+        builder: (context) => const SharedQRScannerScreen(),
       ),
     );
+    
+    if (qrCode != null && mounted) {
+      // Verificar si es un código QR de muestra de megalote
+      if (qrCode.startsWith('MUESTRA-MEGALOTE-')) {
+        // Es una muestra de megalote, ir directamente al formulario
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LaboratorioTomaMuestraMegaloteScreen(
+              qrCode: qrCode,
+            ),
+          ),
+        );
+      } else {
+        // Es un lote normal, extraer el ID y procesar
+        final loteId = QRUtils.extractLoteIdFromQR(qrCode);
+        
+        // Navegar a la pantalla de registro de muestras
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LaboratorioRegistroMuestrasScreen(
+              initialMuestraId: loteId,
+              isMegaloteSample: false,
+            ),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -714,9 +787,19 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
     final muestraId = muestra['id'] ?? '';
     final material = muestra['material_predominante'] ?? 'Mixto';
     final peso = (muestra['peso_muestra'] ?? 0.0).toDouble();
-    final fecha = muestra['fecha_toma'] != null 
-        ? (muestra['fecha_toma'] as Timestamp).toDate()
-        : DateTime.now();
+    // fecha_toma es un String ISO8601, no un Timestamp
+    DateTime fecha;
+    if (muestra['fecha_toma'] != null) {
+      if (muestra['fecha_toma'] is String) {
+        fecha = DateTime.parse(muestra['fecha_toma']);
+      } else if (muestra['fecha_toma'] is Timestamp) {
+        fecha = (muestra['fecha_toma'] as Timestamp).toDate();
+      } else {
+        fecha = DateTime.now();
+      }
+    } else {
+      fecha = DateTime.now();
+    }
     
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -744,7 +827,7 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Muestra ${muestraId.substring(0, 8).toUpperCase()}',
+                          'Muestra ${_formatMuestraId(muestraId)}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -863,6 +946,14 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
       default:
         return Colors.grey;
     }
+  }
+  
+  String _formatMuestraId(String id) {
+    if (id.isEmpty) return 'SIN-ID';
+    if (id.length >= 8) {
+      return id.substring(0, 8).toUpperCase();
+    }
+    return id.toUpperCase();
   }
   
   void _navigateToMuestraDetail(Map<String, dynamic> muestra) {

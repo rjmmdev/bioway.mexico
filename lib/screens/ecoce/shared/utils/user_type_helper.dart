@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../../utils/colors.dart';
+import '../../../../utils/qr_utils.dart';
 import '../../../../models/ecoce/ecoce_profile_model.dart';
 import '../widgets/ecoce_bottom_navigation.dart';
+import '../widgets/shared_qr_scanner_screen.dart';
 import '../screens/receptor_recepcion_pasos_screen.dart';
-import '../../laboratorio/laboratorio_escaneo.dart';
+import '../../laboratorio/laboratorio_registro_muestras.dart';
+import '../../laboratorio/laboratorio_toma_muestra_megalote_screen.dart';
 
 /// Helper class for user type related operations
 class UserTypeHelper {
@@ -106,13 +109,43 @@ class UserTypeHelper {
       case 'L':
         return FabConfig(
           icon: Icons.add,
-          onPressed: () {
-            Navigator.push(
+          onPressed: () async {
+            // Navegar directamente al escáner QR (como Reciclador y Transformador)
+            final qrCode = await Navigator.push<String>(
               context,
               MaterialPageRoute(
-                builder: (context) => const LaboratorioEscaneoScreen(),
+                builder: (context) => const SharedQRScannerScreen(),
               ),
             );
+            
+            if (qrCode != null && context.mounted) {
+              // Verificar si es un código QR de muestra de megalote
+              if (qrCode.startsWith('MUESTRA-MEGALOTE-')) {
+                // Es una muestra de megalote, ir directamente al formulario
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LaboratorioTomaMuestraMegaloteScreen(
+                      qrCode: qrCode,
+                    ),
+                  ),
+                );
+              } else {
+                // Es un lote normal, extraer el ID y procesar
+                final loteId = QRUtils.extractLoteIdFromQR(qrCode);
+                
+                // Navegar a la pantalla de registro de muestras
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LaboratorioRegistroMuestrasScreen(
+                      initialMuestraId: loteId,
+                      isMegaloteSample: false,
+                    ),
+                  ),
+                );
+              }
+            }
           },
           tooltip: 'Nueva Muestra',
         );

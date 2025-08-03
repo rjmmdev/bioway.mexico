@@ -8,13 +8,16 @@ import '../../../utils/format_utils.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/lote_unificado_service.dart';
-import 'laboratorio_escaneo.dart';
 import 'laboratorio_gestion_muestras.dart';
+import 'laboratorio_registro_muestras.dart';
+import 'laboratorio_toma_muestra_megalote_screen.dart';
 import '../shared/ecoce_ayuda_screen.dart';
 import '../shared/ecoce_perfil_screen.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/unified_stat_card.dart';
+import '../shared/widgets/shared_qr_scanner_screen.dart';
 import '../shared/utils/navigation_utils.dart';
+import '../../../utils/qr_utils.dart';
 
 class LaboratorioInicioScreen extends StatefulWidget {
   const LaboratorioInicioScreen({super.key});
@@ -114,12 +117,45 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
   }
 
 
-  void _navigateToNewMuestra() {
+  void _navigateToNewMuestra() async {
     HapticFeedback.lightImpact();
-    NavigationUtils.navigateWithSlide(
+    
+    // Navegar directamente al escáner QR (como Reciclador y Transformador)
+    final qrCode = await Navigator.push<String>(
       context,
-      const LaboratorioEscaneoScreen(),
+      MaterialPageRoute(
+        builder: (context) => const SharedQRScannerScreen(),
+      ),
     );
+    
+    if (qrCode != null && mounted) {
+      // Verificar si es un código QR de muestra de megalote
+      if (qrCode.startsWith('MUESTRA-MEGALOTE-')) {
+        // Es una muestra de megalote, ir directamente al formulario
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LaboratorioTomaMuestraMegaloteScreen(
+              qrCode: qrCode,
+            ),
+          ),
+        );
+      } else {
+        // Es un lote normal, extraer el ID y procesar
+        final loteId = QRUtils.extractLoteIdFromQR(qrCode);
+        
+        // Navegar a la pantalla de registro de muestras
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LaboratorioRegistroMuestrasScreen(
+              initialMuestraId: loteId,
+              isMegaloteSample: false,
+            ),
+          ),
+        );
+      }
+    }
   }
 
   void _navigateToMuestrasControl() {

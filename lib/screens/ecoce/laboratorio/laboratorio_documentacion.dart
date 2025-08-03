@@ -57,7 +57,8 @@ class LaboratorioDocumentacion extends StatelessWidget {
               ...muestrasLab[muestraIndex],
               'certificado': documentosUrls['certificado_analisis'] ?? '',
               'documentos': documentosUrls,
-              'fecha_documentos': FieldValue.serverTimestamp(),
+              'estado': 'documentacion_completada', // Cambiar estado para que aparezca en pestaña Finalizadas
+              'fecha_documentos': DateTime.now().toIso8601String(), // Usar ISO string consistente
             };
             
             // Actualizar la transformación
