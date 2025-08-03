@@ -316,8 +316,12 @@ class _LaboratorioRegistroMuestrasScreenState extends State<LaboratorioRegistroM
     });
     
     try {
-      // Ya no necesitamos delay porque venimos con navegación limpia
+      // NUEVO SISTEMA: Procesar muestra de megalote con el sistema independiente
+      print('[DEBUG] Procesando muestra de megalote con sistema independiente');
+      print('[DEBUG] QR Code: $qrCode');
+      
       // Navegar directamente a la pantalla de toma de muestra para megalote
+      // Esta pantalla ahora usa el servicio MuestraLaboratorioService
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -329,6 +333,7 @@ class _LaboratorioRegistroMuestrasScreenState extends State<LaboratorioRegistroM
         );
       }
     } catch (e) {
+      print('[ERROR] Error al procesar muestra de megalote: $e');
       if (mounted) {
         _showError('Error al procesar muestra de megalote: $e');
       }

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:path_provider/path_provider.dart';
 import '../../../services/transformacion_service.dart';
+import '../../../services/muestra_laboratorio_service.dart'; // NUEVO: Servicio independiente
 import '../../../services/user_session_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
 import '../../../services/firebase/auth_service.dart';
@@ -13,6 +14,7 @@ import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/dialog_utils.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
 import '../shared/widgets/field_label.dart' as field_label;
+import 'laboratorio_formulario.dart';
 
 /// Painter personalizado para dibujar la firma con el color del Laboratorio
 class SignaturePainter extends CustomPainter {
@@ -57,6 +59,7 @@ class LaboratorioTomaMuestraMegaloteScreen extends StatefulWidget {
 class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMuestraMegaloteScreen> {
   final _formKey = GlobalKey<FormState>();
   final TransformacionService _transformacionService = TransformacionService();
+  final MuestraLaboratorioService _muestraService = MuestraLaboratorioService(); // NUEVO: Servicio independiente
   final UserSessionService _userSession = UserSessionService();
   final FirebaseStorageService _storageService = FirebaseStorageService();
   final AuthService _authService = AuthService();
@@ -102,17 +105,27 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
 
   Future<void> _parseQRAndLoadData() async {
     try {
-      // Extraer IDs del QR code: MUESTRA-MEGALOTE-transformacionId-muestraId
+      // NUEVO SISTEMA: El QR puede ser simplemente MUESTRA-MEGALOTE-transformacionId
+      // o el formato anterior MUESTRA-MEGALOTE-transformacionId-muestraId
       final parts = widget.qrCode.split('-');
-      if (parts.length != 4 || parts[0] != 'MUESTRA' || parts[1] != 'MEGALOTE') {
+      
+      if (parts.length < 3 || parts[0] != 'MUESTRA' || parts[1] != 'MEGALOTE') {
         throw Exception('Código QR de muestra inválido');
       }
       
       _transformacionId = parts[2];
-      // parts[3] es el ID de la muestra pero no lo necesitamos por ahora
       
-      // Cargar datos de la transformación
+      // Cargar datos de la transformación usando el servicio independiente
       final transformacion = await _transformacionService.obtenerTransformacionPorId(_transformacionId!);
+      
+      if (transformacion == null) {
+        throw Exception('No se encontró el megalote con ID: $_transformacionId');
+      }
+      
+      // Verificar que el megalote tenga peso disponible
+      if (transformacion.pesoDisponible <= 0) {
+        throw Exception('El megalote no tiene peso disponible para tomar muestras');
+      }
       
       if (mounted) {
         setState(() {
@@ -270,35 +283,35 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
         }
       }
 
-      // Obtener datos del usuario
-      final userData = _userSession.getUserData();
-      final userId = _authService.currentUser?.uid;
-
-      // Registrar la toma de muestra en el megalote
-      await _transformacionService.registrarTomaMuestra(
-        transformacionId: _transformacionId!,
-        pesoMuestra: double.parse(_pesoMuestraController.text),
+      // NUEVO SISTEMA: Crear muestra usando el servicio independiente
+      print('[DEBUG] Creando muestra con sistema independiente');
+      
+      final pesoMuestra = double.parse(_pesoMuestraController.text);
+      
+      // Crear la muestra en la colección independiente
+      final muestraId = await _muestraService.crearMuestra(
+        origenId: _transformacionId!,
+        origenTipo: 'transformacion',
+        pesoMuestra: pesoMuestra,
         firmaOperador: _signatureUrl!,
         evidenciasFoto: _photoUrls,
-        operadorNombre: _operadorController.text.trim(),
-        usuarioId: userId ?? '',
-        usuarioFolio: userData?['folio'] ?? '',
+        qrCode: 'MUESTRA-MEGALOTE-$_transformacionId',
       );
+      
+      print('[DEBUG] Muestra creada exitosamente con ID: $muestraId');
 
       if (mounted) {
-        DialogUtils.showSuccessDialog(
-          context,
-          title: 'Éxito',
-          message: 'Toma de muestra registrada correctamente.',
-          onAccept: () {
-            Navigator.of(context).pushNamedAndRemoveUntil(
-              '/laboratorio_inicio',
-              (route) => false,
-            );
-          },
+        // Navegar directamente a inicio después de crear la muestra
+        print('[LABORATORIO] Muestra creada exitosamente: $muestraId');
+        print('[LABORATORIO] Navegando a inicio...');
+        
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/laboratorio_inicio',
+          (route) => false,
         );
       }
     } catch (e) {
+      print('[ERROR] Error al registrar muestra: $e');
       if (mounted) {
         DialogUtils.showErrorDialog(
           context,

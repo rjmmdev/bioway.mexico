@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
 import '../../../services/lote_service.dart';
-import '../../../services/lote_unificado_service.dart';
+// import '../../../services/lote_unificado_service.dart'; // No se usa actualmente
+import '../../../services/muestra_laboratorio_service.dart'; // NUEVO: Servicio independiente
+// import '../../../models/laboratorio/muestra_laboratorio_model.dart'; // No se usa actualmente
 import '../../../services/user_session_service.dart';
 import 'laboratorio_documentacion.dart';
 import 'laboratorio_gestion_muestras.dart';
@@ -29,7 +31,8 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
   
   // Servicios
   final LoteService _loteService = LoteService();
-  final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
+  // final LoteUnificadoService _loteUnificadoService = LoteUnificadoService(); // No se usa actualmente
+  final MuestraLaboratorioService _muestraService = MuestraLaboratorioService(); // NUEVO: Servicio independiente
   final UserSessionService _userSession = UserSessionService();
   
   // Controladores para los campos
@@ -141,15 +144,29 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
         'analista': userProfile?['ecoceNombre'] ?? 'Sin nombre',
       };
       
-      // Si hay transformacionId, es un megalote
-      if (widget.transformacionId != null) {
-        await _loteUnificadoService.actualizarAnalisisMuestraMegalote(
-          transformacionId: widget.transformacionId!,
-          muestraId: widget.muestraId,
-          datosAnalisis: datosAnalisis,
+      // NUEVO SISTEMA: Actualizar análisis usando el servicio independiente
+      debugPrint('[LABORATORIO] ========================================');
+      debugPrint('[LABORATORIO] ACTUALIZANDO ANÁLISIS');
+      debugPrint('[LABORATORIO] Muestra ID: ${widget.muestraId}');
+      debugPrint('[LABORATORIO] Transformación ID: ${widget.transformacionId}');
+      debugPrint('[LABORATORIO] Datos muestra: ${widget.datosMuestra['id'] ?? 'Sin ID en datos'}');
+      debugPrint('[LABORATORIO] ========================================');
+      
+      // Verificar si es una muestra de megalote
+      final transformacionId = widget.transformacionId;
+      if (transformacionId != null && transformacionId.isNotEmpty) {
+        // Es una muestra de megalote - usar el sistema independiente
+        debugPrint('[LABORATORIO] Usando sistema independiente para megalote');
+        debugPrint('[LABORATORIO] Actualizando muestra con ID: ${widget.muestraId}');
+        
+        await _muestraService.actualizarAnalisis(
+          widget.muestraId,
+          datosAnalisis,
         );
+        
+        debugPrint('[LABORATORIO] ✓ Análisis actualizado exitosamente en muestra: ${widget.muestraId}');
       } else {
-        // Sistema antiguo (por compatibilidad)
+        // Sistema antiguo (por compatibilidad con lotes normales)
         await _loteService.actualizarLoteLaboratorio(
           widget.muestraId,
           {
@@ -158,74 +175,41 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
             'estado': 'documentacion',
           },
         );
+        
+        debugPrint('[LABORATORIO] Análisis actualizado en sistema antiguo (lote normal)');
       }
 
       if (mounted) {
-        // Mostrar diálogo de confirmación
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
+        // Mostrar mensaje de éxito
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Análisis registrado correctamente. Preparando documentación...'),
+            backgroundColor: BioWayColors.success,
+            behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(10),
             ),
-            title: Row(
-              children: [
-                Icon(
-                  Icons.check_circle,
-                  color: BioWayColors.success,
-                  size: 28,
-                ),
-                const SizedBox(width: 12),
-                const Text('Análisis Registrado'),
-              ],
-            ),
-            content: const Text(
-              '¿Deseas proceder a cargar la documentación del análisis?',
-              style: TextStyle(fontSize: 16),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  // Navegar a gestión de muestras
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LaboratorioGestionMuestras(
-                        initialTab: 1, // Tab de documentación
-                      ),
-                    ),
-                    (route) => route.isFirst,
-                  );
-                },
-                child: const Text('Más tarde'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  // Navegar a documentación
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => LaboratorioDocumentacion(
-                        muestraId: widget.muestraId,
-                        transformacionId: widget.transformacionId,
-                      ),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BioWayColors.ecoceGreen,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('Cargar Documentos'),
-              ),
-            ],
+            duration: const Duration(seconds: 2),
           ),
         );
+        
+        // Navegar directamente a gestión de muestras en la pestaña de documentación
+        debugPrint('[LABORATORIO] Análisis completado, navegando a gestión de muestras...');
+        debugPrint('[LABORATORIO] Esperando propagación de datos en Firebase...');
+        
+        // Dar más tiempo para asegurar que Firebase propague los cambios
+        await Future.delayed(const Duration(milliseconds: 1500));
+        
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (context) => const LaboratorioGestionMuestras(
+                initialTab: 1, // Tab de documentación donde ahora aparecerá la muestra
+              ),
+            ),
+            (route) => route.isFirst,
+          );
+        }
       }
     } catch (e) {
       if (mounted) {

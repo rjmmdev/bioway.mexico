@@ -6,6 +6,7 @@ import '../models/lotes/lote_unificado_model.dart';
 import 'user_session_service.dart';
 import 'firebase/auth_service.dart';
 import 'firebase/firebase_manager.dart';
+import 'muestra_laboratorio_service.dart';
 
 /// Servicio para manejar las transformaciones de lotes en el reciclador
 class TransformacionService {
@@ -512,6 +513,7 @@ class TransformacionService {
   }
 
   /// Registra una toma de muestra en un megalote
+  /// NUEVO SISTEMA: Usa el servicio MuestraLaboratorioService para crear documentos independientes
   Future<void> registrarTomaMuestra({
     required String transformacionId,
     required double pesoMuestra,
@@ -522,52 +524,22 @@ class TransformacionService {
     required String usuarioFolio,
   }) async {
     try {
-      // Obtener la transformación actual
-      final transformacionRef = _firestore
-          .collection('transformaciones')
-          .doc(transformacionId);
+      print('[TransformacionService] NUEVO SISTEMA - Registrando muestra independiente');
       
-      final transformacionDoc = await transformacionRef.get();
+      // Importar el servicio de muestras independiente
+      final MuestraLaboratorioService muestraService = MuestraLaboratorioService();
       
-      if (!transformacionDoc.exists) {
-        throw Exception('Transformación no encontrada');
-      }
+      // Crear muestra usando el nuevo servicio independiente
+      final muestraId = await muestraService.crearMuestra(
+        origenId: transformacionId,
+        origenTipo: 'transformacion',
+        pesoMuestra: pesoMuestra,
+        firmaOperador: firmaOperador,
+        evidenciasFoto: evidenciasFoto,
+        qrCode: 'MUESTRA-MEGALOTE-$transformacionId',
+      );
       
-      final transformacionData = transformacionDoc.data()!;
-      final pesoDisponible = transformacionData['peso_disponible'] ?? 0.0;
-      
-      // Verificar que hay peso suficiente
-      if (pesoMuestra > pesoDisponible) {
-        throw Exception('Peso de muestra excede el peso disponible');
-      }
-      
-      // Crear registro de la muestra
-      // IMPORTANTE: Usar DateTime.now().toIso8601String() en lugar de FieldValue.serverTimestamp()
-      // porque serverTimestamp() no se puede usar dentro de arrayUnion()
-      final muestraData = {
-        'fecha_toma': DateTime.now().toIso8601String(),
-        'peso_muestra': pesoMuestra,
-        'firma_operador': firmaOperador,
-        'evidencias_foto': evidenciasFoto,
-        'operador_nombre': operadorNombre,
-        'usuario_id': usuarioId,
-        'usuario_folio': usuarioFolio,
-        'laboratorio_id': usuarioId,
-        'estado': 'pendiente_analisis',
-      };
-      
-      // Actualizar la transformación
-      await transformacionRef.update({
-        'peso_disponible': FieldValue.increment(-pesoMuestra),
-        'muestras_laboratorio': FieldValue.arrayUnion([muestraData]),
-        'tiene_muestra_laboratorio': true,
-        'ultima_actualizacion': FieldValue.serverTimestamp(),
-      });
-      
-      // También registrar en el sistema de lotes unificado si es necesario
-      // Esto depende de cómo esté estructurado el sistema de análisis de laboratorio
-      
-      print('[TransformacionService] Muestra de laboratorio registrada exitosamente');
+      print('[TransformacionService] Muestra creada con ID independiente: $muestraId');
       print('[TransformacionService] Peso muestra: $pesoMuestra kg');
       print('[TransformacionService] Transformación ID: $transformacionId');
       

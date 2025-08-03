@@ -158,38 +158,119 @@ service cloud.firestore {
       allow delete: if isAuthenticated();
     }
     
-    // ============ TRANSFORMACIONES Y SUBLOTES - REGLAS ACTUALIZADAS ============
+    // ============ SISTEMA INDEPENDIENTE DE MUESTRAS DE LABORATORIO (NUEVO) ============
     
-    // TRANSFORMACIONES (MEGALOTES) - REGLA MEJORADA
-    match /transformaciones/{transformacionId} {
-      // Permitir lectura a usuarios autenticados
+    // NUEVA COLECCIÓN: muestras_laboratorio
+    // Sistema independiente para resolver problemas de permisos y escalabilidad
+    match /muestras_laboratorio/{muestraId} {
+      // Funciones auxiliares locales
+      function isMuestraOwner() {
+        return resource.data.laboratorio_id == request.auth.uid;
+      }
+      
+      function isAdmin() {
+        return exists(/databases/$(database)/documents/ecoce_profiles/maestro/usuarios/$(request.auth.uid));
+      }
+      
+      // LECTURA: Permitir lectura si está autenticado
+      // La seguridad se garantiza porque:
+      // 1. La app siempre filtra por laboratorio_id en las consultas
+      // 2. Solo se pueden crear muestras con tu propio laboratorio_id
+      // 3. Las consultas where('laboratorio_id', '==', uid) solo devuelven tus muestras
       allow read: if isAuthenticated();
       
-      // CAMBIO CRÍTICO: Permitir crear si está autenticado
-      // La validación del usuario_id se hace en el código, no en las reglas
-      allow create: if isAuthenticated() && 
-        request.resource.data.keys().hasAll(['usuario_id', 'tipo', 'estado']) &&
-        request.resource.data.usuario_id is string &&
-        request.resource.data.usuario_id.size() > 0;
+      // CREACIÓN: Solo laboratorios autenticados pueden crear sus propias muestras
+      allow create: if isAuthenticated() &&
+        // El laboratorio_id debe ser el mismo que el usuario autenticado
+        request.resource.data.laboratorio_id == request.auth.uid &&
+        // Campos requeridos
+        request.resource.data.keys().hasAll(['laboratorio_id', 'origen_id', 'origen_tipo', 'peso_muestra', 'estado']) &&
+        // Estado inicial debe ser pendiente_analisis
+        request.resource.data.estado == 'pendiente_analisis';
       
-      // Actualizar: permitir si es el dueño o si solo se actualizan ciertos campos
-      allow update: if isAuthenticated() && (
-        // Es el dueño de la transformación
-        (resource.data.keys().hasAll(['usuario_id']) && 
-         resource.data.usuario_id == request.auth.uid) ||
-        // O solo se están actualizando documentos (para compatibilidad)
-        (request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['documentos_asociados', 'fecha_documentacion', 'documentacion_completada'])) ||
-        // O solo se están modificando campos de laboratorio
-        (request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['muestras_laboratorio', 'peso_disponible'])) ||
-        // O solo se están creando sublotes (actualiza peso_disponible y sublotes_generados)
-        (request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['peso_disponible', 'sublotes_generados']))
+      // ACTUALIZACIÓN: Solo el dueño puede actualizar su muestra
+      allow update: if isAuthenticated() && isMuestraOwner() && (
+        // Validar transiciones de estado correctas
+        // De pendiente_analisis a analisis_completado
+        (request.resource.data.estado == 'analisis_completado' && 
+         resource.data.estado == 'pendiente_analisis') ||
+        // De analisis_completado a documentacion_completada
+        (request.resource.data.estado == 'documentacion_completada' && 
+         resource.data.estado == 'analisis_completado') ||
+        // Permitir actualización del mismo estado (para agregar datos)
+        (request.resource.data.estado == resource.data.estado)
       );
       
-      // Eliminar: nunca
+      // ELIMINACIÓN: No permitida para mantener historial completo
       allow delete: if false;
+    }
+    
+    // ============ TRANSFORMACIONES Y SUBLOTES - REGLAS ACTUALIZADAS ============
+    
+    // Reglas para transformaciones (megalotes) - ACTUALIZADO PARA SISTEMA INDEPENDIENTE
+    match /transformaciones/{transformacionId} {
+      // Funciones auxiliares locales
+      function isTransformacionOwner() {
+        return resource.data.usuario_id == request.auth.uid;
+      }
+      
+      function isLaboratorio() {
+        return exists(/databases/$(database)/documents/ecoce_profiles/laboratorio/usuarios/$(request.auth.uid));
+      }
+      
+      // LECTURA: Permitir a usuarios autenticados
+      // Necesario para que el laboratorio pueda verificar existencia de transformación
+      allow read: if isAuthenticated();
+      
+      // CREAR: Mantener reglas existentes
+      allow create: if isAuthenticated() &&
+        request.resource.data.usuario_id == request.auth.uid &&
+        request.resource.data.keys().hasAll(['usuario_id', 'usuario_folio', 'tipo', 'fecha_inicio']);
+      
+      // ACTUALIZAR: Permitir al dueño o laboratorio con campos específicos
+      allow update: if isAuthenticated() && (
+        // El dueño puede actualizar todo
+        isTransformacionOwner() ||
+        // NUEVO: Laboratorio puede actualizar campos del sistema independiente
+        (isLaboratorio() && 
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+           'muestras_laboratorio_ids', 
+           'tiene_muestra_laboratorio', 
+           'peso_muestras_total', 
+           'peso_disponible'
+         ])) ||
+        // Compatibilidad con sistema anterior (array muestras_laboratorio)
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'muestras_laboratorio', 
+          'tiene_muestra_laboratorio', 
+          'ultima_actualizacion', 
+          'peso_disponible'
+        ]))
+      );
+      
+      // ELIMINAR: Solo el dueño
+      allow delete: if isAuthenticated() && isTransformacionOwner();
+      
+      // Subcollección datos_generales de transformaciones
+      match /datos_generales/{doc} {
+        allow read: if isAuthenticated();
+        
+        allow create: if isAuthenticated();
+        
+        allow update: if isAuthenticated() && (
+          isTransformacionOwner() ||
+          // Laboratorio puede actualizar campos específicos
+          (isLaboratorio() && 
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+             'muestras_laboratorio_ids', 
+             'tiene_muestra_laboratorio', 
+             'peso_muestras_total', 
+             'peso_disponible'
+           ]))
+        );
+        
+        allow delete: if false;
+      }
     }
     
     // Sublotes

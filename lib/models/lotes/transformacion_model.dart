@@ -17,8 +17,12 @@ class TransformacionModel {
   final String usuarioFolio;
   final String? procesoAplicado;
   final String? observaciones;
-  final List<Map<String, dynamic>> muestrasLaboratorio;
+  final List<Map<String, dynamic>> muestrasLaboratorio; // Mantener para compatibilidad temporal
   final String? materialPredominante;
+  // Nuevos campos para sistema independiente de muestras
+  final List<String> muestrasLaboratorioIds;
+  final bool tieneMuestraLaboratorio;
+  final double pesoMuestrasTotal;
   
   TransformacionModel({
     required this.id,
@@ -38,7 +42,13 @@ class TransformacionModel {
     this.observaciones,
     List<Map<String, dynamic>>? muestrasLaboratorio,
     this.materialPredominante,
-  }) : muestrasLaboratorio = muestrasLaboratorio ?? [];
+    List<String>? muestrasLaboratorioIds,
+    bool? tieneMuestraLaboratorio,
+    double? pesoMuestrasTotal,
+  }) : muestrasLaboratorio = muestrasLaboratorio ?? [],
+       muestrasLaboratorioIds = muestrasLaboratorioIds ?? [],
+       tieneMuestraLaboratorio = tieneMuestraLaboratorio ?? false,
+       pesoMuestrasTotal = pesoMuestrasTotal ?? 0.0;
   
   factory TransformacionModel.fromFirestore(DocumentSnapshot doc) {
     print('[TransformacionModel] Iniciando conversión desde Firestore para doc: ${doc.id}');
@@ -158,6 +168,10 @@ class TransformacionModel {
       observaciones: data['observaciones']?.toString(),
       muestrasLaboratorio: _convertirAListaMapas(data['muestras_laboratorio'], 'muestras_laboratorio'),
       materialPredominante: data['material_predominante']?.toString(),
+      // Nuevos campos para sistema independiente
+      muestrasLaboratorioIds: _convertirAListaString(data['muestras_laboratorio_ids'], 'muestras_laboratorio_ids'),
+      tieneMuestraLaboratorio: data['tiene_muestra_laboratorio'] ?? false,
+      pesoMuestrasTotal: _convertirADouble(data['peso_muestras_total'], 'peso_muestras_total'),
     );
   }
   

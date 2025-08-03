@@ -102,29 +102,16 @@ class TransformacionDetailsSheet extends StatelessWidget {
                   const SizedBox(height: 20),
                 ],
                 
-                // Muestras de laboratorio
-                if (transformacion.muestrasLaboratorio.isNotEmpty) ...[
+                // Muestras de laboratorio - NUEVO SISTEMA INDEPENDIENTE
+                // Ahora mostramos los IDs de referencia en lugar del array antiguo
+                if (transformacion.muestrasLaboratorioIds.isNotEmpty || transformacion.tieneMuestraLaboratorio) ...[
                   _buildDetailSection(
-                    'Muestras de Laboratorio (${transformacion.muestrasLaboratorio.length})',
-                    transformacion.muestrasLaboratorio.map((muestra) {
-                      final estado = muestra['estado'] ?? 'pendiente';
-                      final peso = muestra['peso'] ?? muestra['peso_muestra'] ?? 0;
-                      final analisisCompletado = muestra['analisis_completado'] ?? false;
-                      final tieneCertificado = muestra['certificado'] != null;
-                      
-                      String estadoTexto = 'Pendiente';
-                      Color estadoColor = Colors.orange;
-                      
-                      if (tieneCertificado) {
-                        estadoTexto = 'Finalizada';
-                        estadoColor = Colors.green;
-                      } else if (analisisCompletado) {
-                        estadoTexto = 'Análisis completado';
-                        estadoColor = Colors.blue;
-                      } else if (estado == 'completado') {
-                        estadoTexto = 'Muestra tomada';
-                        estadoColor = Colors.indigo;
-                      }
+                    'Muestras de Laboratorio (${transformacion.muestrasLaboratorioIds.length})',
+                    // SISTEMA NUEVO: Solo mostramos información básica ya que los detalles están en colección independiente
+                    transformacion.muestrasLaboratorioIds.map((muestraId) {
+                      // Con el sistema independiente, no tenemos acceso directo a los detalles
+                      // Solo mostramos el ID de referencia
+                      final muestraIdCorto = muestraId.length > 8 ? muestraId.substring(0, 8).toUpperCase() : muestraId.toUpperCase();
                       
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
@@ -132,39 +119,40 @@ class TransformacionDetailsSheet extends StatelessWidget {
                           children: [
                             Expanded(
                               child: Text(
-                                'Muestra ${muestra['id']?.toString().substring(0, 8).toUpperCase() ?? 'N/A'}',
+                                'Muestra $muestraIdCorto',
                                 style: const TextStyle(fontSize: 14),
                               ),
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: estadoColor.withValues(alpha: 0.2),
+                                color: Colors.purple.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                estadoTexto,
+                                'Registrada',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: estadoColor,
+                                  color: Colors.purple,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              peso > 0 ? '${peso.toStringAsFixed(2)} kg' : 'Sin peso',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: peso > 0 ? Colors.black87 : Colors.grey,
-                              ),
-                            ),
+                            // Sin información de peso individual en el sistema nuevo
+                            // El peso total se muestra abajo
                           ],
                         ),
                       );
                     }).toList(),
                   ),
+                  const SizedBox(height: 8),
+                  // Mostrar peso total de muestras tomadas
+                  if (transformacion.pesoMuestrasTotal > 0)
+                    _buildDetailRow(
+                      'Peso total muestras',
+                      '${transformacion.pesoMuestrasTotal.toStringAsFixed(2)} kg',
+                      valueColor: Colors.purple,
+                    ),
                   const SizedBox(height: 20),
                 ],
                 

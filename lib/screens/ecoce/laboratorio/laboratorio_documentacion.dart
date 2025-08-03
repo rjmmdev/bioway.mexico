@@ -2,34 +2,49 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
 import '../../../services/lote_service.dart';
+import '../../../services/muestra_laboratorio_service.dart'; // NUEVO: Servicio independiente
 import '../../../services/firebase/firebase_storage_service.dart';
 import 'laboratorio_gestion_muestras.dart';
 import '../shared/widgets/document_upload_per_requirement_widget.dart';
 
-class LaboratorioDocumentacion extends StatelessWidget {
+class LaboratorioDocumentacion extends StatefulWidget {
   final String muestraId;
   final String? transformacionId;
   
-  LaboratorioDocumentacion({
+  const LaboratorioDocumentacion({
     super.key,
     required this.muestraId,
     this.transformacionId,
   });
-  
-  final LoteService _loteService = LoteService();
-  final FirebaseStorageService _storageService = FirebaseStorageService();
 
-  void _onDocumentsSubmitted(BuildContext context, Map<String, DocumentInfo> documents) async {
+  @override
+  State<LaboratorioDocumentacion> createState() => _LaboratorioDocumentacionState();
+}
+
+class _LaboratorioDocumentacionState extends State<LaboratorioDocumentacion> {
+  final LoteService _loteService = LoteService();
+  final MuestraLaboratorioService _muestraService = MuestraLaboratorioService(); // NUEVO: Servicio independiente
+  final FirebaseStorageService _storageService = FirebaseStorageService();
+  bool _isLoading = false;
+
+  void _onDocumentsSubmitted(Map<String, DocumentInfo> documents) async {
+    if (_isLoading) return; // Evitar múltiples envíos
+    
+    setState(() {
+      _isLoading = true;
+    });
+    
     try {
       // Preparar URLs de documentos
       Map<String, String> documentosUrls = {};
       
       // Subir documentos a Firebase Storage
       for (var entry in documents.entries) {
-        if (entry.value.file != null) {
+        final file = entry.value.file;
+        if (file != null) {
           final url = await _storageService.uploadFile(
-            entry.value.file!,
-            'laboratorio/documentos/${transformacionId ?? 'lotes'}',
+            file,
+            'laboratorio/documentos/${widget.transformacionId ?? 'lotes'}',
           );
           if (url != null) {
             documentosUrls[entry.key] = url;
@@ -37,43 +52,26 @@ class LaboratorioDocumentacion extends StatelessWidget {
         }
       }
       
-      // Si hay transformacionId, actualizar la muestra del megalote
-      if (transformacionId != null) {
-        // Obtener la transformación actual
-        final transformacionDoc = await FirebaseFirestore.instance
-            .collection('transformaciones')
-            .doc(transformacionId)
-            .get();
-            
-        if (transformacionDoc.exists) {
-          final muestrasLab = List<Map<String, dynamic>>.from(
-            transformacionDoc.data()!['muestras_laboratorio'] ?? []
-          );
-          
-          // Buscar la muestra y actualizarla
-          final muestraIndex = muestrasLab.indexWhere((m) => m['id'] == muestraId);
-          if (muestraIndex != -1) {
-            muestrasLab[muestraIndex] = {
-              ...muestrasLab[muestraIndex],
-              'certificado': documentosUrls['certificado_analisis'] ?? '',
-              'documentos': documentosUrls,
-              'estado': 'documentacion_completada', // Cambiar estado para que aparezca en pestaña Finalizadas
-              'fecha_documentos': DateTime.now().toIso8601String(), // Usar ISO string consistente
-            };
-            
-            // Actualizar la transformación
-            await FirebaseFirestore.instance
-                .collection('transformaciones')
-                .doc(transformacionId)
-                .update({
-              'muestras_laboratorio': muestrasLab,
-            });
-          }
-        }
+      // NUEVO SISTEMA: Actualizar documentación usando el servicio independiente
+      debugPrint('[LABORATORIO] Actualizando documentación con sistema independiente');
+      debugPrint('[LABORATORIO] Muestra ID: ${widget.muestraId}');
+      debugPrint('[LABORATORIO] Transformación ID: ${widget.transformacionId}');
+      
+      if (widget.transformacionId != null) {
+        // Es una muestra de megalote - usar el sistema independiente
+        // El método actualizarDocumentacion espera 2 parámetros posicionales
+        await _muestraService.actualizarDocumentacion(
+          widget.muestraId,
+          documentosUrls, // Solo pasamos el mapa de documentos
+        );
+        
+        debugPrint('[LABORATORIO] ✓ Documentación actualizada en sistema independiente');
+        debugPrint('[LABORATORIO] Certificado: ${documentosUrls['certificado_analisis'] ?? 'No cargado'}');
+        debugPrint('[LABORATORIO] Total documentos: ${documentosUrls.length}');
       } else {
         // Sistema antiguo (por compatibilidad)
         await _loteService.actualizarLoteLaboratorio(
-          muestraId,
+          widget.muestraId,
           {
             'ecoce_laboratorio_documentos': documentosUrls.values.toList(),
             'ecoce_laboratorio_fecha_documentos': Timestamp.fromDate(DateTime.now()),
@@ -82,92 +80,104 @@ class LaboratorioDocumentacion extends StatelessWidget {
         );
       }
       
-      // Mostrar diálogo de éxito
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext dialogContext) {
-          return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.check_circle,
-                color: BioWayColors.success,
-                size: 80,
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Documentación Completada',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Se han cargado ${documents.length} documentos exitosamente',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: BioWayColors.textGrey,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                // Navegar a la gestión de muestras en la pestaña de finalizados
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const LaboratorioGestionMuestras(
-                      initialTab: 2, // Pestaña de Finalizados
-                    ),
-                  ),
-                  (route) => route.isFirst,
-                );
-              },
-              child: Text(
-                'Aceptar',
-                style: TextStyle(
-                  color: BioWayColors.ecoceGreen,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
+      // Navegar directamente a la gestión de muestras en la pestaña de finalizados
+      if (mounted) {
+        debugPrint('[LABORATORIO] Documentación completada, navegando a muestras finalizadas...');
+        
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const LaboratorioGestionMuestras(
+              initialTab: 2, // Pestaña de Finalizados
             ),
-          ],
+          ),
         );
-      },
-    );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al cargar documentos: ${e.toString()}'),
-          backgroundColor: BioWayColors.error,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar documentos: ${e.toString()}'),
+            backgroundColor: BioWayColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return DocumentUploadPerRequirementWidget(
-      title: 'Documentación de Análisis',
-      subtitle: 'Carga el certificado de análisis de la muestra',
-      lotId: muestraId,
-      requiredDocuments: const {
-        'certificado_analisis': 'Certificado de Análisis de Laboratorio',
-      },
-      onDocumentsSubmitted: (documents) => _onDocumentsSubmitted(context, documents),
-      primaryColor: const Color(0xFF9333EA), // Morado para laboratorio
-      userType: 'laboratorio',
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF9333EA),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          onPressed: () {
+            // Botón de retroceso para salir sin guardar
+            Navigator.pop(context);
+          },
+        ),
+        title: const Text(
+          'Documentación de Análisis',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        actions: [
+          // Botón de cancelar adicional
+          TextButton(
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LaboratorioGestionMuestras(
+                    initialTab: 1, // Volver a documentación pendiente
+                  ),
+                ),
+              );
+            },
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          DocumentUploadPerRequirementWidget(
+            title: 'Documentación de Análisis',
+            subtitle: 'Carga el certificado de análisis de la muestra',
+            lotId: widget.muestraId,
+            requiredDocuments: const {
+              'certificado_analisis': 'Certificado de Análisis de Laboratorio',
+            },
+            onDocumentsSubmitted: _onDocumentsSubmitted,
+            primaryColor: const Color(0xFF9333EA), // Morado para laboratorio
+            userType: 'laboratorio',
+          ),
+          // Loading overlay
+          if (_isLoading)
+            Container(
+              color: Colors.black.withValues(alpha: 0.5),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFF9333EA),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

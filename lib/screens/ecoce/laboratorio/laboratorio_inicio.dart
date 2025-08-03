@@ -7,8 +7,13 @@ import 'dart:async';
 import '../../../utils/format_utils.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
 import '../../../services/firebase/auth_service.dart';
-import '../../../services/lote_unificado_service.dart';
+import '../../../services/firebase/firebase_manager.dart';
+// import '../../../services/lote_unificado_service.dart'; // No se usa actualmente
+import '../../../services/muestra_laboratorio_service.dart';
+import '../../../models/laboratorio/muestra_laboratorio_model.dart';
 import 'laboratorio_gestion_muestras.dart';
+import 'laboratorio_formulario.dart';
+import 'laboratorio_documentacion.dart';
 import 'laboratorio_registro_muestras.dart';
 import 'laboratorio_toma_muestra_megalote_screen.dart';
 import '../shared/ecoce_ayuda_screen.dart';
@@ -33,8 +38,9 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
   // Servicios
   final EcoceProfileService _profileService = EcoceProfileService();
   final AuthService _authService = AuthService();
-    final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final MuestraLaboratorioService _muestraService = MuestraLaboratorioService();
+  final FirebaseManager _firebaseManager = FirebaseManager();
+  late final FirebaseFirestore _firestore;
   
   // Datos del usuario
   String _nombreLaboratorio = "Cargando...";
@@ -42,14 +48,28 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
   int _muestrasRecibidas = 0;
   double _materialAnalizado = 0.0; // en kg
   
+  // Muestras recientes
+  List<MuestraLaboratorioModel> _muestrasRecientes = [];
+  bool _isLoadingMuestras = false;
+  
   // Stream para muestras del laboratorio
   StreamSubscription? _statsSubscription;
   
   @override
   void initState() {
     super.initState();
+    
+    // Inicializar Firestore con la instancia correcta
+    final app = _firebaseManager.currentApp;
+    if (app != null) {
+      _firestore = FirebaseFirestore.instanceFor(app: app);
+    } else {
+      _firestore = FirebaseFirestore.instance;
+    }
+    
     _loadUserData();
     _loadStatistics();
+    _loadMuestrasRecientes();
     _setupLotesStream();
     _setupStatisticsListener();
   }
@@ -59,16 +79,88 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
     // No hay acceso directo a megalotes
   }
   
+  Future<void> _loadMuestrasRecientes() async {
+    setState(() => _isLoadingMuestras = true);
+    
+    try {
+      final userId = _authService.currentUser?.uid;
+      if (userId == null) return;
+      
+      // Cargar las 5 muestras más recientes
+      final muestrasSnapshot = await _firestore
+          .collection('muestras_laboratorio')
+          .where('laboratorio_id', isEqualTo: userId)
+          .limit(5)
+          .get();
+      
+      // Ordenar manualmente por fecha
+      final docs = muestrasSnapshot.docs.toList();
+      if (docs.isNotEmpty) {
+        docs.sort((a, b) {
+          try {
+            final fechaA = a.data()['fecha_toma'];
+            final fechaB = b.data()['fecha_toma'];
+            
+            DateTime dateA;
+            DateTime dateB;
+            
+            if (fechaA is Timestamp) {
+              dateA = fechaA.toDate();
+            } else if (fechaA is String) {
+              dateA = DateTime.parse(fechaA);
+            } else {
+              dateA = DateTime.now();
+            }
+            
+            if (fechaB is Timestamp) {
+              dateB = fechaB.toDate();
+            } else if (fechaB is String) {
+              dateB = DateTime.parse(fechaB);
+            } else {
+              dateB = DateTime.now();
+            }
+            
+            return dateB.compareTo(dateA); // Orden descendente
+          } catch (e) {
+            return 0;
+          }
+        });
+      }
+      
+      // Convertir a modelos
+      _muestrasRecientes = [];
+      for (var doc in docs.take(5)) {
+        try {
+          final muestra = MuestraLaboratorioModel.fromMap(doc.data(), doc.id);
+          _muestrasRecientes.add(muestra);
+        } catch (e) {
+          debugPrint('Error al parsear muestra: $e');
+        }
+      }
+      
+    } catch (e) {
+      debugPrint('Error cargando muestras recientes: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingMuestras = false);
+      }
+    }
+  }
+  
   void _setupStatisticsListener() {
-    // Escuchar cambios en las transformaciones para actualizar estadísticas
-    _statsSubscription = _firestore
-        .collection('transformaciones')
-        .where('muestras_laboratorio', isNotEqualTo: null)
-        .snapshots()
-        .listen((_) {
-      // Cuando hay cambios, recargar estadísticas
-      _loadStatistics();
-    });
+    // NUEVO SISTEMA: Escuchar cambios en la colección independiente de muestras
+    final userId = _authService.currentUser?.uid;
+    if (userId != null) {
+      _statsSubscription = _firestore
+          .collection('muestras_laboratorio')
+          .where('laboratorio_id', isEqualTo: userId)
+          .snapshots()
+          .listen((_) {
+        // Cuando hay cambios, recargar estadísticas y muestras recientes
+        _loadStatistics();
+        _loadMuestrasRecientes();
+      });
+    }
   }
   
   @override
@@ -79,17 +171,39 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
   
   Future<void> _loadStatistics() async {
     try {
-      // Usar el nuevo método de estadísticas del servicio
-      final estadisticas = await _loteUnificadoService.obtenerEstadisticasLaboratorio();
+      // NUEVO SISTEMA: Obtener estadísticas desde el servicio independiente
+      final userId = _authService.currentUser?.uid;
+      if (userId == null) {
+        debugPrint('[LABORATORIO] No hay usuario autenticado para estadísticas');
+        return;
+      }
+      
+      // Obtener todas las muestras del usuario a través de Firestore directamente
+      final muestrasSnapshot = await _firestore
+          .collection('muestras_laboratorio')
+          .where('laboratorio_id', isEqualTo: userId)
+          .get();
+      
+      // Calcular estadísticas
+      int totalMuestras = muestrasSnapshot.docs.length;
+      double pesoTotal = 0.0;
+      
+      for (var doc in muestrasSnapshot.docs) {
+        final data = doc.data();
+        final peso = (data['peso_muestra'] ?? 0.0);
+        pesoTotal += peso is num ? peso.toDouble() : 0.0;
+      }
       
       if (mounted) {
         setState(() {
-          _muestrasRecibidas = estadisticas['muestrasRecibidas'] ?? 0;
-          _materialAnalizado = (estadisticas['materialAnalizado'] ?? 0.0).toDouble();
+          _muestrasRecibidas = totalMuestras;
+          _materialAnalizado = pesoTotal;
         });
       }
+      
+      debugPrint('[LABORATORIO] Estadísticas actualizadas: $totalMuestras muestras, ${pesoTotal.toStringAsFixed(2)} kg');
     } catch (e) {
-      debugPrint('Error cargando estadísticas: $e');
+      debugPrint('[ERROR] Error cargando estadísticas: $e');
       if (mounted) {
         setState(() {
           _muestrasRecibidas = 0;
@@ -537,56 +651,72 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                       ),
                       const SizedBox(height: 16),
                       
-                      // Mensaje informativo sobre el flujo de trabajo
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 40),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.qr_code_scanner,
-                                size: 64,
-                                color: Colors.grey[300],
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Toma de muestras por código QR',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Escanea el código QR de muestra\ngenerado por el Reciclador',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[400],
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              ElevatedButton.icon(
-                                onPressed: _navigateToNewMuestra,
-                                icon: const Icon(Icons.qr_code_scanner),
-                                label: const Text('Escanear Código QR'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF9333EA),
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
-                                    vertical: 12,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                ),
-                              ),
-                            ],
+                      // Lista de muestras recientes o mensaje informativo
+                      if (_isLoadingMuestras)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 40),
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF9333EA),
+                            ),
                           ),
+                        )
+                      else if (_muestrasRecientes.isEmpty)
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 40),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.qr_code_scanner,
+                                  size: 64,
+                                  color: Colors.grey[300],
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Toma de muestras por código QR',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Escanea el código QR de muestra\ngenerado por el Reciclador',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[400],
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                ElevatedButton.icon(
+                                  onPressed: _navigateToNewMuestra,
+                                  icon: const Icon(Icons.qr_code_scanner),
+                                  label: const Text('Escanear Código QR'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF9333EA),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: 12,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(24),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      else
+                        Column(
+                          children: _muestrasRecientes.map((muestra) => 
+                            _buildMuestraCard(muestra)
+                          ).toList(),
                         ),
-                      ),
                       
                       const SizedBox(height: 100), // Espacio para el FAB
                     ],
@@ -642,5 +772,258 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
+  }
+  
+  Widget _buildMuestraCard(MuestraLaboratorioModel muestra) {
+    final muestraId = muestra.id;
+    final tipoDisplay = muestra.tipo == 'megalote' ? 'Megalote' : 'Lote';
+    final origenDisplay = muestra.origenId.length > 8 ? muestra.origenId.substring(0, 8).toUpperCase() : muestra.origenId.toUpperCase();
+    final peso = muestra.pesoMuestra;
+    final fecha = muestra.fechaToma;
+    
+    // Determinar estado y color
+    Color statusColor;
+    String statusText;
+    IconData statusIcon;
+    
+    switch (muestra.estado) {
+      case 'pendiente_analisis':
+        statusColor = const Color(0xFF9333EA);
+        statusText = 'Pendiente de análisis';
+        statusIcon = Icons.analytics;
+        break;
+      case 'analisis_completado':
+        statusColor = Colors.orange;
+        statusText = 'Pendiente de documentación';
+        statusIcon = Icons.upload_file;
+        break;
+      case 'documentacion_completada':
+        statusColor = Colors.green;
+        statusText = 'Completada';
+        statusIcon = Icons.check_circle;
+        break;
+      default:
+        statusColor = Colors.grey;
+        statusText = 'Estado desconocido';
+        statusIcon = Icons.help_outline;
+    }
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _navigateToMuestraDetail(muestra),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header con estilo consistente
+              Row(
+                children: [
+                  // Icono de estado
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      muestra.tipo == 'megalote' ? Icons.science : Icons.biotech,
+                      color: statusColor,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  
+                  // Información principal
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                'MUESTRA: ${muestraId.length > 8 ? muestraId.substring(0, 8).toUpperCase() : muestraId.toUpperCase()}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'monospace',
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF9333EA).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: const Color(0xFF9333EA).withValues(alpha: 0.3)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    muestra.tipo == 'megalote' ? Icons.layers : Icons.inventory_2,
+                                    size: 12,
+                                    color: const Color(0xFF9333EA),
+                                  ),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    tipoDisplay,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      color: Color(0xFF9333EA),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          statusText,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: statusColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Botón de acción
+                  IconButton(
+                    icon: Icon(
+                      muestra.estado == 'pendiente_analisis' ? Icons.analytics : 
+                      muestra.estado == 'analisis_completado' ? Icons.upload_file :
+                      Icons.visibility,
+                      color: statusColor,
+                    ),
+                    onPressed: () => _navigateToMuestraDetail(muestra),
+                    tooltip: muestra.estado == 'pendiente_analisis' ? 'Realizar análisis' : 
+                             muestra.estado == 'analisis_completado' ? 'Subir documentos' :
+                             'Ver detalles',
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Información adicional
+              Row(
+                children: [
+                  _buildInfoItem(
+                    icon: Icons.qr_code_2,
+                    label: 'Origen',
+                    value: origenDisplay,
+                  ),
+                  const SizedBox(width: 16),
+                  _buildInfoItem(
+                    icon: Icons.scale,
+                    label: 'Peso',
+                    value: '${peso.toStringAsFixed(2)} kg',
+                  ),
+                  const SizedBox(width: 16),
+                  _buildInfoItem(
+                    icon: Icons.calendar_today,
+                    label: 'Fecha',
+                    value: '${fecha.day}/${fecha.month}/${fecha.year}',
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildInfoItem({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: Colors.grey[600]),
+        const SizedBox(width: 4),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey[600],
+              ),
+            ),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+  
+  void _navigateToMuestraDetail(MuestraLaboratorioModel muestra) {
+    if (muestra.estado == 'pendiente_analisis') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LaboratorioFormulario(
+            muestraId: muestra.id,
+            transformacionId: muestra.origenId,
+            datosMuestra: muestra.toMap(),
+          ),
+        ),
+      ).then((_) {
+        _loadMuestrasRecientes();
+        _loadStatistics();
+      });
+    } else if (muestra.estado == 'analisis_completado') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LaboratorioDocumentacion(
+            muestraId: muestra.id,
+            transformacionId: muestra.origenId,
+          ),
+        ),
+      ).then((_) {
+        _loadMuestrasRecientes();
+        _loadStatistics();
+      });
+    } else {
+      // Para muestras completadas, navegar a la pantalla de gestión en la pestaña correspondiente
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const LaboratorioGestionMuestras(initialTab: 2),
+        ),
+      );
+    }
   }
 }
