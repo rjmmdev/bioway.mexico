@@ -367,6 +367,22 @@ class LoteUnificadoService {
           ...datosFinales,
         });
       } else {
+        // Proteger contra sobrescritura del usuario_id en procesos existentes
+        if (procesoDestino == PROCESO_RECICLADOR) {
+          // Verificar si ya existe el documento del reciclador
+          final existingDoc = await loteRef.collection(PROCESO_RECICLADOR).doc('data').get();
+          if (existingDoc.exists) {
+            // Si existe, preservar el usuario_id original
+            final existingData = existingDoc.data() ?? {};
+            final existingUserId = existingData['usuario_id'] ?? existingData['reciclador_id'];
+            if (existingUserId != null && existingUserId != datosFinales['usuario_id']) {
+              _debugPrint('PROTEGIENDO usuario_id existente: $existingUserId');
+              datosFinales['usuario_id'] = existingUserId;
+              datosFinales['reciclador_id'] = existingUserId;
+            }
+          }
+        }
+        
         await crearOActualizarProceso(
           loteId: loteId,
           proceso: procesoDestino,
@@ -873,7 +889,7 @@ class LoteUnificadoService {
     
     return _firestore
         .collectionGroup(DATOS_GENERALES)
-        .where('proceso_actual', whereIn: ['reciclador', 'transporte', 'transformador'])
+        .where('proceso_actual', whereIn: ['reciclador', 'transporte']) // Incluir lotes en transporte donde reciclador ya recibió
         .orderBy('fecha_creacion', descending: true)
         .snapshots()
         .asyncMap((snapshot) async {
@@ -900,9 +916,9 @@ class LoteUnificadoService {
               continue; // No mostrar sublotes creados por otros usuarios
             }
           } 
-          // 2. Si es un lote original, verificar que el reciclador lo haya recibido
-          else if (lote.reciclador != null) {
-            // Verificar el usuario_id en el proceso reciclador
+          // 2. Si es un lote original, SIEMPRE verificar el documento reciclador
+          else {
+            // Siempre verificar el usuario_id en el documento del proceso reciclador
             final recicladorDoc = await _firestore
                 .collection(COLECCION_LOTES)
                 .doc(loteId)
@@ -912,10 +928,36 @@ class LoteUnificadoService {
                 
             if (recicladorDoc.exists) {
               final data = recicladorDoc.data() ?? {};
+              // Verificar tanto usuario_id como reciclador_id por compatibilidad
               final recicladorUserId = data['usuario_id'] ?? data['reciclador_id'];
               
+              // Verificación principal: ID del usuario
               if (recicladorUserId == userId) {
                 usuarioRelacionado = true;
+              } 
+              // Verificación adicional para lotes antiguos con ID incorrecto
+              // Si el lote tiene recepcion_completada=true pero el ID no coincide,
+              // verificar si el proceso actual es 'reciclador' y hay evidencia de recepción
+              else if (data['recepcion_completada'] == true && 
+                       lote.datosGenerales.procesoActual == 'reciclador') {
+                // Verificar campos adicionales que indiquen que este reciclador recibió el lote
+                // Esto maneja casos donde el ID fue sobrescrito incorrectamente
+                final tieneOperadorNombre = data['operador_nombre'] != null && 
+                                           data['operador_nombre'].toString().isNotEmpty;
+                final tieneFirmaOperador = data['firma_operador'] != null && 
+                                          data['firma_operador'].toString().isNotEmpty;
+                final tienePesoRecibido = data['peso_recibido'] != null;
+                
+                // Si tiene evidencia de recepción (firma, operador, peso), considerarlo relacionado
+                // Esto permite recuperar lotes antiguos donde el ID fue corrompido
+                if (tieneOperadorNombre && (tieneFirmaOperador || tienePesoRecibido)) {
+                  _debugPrint('Lote $loteId recuperado por verificación adicional');
+                  _debugPrint('  - usuario_id en DB: $recicladorUserId');
+                  _debugPrint('  - usuario actual: $userId');
+                  _debugPrint('  - recepcion_completada: true');
+                  _debugPrint('  - operador_nombre: ${data['operador_nombre']}');
+                  usuarioRelacionado = true;
+                }
               }
             }
           }
@@ -924,34 +966,10 @@ class LoteUnificadoService {
             continue; // Saltar lotes sin relación con el usuario
           }
           
-          // Incluir si está en reciclador o si fue transferido pero le falta documentación
-          if (lote.datosGenerales.procesoActual == 'reciclador') {
-            lotes.add(lote);
-          } else if (lote.datosGenerales.procesoActual == 'transporte' || 
-                     lote.datosGenerales.procesoActual == 'transformador') {
-            // Verificar documentación directamente desde Firebase
-            try {
-              final recicladorDoc = await _firestore
-                  .collection(COLECCION_LOTES)
-                  .doc(loteId)
-                  .collection(PROCESO_RECICLADOR)
-                  .doc('data')
-                  .get();
-              
-              if (recicladorDoc.exists) {
-                final data = recicladorDoc.data() ?? {};
-                final fTecnicaPellet = data['f_tecnica_pellet'];
-                final repResultReci = data['rep_result_reci'];
-                
-                // Solo incluir si falta documentación
-                if (fTecnicaPellet == null || repResultReci == null) {
-                  lotes.add(lote);
-                }
-              }
-            } catch (e) {
-              _debugPrint('Error verificando documentación: $e');
-            }
-          }
+          // Si el usuario tiene relación con el lote, incluirlo siempre
+          // La verificación de usuario ya garantiza que el lote pertenece al reciclador
+          // Los filtros de documentación y estado se manejan en la UI según la pestaña
+          lotes.add(lote);
         }
       }
       

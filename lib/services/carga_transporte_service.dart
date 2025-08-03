@@ -538,7 +538,7 @@ class CargaTransporteService {
         // Obtener el transporteId específico para este lote
         final transporteId = transporteIds[loteId] as String?;
         
-        // Primero actualizar datos del transporte
+        // Actualizar datos del transporte marcando la entrega como completada
         await _loteUnificadoService.actualizarProcesoTransporte(
           loteId: loteId,
           datos: {
@@ -548,22 +548,14 @@ class CargaTransporteService {
             'firma_entrega': firmaEntrega,
             'evidencias_foto_entrega': evidenciasFotoEntrega,
             'comentarios_entrega': comentariosEntrega,
+            'entrega_completada': true, // Marcar que el transporte completó su parte
+            'entregado_a': entrega.destinatarioFolio,
           },
         );
         
-        // Luego transferir al destinatario
-        await _loteUnificadoService.transferirLote(
-          loteId: loteId,
-          procesoDestino: entrega.destinatarioTipo,
-          usuarioDestinoFolio: entrega.destinatarioFolio,
-          datosIniciales: {
-            'peso_entrada': entrega.pesoTotalEntregado / entrega.lotesIds.length,
-            'transportista_folio': entrega.transportistaFolio,
-            'entrega_id': entregaId,
-            'transporte_origen': entrega.transportistaFolio,
-            'transporte_numero': transporteId?.split('_')[1] ?? '1',
-          },
-        );
+        // NO transferir al destinatario aquí - el destinatario lo hará cuando reciba
+        // Esto evita la sobrescritura del usuario_id con el ID del transportista
+        // El sistema verificará automáticamente cuando ambas partes completen
       }
       
       // Verificar si la carga está completamente entregada

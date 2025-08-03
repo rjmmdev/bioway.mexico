@@ -835,6 +835,23 @@ NEVER hardcode colors. Always use `BioWayColors` constants:
 
 ### Recent Critical Fixes (2025-01-28) - Reciclador Final Implementation
 
+#### Visibilidad de Lotes en Transferencia Transporte-Reciclador
+- **Problem**: Lots disappeared from Recycler's "Salida" tab when Recycler received before Transport confirmed delivery
+- **Root Causes**:
+  - Transport service incorrectly calling `transferirLote()` and overwriting recycler's `usuario_id`
+  - Query filter too restrictive (only `proceso_actual == 'reciclador'`)
+  - Excessive filtering based on documentation status
+  - Legacy lots with corrupted `usuario_id` from previous bug
+- **Solution**:
+  - Removed incorrect `transferirLote()` call in `carga_transporte_service.dart`
+  - Expanded query to include `['reciclador', 'transporte']` states
+  - Implemented flexible verification for legacy lots using additional evidence fields
+- **Files Modified**:
+  - `lib/services/carga_transporte_service.dart` - Removed lines 554-566
+  - `lib/services/lote_unificado_service.dart` - Lines 892, 920-963, 944-947
+  - `lib/screens/ecoce/reciclador/reciclador_administracion_lotes.dart` - Lines 149-151
+- **Documentation**: `docs/FIX_VISIBILIDAD_LOTES_TRANSPORTE_RECICLADOR.md`
+
 #### Estadísticas del Reciclador Mostrando 0
 - **Problem**: Statistics showed 0 despite having data (megalotes and processed lots)
 - **Root Cause**: 
@@ -921,6 +938,7 @@ For detailed deployment instructions, see `docs/DEPLOY_FUNCTIONS_CLOUD_SHELL.md`
 - `docs/CONFIGURACION_TECNICA_COMPLETA.md` - Complete technical configuration
 
 ### Recent Fixes
+- `docs/FIX_VISIBILIDAD_LOTES_TRANSPORTE_RECICLADOR.md` - Batch visibility fix in Transport-Recycler transfer
 - `docs/OPTIMIZACION_REGISTRO_PROVEEDORES.md` - Provider registration optimization
 - `docs/FIX_FOLIO_FORMAT.md` - Folio format standardization
 - `docs/FIX_MISSING_USER_ID_IN_SOLICITUD.md` - User ID in account requests

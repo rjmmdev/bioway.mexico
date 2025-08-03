@@ -143,11 +143,12 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
           
           // Solo mostrar lotes que:
           // 1. NO sean sublotes (los sublotes ya pasaron por el proceso de salida)
-          // 2. Estén en proceso reciclador
+          // 2. Estén en proceso reciclador O transporte (cuando reciclador ya recibió pero espera confirmación)
           // 3. No tengan fecha de salida
           // 4. NO estén consumidos en una transformación
           return !esSublote &&
-                 lote.datosGenerales.procesoActual == 'reciclador' &&
+                 (lote.datosGenerales.procesoActual == 'reciclador' || 
+                  lote.datosGenerales.procesoActual == 'transporte') &&
                  reciclador != null && 
                  reciclador.fechaSalida == null &&
                  !lote.estaConsumido; // Excluir lotes consumidos
