@@ -83,8 +83,8 @@ class DocumentService {
       final sizeInMB = file.bytes!.length / (1024 * 1024);
       print('Tamaño original del PDF: ${sizeInMB.toStringAsFixed(2)} MB');
       
-      // Si el PDF es menor a 1MB, no comprimir
-      if (sizeInMB < 1.0) {
+      // Si el PDF es menor a 5MB, no comprimir (temporal hasta implementar compresión real)
+      if (sizeInMB < 5.0) {
         return file.bytes;
       }
       

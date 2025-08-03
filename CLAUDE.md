@@ -835,6 +835,24 @@ NEVER hardcode colors. Always use `BioWayColors` constants:
 
 ### Recent Critical Fixes (2025-01-28) - Reciclador Final Implementation
 
+#### Pantalla Negra en Documentación de Megalotes
+- **Problem**: Pantalla negra al completar documentación de megalotes
+- **Root Cause**: Exceso de `Navigator.pop()` - DialogUtils ya cerraba el diálogo automáticamente
+- **Solution**: Eliminado `Navigator.pop()` redundante en callback `onAccept`
+- **Files Modified**:
+  - `lib/screens/ecoce/reciclador/reciclador_transformacion_documentacion.dart` - Línea 200
+- **Documentation**: `docs/FIX_PANTALLA_NEGRA_DOCUMENTACION_MEGALOTES.md`
+
+#### Límite Temporal de PDFs Aumentado a 5MB
+- **Problem**: PDFs > 1MB eran rechazados aunque UI mostraba "máx. 5MB"
+- **Root Cause**: Sistema de compresión es placeholder no funcional
+- **Solution**: Aumentado límite a 5MB temporalmente hasta implementar compresión real
+- **Files Modified**:
+  - `lib/services/firebase/firebase_storage_service.dart` - Línea 75
+  - `lib/services/document_compression_service.dart` - Línea 15
+  - `lib/services/document_service.dart` - Línea 87
+- **Documentation**: `docs/FIX_LIMITE_TEMPORAL_PDF_5MB.md`
+
 #### Visibilidad de Lotes en Transferencia Transporte-Reciclador
 - **Problem**: Lots disappeared from Recycler's "Salida" tab when Recycler received before Transport confirmed delivery
 - **Root Causes**:
@@ -938,6 +956,8 @@ For detailed deployment instructions, see `docs/DEPLOY_FUNCTIONS_CLOUD_SHELL.md`
 - `docs/CONFIGURACION_TECNICA_COMPLETA.md` - Complete technical configuration
 
 ### Recent Fixes
+- `docs/FIX_PANTALLA_NEGRA_DOCUMENTACION_MEGALOTES.md` - Fixed black screen after megalote documentation
+- `docs/FIX_LIMITE_TEMPORAL_PDF_5MB.md` - Temporary PDF limit increase to 5MB
 - `docs/FIX_VISIBILIDAD_LOTES_TRANSPORTE_RECICLADOR.md` - Batch visibility fix in Transport-Recycler transfer
 - `docs/OPTIMIZACION_REGISTRO_PROVEEDORES.md` - Provider registration optimization
 - `docs/FIX_FOLIO_FORMAT.md` - Folio format standardization

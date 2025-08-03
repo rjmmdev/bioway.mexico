@@ -71,9 +71,9 @@ class FirebaseStorageService {
       final fileData = await file.readAsBytes();
       print('Tamaño del archivo: ${_formatBytes(fileData.length)}');
       
-      // Validar tamaño final (máximo 1MB)
-      if (fileData.length > 1024 * 1024) {
-        throw Exception('El archivo es demasiado grande. Máximo 1MB.');
+      // Validar tamaño final (máximo 5MB - temporal hasta implementar compresión real)
+      if (fileData.length > 5 * 1024 * 1024) {
+        throw Exception('El archivo es demasiado grande. Máximo 5MB.');
       }
 
       // Generar nombre único

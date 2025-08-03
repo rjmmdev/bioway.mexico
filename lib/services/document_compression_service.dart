@@ -11,8 +11,8 @@ class DocumentCompressionService {
   /// Tamaño máximo de entrada para PDFs en bytes (5MB)
   static const int maxPdfInputSize = 5 * 1024 * 1024; // 5MB
   
-  /// Tamaño máximo objetivo para PDFs en bytes (1MB)
-  static const int maxPdfSize = 1024 * 1024; // 1MB
+  /// Tamaño máximo objetivo para PDFs en bytes (5MB - temporal hasta implementar compresión real)
+  static const int maxPdfSize = 5 * 1024 * 1024; // 5MB
   
   /// Tamaño máximo objetivo para imágenes en bytes (50KB)
   static const int maxImageSize = 50 * 1024; // 50KB
@@ -44,7 +44,7 @@ class DocumentCompressionService {
       
       // Intentar comprimir el PDF usando el servicio especializado
       try {
-        print('[DocumentCompression] Intentando comprimir PDF de ${formatBytes(originalSize)} a menos de 1MB...');
+        print('[DocumentCompression] Intentando comprimir PDF de ${formatBytes(originalSize)} a menos de 5MB...');
         final compressedBytes = await PdfCompressionService.compressPdf(originalBytes, maxPdfSize);
         final compressedSize = compressedBytes.length;
         
@@ -56,8 +56,8 @@ class DocumentCompressionService {
           print('[DocumentCompression] PDF comprimido exitosamente (-${reduction.toStringAsFixed(1)}%)');
           return compressedBytes;
         } else {
-          print('[DocumentCompression] No se pudo comprimir el PDF por debajo de 1MB');
-          throw Exception('No se pudo comprimir el PDF a menos de 1MB. Por favor, use un archivo más pequeño o con menos imágenes.');
+          print('[DocumentCompression] No se pudo comprimir el PDF por debajo de 5MB');
+          throw Exception('No se pudo comprimir el PDF a menos de 5MB. Por favor, use un archivo más pequeño o con menos imágenes.');
         }
       } catch (e) {
         print('[DocumentCompression] Error durante la compresión: $e');
@@ -66,7 +66,7 @@ class DocumentCompressionService {
           return originalBytes;
         }
         // Si no, lanzar error con mensaje claro
-        throw Exception('El PDF de ${formatBytes(originalSize)} no pudo ser comprimido a menos de 1MB. Por favor, reduzca el tamaño del archivo antes de cargarlo.');
+        throw Exception('El PDF de ${formatBytes(originalSize)} no pudo ser comprimido a menos de 5MB. Por favor, reduzca el tamaño del archivo antes de cargarlo.');
       }
       
     } catch (e) {

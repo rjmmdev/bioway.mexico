@@ -197,7 +197,6 @@ class _RecicladorTransformacionDocumentacionState extends State<RecicladorTransf
         title: 'Documentación Cargada',
         message: 'Los documentos se han guardado correctamente',
         onAccept: () {
-          Navigator.pop(context); // Cerrar diálogo
           Navigator.pop(context); // Regresar a la pantalla anterior
         },
       );
