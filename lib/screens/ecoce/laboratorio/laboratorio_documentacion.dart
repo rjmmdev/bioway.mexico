@@ -6,6 +6,7 @@ import '../../../services/muestra_laboratorio_service.dart'; // NUEVO: Servicio 
 import '../../../services/firebase/firebase_storage_service.dart';
 import 'laboratorio_gestion_muestras.dart';
 import '../shared/widgets/document_upload_per_requirement_widget.dart';
+import '../shared/widgets/dialog_utils.dart';
 
 class LaboratorioDocumentacion extends StatefulWidget {
   final String muestraId;
@@ -80,17 +81,25 @@ class _LaboratorioDocumentacionState extends State<LaboratorioDocumentacion> {
         );
       }
       
-      // Navegar directamente a la gestión de muestras en la pestaña de finalizados
+      // Mostrar diálogo de éxito y luego navegar
       if (mounted) {
-        debugPrint('[LABORATORIO] Documentación completada, navegando a muestras finalizadas...');
+        debugPrint('[LABORATORIO] Documentación completada, mostrando diálogo de éxito...');
         
-        Navigator.pushReplacement(
+        DialogUtils.showSuccessDialog(
           context,
-          MaterialPageRoute(
-            builder: (context) => const LaboratorioGestionMuestras(
-              initialTab: 2, // Pestaña de Finalizados
-            ),
-          ),
+          title: 'Documentación Cargada',
+          message: 'Los documentos se han guardado correctamente',
+          onAccept: () {
+            // Navegar a la gestión de muestras en la pestaña de finalizados
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const LaboratorioGestionMuestras(
+                  initialTab: 2, // Pestaña de Finalizados
+                ),
+              ),
+            );
+          },
         );
       }
     } catch (e) {
@@ -165,6 +174,7 @@ class _LaboratorioDocumentacionState extends State<LaboratorioDocumentacion> {
             onDocumentsSubmitted: _onDocumentsSubmitted,
             primaryColor: const Color(0xFF9333EA), // Morado para laboratorio
             userType: 'laboratorio',
+            showAppBar: false, // Evitar duplicación del AppBar
           ),
           // Loading overlay
           if (_isLoading)

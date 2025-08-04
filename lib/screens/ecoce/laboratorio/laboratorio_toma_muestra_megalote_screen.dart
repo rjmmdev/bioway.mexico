@@ -506,11 +506,12 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                   children: [
                     Row(
                       children: [
-                        const Text(
-                          '⚖️',
-                          style: TextStyle(fontSize: 24),
+                        Icon(
+                          Icons.scale,
+                          color: const Color(0xFF9333EA),
+                          size: 24,
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 12),
                         const Text(
                           'Peso de la Muestra',
                           style: TextStyle(
@@ -534,6 +535,7 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                       controller: _pesoMuestraController,
                       label: 'Peso de la muestra en kg',
                       primaryColor: const Color(0xFF9333EA),
+                      quickAddValues: const [5, 10, 25, 50], // Valores apropiados para muestras de laboratorio
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Por favor ingrese el peso de la muestra';
@@ -583,11 +585,12 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                   children: [
                     Row(
                       children: [
-                        const Text(
-                          '👤',
-                          style: TextStyle(fontSize: 24),
+                        Icon(
+                          Icons.person,
+                          color: const Color(0xFF9333EA),
+                          size: 24,
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 12),
                         Text(
                           'Datos del Responsable',
                           style: TextStyle(
@@ -714,7 +717,7 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                                     padding: const EdgeInsets.all(12),
                                     child: Center(
                                       child: AspectRatio(
-                                        aspectRatio: 2.5,
+                                        aspectRatio: 2.0, // Mismo aspect ratio que Reciclador
                                         child: Container(
                                           decoration: BoxDecoration(
                                             color: Colors.white,
@@ -730,7 +733,7 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                                               fit: BoxFit.contain,
                                               child: SizedBox(
                                                 width: 300,
-                                                height: 120,
+                                                height: 300, // Mismo tamaño que Reciclador para consistencia
                                                 child: CustomPaint(
                                                   painter: SignaturePainter(
                                                     points: _signaturePoints,

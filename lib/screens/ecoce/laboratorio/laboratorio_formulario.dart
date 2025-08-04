@@ -1,14 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:ui' as ui;
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import '../../../utils/colors.dart';
 import '../../../services/lote_service.dart';
 // import '../../../services/lote_unificado_service.dart'; // No se usa actualmente
 import '../../../services/muestra_laboratorio_service.dart'; // NUEVO: Servicio independiente
 // import '../../../models/laboratorio/muestra_laboratorio_model.dart'; // No se usa actualmente
 import '../../../services/user_session_service.dart';
+import '../../../services/firebase/firebase_storage_service.dart';
+import '../../../services/firebase/auth_service.dart';
+import '../shared/widgets/signature_dialog.dart';
+import '../shared/widgets/dialog_utils.dart';
 import 'laboratorio_documentacion.dart';
 import 'laboratorio_gestion_muestras.dart';
+
+// Painter para la firma
+class SignaturePainter extends CustomPainter {
+  final List<Offset?> points;
+  final double strokeWidth;
+
+  SignaturePainter({
+    required this.points,
+    this.strokeWidth = 2.0,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFF9333EA) // Color morado del Laboratorio
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = strokeWidth;
+
+    for (int i = 0; i < points.length - 1; i++) {
+      if (points[i] != null && points[i + 1] != null) {
+        canvas.drawLine(points[i]!, points[i + 1]!, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(SignaturePainter oldDelegate) => true;
+}
 
 class LaboratorioFormulario extends StatefulWidget {
   final String muestraId;
@@ -34,6 +69,8 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
   // final LoteUnificadoService _loteUnificadoService = LoteUnificadoService(); // No se usa actualmente
   final MuestraLaboratorioService _muestraService = MuestraLaboratorioService(); // NUEVO: Servicio independiente
   final UserSessionService _userSession = UserSessionService();
+  final FirebaseStorageService _storageService = FirebaseStorageService();
+  final AuthService _authService = AuthService();
   
   // Controladores para los campos
   final _humedadController = TextEditingController();
@@ -49,8 +86,11 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
   final _densidadController = TextEditingController();
   final _normaController = TextEditingController();
   final _observacionesController = TextEditingController();
+  final _nombreResponsableController = TextEditingController();
   
   // Estados para el formulario
+  List<Offset?> _signaturePoints = [];
+  String? _signatureUrl;
   bool _isTemperaturaUnica = true; // true = única, false = rango
   String _unidadTemperatura = 'C°'; // C°, K°, F°
   bool? _cumpleRequisitos; // null = no seleccionado, true = Sí, false = No
@@ -71,9 +111,98 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
     _densidadController.dispose();
     _normaController.dispose();
     _observacionesController.dispose();
+    _nombreResponsableController.dispose();
     super.dispose();
   }
 
+  // Inicializar nombre del responsable
+  @override
+  void initState() {
+    super.initState();
+    _initializeResponsableData();
+  }
+  
+  void _initializeResponsableData() async {
+    final userProfile = await _userSession.getUserProfile();
+    if (userProfile != null && mounted) {
+      setState(() {
+        _nombreResponsableController.text = userProfile['ecoceNombre'] ?? '';
+      });
+    }
+  }
+  
+  // Capturar firma
+  Future<void> _captureSignature() async {
+    FocusScope.of(context).unfocus();
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    if (!mounted) return;
+    
+    try {
+      await SignatureDialog.show(
+        context: context,
+        title: 'Firma del Responsable',
+        initialSignature: _signaturePoints,
+        onSignatureSaved: (points) {
+          setState(() {
+            _signaturePoints = List.from(points);
+            _signatureUrl = null;
+          });
+        },
+        primaryColor: const Color(0xFF9333EA), // Color del Laboratorio
+      );
+    } catch (e) {
+      debugPrint('[ERROR] Error mostrando diálogo de firma: $e');
+    }
+  }
+  
+  // Subir firma a Firebase
+  Future<String?> _uploadSignature() async {
+    if (_signaturePoints.isEmpty) return null;
+    
+    try {
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      final painter = SignaturePainter(
+        points: _signaturePoints,
+        strokeWidth: 2.0,
+      );
+      
+      const size = Size(300, 300);
+      
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, size.width, size.height),
+        Paint()..color = Colors.white,
+      );
+      
+      painter.paint(canvas, size);
+      
+      final picture = recorder.endRecording();
+      final img = await picture.toImage(size.width.toInt(), size.height.toInt());
+      final pngBytes = await img.toByteData(format: ui.ImageByteFormat.png);
+      
+      if (pngBytes == null) return null;
+      
+      final bytes = pngBytes.buffer.asUint8List();
+      
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/firma_${DateTime.now().millisecondsSinceEpoch}.png');
+      await file.writeAsBytes(bytes);
+      
+      final url = await _storageService.uploadFile(
+        file,
+        'firmas/laboratorio/${_authService.currentUser?.uid}',
+      );
+      
+      await file.delete();
+      
+      return url;
+    } catch (e) {
+      debugPrint('Error al subir firma: $e');
+      return null;
+    }
+  }
+  
   void _handleFormSubmit() async {
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -103,6 +232,16 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
       return;
     }
 
+    // Validar que tenga firma
+    if (_signaturePoints.isEmpty) {
+      DialogUtils.showErrorDialog(
+        context,
+        title: 'Firma Requerida',
+        message: 'Por favor capture la firma del responsable antes de continuar.',
+      );
+      return;
+    }
+    
     HapticFeedback.mediumImpact();
     
     setState(() {
@@ -110,6 +249,11 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
     });
 
     try {
+      // Subir firma
+      _signatureUrl = await _uploadSignature();
+      if (_signatureUrl == null) {
+        throw Exception('Error al subir la firma');
+      }
       // Preparar datos de temperatura
       Map<String, dynamic> temperaturaData = {
         'unidad': _unidadTemperatura,
@@ -142,6 +286,8 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
         'observaciones': _observacionesController.text.trim(),
         'cumple_requisitos': _cumpleRequisitos,
         'analista': userProfile?['ecoceNombre'] ?? 'Sin nombre',
+        'nombre_responsable': _nombreResponsableController.text.trim(),
+        'firma_responsable': _signatureUrl,
       };
       
       // NUEVO SISTEMA: Actualizar análisis usando el servicio independiente
@@ -354,6 +500,98 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
     );
   }
 
+  // Método para campos numéricos con punto decimal (OIT, MFI, Densidad)
+  Widget _buildDecimalField({
+    required String label,
+    required TextEditingController controller,
+    required String hint,
+    int maxLength = 10,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: BioWayColors.textGrey,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '*',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: BioWayColors.error,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          maxLength: maxLength,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+          ],
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(
+              color: Colors.grey[400],
+              fontSize: 14,
+            ),
+            filled: true,
+            fillColor: BioWayColors.backgroundGrey,
+            counterText: '',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: BioWayColors.backgroundGrey,
+                width: 1,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: BioWayColors.ecoceGreen,
+                width: 2,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: BioWayColors.error,
+                width: 1,
+              ),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: BioWayColors.error,
+                width: 2,
+              ),
+            ),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Campo requerido';
+            }
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+  
   Widget _buildStringField({
     required String label,
     required TextEditingController controller,
@@ -758,7 +996,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                     ),
                     const SizedBox(height: 16),
                     
-                    _buildStringField(
+                    _buildDecimalField(
                       label: 'Tiempo de Inducción de Oxidación (OIT)',
                       controller: _oitController,
                       hint: 'Ej: 45',
@@ -766,7 +1004,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                     ),
                     const SizedBox(height: 16),
                     
-                    _buildStringField(
+                    _buildDecimalField(
                       label: 'Índice de fluidez (MFI)',
                       controller: _mfiController,
                       hint: 'Ej: 2.16',
@@ -774,7 +1012,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                     ),
                     const SizedBox(height: 16),
                     
-                    _buildStringField(
+                    _buildDecimalField(
                       label: 'Densidad',
                       controller: _densidadController,
                       hint: 'Ej: 0.918',
@@ -984,6 +1222,307 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                           ),
                         ],
                       ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+              
+              // Datos del responsable
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.person,
+                          color: const Color(0xFF9333EA),
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Datos del Responsable',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF9333EA),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Text(
+                          '*',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    // Nombre del Responsable
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Nombre',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: BioWayColors.textGrey,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '*',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: BioWayColors.error,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _nombreResponsableController,
+                          maxLength: 50,
+                          keyboardType: TextInputType.name,
+                          textInputAction: TextInputAction.done,
+                          autocorrect: false,
+                          enableSuggestions: false,
+                          decoration: InputDecoration(
+                            hintText: 'Ingresa el nombre completo',
+                            filled: true,
+                            fillColor: const Color(0xFFF5F5F5),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: const Color(0xFF9333EA).withValues(alpha: 0.3),
+                                width: 1,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF9333EA),
+                                width: 2,
+                              ),
+                            ),
+                            counterText: '',
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Ingresa el nombre del responsable';
+                            }
+                            if (value.length < 3) {
+                              return 'El nombre debe tener al menos 3 caracteres';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // Firma del Responsable
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Firma',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: BioWayColors.textGrey,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '*',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: BioWayColors.error,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            if (_signaturePoints.isEmpty) {
+                              _captureSignature();
+                            }
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            height: _signaturePoints.isNotEmpty ? 150 : 100,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: _signaturePoints.isNotEmpty 
+                                  ? const Color(0xFF9333EA).withValues(alpha: 0.05)
+                                  : Colors.grey[50],
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: _signaturePoints.isNotEmpty 
+                                    ? const Color(0xFF9333EA) 
+                                    : Colors.grey[300]!,
+                                width: _signaturePoints.isNotEmpty ? 2 : 1,
+                              ),
+                            ),
+                            child: !_signaturePoints.isNotEmpty
+                                ? Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.draw,
+                                          size: 32,
+                                          color: Colors.grey[400],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Toque para firmar',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : Stack(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        child: Center(
+                                          child: AspectRatio(
+                                            aspectRatio: 2.0,
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                borderRadius: BorderRadius.circular(8),
+                                                border: Border.all(
+                                                  color: Colors.grey[200]!,
+                                                  width: 1,
+                                                ),
+                                              ),
+                                              child: ClipRRect(
+                                                borderRadius: BorderRadius.circular(7),
+                                                child: FittedBox(
+                                                  fit: BoxFit.contain,
+                                                  child: SizedBox(
+                                                    width: 300,
+                                                    height: 300,
+                                                    child: CustomPaint(
+                                                      painter: SignaturePainter(
+                                                        points: _signaturePoints,
+                                                        strokeWidth: 2.0,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 8,
+                                        right: 8,
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Container(
+                                              decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                shape: BoxShape.circle,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black.withValues(alpha: 0.1),
+                                                    blurRadius: 4,
+                                                  ),
+                                                ],
+                                              ),
+                                              child: IconButton(
+                                                onPressed: _captureSignature,
+                                                icon: const Icon(
+                                                  Icons.edit,
+                                                  color: Color(0xFF9333EA),
+                                                  size: 20,
+                                                ),
+                                                constraints: const BoxConstraints(
+                                                  minWidth: 32,
+                                                  minHeight: 32,
+                                                ),
+                                                padding: EdgeInsets.zero,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Container(
+                                              decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                shape: BoxShape.circle,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black.withValues(alpha: 0.1),
+                                                    blurRadius: 4,
+                                                  ),
+                                                ],
+                                              ),
+                                              child: IconButton(
+                                                onPressed: () {
+                                                  setState(() {
+                                                    _signaturePoints.clear();
+                                                  });
+                                                },
+                                                icon: const Icon(
+                                                  Icons.clear,
+                                                  color: Colors.red,
+                                                  size: 20,
+                                                ),
+                                                constraints: const BoxConstraints(
+                                                  minWidth: 32,
+                                                  minHeight: 32,
+                                                ),
+                                                padding: EdgeInsets.zero,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

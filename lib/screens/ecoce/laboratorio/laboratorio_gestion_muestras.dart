@@ -6,7 +6,9 @@ import '../../../utils/qr_utils.dart';
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/firebase/firebase_manager.dart'; // NUEVO: Para obtener la instancia correcta
 import '../../../services/muestra_laboratorio_service.dart'; // NUEVO: Servicio independiente
+import '../../../services/transformacion_service.dart';
 import '../../../models/laboratorio/muestra_laboratorio_model.dart'; // NUEVO: Modelo de muestra
+import '../../../models/lotes/transformacion_model.dart';
 import 'laboratorio_registro_muestras.dart';
 import 'laboratorio_toma_muestra_megalote_screen.dart';
 import 'laboratorio_formulario.dart';
@@ -33,7 +35,6 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
   // Filtros
   String _selectedMaterial = 'Todos';
   String _selectedTiempo = 'Este Mes';
-  String _selectedPresentacion = 'Todos';
   
   // Bottom navigation
   final int _selectedIndex = 1; // Muestras está seleccionado
@@ -43,12 +44,16 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
   late final FirebaseFirestore _firestore; // CAMBIADO: Se inicializa en initState con la instancia correcta
   final MuestraLaboratorioService _muestraService = MuestraLaboratorioService(); // NUEVO: Servicio independiente
   final FirebaseManager _firebaseManager = FirebaseManager(); // NUEVO: Para obtener la app correcta
+  final TransformacionService _transformacionService = TransformacionService();
   
   // Datos - NUEVO: Usando modelo tipado
   bool _isLoading = false;
   List<MuestraLaboratorioModel> _muestrasAnalisis = [];
   List<MuestraLaboratorioModel> _muestrasDocumentacion = [];
   List<MuestraLaboratorioModel> _muestrasFinalizadas = [];
+  
+  // Cache para transformaciones
+  Map<String, TransformacionModel?> _transformacionesCache = {};
 
   @override
   void initState() {
@@ -173,11 +178,17 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
       
       // Convertir documentos a modelos tipados
       List<MuestraLaboratorioModel> todasLasMuestras = [];
+      Set<String> transformacionIds = {}; // IDs de transformaciones a cargar
       
       for (var doc in docs) {
         try {
           final muestra = MuestraLaboratorioModel.fromMap(doc.data(), doc.id);
           todasLasMuestras.add(muestra);
+          
+          // Si es de una transformación, agregar a la lista para cargar
+          if (muestra.origenTipo == 'transformacion') {
+            transformacionIds.add(muestra.origenId);
+          }
           
           debugPrint('[LABORATORIO] Muestra cargada:');
           debugPrint('  - ID: ${muestra.id}');
@@ -187,6 +198,20 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
           debugPrint('  - Fecha: ${muestra.fechaToma}');
         } catch (e) {
           debugPrint('[ERROR] Error al parsear muestra ${doc.id}: $e');
+        }
+      }
+      
+      // Cargar transformaciones en cache para filtrado por material
+      if (transformacionIds.isNotEmpty) {
+        debugPrint('[LABORATORIO] Cargando ${transformacionIds.length} transformaciones para filtrado');
+        for (String transformacionId in transformacionIds) {
+          try {
+            final transformacion = await _transformacionService.obtenerTransformacion(transformacionId);
+            _transformacionesCache[transformacionId] = transformacion;
+          } catch (e) {
+            debugPrint('[ERROR] Error al cargar transformación $transformacionId: $e');
+            _transformacionesCache[transformacionId] = null;
+          }
         }
       }
       
@@ -283,10 +308,6 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
     }
   }
   
-  void _handleSearch(String value) {
-    // Implementar búsqueda si es necesario
-    setState(() {});
-  }
   
   void _showFilterDialog() {
     showDialog(
@@ -364,6 +385,58 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
     super.dispose();
   }
 
+  // Método helper para verificar si un megalote contiene >50% del material seleccionado
+  bool _megaloteContieneMaterial(TransformacionModel megalote, String material) {
+    if (material == 'Todos') return true;
+    
+    // Calcular porcentaje del material en el megalote
+    final lotesDelMaterial = megalote.lotesEntrada.where((lote) {
+      final materialLote = lote.tipoMaterial.trim();
+      final materialBuscado = material.trim();
+      
+      // Comparación directa
+      if (materialLote == materialBuscado) {
+        return true;
+      }
+      
+      // Comparación case-insensitive
+      if (materialLote.toUpperCase() == materialBuscado.toUpperCase()) {
+        return true;
+      }
+      
+      // Manejar el caso donde el material tiene prefijo "EPF-"
+      String materialLoteSinPrefijo = materialLote;
+      if (materialLote.toUpperCase().startsWith('EPF-')) {
+        materialLoteSinPrefijo = materialLote.substring(4); // Remover "EPF-"
+      }
+      
+      // Comparar sin prefijo
+      if (materialLoteSinPrefijo.toUpperCase() == materialBuscado.toUpperCase()) {
+        return true;
+      }
+      
+      // También probar agregando el prefijo al material buscado
+      final materialBuscadoConPrefijo = 'EPF-$materialBuscado';
+      if (materialLote.toUpperCase() == materialBuscadoConPrefijo.toUpperCase()) {
+        return true;
+      }
+      
+      return false;
+    }).toList();
+    
+    if (lotesDelMaterial.isEmpty) {
+      return false;
+    }
+    
+    final pesoMaterial = lotesDelMaterial.fold<double>(
+      0, (sum, lote) => sum + lote.peso
+    );
+    
+    final porcentaje = (pesoMaterial / megalote.pesoTotalEntrada) * 100;
+    
+    return porcentaje > 50; // Más del 50% del material
+  }
+  
   List<MuestraLaboratorioModel> get _muestrasFiltradas {
     List<MuestraLaboratorioModel> muestras;
     
@@ -407,12 +480,18 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
         }
       }
       
-      // Filtro por tipo (megalote/lote)
+      // Filtro por material
       if (_selectedMaterial != 'Todos') {
-        // Adaptar el filtro para tipo de muestra
-        if (_selectedMaterial == 'PEBD' || _selectedMaterial == 'PP' || _selectedMaterial == 'Multilaminado') {
-          // Por ahora permitir todas si es un material específico
-          // TODO: Obtener material del origen cuando se implemente
+        // Si la muestra viene de un megalote, verificar composición >50%
+        if (muestra.origenTipo == 'transformacion') {
+          // Buscar en cache primero
+          final transformacion = _transformacionesCache[muestra.origenId];
+          if (transformacion != null) {
+            return _megaloteContieneMaterial(transformacion, _selectedMaterial);
+          }
+          // Si no está en cache, no podemos filtrar correctamente
+          // Se cargará de forma asíncrona
+          return true;
         }
       }
       
@@ -550,42 +629,6 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
         ),
         body: Column(
           children: [
-            // Barra de búsqueda y filtros
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF5F5F5),
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: TextField(
-                        onChanged: _handleSearch,
-                        decoration: InputDecoration(
-                          hintText: 'Buscar por ID de lote...',
-                          hintStyle: TextStyle(
-                            color: Colors.grey[500],
-                            fontSize: 14,
-                          ),
-                          prefixIcon: Icon(
-                            Icons.search,
-                            color: Colors.grey[500],
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
             // Lista de muestras
             Expanded(
               child: TabBarView(
@@ -675,7 +718,9 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
     
     final tabColor = _getTabColor();
     
-    return Column(
+    return ListView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.only(bottom: 100), // Espacio para el FAB
       children: [
         // Filtros
         Container(
@@ -721,19 +766,6 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                       onChanged: (value) {
                         setState(() {
                           _selectedTiempo = value!;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildDropdownFilter(
-                      label: 'Presentación',
-                      value: _selectedPresentacion,
-                      items: ['Todos', 'Muestra'],
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedPresentacion = value!;
                         });
                       },
                     ),
@@ -858,75 +890,66 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
           ),
         ),
         
-        // Lista de muestras
-        Expanded(
-          child: _muestrasFiltradas.isEmpty
-              ? ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
-                    SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.3,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            _tabController.index == 0 ? Icons.analytics : 
-                            _tabController.index == 1 ? Icons.upload_file : Icons.check_circle,
-                            size: 80,
-                            color: Colors.grey[300],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _tabController.index == 0 ? 'No hay muestras pendientes de análisis' :
-                            _tabController.index == 1 ? 'No hay muestras pendientes de documentación' :
-                            'No hay muestras finalizadas',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Desliza hacia abajo para actualizar',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[400],
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          if (_tabController.index == 0)
-                            ElevatedButton.icon(
-                              onPressed: _navigateToNewMuestra,
-                              icon: const Icon(Icons.qr_code_scanner),
-                              label: const Text('Escanear Nueva Muestra'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF9333EA),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 12,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                ),
-                              ),
-                            ),
-                        ],
+        // Lista de muestras o mensaje de vacío
+        if (_muestrasFiltradas.isEmpty) ...[
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.4,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  _tabController.index == 0 ? Icons.analytics : 
+                  _tabController.index == 1 ? Icons.upload_file : Icons.check_circle,
+                  size: 80,
+                  color: Colors.grey[300],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _tabController.index == 0 ? 'No hay muestras pendientes de análisis' :
+                  _tabController.index == 1 ? 'No hay muestras pendientes de documentación' :
+                  'No hay muestras finalizadas',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Desliza hacia abajo para actualizar',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[400],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                if (_tabController.index == 0)
+                  ElevatedButton.icon(
+                    onPressed: _navigateToNewMuestra,
+                    icon: const Icon(Icons.qr_code_scanner),
+                    label: const Text('Escanear Nueva Muestra'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF9333EA),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
                       ),
                     ),
-                  ],
-                )
-              : ListView.builder(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 100),
-                  itemCount: _muestrasFiltradas.length,
-                  itemBuilder: (context, index) {
-                    final muestra = _muestrasFiltradas[index];
-                    return _buildMuestraCard(muestra);
-                  },
-                ),
-        ),
+                  ),
+              ],
+            ),
+          ),
+        ] else ...[
+          // Lista de todas las muestras
+          ..._muestrasFiltradas.map((muestra) => _buildMuestraCard(muestra)),
+        ],
+        
+        // Espacio adicional al final
+        const SizedBox(height: 20),
       ],
     );
   }
