@@ -313,20 +313,66 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
   }
   
   Future<void> _guardarBorrador() async {
+    // Validar que tengamos el peso de salida antes de guardar
+    if (_pesoSalidaController.text.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Por favor ingrese el peso de salida antes de guardar'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+    
     if (_transformacionId == null) {
-      // Crear nueva transformación si no existe
-      final transformacionData = await _prepareTransformacionData();
-      final docRef = await _firestore
+      // Verificar primero si ya existe una transformación para estos lotes
+      final authUid = _authService.currentUser?.uid;
+      if (authUid == null) return;
+      
+      final existingQuery = await _firestore
           .collection('transformaciones')
-          .add(transformacionData);
-      _transformacionId = docRef.id;
+          .where('tipo', isEqualTo: 'agrupacion_transformador')
+          .where('usuario_id', isEqualTo: authUid)
+          .where('estado', isEqualTo: 'en_proceso')
+          .get();
+      
+      // Buscar si alguna transformación tiene los mismos lotes
+      for (var doc in existingQuery.docs) {
+        final data = doc.data();
+        final existingLotes = (data['lotes_entrada'] as List<dynamic>?) ?? [];
+        final existingLoteIds = existingLotes.map((l) => l['lote_id']).toSet();
+        
+        if (_loteIds.toSet().intersection(existingLoteIds).isNotEmpty) {
+          _transformacionId = doc.id;
+          break;
+        }
+      }
+      
+      if (_transformacionId == null) {
+        // Crear nueva transformación solo si no existe
+        final transformacionData = await _prepareTransformacionData();
+        final docRef = await _firestore
+            .collection('transformaciones')
+            .add(transformacionData);
+        _transformacionId = docRef.id;
+      } else {
+        // Actualizar la existente
+        final updateData = await _prepareTransformacionData();
+        await _firestore
+            .collection('transformaciones')
+            .doc(_transformacionId)
+            .set(updateData, SetOptions(merge: true));
+      }
     } else {
       // Actualizar transformación existente
       final updateData = await _prepareTransformacionData();
       await _firestore
           .collection('transformaciones')
           .doc(_transformacionId)
-          .update(updateData);
+          .set(updateData, SetOptions(merge: true));
     }
     
     if (mounted) {
@@ -380,8 +426,9 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
     }
     
     // Calcular merma
-    final cantidadGenerada = double.tryParse(_cantidadGeneradaController.text) ?? _pesoTotalOriginal;
-    final mermaProceso = _pesoTotalOriginal - cantidadGenerada;
+    final pesoSalida = double.tryParse(_pesoSalidaController.text) ?? _pesoTotalOriginal;
+    final cantidadGenerada = double.tryParse(_cantidadGeneradaController.text) ?? 0;
+    final mermaProceso = _pesoTotalOriginal - pesoSalida;
     
     final procesosSeleccionados = _procesosAplicados.entries
         .where((e) => e.value)
@@ -396,7 +443,8 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
       'estado': 'en_proceso',
       'lotes_entrada': lotesEntrada,
       'peso_total_entrada': _pesoTotalOriginal,
-      'peso_disponible': cantidadGenerada,
+      'peso_disponible': pesoSalida,
+      'peso_salida': pesoSalida,
       'merma_proceso': mermaProceso >= 0 ? mermaProceso : 0,
       'sublotes_generados': [],
       'documentos_asociados': {},
@@ -433,8 +481,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
           _signaturePoints = List.from(points);
           _hasSignature = points.isNotEmpty;
         });
-        // Guardar borrador después de firmar
-        _guardarBorrador();
+        // NO guardar borrador automáticamente después de firmar para evitar duplicados
       },
       primaryColor: _primaryColor,
     );
@@ -647,9 +694,10 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
         print('tipo: agrupacion_transformador');
         print('Verificando que UID coincide con Auth: ${authUid == _authService.currentUser?.uid}');
         
-        // Calcular merma (diferencia entre peso original y cantidad generada)
-        final cantidadGenerada = double.tryParse(_cantidadGeneradaController.text) ?? _pesoTotalOriginal;
-        final mermaProceso = _pesoTotalOriginal - cantidadGenerada;
+        // Calcular merma (diferencia entre peso original y peso de salida)
+        final pesoSalida = double.tryParse(_pesoSalidaController.text) ?? _pesoTotalOriginal;
+        final cantidadGenerada = double.tryParse(_cantidadGeneradaController.text) ?? 0;
+        final mermaProceso = _pesoTotalOriginal - pesoSalida;
         
         final transformacionData = {
           'tipo': 'agrupacion_transformador',
@@ -659,7 +707,8 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
           'estado': 'documentacion',
           'lotes_entrada': lotesEntrada,
           'peso_total_entrada': _pesoTotalOriginal,
-          'peso_disponible': cantidadGenerada, // Peso disponible después de merma
+          'peso_disponible': pesoSalida, // Peso disponible después de merma
+          'peso_salida': pesoSalida, // Peso de salida real en kg
           'merma_proceso': mermaProceso >= 0 ? mermaProceso : 0, // Campo REQUERIDO por el modelo
           'sublotes_generados': [], // Campo REQUERIDO - lista vacía inicial
           'documentos_asociados': {}, // Campo REQUERIDO - mapa vacío inicial
@@ -678,18 +727,50 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
           'muestras_laboratorio': [], // Campo para compatibilidad
         };
         
-        // Siempre crear nueva transformación si no existe
+        // Verificar si ya existe una transformación para estos lotes
         if (_transformacionId == null) {
-          print('Creando nueva transformación...');
-          try {
-            final docRef = await _firestore
+          // Buscar si ya existe una transformación con estos lotes para evitar duplicados
+          final existingQuery = await _firestore
+              .collection('transformaciones')
+              .where('tipo', isEqualTo: 'agrupacion_transformador')
+              .where('usuario_id', isEqualTo: authUid)
+              .get();
+          
+          // Verificar si alguna transformación existente tiene los mismos lotes
+          String? existingId;
+          for (var doc in existingQuery.docs) {
+            final data = doc.data();
+            final existingLotes = (data['lotes_entrada'] as List<dynamic>?) ?? [];
+            final existingLoteIds = existingLotes.map((l) => l['lote_id']).toSet();
+            final currentLoteIds = lotesEntrada.map((l) => l['lote_id']).toSet();
+            
+            if (existingLoteIds.intersection(currentLoteIds).isNotEmpty) {
+              existingId = doc.id;
+              break;
+            }
+          }
+          
+          if (existingId != null) {
+            // Actualizar la transformación existente
+            print('Actualizando transformación existente encontrada: $existingId');
+            _transformacionId = existingId;
+            await _firestore
                 .collection('transformaciones')
-                .add(transformacionData);
-            _transformacionId = docRef.id;
-            print('Transformación creada con ID: $_transformacionId');
-          } catch (e) {
-            print('ERROR al crear transformación: $e');
-            throw Exception('Error al crear megalote: $e');
+                .doc(_transformacionId)
+                .set(transformacionData, SetOptions(merge: true));
+          } else {
+            // Crear nueva transformación
+            print('Creando nueva transformación...');
+            try {
+              final docRef = await _firestore
+                  .collection('transformaciones')
+                  .add(transformacionData);
+              _transformacionId = docRef.id;
+              print('Transformación creada con ID: $_transformacionId');
+            } catch (e) {
+              print('ERROR al crear transformación: $e');
+              throw Exception('Error al crear megalote: $e');
+            }
           }
         } else {
           // Actualizar transformación existente usando set con merge para evitar problemas
@@ -747,8 +828,9 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
         };
         
         // Calcular valores
-        final cantidadGenerada = double.tryParse(_cantidadGeneradaController.text) ?? pesoLote;
-        final mermaProceso = pesoLote - cantidadGenerada;
+        final pesoSalida = double.tryParse(_pesoSalidaController.text) ?? pesoLote;
+        final cantidadGenerada = double.tryParse(_cantidadGeneradaController.text) ?? 0;
+        final mermaProceso = pesoLote - pesoSalida;
         
         // Crear transformación para lote individual
         final transformacionData = {
@@ -759,7 +841,8 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
           'estado': 'documentacion',
           'lotes_entrada': [loteEntrada], // Array con un solo lote
           'peso_total_entrada': pesoLote,
-          'peso_disponible': cantidadGenerada,
+          'peso_disponible': pesoSalida,
+          'peso_salida': pesoSalida,
           'merma_proceso': mermaProceso >= 0 ? mermaProceso : 0,
           'sublotes_generados': [],
           'documentos_asociados': {},
@@ -779,17 +862,45 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
           'es_lote_individual': true, // Marcar que es procesamiento individual
         };
         
-        // Crear la transformación
-        print('Creando transformación para lote individual...');
-        try {
-          final docRef = await _firestore
+        // Verificar si ya existe una transformación para este lote individual
+        final existingQuery = await _firestore
+            .collection('transformaciones')
+            .where('tipo', isEqualTo: 'agrupacion_transformador')
+            .where('usuario_id', isEqualTo: authUid)
+            .get();
+        
+        // Buscar transformación existente con este lote
+        String? existingId;
+        for (var doc in existingQuery.docs) {
+          final data = doc.data();
+          final existingLotes = (data['lotes_entrada'] as List<dynamic>?) ?? [];
+          if (existingLotes.any((l) => l['lote_id'] == _loteIds.first)) {
+            existingId = doc.id;
+            break;
+          }
+        }
+        
+        if (existingId != null) {
+          // Actualizar transformación existente
+          print('Actualizando transformación individual existente: $existingId');
+          _transformacionId = existingId;
+          await _firestore
               .collection('transformaciones')
-              .add(transformacionData);
-          _transformacionId = docRef.id;
-          print('Transformación individual creada con ID: $_transformacionId');
-        } catch (e) {
-          print('ERROR al crear transformación individual: $e');
-          throw Exception('Error al crear megalote individual: $e');
+              .doc(_transformacionId)
+              .set(transformacionData, SetOptions(merge: true));
+        } else {
+          // Crear nueva transformación
+          print('Creando transformación para lote individual...');
+          try {
+            final docRef = await _firestore
+                .collection('transformaciones')
+                .add(transformacionData);
+            _transformacionId = docRef.id;
+            print('Transformación individual creada con ID: $_transformacionId');
+          } catch (e) {
+            print('ERROR al crear transformación individual: $e');
+            throw Exception('Error al crear megalote individual: $e');
+          }
         }
         
         // Marcar el lote como consumido
@@ -809,7 +920,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
         await _loteUnificadoService.actualizarProcesoTransformador(
           loteId: _loteIds.first,
           datosTransformador: {
-            'peso_salida': cantidadGenerada,
+            'peso_salida': pesoSalida,
             'producto_generado': _productoGeneradoController.text.trim(),
             'cantidad_generada': cantidadGenerada.toString(),
             'procesos_aplicados': procesosSeleccionados,

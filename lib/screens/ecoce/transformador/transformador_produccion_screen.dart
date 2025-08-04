@@ -50,7 +50,6 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
   // Estados
   bool _isLoading = true;
   bool _isRefreshing = false;
-  bool _mostrarSoloMegalotes = false;
   bool _isSelectionMode = false;
   bool _autoSelectionMode = false; // Para el tab de Salida
   Set<String> _selectedLotes = {};
@@ -111,11 +110,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
       }
       
       // Handle show megalotes flag
-      if (args['showMegalotes'] == true && !_mostrarSoloMegalotes) {
-        setState(() {
-          _mostrarSoloMegalotes = true;
-        });
-      }
+      // Ya no necesitamos el filtro de megalotes
     }
   }
   
@@ -135,7 +130,9 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
 
   Future<void> _loadLotes() async {
     try {
-      final stream = _loteUnificadoService.obtenerLotesPorProceso('transformador');
+      // IMPORTANTE: Usar obtenerMisLotesPorProcesoActual para que cada transformador
+      // solo vea los lotes que ha recibido él, no todos los del sistema
+      final stream = _loteUnificadoService.obtenerMisLotesPorProcesoActual('transformador');
 
       stream.listen((lotes) {
         if (mounted) {
@@ -294,7 +291,9 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
     
     // Obtener campos específicos del transformador desde datos raw
     final productoFabricado = transformacion.datos['producto_fabricado'] ?? 'Producto sin especificar';
-    final cantidadProducto = transformacion.datos['cantidad_producto'] ?? transformacion.pesoDisponible;
+    // Usar peso_salida si existe, de lo contrario usar peso_disponible
+    final pesoSalida = transformacion.datos['peso_salida'] ?? transformacion.pesoDisponible;
+    final cantidadProducto = transformacion.datos['cantidad_producto'] ?? 0;
     final tipoPolimero = transformacion.datos['tipo_polimero'] ?? 'Polímero no especificado';
     final porcentajeMaterialReciclado = transformacion.datos['porcentaje_material_reciclado'] ?? 0;
     final procesosAplicados = transformacion.datos['procesos_aplicados'] as List<dynamic>? ?? [];
@@ -410,48 +409,48 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                       
                       const SizedBox(height: 8),
                       
-                      // Peso de entrada vs cantidad generada
+                      // Solo mostrar peso de salida
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Peso entrada',
-                                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                              ),
-                              Text(
-                                '${transformacion.pesoTotalEntrada.toStringAsFixed(2)} kg',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
+                          Icon(Icons.scale, size: 16, color: Colors.grey[600]),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Peso de salida: ',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[700],
+                            ),
                           ),
-                          Icon(Icons.arrow_forward, size: 16, color: Colors.grey[400]),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                'Cantidad generada',
-                                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                              ),
-                              Text(
-                                '${cantidadProducto.toStringAsFixed(2)} kg',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green,
-                                ),
-                              ),
-                            ],
+                          Text(
+                            '${pesoSalida.toStringAsFixed(2)} kg',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                            ),
                           ),
                         ],
                       ),
                       
                       const SizedBox(height: 8),
+                      
+                      // Mostrar cantidad de unidades si existe
+                      if (cantidadProducto > 0) ...[
+                        Row(
+                          children: [
+                            Icon(Icons.inventory_2, size: 14, color: Colors.grey[600]),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Cantidad generada: ${cantidadProducto.toStringAsFixed(0)} unidades',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                       
                       // Tipo de polímero y porcentaje reciclado
                       Row(
@@ -1069,78 +1068,8 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              // Show megalotes toggle for documentation tab
-              if (_tabController.index == 1) ...[
-                Row(
-                  children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: () {
-                          setState(() {
-                            _mostrarSoloMegalotes = !_mostrarSoloMegalotes;
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _mostrarSoloMegalotes
-                                ? Colors.orange.withValues(alpha: 0.1)
-                                : Colors.grey[100],
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: _mostrarSoloMegalotes
-                                  ? Colors.orange
-                                  : Colors.grey[300]!,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                _mostrarSoloMegalotes
-                                    ? Icons.check_box
-                                    : Icons.check_box_outline_blank,
-                                color: _mostrarSoloMegalotes
-                                    ? Colors.orange
-                                    : Colors.grey,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Mostrar Megalotes',
-                                style: TextStyle(
-                                  color: _mostrarSoloMegalotes
-                                      ? Colors.orange
-                                      : Colors.grey[700],
-                                  fontWeight: _mostrarSoloMegalotes
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                ),
-                              ),
-                              const Spacer(),
-                              Icon(
-                                Icons.merge_type,
-                                color: _mostrarSoloMegalotes
-                                    ? Colors.orange
-                                    : Colors.grey,
-                                size: 20,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-              ],
-              
-              if (!_mostrarSoloMegalotes || _tabController.index != 1) ...[
-                // Material filter chips for individual lots
-                SingleChildScrollView(
+              // Material filter chips - siempre visibles
+              SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
                   child: Row(
@@ -1194,46 +1123,28 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                     ],
                   ),
                 ),
-              ],
             ],
           ),
         ),
         
-        // Statistics container
-        if (_tabController.index == 1 && _mostrarSoloMegalotes)
+        // Statistics container - mostrar estadísticas de megalotes para tab de docs
+        if (_tabController.index == 1)
           _buildMegaloteStatistics()
         else
           _buildStatistics(),
         
         // List items
         if (_tabController.index == 1) ...[
-          // Tab Documentación
-          if (_mostrarSoloMegalotes) ...[
-            // Mostrar SOLO megalotes
-            if (_filterTransformacionesByState().isEmpty)
-              _buildEmptyStateMegalotes()
-            else
-              ..._filterTransformacionesByState().map(
-                (transformacion) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _buildTransformacionCard(transformacion),
-                ),
-              ),
-          ] else ...[
-            // Mostrar TODO (megalotes Y lotes individuales)
-            // Primero megalotes
+          // Tab Documentación - Solo mostrar megalotes (ya no hay lotes individuales)
+          if (_filterTransformacionesByState().isEmpty)
+            _buildEmptyStateMegalotes()
+          else
             ..._filterTransformacionesByState().map(
               (transformacion) => Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _buildTransformacionCard(transformacion),
               ),
             ),
-            // Luego lotes individuales
-            ...lotes.map((lote) => _buildLoteCard(lote)),
-            // Si no hay nada, mostrar estado vacío
-            if (_filterTransformacionesByState().isEmpty && lotes.isEmpty)
-              _buildEmptyState(),
-          ],
         ] else ...[
           // Tab Salida - solo lotes individuales
           if (lotes.isEmpty)
@@ -1285,75 +1196,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              // Toggle for megalotes
-              Row(
-                children: [
-                  Expanded(
-                    child: InkWell(
-                      onTap: () {
-                        setState(() {
-                          _mostrarSoloMegalotes = !_mostrarSoloMegalotes;
-                        });
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _mostrarSoloMegalotes
-                              ? _getTabColor().withValues(alpha: 0.1)
-                              : Colors.grey[100],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: _mostrarSoloMegalotes
-                                ? _getTabColor()
-                                : Colors.grey[300]!,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              _mostrarSoloMegalotes
-                                  ? Icons.check_box
-                                  : Icons.check_box_outline_blank,
-                              color: _mostrarSoloMegalotes
-                                  ? _getTabColor()
-                                  : Colors.grey,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              _mostrarSoloMegalotes ? 'Solo Megalotes' : 'Mostrar Todo',
-                              style: TextStyle(
-                                color: _mostrarSoloMegalotes
-                                    ? _getTabColor()
-                                    : Colors.grey[700],
-                                fontWeight: _mostrarSoloMegalotes
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                            const Spacer(),
-                            Icon(
-                              Icons.merge_type,
-                              color: _mostrarSoloMegalotes
-                                  ? _getTabColor()
-                                  : Colors.grey,
-                              size: 20,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              
-              if (!_mostrarSoloMegalotes) ...[
-                const SizedBox(height: 12),
-                // Material filter chips
+              // Material filter chips directamente sin toggle
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
@@ -1408,46 +1251,28 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                     ],
                   ),
                 ),
-              ],
             ],
           ),
         ),
         
-        // Statistics container
-        if (_mostrarSoloMegalotes)
+        // Statistics container - siempre mostrar estadísticas de megalotes para tabs 1 y 2
+        if (_tabController.index == 1 || _tabController.index == 2)
           _buildMegaloteStatistics()
         else
           _buildStatistics(),
         
         // List items for completed tab
         if (_tabController.index == 2) ...[
-          // Toggle between individual lots and megalotes
-          if (_mostrarSoloMegalotes) ...[
-            // Mostrar SOLO megalotes completados
-            if (_filterTransformacionesByState().isEmpty)
-              _buildEmptyStateMegalotes()
-            else
-              ..._filterTransformacionesByState().map(
-                (transformacion) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _buildTransformacionCard(transformacion),
-                ),
-              ),
-          ] else ...[
-            // Mostrar TODO (megalotes Y lotes completados)
-            // Primero megalotes completados
+          // Solo mostrar megalotes completados (ya no hay lotes individuales)
+          if (_filterTransformacionesByState().isEmpty)
+            _buildEmptyStateMegalotes()
+          else
             ..._filterTransformacionesByState().map(
               (transformacion) => Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _buildTransformacionCard(transformacion),
               ),
             ),
-            // Luego lotes individuales completados
-            ..._lotesCompletados.map((lote) => _buildLoteCard(lote)),
-            // Si no hay nada, mostrar estado vacío
-            if (_filterTransformacionesByState().isEmpty && _lotesCompletados.isEmpty)
-              _buildEmptyState(),
-          ],
         ] else ...[
           // For tabs 0 and 1, only show individual lots
           if (_lotesCompletados.isEmpty)
@@ -1514,10 +1339,11 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
   }
 
   Widget _buildMegaloteStatistics() {
-    final transformacionesVisibles = _transformaciones.where((t) => !t.debeSerEliminada).toList();
-    final totalMegalotes = transformacionesVisibles.length;
-    final pesoDisponible = transformacionesVisibles.fold(0.0, (sum, t) => sum + t.pesoDisponible);
-    final totalSublotes = transformacionesVisibles.fold(0, (sum, t) => sum + t.sublotesGenerados.length);
+    // Filtrar transformaciones según la pestaña actual
+    final transformacionesPestanaActual = _filterTransformacionesByState();
+    final totalMegalotes = transformacionesPestanaActual.length;
+    final pesoDisponible = transformacionesPestanaActual.fold(0.0, (sum, t) => sum + t.pesoDisponible);
+    final totalSublotes = transformacionesPestanaActual.fold(0, (sum, t) => sum + t.sublotesGenerados.length);
     
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -1548,8 +1374,12 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
           _buildStatCard(
             icon: Icons.scale,
             value: '${pesoDisponible.toStringAsFixed(2)} kg',
-            label: 'Peso disponible total',
-            color: BioWayColors.success,
+            label: _tabController.index == 1 
+                ? 'Peso en documentación' 
+                : 'Peso completado',
+            color: _tabController.index == 1 
+                ? Colors.orange 
+                : BioWayColors.success,
             fullWidth: true,
           ),
         ],
@@ -2126,9 +1956,13 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
   }
 
   List<TransformacionModel> _filterTransformacionesByState() {
-    final estado = _tabController.index == 1 ? 'documentacion' : 'completado';
     return _transformaciones.where((t) {
-      return t.estado == estado;
+      // Para la pestaña de documentación, mostrar tanto 'documentacion' como 'en_proceso'
+      if (_tabController.index == 1) {
+        return t.estado == 'documentacion' || t.estado == 'en_proceso';
+      }
+      // Para la pestaña de completados, solo mostrar 'completado'
+      return t.estado == 'completado';
     }).toList();
   }
 

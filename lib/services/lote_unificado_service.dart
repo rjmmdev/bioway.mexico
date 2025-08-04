@@ -1901,7 +1901,7 @@ class LoteUnificadoService {
   /// Obtener estadísticas del transformador
   /// - lotesRecibidos: Todos los sublotes que han entrado al perfil del transformador
   /// - productosCreados: Total de transformaciones (megalotes) creadas
-  /// - materialProcesado: Suma del peso_total_entrada de las transformaciones del transformador
+  /// - materialProcesado: Suma del peso_salida (peso real recibido) de las transformaciones del transformador
   Future<Map<String, dynamic>> obtenerEstadisticasTransformador() async {
     try {
       debugPrint('╔════════════════════════════════════════════════════════════╗');
@@ -2007,16 +2007,17 @@ class LoteUnificadoService {
         for (final transformDoc in transformacionesQuery.docs) {
           final data = transformDoc.data();
           final estado = data['estado'] as String?;
-          final pesoTotalEntrada = (data['peso_total_entrada'] ?? 0).toDouble();
+          // Usar peso_salida si existe (peso real recibido), sino usar peso_total_entrada
+          final pesoRecibido = (data['peso_salida'] ?? data['peso_total_entrada'] ?? 0).toDouble();
           
           // Contar productos creados (megalotes en cualquier estado)
           if (estado == 'en_proceso' || estado == 'documentacion' || estado == 'completado') {
             productosCreados++;
-            debugPrint('  🏭 Megalote ${transformDoc.id.substring(0, 8)} - Estado: $estado - Peso: $pesoTotalEntrada kg');
+            debugPrint('  🏭 Megalote ${transformDoc.id.substring(0, 8)} - Estado: $estado - Peso recibido: $pesoRecibido kg');
           }
           
-          // Sumar al material procesado (peso de TODAS las transformaciones)
-          materialProcesado += pesoTotalEntrada;
+          // Sumar al material procesado usando el peso real recibido
+          materialProcesado += pesoRecibido;
         }
         
         debugPrint('🏭 Total productos creados: $productosCreados');
