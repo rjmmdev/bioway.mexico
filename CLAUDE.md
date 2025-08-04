@@ -293,26 +293,51 @@ The system uses dynamic weight calculation through the `pesoActual` getter:
 ## Transformation System (Megalotes & Sublotes)
 
 ### Overview
-The transformation system allows recyclers to process multiple lots together as "megalotes" and split them into "sublotes":
+The transformation system allows both Recyclers and Transformers to process materials:
+
+#### Recycler Transformations
 - **Megalote**: Virtual container for processing multiple lots together
 - **Sublote**: New lot created from megalote with specific weight
 - **Automatic deletion**: Megalotes are removed when `pesoDisponible == 0` AND documentation is uploaded
+- **Type**: `tipo: 'agrupacion_reciclador'`
+
+#### Transformer Transformations
+- **ALL lots become megalotes**: Both individual and multiple lot processing creates transformaciones
+- **Type**: `tipo: 'agrupacion_transformador'`
+- **States**: `documentacion`, `en_proceso`, `completado`
+- **Weight tracking**: Uses `peso_salida` for actual received weight
 
 ### Key Implementation
 ```dart
-// Megalote deletion logic in transformacion_model.dart
+// Recycler megalote deletion logic
 bool get debeSerEliminada => pesoDisponible <= 0 && tieneDocumentacion;
 
-// Creating sublotes
+// Creating sublotes (Recycler)
 await _transformacionService.crearSublote(
   transformacionId: transformacion.id,
   peso: peso,
 );
+
+// Transformer megalote structure
+{
+  'tipo': 'agrupacion_transformador',
+  'usuario_id': userId,
+  'estado': 'documentacion',
+  'peso_total_entrada': pesoOriginal,  // Original weight from Recycler
+  'peso_salida': pesoReal,             // Actual weight received
+  'cantidad_producto': unidades,       // Units generated (not weight)
+  'producto_fabricado': tipoProducto,
+}
 ```
 
 ### Documentation Requirements
+#### Recycler
 - **Ficha Técnica de Pellet** (f_tecnica_pellet)
 - **Reporte de Resultado de Reciclador** (rep_result_reci)
+
+#### Transformer
+- **Technical specifications** per product type
+- **Quality reports** for final products
 
 ## Unified Lot System
 
@@ -467,13 +492,37 @@ _loteService.obtenerLotesConAnalisisLaboratorio()
 ```
 
 ### Transformation System (Megalotes)
-Megalotes are created when recycler processes materials. Critical deletion logic:
+Megalotes are created when recycler or transformer processes materials:
+
+#### Recycler Megalotes
 ```dart
 // TransformacionModel deletion criteria
 bool get debeSerEliminada => pesoDisponible <= 0 && tieneDocumentacion;
 
 // NEVER auto-complete transformations when uploading docs
 // Let the user explicitly mark as complete
+```
+
+#### Transformer Megalotes
+```dart
+// CRITICAL: Use correct service method for visibility
+// WRONG - Shows ALL lots from ALL transformers
+_loteUnificadoService.obtenerLotesPorProceso('transformador');
+
+// CORRECT - Shows only current user's lots
+_loteUnificadoService.obtenerMisLotesPorProcesoActual('transformador');
+
+// Prevent duplicate megalote creation
+if (_transformacionId == null) {
+  // Check for existing transformation with same lots
+  final existing = await findExistingTransformation(loteIds);
+  if (existing != null) {
+    _transformacionId = existing.id;
+  }
+}
+
+// Use peso_salida for actual received weight, not peso_total_entrada
+final materialProcesado = data['peso_salida'] ?? data['peso_total_entrada'];
 ```
 
 ### Merma Calculation Display
@@ -917,6 +966,44 @@ NEVER hardcode colors. Always use `BioWayColors` constants:
   - Lots array: `lotes_entrada` with objects containing `lote_id`
 - **Lotes consumed**: Marked with `consumido_en_transformacion: true` in datos_generales/info
 
+### Critical Fixes (2025-01-29) - Transformador Complete Implementation
+
+#### Transformador Visibility Issue
+- **Problem**: Transformador users could see lots from other Transformador users
+- **Root Cause**: Using `obtenerLotesPorProceso()` instead of `obtenerMisLotesPorProcesoActual()`
+- **Solution**: Changed to use filtered method that checks `usuario_id` in transformador/data
+- **Files Modified**:
+  - `lib/screens/ecoce/transformador/transformador_produccion_screen.dart` - Line 138-140
+- **Documentation**: `docs/FIX_TRANSFORMADOR_LOTES_VISIBILIDAD.md`
+
+#### Duplicate Megalote Creation
+- **Problem**: Creating two megalotes - one with peso 0, one with correct weight
+- **Root Cause**: Automatic save on signature with empty `_pesoSalidaController`
+- **Solution**: 
+  - Removed automatic save after signature
+  - Added duplicate transformation checking
+  - Verify peso_salida before saving
+- **Files Modified**:
+  - `lib/screens/ecoce/transformador/transformador_formulario_salida.dart`
+
+#### Weight Display Errors
+- **Problem**: Showing `cantidad_producto` (units) instead of `peso_salida` (weight)
+- **Solution**: Updated UI to use peso_salida for weight display
+- **Files Modified**:
+  - `lib/screens/ecoce/transformador/transformador_produccion_screen.dart`
+
+#### Statistics Using Wrong Weight
+- **Problem**: Material procesado using `peso_total_entrada` instead of actual received weight
+- **Solution**: Changed to use `peso_salida` (actual weight) with fallback
+- **Files Modified**:
+  - `lib/services/lote_unificado_service.dart` - obtenerEstadisticasTransformador()
+
+#### Transformer Architecture Clarification
+- **Key Concept**: ALL lots (individual or multiple) create transformaciones
+- **No individual lots**: Everything becomes megalotes in Transformer
+- **States**: `documentacion`, `en_proceso`, `completado`
+- **Documentation**: `docs/FLUJO_COMPLETO_TRANSFORMADOR.md`
+
 ## Cloud Functions
 
 ### Implemented Functions
@@ -937,29 +1024,18 @@ For detailed deployment instructions, see `docs/DEPLOY_FUNCTIONS_CLOUD_SHELL.md`
 
 ## Documentation Index
 
-### Implementation Guides
-- `docs/RECICLADOR_ESTADISTICAS_SOLUCION.md` - Statistics fix details
-- `docs/RECICLADOR_TRANSFORMACIONES_IMPLEMENTACION.md` - Complete transformation system
-- `docs/SISTEMA_TRANSFORMACIONES_SUBLOTES.md` - Megalotes and sublotes architecture
-- `docs/RESUMEN_CLOUD_FUNCTIONS_IMPLEMENTACION.md` - Cloud Functions summary
+### Core Documentation
+- `docs/ARQUITECTURA_Y_SISTEMA.md` - System architecture overview
+- `docs/FLUJOS_Y_PROCESOS.md` - Complete process flows
+- `docs/GUIA_IMPLEMENTACION.md` - Implementation guide
 
-### Troubleshooting
-- `docs/PROBLEMA_VISUALIZACION_MEGALOTES.md` - Megalotes visibility issue analysis
-- `docs/MISMO_USUARIO_MULTIPLES_DISPOSITIVOS.md` - Multi-device same account usage
-- `docs/FIREBASE_RULES_TRANSFORMACIONES_SOLUTION.md` - Firebase security rules
-- `docs/TROUBLESHOOTING_GUIDE.md` - General troubleshooting guide
+### Module-Specific Documentation
+- `docs/FLUJO_COMPLETO_TRANSFORMADOR.md` - Complete Transformer flow and fixes
+- `docs/LABORATORIO_SISTEMA_MUESTRAS_INDEPENDIENTE.md` - Laboratory sample system architecture
 
-### Deployment & Configuration
-- `docs/DEPLOY_FUNCTIONS_CLOUD_SHELL.md` - Cloud Functions deployment
-- `docs/DEPLOY_FIRESTORE_RULES_FIX.md` - Firestore rules deployment
-- `docs/HABILITAR_APIS_CLOUD_FUNCTIONS.md` - Enable required Google Cloud APIs
-- `docs/CONFIGURACION_TECNICA_COMPLETA.md` - Complete technical configuration
-
-### Recent Fixes
-- `docs/FIX_PANTALLA_NEGRA_DOCUMENTACION_MEGALOTES.md` - Fixed black screen after megalote documentation
+### Critical Fixes
+- `docs/CRITICAL_FIX_MAESTRO_DELETE_BUG.md` - Master user deletion bug fix
+- `docs/FIX_PANTALLA_NEGRA_DOCUMENTACION_MEGALOTES.md` - Black screen after megalote documentation
 - `docs/FIX_LIMITE_TEMPORAL_PDF_5MB.md` - Temporary PDF limit increase to 5MB
 - `docs/FIX_VISIBILIDAD_LOTES_TRANSPORTE_RECICLADOR.md` - Batch visibility fix in Transport-Recycler transfer
-- `docs/OPTIMIZACION_REGISTRO_PROVEEDORES.md` - Provider registration optimization
-- `docs/FIX_FOLIO_FORMAT.md` - Folio format standardization
-- `docs/FIX_MISSING_USER_ID_IN_SOLICITUD.md` - User ID in account requests
-- `docs/ECOCE_PROFILE_SERVICE_FIXES.md` - Profile service improvements
+- `docs/FIX_TRANSFORMADOR_LOTES_VISIBILIDAD.md` - Fixed Transformer seeing other users' lots
