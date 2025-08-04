@@ -10,7 +10,6 @@ import 'widgets/ecoce_bottom_navigation.dart';
 import 'widgets/loading_wrapper.dart';
 import 'utils/user_type_helper.dart';
 import 'utils/dialog_utils.dart';
-import '../../login/platform_selector_screen.dart';
 
 /// Pantalla de perfil universal que funciona para todos los tipos de usuarios
 /// Obtiene la información del usuario desde Firebase y aplica los colores correspondientes
@@ -81,9 +80,9 @@ class _EcocePerfilScreenState extends State<EcocePerfilScreen> with SingleTicker
       try {
         await _authService.signOut();
         if (mounted) {
-          Navigator.pushAndRemoveUntil(
+          Navigator.pushNamedAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const PlatformSelectorScreen()),
+            '/ecoce_login',
             (route) => false,
           );
         }

@@ -62,9 +62,34 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
       final datosOrigen = lote.origen;
       if (datosOrigen == null) return false;
       
-      // Filtro por material
-      if (_filtroMaterial != 'Todos' && datosOrigen.tipoPoli != _filtroMaterial) {
-        return false;
+      // Filtro por material - Manejar prefijo "EPF-"
+      if (_filtroMaterial != 'Todos') {
+        String materialLote = datosOrigen.tipoPoli;
+        String materialBuscado = _filtroMaterial;
+        
+        // Los materiales vienen con prefijo "EPF-" desde la creación
+        // pero el filtro busca sin prefijo
+        bool match = false;
+        
+        // Comparación directa
+        if (materialLote == materialBuscado) {
+          match = true;
+        } 
+        // Si el material tiene prefijo "EPF-", comparar sin él
+        else if (materialLote.toUpperCase().startsWith('EPF-')) {
+          String materialSinPrefijo = materialLote.substring(4);
+          if (materialSinPrefijo.toUpperCase() == materialBuscado.toUpperCase()) {
+            match = true;
+          }
+        }
+        // Si el material no tiene prefijo, probar agregándolo
+        else if ('EPF-$materialBuscado'.toUpperCase() == materialLote.toUpperCase()) {
+          match = true;
+        }
+        
+        if (!match) {
+          return false;
+        }
       }
       
       // Filtro por presentación
@@ -91,6 +116,13 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
     _loadLotes();
   }
   
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocus.dispose();
+    super.dispose();
+  }
+  
   Future<void> _loadUserData() async {
     try {
       final profile = await _sessionService.getCurrentUserProfile();
@@ -114,13 +146,6 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
         });
       }
     });
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    _searchFocus.dispose();
-    super.dispose();
   }
 
   void _verCodigoQR(LoteUnificadoModel lote) {
@@ -190,6 +215,10 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Detectar si el teclado está visible usando MediaQuery
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final isKeyboardVisible = keyboardHeight > 0;
+    
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
@@ -417,12 +446,14 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
           tooltip: 'Nuevo Lote',
         ),
       ),
-      floatingActionButton: EcoceFloatingActionButton(
-        onPressed: _navigateToNewLot,
-        icon: Icons.add,
-        backgroundColor: _primaryColor,
-        tooltip: 'Nuevo Lote',
-      ),
+      floatingActionButton: isKeyboardVisible 
+        ? null 
+        : EcoceFloatingActionButton(
+            onPressed: _navigateToNewLot,
+            icon: Icons.add,
+            backgroundColor: _primaryColor,
+            tooltip: 'Nuevo Lote',
+          ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
@@ -440,17 +471,18 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(30),
-            topRight: Radius.circular(30),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(30),
+              topRight: Radius.circular(30),
+            ),
           ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             // Handle
             Container(
               margin: const EdgeInsets.only(top: 12),
@@ -477,6 +509,10 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                   ),
                   TextButton(
                     onPressed: () {
+                      setModalState(() {
+                        _filtroMaterial = 'Todos';
+                        _filtroPresentacion = 'Todas';
+                      });
                       setState(() {
                         _filtroMaterial = 'Todos';
                         _filtroPresentacion = 'Todas';
@@ -513,6 +549,9 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                         label: Text(material),
                         selected: isSelected,
                         onSelected: (selected) {
+                          setModalState(() {
+                            _filtroMaterial = material;
+                          });
                           setState(() {
                             _filtroMaterial = material;
                           });
@@ -559,6 +598,9 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                         label: Text(presentacion),
                         selected: isSelected,
                         onSelected: (selected) {
+                          setModalState(() {
+                            _filtroPresentacion = presentacion;
+                          });
                           setState(() {
                             _filtroPresentacion = presentacion;
                           });
@@ -612,16 +654,20 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+    // Detectar si el teclado está visible
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final isKeyboardVisible = keyboardHeight > 0;
+    
+    // Si el teclado está visible, hacer el contenido scrollable
+    Widget content = Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: isKeyboardVisible ? MainAxisSize.min : MainAxisSize.max,
+      children: [
             // Ilustración moderna
             Container(
               width: 120,
@@ -733,8 +779,23 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                 ),
               ),
           ],
-        ),
-      ),
     );
+    
+    // Si el teclado está visible, envolver en SingleChildScrollView
+    if (isKeyboardVisible) {
+      return SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(40),
+          child: content,
+        ),
+      );
+    } else {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(40),
+          child: content,
+        ),
+      );
+    }
   }
 }

@@ -11,7 +11,6 @@ import 'widgets/maestro_solicitud_card.dart';
 import 'widgets/delete_user_dialog.dart';
 import 'maestro_solicitud_details_screen.dart';
 import 'maestro_utilities_screen.dart';
-import '../../login/platform_selector_screen.dart';
 
 /// Pantalla unificada para la gestión de usuarios maestro ECOCE
 /// Combina la funcionalidad de aprobación y administración de usuarios
@@ -731,12 +730,10 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                                       await auth.signOut();
                                     }
                                     
-                                    // Navegar a la pantalla de selección de plataforma
+                                    // Navegar a la pantalla de login de ECOCE
                                     if (mounted) {
-                                      Navigator.of(context).pushAndRemoveUntil(
-                                        MaterialPageRoute(
-                                          builder: (context) => const PlatformSelectorScreen(),
-                                        ),
+                                      Navigator.of(context).pushNamedAndRemoveUntil(
+                                        '/ecoce_login',
                                         (route) => false,
                                       );
                                     }

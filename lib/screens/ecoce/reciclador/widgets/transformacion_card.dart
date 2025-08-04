@@ -117,6 +117,11 @@ class TransformacionCard extends StatelessWidget {
               
               const SizedBox(height: 8),
               
+              // Composición de materiales
+              _buildMaterialComposition(),
+              
+              const SizedBox(height: 4),
+              
               // Lotes de entrada
               Text(
                 '${transformacion.lotesEntrada.length} lotes combinados',
@@ -200,6 +205,72 @@ class TransformacionCard extends StatelessWidget {
         ),
       ),
     );
+  }
+  
+  Widget _buildMaterialComposition() {
+    // Calcular composición de materiales
+    Map<String, double> composicion = {};
+    for (final lote in transformacion.lotesEntrada) {
+      final material = lote.tipoMaterial;
+      composicion[material] = (composicion[material] ?? 0) + lote.porcentaje;
+    }
+    
+    // Construir texto de composición
+    String composicionTexto = '';
+    if (composicion.length == 1) {
+      // Un solo material
+      composicionTexto = composicion.keys.first;
+    } else {
+      // Múltiples materiales - mostrar porcentajes
+      List<String> materiales = [];
+      composicion.forEach((material, porcentaje) {
+        materiales.add('$material ${porcentaje.toStringAsFixed(1)}%');
+      });
+      composicionTexto = materiales.join(', ');
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: _getMaterialColor(composicion.keys.first).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.category,
+            size: 14,
+            color: _getMaterialColor(composicion.keys.first),
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              composicionTexto,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: _getMaterialColor(composicion.keys.first),
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Color _getMaterialColor(String material) {
+    switch (material.toUpperCase()) {
+      case 'PEBD':
+        return BioWayColors.pebdPink;
+      case 'PP':
+        return BioWayColors.ppPurple;
+      case 'MULTILAMINADO':
+        return BioWayColors.multilaminadoBrown;
+      default:
+        return BioWayColors.ecoceGreen;
+    }
   }
   
   Widget _buildInfoChip({

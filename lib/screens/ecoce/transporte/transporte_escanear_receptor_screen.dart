@@ -62,13 +62,22 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
         return;
       }
       
+      // Detectar si se escaneó un código de transformación/megalote
+      if (codigo.startsWith('TRANSFORMACION-') || codigo.startsWith('MEGALOTE-')) {
+        _mostrarError('Código incorrecto. Por favor escanea el código QR de identificación del receptor, no un megalote');
+        return;
+      }
+      
+      // Detectar si se escaneó un código de sublote
+      if (codigo.startsWith('SUBLOTE-')) {
+        _mostrarError('Código incorrecto. Por favor escanea el código QR de identificación del receptor, no un sublote');
+        return;
+      }
+      
       // Validar formato del código QR del usuario
       if (!codigo.startsWith('USER-')) {
-        // Si no es un código de usuario, simplemente retornar sin mostrar error
-        // ya que el usuario puede estar escaneando otros tipos de códigos válidos
-        setState(() {
-          _isProcessing = false;
-        });
+        // Mostrar mensaje genérico para cualquier otro tipo de código no reconocido
+        _mostrarError('Código QR no válido. Por favor escanea el código QR de identificación del receptor');
         return;
       }
       

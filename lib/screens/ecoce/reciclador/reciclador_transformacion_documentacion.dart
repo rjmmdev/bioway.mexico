@@ -120,9 +120,8 @@ class _RecicladorTransformacionDocumentacionState extends State<RecicladorTransf
       subtitle: 'Carga la documentación técnica del proceso',
       lotId: widget.transformacionId, // Usar el ID de la transformación
       requiredDocuments: const {
-        'ficha_tecnica': 'Ficha Técnica del Proceso',
-        'reporte_transformacion': 'Reporte de Transformación',
-        'certificado_calidad': 'Certificado de Calidad',
+        'f_tecnica_pellet': 'Ficha Técnica del Pellet',
+        'rep_result_reci': 'Reporte de Resultado del Reciclador',
       },
       onDocumentsSubmitted: _onDocumentsSubmitted,
       primaryColor: BioWayColors.ecoceGreen,

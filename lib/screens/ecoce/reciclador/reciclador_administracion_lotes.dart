@@ -52,7 +52,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
   String _selectedMaterial = 'Todos';
   String _selectedTime = 'Todos';
   final String _selectedDocFilter = 'Todos'; // Nuevo filtro para documentación
-  String _selectedPresentacion = 'Todos'; // Filtro de presentación
+  String _selectedPresentacion = 'Todas'; // Filtro de presentación - cambiar a 'Todas' para coincidir con el dropdown
   bool _showOnlyMegalotes = false; // Filtro para mostrar solo megalotes
   int _selectedIndex = 1; // Bottom nav index
   
@@ -101,13 +101,29 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
   List<LoteUnificadoModel> _filterByTab(List<LoteUnificadoModel> lotes) {
     // Primero aplicar filtros generales
     var filteredLotes = lotes.where((lote) {
-      // Filtro por material
-      if (_selectedMaterial != 'Todos' && lote.datosGenerales.tipoMaterial != _selectedMaterial) {
-        return false;
+      // Filtro por material - Manejar prefijo "EPF-"
+      if (_selectedMaterial != 'Todos') {
+        String materialLote = lote.datosGenerales.tipoMaterial;
+        String materialBuscado = _selectedMaterial;
+        
+        // Comparación directa
+        if (materialLote == materialBuscado) {
+          // Match directo
+        } else if (materialLote.toUpperCase().startsWith('EPF-')) {
+          // Si el material tiene prefijo "EPF-", comparar sin él
+          String materialSinPrefijo = materialLote.substring(4);
+          if (materialSinPrefijo.toUpperCase() != materialBuscado.toUpperCase()) {
+            return false;
+          }
+        } else if ('EPF-$materialLote'.toUpperCase() == 'EPF-$materialBuscado'.toUpperCase()) {
+          // Si el material no tiene prefijo, probar agregándolo
+        } else {
+          return false;
+        }
       }
       
       // Filtro por presentación
-      if (_selectedPresentacion != 'Todos' && lote.datosGenerales.materialPresentacion != _selectedPresentacion) {
+      if (_selectedPresentacion != 'Todas' && lote.datosGenerales.materialPresentacion != _selectedPresentacion) {
         return false;
       }
       
@@ -146,12 +162,28 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
           // 2. Estén en proceso reciclador O transporte (cuando reciclador ya recibió pero espera confirmación)
           // 3. No tengan fecha de salida
           // 4. NO estén consumidos en una transformación
-          return !esSublote &&
+          bool passesBaseFilter = !esSublote &&
                  (lote.datosGenerales.procesoActual == 'reciclador' || 
                   lote.datosGenerales.procesoActual == 'transporte') &&
                  reciclador != null && 
                  reciclador.fechaSalida == null &&
                  !lote.estaConsumido; // Excluir lotes consumidos
+          
+          if (!passesBaseFilter) return false;
+          
+          // Aplicar filtro de material
+          if (_selectedMaterial != 'Todos') {
+            final material = _obtenerMaterialDelLote(lote);
+            if (material != _selectedMaterial) return false;
+          }
+          
+          // Aplicar filtro de presentación
+          if (_selectedPresentacion != 'Todas') {
+            final presentacion = _obtenerPresentacionDelLote(lote);
+            if (presentacion != _selectedPresentacion) return false;
+          }
+          
+          return true;
         }).toList();
         
       case 1: // Completados
@@ -371,7 +403,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
         LoteFilterSection(
           selectedMaterial: _selectedMaterial,
           selectedTime: _selectedTime,
-          selectedPresentacion: _selectedPresentacion,
+          selectedPresentacion: _selectedPresentacion, // Sigue mostrando presentación en Salida
           onMaterialChanged: (value) {
             setState(() {
               _selectedMaterial = value;
@@ -891,22 +923,35 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
           return const Center(child: CircularProgressIndicator());
         }
 
-        // NO filtrar transformaciones - mostrar todas
-        final transformaciones = snapshot.data ?? [];
-        final pesoTotal = _calcularPesoTotal(lotes);
+        // Filtrar transformaciones basándose en el material seleccionado
+        var transformaciones = snapshot.data ?? [];
+        if (_selectedMaterial != 'Todos') {
+          transformaciones = transformaciones.where((transformacion) {
+            return _megaloteContieneMaterial(transformacion, _selectedMaterial);
+          }).toList();
+        }
+        
+        // Filtrar sublotes por material (NO por presentación)
+        var sublotes = lotes.where((lote) => lote.esSublote).toList();
+        if (_selectedMaterial != 'Todos') {
+          sublotes = sublotes.where((sublote) {
+            final material = _obtenerMaterialDelLote(sublote);
+            return material == _selectedMaterial;
+          }).toList();
+        }
+        
+        final pesoTotal = _calcularPesoTotal(sublotes);
         final tabColor = _getTabColor();
-        // Solo sublotes en lotes (los megalotes están en transformaciones)
-        final sublotes = lotes.where((lote) => lote.esSublote).toList();
         final bool hasNoItems = _showOnlyMegalotes ? transformaciones.isEmpty : (sublotes.isEmpty && transformaciones.isEmpty);
         
         return ListView(
           physics: const BouncingScrollPhysics(),
           children: [
-            // Filtros horizontales
+            // Filtros horizontales - NO mostrar filtro de presentación en Completados
             LoteFilterSection(
               selectedMaterial: _selectedMaterial,
               selectedTime: _selectedTime,
-              selectedPresentacion: _selectedPresentacion,
+              selectedPresentacion: null, // No mostrar filtro de presentación en Completados
               onMaterialChanged: (value) {
                 setState(() {
                   _selectedMaterial = value;
@@ -919,12 +964,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                   _filterLotes();
                 });
               },
-              onPresentacionChanged: (value) {
-                setState(() {
-                  _selectedPresentacion = value;
-                  _filterLotes();
-                });
-              },
+              onPresentacionChanged: null, // No manejar cambios de presentación en Completados
               tabColor: tabColor,
               showMegaloteFilter: true,
               showOnlyMegalotes: _showOnlyMegalotes,
@@ -1080,6 +1120,86 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
     }
   }
 
+  // Métodos auxiliares para obtener información de los lotes
+  String _obtenerMaterialDelLote(LoteUnificadoModel lote) {
+    // Usar datos generales que siempre están disponibles
+    String material = lote.datosGenerales.tipoMaterial;
+    
+    // Si el material tiene prefijo "EPF-", removerlo para comparación con filtros
+    if (material.toUpperCase().startsWith('EPF-')) {
+      material = material.substring(4); // Remover "EPF-"
+    }
+    
+    return material;
+  }
+
+  String _obtenerPresentacionDelLote(LoteUnificadoModel lote) {
+    // Primero verificar datos generales
+    if (lote.datosGenerales.materialPresentacion != null) {
+      return lote.datosGenerales.materialPresentacion!;
+    }
+    // Si no está en datos generales, buscar en origen
+    if (lote.origen != null) {
+      return lote.origen!.presentacion;
+    }
+    return '';
+  }
+  
+  bool _megaloteContieneMaterial(TransformacionModel megalote, String material) {
+    if (material == 'Todos') return true;
+    
+    // Calcular porcentaje del material en el megalote
+    final lotesDelMaterial = megalote.lotesEntrada.where((lote) {
+      final materialLote = lote.tipoMaterial.trim();
+      final materialBuscado = material.trim();
+      
+      // Comparación exacta primero
+      if (materialLote == materialBuscado) {
+        return true;
+      }
+      
+      // Comparación case-insensitive
+      if (materialLote.toUpperCase() == materialBuscado.toUpperCase()) {
+        return true;
+      }
+      
+      // IMPORTANTE: Manejar el caso donde el material tiene prefijo "EPF-"
+      // Los materiales del Origen vienen como "EPF-PEBD", "EPF-PP", "EPF-Multilaminado"
+      // pero el filtro busca "PEBD", "PP", "Multilaminado"
+      
+      // Remover prefijo "EPF-" si existe
+      String materialLoteSinPrefijo = materialLote;
+      if (materialLote.toUpperCase().startsWith('EPF-')) {
+        materialLoteSinPrefijo = materialLote.substring(4); // Remover "EPF-"
+      }
+      
+      // Comparar sin prefijo
+      if (materialLoteSinPrefijo.toUpperCase() == materialBuscado.toUpperCase()) {
+        return true;
+      }
+      
+      // También probar agregando el prefijo al material buscado
+      final materialBuscadoConPrefijo = 'EPF-$materialBuscado';
+      if (materialLote.toUpperCase() == materialBuscadoConPrefijo.toUpperCase()) {
+        return true;
+      }
+      
+      return false;
+    }).toList();
+    
+    if (lotesDelMaterial.isEmpty) {
+      return false;
+    }
+    
+    final pesoMaterial = lotesDelMaterial.fold<double>(
+      0, (sum, lote) => sum + lote.peso
+    );
+    
+    final porcentaje = (pesoMaterial / megalote.pesoTotalEntrada) * 100;
+    
+    return porcentaje > 50; // Más del 50% del material
+  }
+  
   // Crear sublote
   void _createSublote(TransformacionModel transformacion) {
     showDialog(
@@ -1163,7 +1283,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
           LoteFilterSection(
             selectedMaterial: _selectedMaterial,
             selectedTime: _selectedTime,
-            selectedPresentacion: _selectedPresentacion,
+            selectedPresentacion: tabIndex == 0 ? _selectedPresentacion : null, // Solo en Salida
             onMaterialChanged: (value) {
               setState(() {
                 _selectedMaterial = value;
@@ -1176,15 +1296,22 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                 _filterLotes();
               });
             },
-            onPresentacionChanged: (value) {
+            onPresentacionChanged: tabIndex == 0 ? (value) {
               setState(() {
                 _selectedPresentacion = value;
                 _filterLotes();
               });
-            },
+            } : null, // Solo manejar en Salida
             tabColor: _getTabColor(),
             showSelectionIndicator: tabIndex == 0,
             selectionIndicatorText: 'Selecciona múltiples lotes para procesarlos juntos como megalote',
+            showMegaloteFilter: tabIndex == 1, // Solo en Completados
+            showOnlyMegalotes: _showOnlyMegalotes,
+            onMegaloteFilterToggle: tabIndex == 1 ? () {
+              setState(() {
+                _showOnlyMegalotes = !_showOnlyMegalotes;
+              });
+            } : null,
           ),
           // Indicador de carga en lugar de las tarjetas
           const SizedBox(height: 100),

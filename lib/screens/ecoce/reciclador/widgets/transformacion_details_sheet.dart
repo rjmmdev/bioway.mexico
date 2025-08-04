@@ -66,7 +66,6 @@ class TransformacionDetailsSheet extends StatelessWidget {
                   'Información General',
                   [
                     _buildDetailRow('ID', transformacion.id.substring(0, 8).toUpperCase()),
-                    _buildDetailRow('Material', transformacion.materialPredominante ?? 'Mixto'),
                     _buildDetailRow('Peso entrada', '${transformacion.pesoTotalEntrada.toStringAsFixed(2)} kg'),
                     _buildDetailRow('Peso asignado', '${transformacion.pesoAsignadoSublotes.toStringAsFixed(2)} kg'),
                     _buildDetailRow('Peso disponible', '${transformacion.pesoDisponible.toStringAsFixed(2)} kg'),
@@ -74,6 +73,10 @@ class TransformacionDetailsSheet extends StatelessWidget {
                     _buildDetailRow('Estado', transformacion.estado),
                   ],
                 ),
+                const SizedBox(height: 20),
+                
+                // Composición de materiales
+                _buildMaterialCompositionSection(),
                 const SizedBox(height: 20),
                 
                 // Lotes de entrada
@@ -162,14 +165,20 @@ class TransformacionDetailsSheet extends StatelessWidget {
                   [
                     _buildDetailRow(
                       'Ficha técnica',
-                      transformacion.documentosAsociados['f_tecnica_pellet'] != null ? 'Cargada' : 'Pendiente',
-                      valueColor: transformacion.documentosAsociados['f_tecnica_pellet'] != null ? Colors.green : Colors.orange,
+                      _hasDocument(transformacion, ['f_tecnica_pellet', 'ficha_tecnica']) ? 'Cargada' : 'Pendiente',
+                      valueColor: _hasDocument(transformacion, ['f_tecnica_pellet', 'ficha_tecnica']) ? Colors.green : Colors.orange,
                     ),
                     _buildDetailRow(
                       'Reporte de resultado',
-                      transformacion.documentosAsociados['rep_result_reci'] != null ? 'Cargado' : 'Pendiente',
-                      valueColor: transformacion.documentosAsociados['rep_result_reci'] != null ? Colors.green : Colors.orange,
+                      _hasDocument(transformacion, ['rep_result_reci', 'reporte_transformacion']) ? 'Cargado' : 'Pendiente',
+                      valueColor: _hasDocument(transformacion, ['rep_result_reci', 'reporte_transformacion']) ? Colors.green : Colors.orange,
                     ),
+                    if (_hasDocument(transformacion, ['certificado_calidad']))
+                      _buildDetailRow(
+                        'Certificado de calidad',
+                        'Cargado',
+                        valueColor: Colors.green,
+                      ),
                   ],
                 ),
               ],
@@ -178,6 +187,140 @@ class TransformacionDetailsSheet extends StatelessWidget {
         ],
       ),
     );
+  }
+  
+  /// Helper para verificar si existe un documento con cualquiera de las claves dadas
+  /// Esto maneja la compatibilidad con documentos antiguos y nuevos
+  bool _hasDocument(TransformacionModel transformacion, List<String> keys) {
+    for (final key in keys) {
+      if (transformacion.documentosAsociados[key] != null && 
+          transformacion.documentosAsociados[key]!.isNotEmpty) {
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  Widget _buildMaterialCompositionSection() {
+    // Calcular composición de materiales
+    Map<String, double> composicion = {};
+    Map<String, double> pesosPorMaterial = {};
+    
+    for (final lote in transformacion.lotesEntrada) {
+      final material = lote.tipoMaterial;
+      composicion[material] = (composicion[material] ?? 0) + lote.porcentaje;
+      pesosPorMaterial[material] = (pesosPorMaterial[material] ?? 0) + lote.peso;
+    }
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.category, color: BioWayColors.ecoceGreen, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Composición de Materiales',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...composicion.entries.map((entry) {
+            final material = entry.key;
+            final porcentaje = entry.value;
+            final peso = pesosPorMaterial[material] ?? 0;
+            
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: _getMaterialColor(material),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      material,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${porcentaje.toStringAsFixed(1)}%',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: _getMaterialColor(material),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '(${peso.toStringAsFixed(2)} kg)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          if (composicion.length == 1) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: BioWayColors.info.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: BioWayColors.info),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Megalote de material único',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+  
+  Color _getMaterialColor(String material) {
+    switch (material.toUpperCase()) {
+      case 'PEBD':
+        return BioWayColors.pebdPink;
+      case 'PP':
+        return BioWayColors.ppPurple;
+      case 'MULTILAMINADO':
+        return BioWayColors.multilaminadoBrown;
+      default:
+        return BioWayColors.ecoceGreen;
+    }
   }
   
   Widget _buildDetailSection(String title, List<Widget> children) {

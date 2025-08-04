@@ -5,12 +5,12 @@ import '../../../../utils/colors.dart';
 class LoteFilterSection extends StatelessWidget {
   final String selectedMaterial;
   final String selectedTime;
-  final String selectedPresentacion;
+  final String? selectedPresentacion; // Ahora es opcional
   final bool showMegaloteFilter;
   final bool showOnlyMegalotes;
   final ValueChanged<String> onMaterialChanged;
   final ValueChanged<String> onTimeChanged;
-  final ValueChanged<String> onPresentacionChanged;
+  final ValueChanged<String>? onPresentacionChanged; // Ahora es opcional
   final VoidCallback? onMegaloteFilterToggle;
   final int megaloteCount;
   final Color tabColor;
@@ -21,10 +21,10 @@ class LoteFilterSection extends StatelessWidget {
     super.key,
     required this.selectedMaterial,
     required this.selectedTime,
-    required this.selectedPresentacion,
+    this.selectedPresentacion, // Ahora es opcional
     required this.onMaterialChanged,
     required this.onTimeChanged,
-    required this.onPresentacionChanged,
+    this.onPresentacionChanged, // Ahora es opcional
     required this.tabColor,
     this.showMegaloteFilter = false,
     this.showOnlyMegalotes = false,
@@ -103,7 +103,7 @@ class LoteFilterSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           
-          // Filtros de tiempo y presentación
+          // Filtros de tiempo y presentación (condicional)
           Row(
             children: [
               Expanded(
@@ -114,15 +114,18 @@ class LoteFilterSection extends StatelessWidget {
                   onChanged: (value) => onTimeChanged(value!),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildDropdownFilter(
-                  label: 'Presentación',
-                  value: selectedPresentacion,
-                  items: ['Todos', 'Pacas', 'Costales', 'Separados', 'Sacos'],
-                  onChanged: (value) => onPresentacionChanged(value!),
+              // Solo mostrar filtro de presentación si está disponible
+              if (selectedPresentacion != null && onPresentacionChanged != null) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildDropdownFilter(
+                    label: 'Presentación',
+                    value: selectedPresentacion!,
+                    items: ['Todas', 'Pacas', 'Costales', 'Separados', 'Sacos'],
+                    onChanged: (value) => onPresentacionChanged!(value!),
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
           

@@ -101,6 +101,40 @@ class TransformacionService {
         );
       }
       
+      // Calcular composición de materiales y material predominante
+      Map<String, double> composicionMateriales = {};
+      for (final lote in lotesEntrada) {
+        final material = lote.tipoMaterial;
+        composicionMateriales[material] = (composicionMateriales[material] ?? 0) + lote.porcentaje;
+      }
+      
+      // Determinar material predominante
+      String materialPredominante = 'Mixto';
+      double porcentajeMaximo = 0;
+      
+      // Si hay un solo material con 100%, usarlo
+      if (composicionMateriales.length == 1) {
+        materialPredominante = composicionMateriales.keys.first;
+      } else {
+        // Buscar el material con mayor porcentaje
+        composicionMateriales.forEach((material, porcentaje) {
+          if (porcentaje > porcentajeMaximo) {
+            porcentajeMaximo = porcentaje;
+            materialPredominante = material;
+          }
+        });
+        
+        // Si el material predominante tiene más del 70%, usarlo, sino "Mixto"
+        if (porcentajeMaximo < 70) {
+          // Construir descripción de composición mixta
+          List<String> composicionTexto = [];
+          composicionMateriales.forEach((material, porcentaje) {
+            composicionTexto.add('$material ${porcentaje.toStringAsFixed(1)}%');
+          });
+          materialPredominante = composicionTexto.join(', ');
+        }
+      }
+      
       // Crear el documento de transformación
       final transformacionRef = _firestore.collection('transformaciones').doc();
       final transformacionId = transformacionRef.id;
@@ -120,6 +154,7 @@ class TransformacionService {
         usuarioFolio: userData['folio'] ?? '',
         procesoAplicado: procesoAplicado,
         observaciones: observaciones,
+        materialPredominante: materialPredominante,
       );
       
       print('[TransformacionService] Transformación creada en memoria');
