@@ -109,7 +109,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
           title: 'Error de Sesión',
           message: 'No se pudo cargar tu perfil. Por favor cierra sesión y vuelve a iniciar.',
         ).then((_) {
-          Navigator.of(context).pushNamedAndRemoveUntil('/platform_selector', (route) => false);
+          Navigator.of(context).pushNamedAndRemoveUntil('/ecoce_login', (route) => false);
         });
         return;
       }

@@ -9,6 +9,7 @@ import '../../../../services/firebase/ecoce_profile_service.dart';
 import '../../../../services/firebase/auth_service.dart';
 import '../../../../services/firebase/firebase_manager.dart';
 import '../../../../services/document_service.dart';
+import '../../../../services/configuration_service.dart';
 
 abstract class BaseProviderRegisterScreen extends StatefulWidget {
   const BaseProviderRegisterScreen({super.key});
@@ -84,10 +85,18 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
   final DocumentService _documentService = DocumentService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseManager _firebaseManager = FirebaseManager();
+  final ConfigurationService _configService = ConfigurationService();
 
   // Animación
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  
+  // ScrollController para manejar el scroll
+  final ScrollController _scrollController = ScrollController();
+  
+  // Materiales dinámicos
+  List<MaterialConfig> _dynamicMaterials = [];
+  bool _isLoadingMaterials = false;
 
   // Métodos abstractos que cada pantalla debe implementar
   String get providerType;
@@ -102,12 +111,39 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
     super.initState();
     _setupAnimation();
     _initializeFirebase();
+    _loadDynamicMaterials();
   }
   
   Future<void> _initializeFirebase() async {
     try {
       await _authService.initializeForPlatform(FirebasePlatform.ecoce);
     } catch (e) {
+    }
+  }
+  
+  Future<void> _loadDynamicMaterials() async {
+    // No cargar materiales para transportistas
+    if (providerType == 'Transportista') {
+      return;
+    }
+    
+    setState(() {
+      _isLoadingMaterials = true;
+    });
+    
+    try {
+      final subtipo = _getSubtipo();
+      _dynamicMaterials = await _configService.getMaterialesPorSubtipo(subtipo);
+      debugPrint('✅ Materiales cargados para $providerType: ${_dynamicMaterials.length}');
+    } catch (e) {
+      debugPrint('❌ Error cargando materiales: $e');
+      // Los materiales por defecto se cargarán automáticamente desde el servicio
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingMaterials = false;
+        });
+      }
     }
   }
 
@@ -127,12 +163,18 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
       controller.dispose();
     }
     _animationController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   void _navigateBack() {
     HapticFeedback.lightImpact();
     if (_currentStep > 1) {
+      // Primero hacer scroll instantáneo
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(0.0);
+      }
+      // Luego cambiar de paso
       setState(() => _currentStep--);
     } else {
       Navigator.pop(context);
@@ -146,6 +188,11 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
 
   void _nextStep() {
     if (_currentStep < _totalSteps) {
+      // Primero hacer scroll instantáneo
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(0.0);
+      }
+      // Luego cambiar de paso con animación
       setState(() {
         _currentStep++;
         _animationController.reset();
@@ -892,6 +939,7 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       return SingleChildScrollView(
+                        controller: _scrollController,
                         physics: const BouncingScrollPhysics(),
                         padding: const EdgeInsets.all(20),
                         child: ConstrainedBox(
@@ -992,12 +1040,37 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
   Widget buildOperationsStep() {
     // Solo acopiador y planta de separación tienen capacidad de prensado
     final showCapacity = providerType == 'Acopiador' || providerType == 'Planta de Separación';
-    // Los transportistas siempre tienen transporte y no pueden cambiarlo
+    // Los transportistas no manejan materiales
     final isTransportLocked = providerType == 'Transportista';
+    final showMaterials = providerType != 'Transportista';
     
-    // Obtener materiales según el subtipo de usuario origen
-    final subtipo = _getSubtipo();
-    final materialesList = _getMaterialesBySubtipo(subtipo);
+    // Convertir MaterialConfig a formato esperado por OperationsStep
+    final materialesList = _dynamicMaterials.map((material) => {
+      'id': material.id,
+      'label': material.label,
+    }).toList();
+    
+    // Si los materiales están cargando, mostrar indicador
+    if (_isLoadingMaterials && showMaterials) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              color: providerColor,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Cargando opciones de materiales...',
+              style: TextStyle(
+                fontSize: 14,
+                color: BioWayColors.textGrey,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     
     return OperationsStep(
       controllers: _controllers,
@@ -1009,7 +1082,8 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
       onPrevious: _navigateBack,
       showCapacitySection: showCapacity,
       isTransportLocked: isTransportLocked,
-      customMaterials: materialesList,
+      customMaterials: showMaterials ? materialesList : [],
+      showMaterialsSection: showMaterials,
     );
   }
   

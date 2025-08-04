@@ -377,55 +377,6 @@ class _ECOCETipoProveedorSelectorState extends State<ECOCETipoProveedorSelector>
                       );
                     }),
 
-                    const SizedBox(height: 20),
-
-                    // Information card
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: BioWayColors.info.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: BioWayColors.info.withValues(alpha: 0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: BioWayColors.info,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Proceso de verificación',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: BioWayColors.darkGreen,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Después del registro, recibirás un código de verificación por correo electrónico para activar tu cuenta.',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: BioWayColors.textGrey,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
               ),

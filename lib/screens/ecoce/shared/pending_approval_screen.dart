@@ -265,7 +265,7 @@ class PendingApprovalScreen extends StatelessWidget {
     if (shouldLogout == true) {
       await AuthService().signOut();
       Navigator.of(context).pushNamedAndRemoveUntil(
-        '/platform_selector',
+        '/ecoce_login',
         (route) => false,
       );
     }

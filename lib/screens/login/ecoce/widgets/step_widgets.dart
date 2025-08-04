@@ -1526,6 +1526,7 @@ class OperationsStep extends StatefulWidget {
   final bool isTransportLocked;
   final bool showCapacitySection;
   final List<Map<String, String>>? customMaterials;
+  final bool showMaterialsSection;
 
   const OperationsStep({
     super.key,
@@ -1539,6 +1540,7 @@ class OperationsStep extends StatefulWidget {
     this.isTransportLocked = false,
     this.showCapacitySection = true,
     this.customMaterials,
+    this.showMaterialsSection = true,
   });
 
   @override
@@ -1553,8 +1555,8 @@ class _OperationsStepState extends State<OperationsStep> {
       _errorMessage = null;
     });
     
-    // Validar que haya al menos un material seleccionado
-    if (widget.selectedMaterials.isEmpty) {
+    // Validar que haya al menos un material seleccionado (solo si se muestran materiales)
+    if (widget.showMaterialsSection && widget.selectedMaterials.isEmpty) {
       setState(() {
         _errorMessage = 'Debes seleccionar al menos un tipo de material';
       });
@@ -1605,15 +1607,24 @@ class _OperationsStepState extends State<OperationsStep> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        buildStepTitle(3, 5, 'Información Operativa', 'Materiales EPF\'s y capacidad de tu centro'),
+        buildStepTitle(
+          3, 
+          5, 
+          'Información Operativa', 
+          widget.showMaterialsSection 
+            ? 'Materiales EPF\'s y capacidad de tu centro'
+            : 'Información de tu empresa'
+        ),
         const SizedBox(height: 32),
 
-        MaterialSelector(
-          selectedMaterials: widget.selectedMaterials,
-          onMaterialToggle: widget.onMaterialToggle,
-          customMaterials: widget.customMaterials,
-        ),
-        const SizedBox(height: 24),
+        if (widget.showMaterialsSection) ...[
+          MaterialSelector(
+            selectedMaterials: widget.selectedMaterials,
+            onMaterialToggle: widget.onMaterialToggle,
+            customMaterials: widget.customMaterials,
+          ),
+          const SizedBox(height: 24),
+        ],
 
         // Toggle de transporte
         Container(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'screens/splash_screen.dart';
+import 'screens/ecoce_splash_screen.dart';
+import 'screens/login/ecoce/ecoce_login_screen.dart';
 import 'utils/colors.dart';
 
 // Screens - Origen
@@ -213,10 +214,13 @@ class BioWayApp extends StatelessWidget {
       ),
 
       // Pantalla inicial
-      home: const SplashScreen(),
+      home: const EcoceSplashScreen(),
       
       // Rutas de navegación
       routes: {
+        // Ruta de login ECOCE
+        '/ecoce_login': (context) => const ECOCELoginScreen(),
+        
         // Rutas de Origen (Acopiador)
         '/origen_inicio': (context) => const OrigenInicioScreen(),
         '/origen_lotes': (context) => const OrigenLotesScreen(),

@@ -191,6 +191,11 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
                   
                   SizedBox(height: 16),
                   
+                  // Información Operativa (Paso 3 del registro)
+                  _buildInformacionOperativa(context, datosPerfil),
+                  
+                  SizedBox(height: 16),
+                  
                   // Información bancaria
                   if (datosPerfil['ecoce_banco_nombre'] != null) ...[
                     MaestroInfoSection(
@@ -554,5 +559,103 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
     };
     
     return actividadesMap[actividadId] ?? actividadId;
+  }
+  
+  Widget _buildInformacionOperativa(BuildContext context, Map<String, dynamic> datosPerfil) {
+    final materiales = datosPerfil['ecoce_lista_materiales'] as List?;
+    final transporte = datosPerfil['ecoce_transporte'] as bool?;
+    final dimensionesCapacidad = datosPerfil['ecoce_dim_cap'] as Map<String, dynamic>?;
+    final pesoCapacidad = datosPerfil['ecoce_peso_cap'];
+    final subtipo = datosPerfil['ecoce_subtipo'] as String?;
+    final linkRedSocial = datosPerfil['ecoce_link_red_social'] as String?;
+    
+    // Si es transportista, no mostrar esta sección ya que no maneja materiales
+    if (subtipo == 'V') {
+      return SizedBox.shrink();
+    }
+    
+    // Verificar si hay información operativa para mostrar
+    bool hasOperationalInfo = (materiales != null && materiales.isNotEmpty) ||
+                              transporte != null ||
+                              dimensionesCapacidad != null ||
+                              pesoCapacidad != null ||
+                              (linkRedSocial != null && linkRedSocial.isNotEmpty);
+    
+    if (!hasOperationalInfo) {
+      return SizedBox.shrink();
+    }
+    
+    List<InfoItem> items = [];
+    
+    // Agregar materiales que maneja
+    if (materiales != null && materiales.isNotEmpty) {
+      String materialesStr = materiales.join(', ');
+      items.add(
+        InfoItem(
+          label: 'Materiales que maneja',
+          value: materialesStr,
+        ),
+      );
+    }
+    
+    // Agregar información de transporte
+    if (transporte != null) {
+      items.add(
+        InfoItem(
+          label: 'Transporte propio',
+          value: transporte ? 'Sí' : 'No',
+        ),
+      );
+    }
+    
+    // Agregar link de redes sociales
+    if (linkRedSocial != null && linkRedSocial.isNotEmpty) {
+      items.add(
+        InfoItem(
+          label: 'Redes sociales',
+          value: linkRedSocial,
+          copyable: true,
+        ),
+      );
+    }
+    
+    // Agregar capacidad de prensado (solo para Acopiador y Planta de Separación)
+    if ((subtipo == 'A' || subtipo == 'P')) {
+      if (dimensionesCapacidad != null) {
+        final largo = dimensionesCapacidad['largo'] ?? 0;
+        final ancho = dimensionesCapacidad['ancho'] ?? 0;
+        final alto = dimensionesCapacidad['alto'] ?? 0;
+        
+        if (largo > 0 || ancho > 0 || alto > 0) {
+          items.add(
+            InfoItem(
+              label: 'Dimensiones de prensado',
+              value: '${largo}m × ${ancho}m × ${alto}m',
+            ),
+          );
+        }
+      }
+      
+      if (pesoCapacidad != null && pesoCapacidad > 0) {
+        items.add(
+          InfoItem(
+            label: 'Capacidad de prensado',
+            value: '${pesoCapacidad} kg',
+          ),
+        );
+      }
+    }
+    
+    // Si no hay items para mostrar, no mostrar la sección
+    if (items.isEmpty) {
+      return SizedBox.shrink();
+    }
+    
+    return MaestroInfoSection(
+      title: 'Información Operativa',
+      icon: Icons.factory,
+      color: BioWayColors.ppPurple,
+      items: items,
+    );
   }
 }

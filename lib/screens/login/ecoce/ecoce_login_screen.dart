@@ -132,12 +132,6 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
     super.dispose();
   }
 
-  void _navigateBack() {
-    HapticFeedback.lightImpact();
-    Navigator.pop(context);
-  }
-
-
   Future<void> _handleLogin({bool goToRepository = false}) async {
     // Ocultar teclado
     FocusScope.of(context).unfocus();
@@ -444,31 +438,6 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
     }
   }
 
-  Widget _buildBackButton() {
-    return IconButton(
-      onPressed: _navigateBack,
-      icon: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Icon(
-          Icons.arrow_back_ios_new,
-          color: BioWayColors.ecoceGreen,
-          size: 20,
-        ),
-      ),
-    );
-  }
-
   Widget _buildLogo() {
     return AnimatedBuilder(
       animation: _logoController,
@@ -505,16 +474,6 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
             // Contenido principal
             Column(
               children: [
-                // Header con botón de regreso
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                  child: Row(
-                    children: [
-                      _buildBackButton(),
-                    ],
-                  ),
-                ),
-
                 // Contenido scrollable
                 Expanded(
                   child: SingleChildScrollView(
@@ -523,7 +482,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 0),
+                        const SizedBox(height: 40),
 
                         // Logo animado
                         _buildLogo(),
