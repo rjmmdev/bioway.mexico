@@ -5,12 +5,15 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:path_provider/path_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../utils/colors.dart';
 import '../../../services/lote_service.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../services/transformacion_service.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
+import '../../../services/firebase/auth_service.dart';
+import '../../../services/firebase/firebase_manager.dart';
 import '../../../models/lotes/lote_unificado_model.dart';
 import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
@@ -55,6 +58,17 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
   final TransformacionService _transformacionService = TransformacionService();
   final UserSessionService _userSession = UserSessionService();
   final FirebaseStorageService _storageService = FirebaseStorageService();
+  final AuthService _authService = AuthService();
+  final FirebaseManager _firebaseManager = FirebaseManager();
+  
+  // Obtener Firestore de la instancia correcta (multi-tenant)
+  FirebaseFirestore get _firestore {
+    final app = _firebaseManager.currentApp;
+    if (app != null) {
+      return FirebaseFirestore.instanceFor(app: app);
+    }
+    return FirebaseFirestore.instance;
+  }
   
   // Variables para manejar múltiples lotes
   late List<String> _loteIds;
@@ -239,7 +253,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
   Future<DocumentSnapshot?> _checkExistingTransformacion() async {
     try {
       // Buscar transformación existente con estos lotes y estado 'en_proceso'
-      final query = await FirebaseFirestore.instance
+      final query = await _firestore
           .collection('transformaciones')
           .where('tipo', isEqualTo: 'agrupacion_transformador')
           .where('estado', isEqualTo: 'en_proceso')
@@ -302,14 +316,14 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
     if (_transformacionId == null) {
       // Crear nueva transformación si no existe
       final transformacionData = await _prepareTransformacionData();
-      final docRef = await FirebaseFirestore.instance
+      final docRef = await _firestore
           .collection('transformaciones')
           .add(transformacionData);
       _transformacionId = docRef.id;
     } else {
       // Actualizar transformación existente
       final updateData = await _prepareTransformacionData();
-      await FirebaseFirestore.instance
+      await _firestore
           .collection('transformaciones')
           .doc(_transformacionId)
           .update(updateData);
@@ -326,42 +340,78 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
   }
   
   Future<Map<String, dynamic>> _prepareTransformacionData() async {
-    final userData = await _userSession.getUserProfile();
+    // Obtener el UID del AuthService que maneja multi-tenant
+    final currentUser = _authService.currentUser;
     
-    // Preparar datos de los lotes
+    if (currentUser == null) {
+      throw Exception('Usuario no autenticado');
+    }
+    
+    final authUid = currentUser.uid;
+    final userData = _userSession.getUserData();
+    final userFolio = userData?['folio'] ?? '';
+    
+    // Preparar datos de los lotes con porcentajes
     List<Map<String, dynamic>> lotesEntrada = [];
+    double pesoTotal = 0;
+    
+    // Primero calcular peso total
     for (String loteId in _loteIds) {
       final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
       if (lote != null) {
+        pesoTotal += lote.pesoActual;
+      }
+    }
+    
+    // Luego crear lotes con porcentajes
+    for (String loteId in _loteIds) {
+      final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
+      if (lote != null) {
+        final peso = lote.pesoActual;
+        final porcentaje = pesoTotal > 0 ? (peso / pesoTotal) * 100 : 0;
+        
         lotesEntrada.add({
           'lote_id': loteId,
-          'peso': lote.pesoActual,
+          'peso': peso,
+          'porcentaje': porcentaje,
           'tipo_material': lote.datosGenerales.tipoMaterial,
         });
       }
     }
     
+    // Calcular merma
+    final cantidadGenerada = double.tryParse(_cantidadGeneradaController.text) ?? _pesoTotalOriginal;
+    final mermaProceso = _pesoTotalOriginal - cantidadGenerada;
+    
+    final procesosSeleccionados = _procesosAplicados.entries
+        .where((e) => e.value)
+        .map((e) => e.key)
+        .toList();
+    
     return {
       'tipo': 'agrupacion_transformador',
+      'usuario_id': authUid,
+      'usuario_folio': userFolio,
+      'fecha_inicio': Timestamp.fromDate(DateTime.now()),
       'estado': 'en_proceso',
-      'fecha_inicio': FieldValue.serverTimestamp(),
       'lotes_entrada': lotesEntrada,
       'peso_total_entrada': _pesoTotalOriginal,
-      'procesos_aplicados': _procesosAplicados.entries
-          .where((e) => e.value)
-          .map((e) => e.key)
-          .toList(),
+      'peso_disponible': cantidadGenerada,
+      'merma_proceso': mermaProceso >= 0 ? mermaProceso : 0,
+      'sublotes_generados': [],
+      'documentos_asociados': {},
+      'procesos_aplicados': procesosSeleccionados,
       'producto_fabricado': _productoFabricadoController.text.trim(),
       'compuesto_67': _compuestoController.text.trim(),
-      'cantidad_producto': double.tryParse(_cantidadGeneradaController.text) ?? 0,
+      'cantidad_producto': cantidadGenerada,
       'porcentaje_material_reciclado': _porcentajeMaterialReciclado,
       'tipo_polimero': _tipoPolimero,
+      'proceso_aplicado': procesosSeleccionados.isNotEmpty ? procesosSeleccionados.join(', ') : null,
       'observaciones': _comentariosController.text.trim(),
-      'usuario_id': userData?['userId'] ?? userData?['uid'] ?? '',
-      'usuario_folio': userData?['ecoceFolio'] ?? userData?['folio'] ?? '',
       'firma_operador': _signatureUrl,
       'evidencias_foto': _existingPhotoUrls,
-      'ultima_actualizacion': FieldValue.serverTimestamp(),
+      'ultima_actualizacion': Timestamp.fromDate(DateTime.now()),
+      'muestras_laboratorio': [],
     };
   }
 
@@ -478,10 +528,32 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
     });
     
     try {
-      // Obtener datos del usuario
-      final userProfile = await _userSession.getUserProfile();
-      if (userProfile == null) {
-        throw Exception('No se pudo obtener el perfil del usuario');
+      // Obtener el UID del AuthService que maneja multi-tenant (como hace el Reciclador)
+      final currentUser = _authService.currentUser;
+      
+      if (currentUser == null) {
+        throw Exception('Usuario no autenticado. Por favor cierre sesión y vuelva a iniciar.');
+      }
+      
+      final authUid = currentUser.uid;
+      print('=== USUARIO FIREBASE AUTH (Multi-tenant) ===');
+      print('Firebase Auth UID: $authUid');
+      
+      // Obtener datos adicionales del usuario para el folio
+      final userData = _userSession.getUserData();
+      final userFolio = userData?['folio'] ?? '';
+      
+      print('Usuario Folio: $userFolio');
+      print('=== VERIFICACIÓN DE USUARIO ===');
+      print('UID de Auth: $authUid');
+      print('Folio del usuario: $userFolio');
+      
+      if (authUid.isEmpty) {
+        throw Exception('No se pudo obtener el ID del usuario autenticado');
+      }
+      
+      if (userFolio.isEmpty) {
+        throw Exception('No se pudo obtener el folio del usuario');
       }
       
       // Subir firma a Storage
@@ -510,12 +582,32 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
       // Procesamiento según sea individual o múltiple
       if (_esProcesamientoMultiple) {
         // Crear transformación (megalote) del transformador
-        // Primero obtener los lotes
+        // Primero obtener y validar los lotes
         List<LoteUnificadoModel> lotes = [];
         for (String loteId in _loteIds) {
           final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
           if (lote != null) {
+            // Verificar que el lote está en proceso transformador
+            if (lote.datosGenerales.procesoActual != 'transformador') {
+              throw Exception('El lote ${lote.id} no está disponible para el transformador');
+            }
+            
+            // Verificar que no esté ya consumido
+            final datosGeneralesDoc = await _firestore
+                .collection('lotes')
+                .doc(loteId)
+                .collection('datos_generales')
+                .doc('info')
+                .get();
+            
+            if (datosGeneralesDoc.exists && 
+                datosGeneralesDoc.data()?['consumido_en_transformacion'] == true) {
+              throw Exception('El lote ${lote.id} ya fue procesado en otra transformación');
+            }
+            
             lotes.add(lote);
+          } else {
+            throw Exception('No se pudo obtener el lote $loteId');
           }
         }
         
@@ -523,85 +615,203 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
           throw Exception('No se pudieron obtener los lotes');
         }
         
-        // Preparar datos de los lotes
+        // Preparar datos de los lotes con porcentajes (IMPORTANTE para el modelo)
         List<Map<String, dynamic>> lotesEntrada = [];
+        double pesoTotal = 0;
+        
+        // Primero calcular peso total
         for (var lote in lotes) {
+          pesoTotal += lote.pesoActual;
+        }
+        
+        // Luego crear lotes con porcentajes
+        for (var lote in lotes) {
+          final peso = lote.pesoActual;
+          final porcentaje = (peso / pesoTotal) * 100;
+          
           lotesEntrada.add({
             'lote_id': lote.id,
-            'peso': lote.pesoActual,
+            'peso': peso,
+            'porcentaje': porcentaje, // REQUERIDO por el modelo
             'tipo_material': lote.datosGenerales.tipoMaterial,
-          });
-          
-          // Marcar lote como consumido en transformación
-          // Mark lot as consumed in transformation
-          await FirebaseFirestore.instance
-              .collection('lotes')
-              .doc(lote.id)
-              .collection('datos_generales')
-              .doc('info')
-              .update({
-            'consumido_en_transformacion': true,
-            'transformacion_id': _transformacionId ?? '',
           });
         }
         
         // Crear o actualizar la transformación
+        // IMPORTANTE: Usar el mismo formato que el Reciclador con Timestamp
+        
+        // Debugging: Verificar que tenemos los campos requeridos
+        print('=== CREANDO TRANSFORMACIÓN ===');
+        print('usuario_id (Firebase Auth): $authUid');
+        print('usuario_folio: $userFolio');
+        print('tipo: agrupacion_transformador');
+        print('Verificando que UID coincide con Auth: ${authUid == _authService.currentUser?.uid}');
+        
+        // Calcular merma (diferencia entre peso original y cantidad generada)
+        final cantidadGenerada = double.tryParse(_cantidadGeneradaController.text) ?? _pesoTotalOriginal;
+        final mermaProceso = _pesoTotalOriginal - cantidadGenerada;
+        
         final transformacionData = {
           'tipo': 'agrupacion_transformador',
+          'usuario_id': authUid, // Usar el UID de Firebase Auth directamente
+          'usuario_folio': userFolio,
+          'fecha_inicio': Timestamp.fromDate(DateTime.now()), // CONVERTIR A TIMESTAMP como el Reciclador
           'estado': 'documentacion',
-          'fecha_inicio': FieldValue.serverTimestamp(),
           'lotes_entrada': lotesEntrada,
           'peso_total_entrada': _pesoTotalOriginal,
+          'peso_disponible': cantidadGenerada, // Peso disponible después de merma
+          'merma_proceso': mermaProceso >= 0 ? mermaProceso : 0, // Campo REQUERIDO por el modelo
+          'sublotes_generados': [], // Campo REQUERIDO - lista vacía inicial
+          'documentos_asociados': {}, // Campo REQUERIDO - mapa vacío inicial
+          // Campos específicos del transformador
           'procesos_aplicados': procesosSeleccionados,
           'producto_fabricado': _productoFabricadoController.text.trim(),
           'compuesto_67': _compuestoController.text.trim(),
-          'cantidad_producto': double.tryParse(_cantidadGeneradaController.text) ?? 0,
+          'cantidad_producto': cantidadGenerada,
           'porcentaje_material_reciclado': _porcentajeMaterialReciclado,
           'tipo_polimero': _tipoPolimero,
+          'proceso_aplicado': procesosSeleccionados.isNotEmpty ? procesosSeleccionados.join(', ') : null,
           'observaciones': _comentariosController.text.trim(),
-          'usuario_id': userProfile['userId'] ?? userProfile['uid'] ?? '',
-          'usuario_folio': userProfile['ecoceFolio'] ?? userProfile['folio'] ?? '',
           'firma_operador': _signatureUrl,
           'evidencias_foto': photoUrls,
-          'fecha_procesamiento': FieldValue.serverTimestamp(),
+          'fecha_procesamiento': Timestamp.fromDate(DateTime.now()), // CONVERTIR A TIMESTAMP
+          'muestras_laboratorio': [], // Campo para compatibilidad
         };
         
-        if (_transformacionId != null) {
-          // Actualizar transformación existente
-          await FirebaseFirestore.instance
+        // Siempre crear nueva transformación si no existe
+        if (_transformacionId == null) {
+          print('Creando nueva transformación...');
+          try {
+            final docRef = await _firestore
+                .collection('transformaciones')
+                .add(transformacionData);
+            _transformacionId = docRef.id;
+            print('Transformación creada con ID: $_transformacionId');
+          } catch (e) {
+            print('ERROR al crear transformación: $e');
+            throw Exception('Error al crear megalote: $e');
+          }
+        } else {
+          // Actualizar transformación existente usando set con merge para evitar problemas
+          print('Actualizando transformación existente: $_transformacionId');
+          await _firestore
               .collection('transformaciones')
               .doc(_transformacionId)
-              .update(transformacionData);
-        } else {
-          // Crear nueva transformación
-          final docRef = await FirebaseFirestore.instance
-              .collection('transformaciones')
-              .add(transformacionData);
-          _transformacionId = docRef.id;
-          
-          // Actualizar IDs de lotes consumidos
-          for (var lote in lotes) {
-            // Mark lot as consumed in transformation
-            await FirebaseFirestore.instance
+              .set(transformacionData, SetOptions(merge: true));
+        }
+        
+        // Ahora sí marcar todos los lotes como consumidos con el ID correcto
+        print('Marcando ${lotes.length} lotes como consumidos...');
+        for (var lote in lotes) {
+          try {
+            await _firestore
                 .collection('lotes')
                 .doc(lote.id)
                 .collection('datos_generales')
                 .doc('info')
-                .update({
+                .set({
               'consumido_en_transformacion': true,
               'transformacion_id': _transformacionId!,
-            });
+              'fecha_consumo': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true));
+            print('Lote ${lote.id} marcado como consumido');
+          } catch (e) {
+            print('ERROR al marcar lote ${lote.id} como consumido: $e');
+            // Continuar con los demás lotes
           }
         }
         
       } else {
-        // Procesamiento individual - comportamiento original
+        // Procesamiento individual - TAMBIÉN debe crear transformación para las estadísticas
+        print('PROCESAMIENTO INDIVIDUAL - Creando transformación para un solo lote...');
+        
+        // Obtener información del lote único
+        final loteDoc = await _firestore
+            .collection('lotes')
+            .doc(_loteIds.first)
+            .collection('datos_generales')
+            .doc('info')
+            .get();
+        
+        final tipoMaterial = loteDoc.data()?['tipo_material'] ?? _tipoPolimero ?? 'Material';
+        final pesoLote = (loteDoc.data()?['peso_actual'] ?? 
+                         loteDoc.data()?['peso_nace'] ?? 
+                         widget.peso ?? 0).toDouble();
+        
+        // Crear entrada para el lote único
+        final loteEntrada = {
+          'lote_id': _loteIds.first,
+          'peso': pesoLote,
+          'tipo_material': tipoMaterial,
+          'porcentaje': 100.0, // Un solo lote = 100%
+        };
+        
+        // Calcular valores
+        final cantidadGenerada = double.tryParse(_cantidadGeneradaController.text) ?? pesoLote;
+        final mermaProceso = pesoLote - cantidadGenerada;
+        
+        // Crear transformación para lote individual
+        final transformacionData = {
+          'tipo': 'agrupacion_transformador',
+          'usuario_id': authUid,
+          'usuario_folio': userFolio,
+          'fecha_inicio': Timestamp.fromDate(DateTime.now()),
+          'estado': 'documentacion',
+          'lotes_entrada': [loteEntrada], // Array con un solo lote
+          'peso_total_entrada': pesoLote,
+          'peso_disponible': cantidadGenerada,
+          'merma_proceso': mermaProceso >= 0 ? mermaProceso : 0,
+          'sublotes_generados': [],
+          'documentos_asociados': {},
+          // Campos específicos del transformador
+          'procesos_aplicados': procesosSeleccionados,
+          'producto_fabricado': _productoGeneradoController.text.trim(),
+          'compuesto_67': _compuestoController.text.trim(),
+          'cantidad_producto': cantidadGenerada,
+          'porcentaje_material_reciclado': _porcentajeMaterialReciclado,
+          'tipo_polimero': tipoMaterial,
+          'proceso_aplicado': procesosSeleccionados.isNotEmpty ? procesosSeleccionados.join(', ') : null,
+          'observaciones': _comentariosController.text.trim(),
+          'firma_operador': _signatureUrl,
+          'evidencias_foto': photoUrls,
+          'fecha_procesamiento': Timestamp.fromDate(DateTime.now()),
+          'muestras_laboratorio': [],
+          'es_lote_individual': true, // Marcar que es procesamiento individual
+        };
+        
+        // Crear la transformación
+        print('Creando transformación para lote individual...');
+        try {
+          final docRef = await _firestore
+              .collection('transformaciones')
+              .add(transformacionData);
+          _transformacionId = docRef.id;
+          print('Transformación individual creada con ID: $_transformacionId');
+        } catch (e) {
+          print('ERROR al crear transformación individual: $e');
+          throw Exception('Error al crear megalote individual: $e');
+        }
+        
+        // Marcar el lote como consumido
+        print('Marcando lote individual como consumido...');
+        await _firestore
+            .collection('lotes')
+            .doc(_loteIds.first)
+            .collection('datos_generales')
+            .doc('info')
+            .set({
+          'consumido_en_transformacion': true,
+          'transformacion_id': _transformacionId!,
+          'fecha_consumo': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        
+        // También actualizar los datos del transformador en el lote
         await _loteUnificadoService.actualizarProcesoTransformador(
           loteId: _loteIds.first,
           datosTransformador: {
-            'peso_salida': double.parse(_pesoSalidaController.text),
+            'peso_salida': cantidadGenerada,
             'producto_generado': _productoGeneradoController.text.trim(),
-            'cantidad_generada': _cantidadGeneradaController.text.trim(),
+            'cantidad_generada': cantidadGenerada.toString(),
             'procesos_aplicados': procesosSeleccionados,
             'operador_salida': _operadorController.text.trim(),
             'firma_salida': _signatureUrl,
@@ -609,8 +819,11 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
             'comentarios_salida': _comentariosController.text.trim(),
             'fecha_salida': DateTime.now(),
             'estado': 'documentacion',
+            'transformacion_id': _transformacionId, // Vincular con la transformación
           },
         );
+        
+        print('Procesamiento individual completado exitosamente');
       }
       
       if (mounted) {
@@ -669,12 +882,37 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
         }
       }
     } catch (e) {
+      // Log detallado del error para debugging
+      print('=== ERROR EN TRANSFORMADOR FORMULARIO SALIDA ===');
+      print('Error completo: $e');
+      print('Stack trace: ${StackTrace.current}');
+      print('Es procesamiento múltiple: $_esProcesamientoMultiple');
+      print('Lotes a procesar: $_loteIds');
+      
       if (mounted) {
+        // Mejorar el mensaje de error según el tipo
+        String errorMessage = 'Error al procesar la salida';
+        
+        if (e.toString().contains('no está disponible')) {
+          errorMessage = 'Uno o más lotes no están disponibles para procesar';
+        } else if (e.toString().contains('ya fue procesado')) {
+          errorMessage = 'Uno o más lotes ya fueron procesados anteriormente';
+        } else if (e.toString().contains('No se pudo obtener')) {
+          errorMessage = 'Error al obtener información de los lotes';
+        } else if (e.toString().contains('permission')) {
+          // Mostrar el error completo para debugging
+          errorMessage = 'Error de permisos: ${e.toString()}';
+          print('Error de permisos detectado: $e');
+        } else {
+          errorMessage = 'Error: ${e.toString().replaceAll('Exception: ', '')}';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al crear el lote: ${e.toString()}'),
+            content: Text(errorMessage),
             backgroundColor: BioWayColors.error,
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),

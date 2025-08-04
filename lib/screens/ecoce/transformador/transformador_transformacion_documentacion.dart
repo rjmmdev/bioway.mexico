@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
 import '../../../services/transformacion_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
+import '../../../services/firebase/firebase_manager.dart';
 import '../../../models/lotes/transformacion_model.dart';
 import '../shared/widgets/document_upload_per_requirement_widget.dart';
 import '../shared/widgets/dialog_utils.dart';
@@ -22,7 +23,16 @@ class TransformadorTransformacionDocumentacion extends StatefulWidget {
 class _TransformadorTransformacionDocumentacionState extends State<TransformadorTransformacionDocumentacion> {
   final TransformacionService _transformacionService = TransformacionService();
   final FirebaseStorageService _storageService = FirebaseStorageService();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseManager _firebaseManager = FirebaseManager();
+  
+  // Obtener Firestore de la instancia correcta (multi-tenant)
+  FirebaseFirestore get _firestore {
+    final app = _firebaseManager.currentApp;
+    if (app != null) {
+      return FirebaseFirestore.instanceFor(app: app);
+    }
+    return FirebaseFirestore.instance;
+  }
   
   TransformacionModel? _transformacion;
   bool _isLoading = true;

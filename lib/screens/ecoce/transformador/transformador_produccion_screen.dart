@@ -140,8 +140,19 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
       stream.listen((lotes) {
         if (mounted) {
           setState(() {
-            // Aplicar filtros
-            var lotesFiltrados = _aplicarFiltros(lotes);
+            // IMPORTANTE: Filtrar lotes que NO estén consumidos en transformaciones
+            // Un lote consumido tiene consumido_en_transformacion = true
+            var lotesNoConsumidos = lotes.where((lote) {
+              // Verificar si el lote está consumido
+              final estaConsumido = lote.datosGenerales.consumidoEnTransformacion ?? false;
+              if (estaConsumido) {
+                print('Lote ${lote.id} está consumido, filtrando de la lista');
+              }
+              return !estaConsumido; // Solo incluir lotes NO consumidos
+            }).toList();
+            
+            // Aplicar filtros adicionales
+            var lotesFiltrados = _aplicarFiltros(lotesNoConsumidos);
             
             _lotesPendientes = lotesFiltrados.where((lote) {
               final estado = _getEstadoLote(lote);
@@ -174,32 +185,31 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
 
   Future<void> _loadTransformaciones() async {
     try {
-      // Get transformations of type 'agrupacion_transformador' only
-      final userData = _userSession.getUserData();
-      final userId = userData?['userId'] ?? userData?['uid'];
-      if (userId == null) return;
-      
-      final stream = FirebaseFirestore.instance
-          .collection('transformaciones')
-          .where('tipo', isEqualTo: 'agrupacion_transformador')
-          .where('usuario_id', isEqualTo: userId)
-          .snapshots();
-      
-      stream.listen((snapshot) {
+      // IMPORTANTE: Usar el TransformacionService que maneja multi-tenant correctamente
+      // El servicio usa FirebaseFirestore.instanceFor(app: ecoceApp) en lugar de .instance
+      _transformacionService.obtenerTransformacionesUsuario().listen((transformaciones) {
         if (mounted) {
-          final transformaciones = snapshot.docs.map((doc) {
-            final data = doc.data();
-            data['id'] = doc.id;
-            return TransformacionModel.fromMap(data, doc.id);
+          // Filtrar solo las transformaciones del tipo transformador
+          final transformacionesTransformador = transformaciones.where((t) {
+            return t.tipo == 'agrupacion_transformador';
           }).toList();
           
           setState(() {
-            _transformaciones = transformaciones;
+            _transformaciones = transformacionesTransformador;
+          });
+          
+          print('Transformaciones del transformador cargadas: ${_transformaciones.length}');
+        }
+      }, onError: (error) {
+        print('Error al cargar transformaciones: $error');
+        if (mounted) {
+          setState(() {
+            _transformaciones = [];
           });
         }
       });
     } catch (e) {
-      print('Error al cargar transformaciones: $e');
+      print('Error al configurar stream de transformaciones: $e');
     }
   }
 
@@ -278,11 +288,16 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
   }
 
   Widget _buildTransformacionCard(TransformacionModel transformacion) {
-    final estado = transformacion.datos['estado'] ?? 'en_proceso';
+    final estado = transformacion.estado;
     final bool hasDocumentation = transformacion.tieneDocumentacion;
-    final productoFabricado = transformacion.datos['producto_fabricado'] ?? 'Sin especificar';
-    final cantidadProducto = transformacion.datos['cantidad_producto'] ?? 0.0;
-    final tipoPolimero = transformacion.datos['tipo_polimero'] ?? '';
+    final bool hasAvailableWeight = transformacion.pesoDisponible > 0;
+    
+    // Obtener campos específicos del transformador desde datos raw
+    final productoFabricado = transformacion.datos['producto_fabricado'] ?? 'Producto sin especificar';
+    final cantidadProducto = transformacion.datos['cantidad_producto'] ?? transformacion.pesoDisponible;
+    final tipoPolimero = transformacion.datos['tipo_polimero'] ?? 'Polímero no especificado';
+    final porcentajeMaterialReciclado = transformacion.datos['porcentaje_material_reciclado'] ?? 0;
+    final procesosAplicados = transformacion.datos['procesos_aplicados'] as List<dynamic>? ?? [];
     
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -375,6 +390,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Producto fabricado
                       Row(
                         children: [
                           Icon(Icons.factory, size: 16, color: Colors.grey[600]),
@@ -391,67 +407,188 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                           ),
                         ],
                       ),
+                      
                       const SizedBox(height: 8),
+                      
+                      // Peso de entrada vs cantidad generada
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: MaterialUtils.getMaterialColor(tipoPolimero).withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  tipoPolimero,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: MaterialUtils.getMaterialColor(tipoPolimero),
-                                  ),
+                              Text(
+                                'Peso entrada',
+                                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                              ),
+                              Text(
+                                '${transformacion.pesoTotalEntrada.toStringAsFixed(2)} kg',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
                           ),
-                          Text(
-                            '${cantidadProducto.toStringAsFixed(2)} kg',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          Icon(Icons.arrow_forward, size: 16, color: Colors.grey[400]),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                'Cantidad generada',
+                                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                              ),
+                              Text(
+                                '${cantidadProducto.toStringAsFixed(2)} kg',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
+                      
+                      const SizedBox(height: 8),
+                      
+                      // Tipo de polímero y porcentaje reciclado
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          if (tipoPolimero.isNotEmpty && tipoPolimero != 'Polímero no especificado')
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: MaterialUtils.getMaterialColor(tipoPolimero).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                tipoPolimero,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: MaterialUtils.getMaterialColor(tipoPolimero),
+                                ),
+                              ),
+                            ),
+                          if (porcentajeMaterialReciclado > 0)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.recycling, size: 14, color: Colors.green),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '$porcentajeMaterialReciclado% reciclado',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.green,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                      
+                      // Procesos aplicados si existen
+                      if (procesosAplicados.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 4,
+                          runSpacing: 4,
+                          children: procesosAplicados.map((proceso) => 
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                proceso.toString(),
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.orange,
+                                ),
+                              ),
+                            ),
+                          ).toList(),
+                        ),
+                      ],
                     ],
                   ),
                 ),
                 
                 const SizedBox(height: 12),
                 
-                // Stats row
-                Row(
+                // Stats row con información de lotes y merma
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.inventory_2, size: 16, color: Colors.grey[600]),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${transformacion.lotesEntrada.length} lotes procesados',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    if (estado == 'completado') ...[
-                      const SizedBox(width: 16),
-                      Icon(Icons.check_circle, size: 16, color: BioWayColors.success),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Completado',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: BioWayColors.success,
-                          fontWeight: FontWeight.w600,
+                    Row(
+                      children: [
+                        Icon(Icons.inventory_2, size: 16, color: Colors.grey[600]),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            '${transformacion.lotesEntrada.length} lotes combinados',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
                         ),
+                        if (transformacion.mermaProceso > 0)
+                          Text(
+                            'Merma: ${transformacion.mermaProceso.toStringAsFixed(2)} kg',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.orange,
+                            ),
+                          ),
+                      ],
+                    ),
+                    
+                    // Mostrar tipos de material de los lotes
+                    if (transformacion.lotesEntrada.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 4,
+                        children: transformacion.lotesEntrada.map((lote) => 
+                          Text(
+                            '${lote.tipoMaterial} (${lote.peso.toStringAsFixed(1)}kg)',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ).toList(),
+                      ),
+                    ],
+                    
+                    if (estado == 'completado') ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.check_circle, size: 16, color: BioWayColors.success),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Megalote Completado',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: BioWayColors.success,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ],
@@ -805,17 +942,17 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                           decoration: BoxDecoration(
-                            color: _lotesConDocumentacion.isNotEmpty
+                            color: (_lotesConDocumentacion.isNotEmpty || _transformaciones.where((t) => t.estado == 'documentacion').isNotEmpty)
                                 ? BioWayColors.warning.withValues(alpha: 0.2)
                                 : Colors.grey.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
-                            '${_lotesConDocumentacion.length}',
+                            '${_lotesConDocumentacion.length + _transformaciones.where((t) => t.estado == 'documentacion').length}',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
-                              color: _lotesConDocumentacion.isNotEmpty
+                              color: (_lotesConDocumentacion.isNotEmpty || _transformaciones.where((t) => t.estado == 'documentacion').isNotEmpty)
                                   ? BioWayColors.warning
                                   : Colors.grey,
                             ),
@@ -839,17 +976,17 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                           decoration: BoxDecoration(
-                            color: _lotesCompletados.isNotEmpty
+                            color: (_lotesCompletados.isNotEmpty || _transformaciones.where((t) => t.estado == 'completado').isNotEmpty)
                                 ? BioWayColors.success.withValues(alpha: 0.2)
                                 : Colors.grey.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
-                            '${_lotesCompletados.length}',
+                            '${_lotesCompletados.length + _transformaciones.where((t) => t.estado == 'completado').length}',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
-                              color: _lotesCompletados.isNotEmpty
+                              color: (_lotesCompletados.isNotEmpty || _transformaciones.where((t) => t.estado == 'completado').isNotEmpty)
                                   ? BioWayColors.success
                                   : Colors.grey,
                             ),
@@ -891,48 +1028,6 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
             ),
           ],
         ),
-        bottomNavigationBar: EcoceBottomNavigation(
-          selectedIndex: 1, // Producción está en índice 1
-          onItemTapped: _onBottomNavTapped,
-          primaryColor: Colors.orange,
-          items: EcoceNavigationConfigs.transformadorItems,
-          fabConfig: UserTypeHelper.getFabConfig('T', context),
-        ),
-      floatingActionButton: _tabController.index == 0 && (_isSelectionMode || _autoSelectionMode) && _selectedLotes.isNotEmpty
-          ? FloatingActionButton.extended(
-              onPressed: _procesarLotesSeleccionados,
-              backgroundColor: Colors.orange,
-              icon: Icon(
-                Icons.merge_type, 
-                color: Colors.white,
-              ),
-              label: Text(
-                _selectedLotes.length > 1 
-                    ? 'Procesar ${_selectedLotes.length} lotes'
-                    : 'Procesar 1 lote',
-                style: TextStyle(
-                  color: Colors.white,
-                ),
-              ),
-            )
-          : EcoceFloatingActionButton(
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                // Usar el flujo de recepción por pasos igual que el reciclador
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ReceptorRecepcionPasosScreen(
-                      userType: 'transformador',
-                    ),
-                  ),
-                );
-              },
-              icon: Icons.add,
-              backgroundColor: Colors.orange,
-              tooltip: 'Recibir Lote',
-            ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
   }
@@ -1111,19 +1206,36 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
           _buildStatistics(),
         
         // List items
-        if (_tabController.index == 1 && _mostrarSoloMegalotes) ...[
-          // Show megalotes with estado 'documentacion'
-          if (_filterTransformacionesByState().isEmpty)
-            _buildEmptyStateMegalotes()
-          else
+        if (_tabController.index == 1) ...[
+          // Tab Documentación
+          if (_mostrarSoloMegalotes) ...[
+            // Mostrar SOLO megalotes
+            if (_filterTransformacionesByState().isEmpty)
+              _buildEmptyStateMegalotes()
+            else
+              ..._filterTransformacionesByState().map(
+                (transformacion) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildTransformacionCard(transformacion),
+                ),
+              ),
+          ] else ...[
+            // Mostrar TODO (megalotes Y lotes individuales)
+            // Primero megalotes
             ..._filterTransformacionesByState().map(
               (transformacion) => Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _buildTransformacionCard(transformacion),
               ),
             ),
+            // Luego lotes individuales
+            ...lotes.map((lote) => _buildLoteCard(lote)),
+            // Si no hay nada, mostrar estado vacío
+            if (_filterTransformacionesByState().isEmpty && lotes.isEmpty)
+              _buildEmptyState(),
+          ],
         ] else ...[
-          // Show individual lots
+          // Tab Salida - solo lotes individuales
           if (lotes.isEmpty)
             _buildEmptyState()
           else
@@ -1213,7 +1325,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Mostrar solo Megalotes',
+                              _mostrarSoloMegalotes ? 'Solo Megalotes' : 'Mostrar Todo',
                               style: TextStyle(
                                 color: _mostrarSoloMegalotes
                                     ? _getTabColor()
@@ -1307,24 +1419,34 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
         else
           _buildStatistics(),
         
-        // List items for completed tab - show megalotes
+        // List items for completed tab
         if (_tabController.index == 2) ...[
           // Toggle between individual lots and megalotes
           if (_mostrarSoloMegalotes) ...[
-          if (_transformaciones.isEmpty)
-            _buildEmptyStateMegalotes()
-          else
+            // Mostrar SOLO megalotes completados
+            if (_filterTransformacionesByState().isEmpty)
+              _buildEmptyStateMegalotes()
+            else
+              ..._filterTransformacionesByState().map(
+                (transformacion) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildTransformacionCard(transformacion),
+                ),
+              ),
+          ] else ...[
+            // Mostrar TODO (megalotes Y lotes completados)
+            // Primero megalotes completados
             ..._filterTransformacionesByState().map(
               (transformacion) => Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _buildTransformacionCard(transformacion),
               ),
             ),
-          ] else ...[
-            if (_lotesCompletados.isEmpty)
-              _buildEmptyState()
-            else
-              ..._lotesCompletados.map((lote) => _buildLoteCard(lote)),
+            // Luego lotes individuales completados
+            ..._lotesCompletados.map((lote) => _buildLoteCard(lote)),
+            // Si no hay nada, mostrar estado vacío
+            if (_filterTransformacionesByState().isEmpty && _lotesCompletados.isEmpty)
+              _buildEmptyState(),
           ],
         ] else ...[
           // For tabs 0 and 1, only show individual lots
@@ -1877,8 +1999,25 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
 
   Map<String, dynamic> _calcularEstadisticasTab() {
     final lotes = _getCurrentTabLotes();
-    final total = lotes.length;
-    final peso = lotes.fold(0.0, (sum, lote) => sum + lote.pesoActual);
+    var total = lotes.length;
+    var peso = lotes.fold(0.0, (sum, lote) => sum + lote.pesoActual);
+    
+    // Incluir megalotes en las estadísticas para tabs de Documentación y Completados
+    if (_tabController.index == 1 || _tabController.index == 2) {
+      final megalotes = _filterTransformacionesByState();
+      
+      // Agregar el conteo de megalotes al total
+      total += megalotes.length;
+      
+      // Agregar el peso de los megalotes (usando peso_disponible o peso_total_entrada)
+      for (var megalote in megalotes) {
+        // Usar peso disponible si existe, sino usar peso total de entrada
+        final pesoMegalote = megalote.pesoDisponible > 0 
+            ? megalote.pesoDisponible 
+            : megalote.pesoTotalEntrada;
+        peso += pesoMegalote;
+      }
+    }
     
     return {
       'total': total,

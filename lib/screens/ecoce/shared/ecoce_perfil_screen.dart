@@ -15,7 +15,12 @@ import '../../login/platform_selector_screen.dart';
 /// Pantalla de perfil universal que funciona para todos los tipos de usuarios
 /// Obtiene la información del usuario desde Firebase y aplica los colores correspondientes
 class EcocePerfilScreen extends StatefulWidget {
-  const EcocePerfilScreen({super.key});
+  final bool showBottomNavigation;
+  
+  const EcocePerfilScreen({
+    super.key,
+    this.showBottomNavigation = true,
+  });
 
   @override
   State<EcocePerfilScreen> createState() => _EcocePerfilScreenState();
@@ -274,14 +279,16 @@ class _EcocePerfilScreenState extends State<EcocePerfilScreen> with SingleTicker
             ],
           ),
         ),
-        bottomNavigationBar: EcoceBottomNavigation(
-          selectedIndex: 3,
-          onItemTapped: _handleNavigation,
-          primaryColor: primaryColor,
-          items: navigationItems,
-          fabConfig: fabConfig,
-        ),
-        floatingActionButton: fabConfig != null
+        bottomNavigationBar: widget.showBottomNavigation
+          ? EcoceBottomNavigation(
+              selectedIndex: 3,
+              onItemTapped: _handleNavigation,
+              primaryColor: primaryColor,
+              items: navigationItems,
+              fabConfig: fabConfig,
+            )
+          : null,
+        floatingActionButton: widget.showBottomNavigation && fabConfig != null
           ? EcoceFloatingActionButton(
               onPressed: fabConfig.onPressed,
               icon: fabConfig.icon,
@@ -289,7 +296,7 @@ class _EcocePerfilScreenState extends State<EcocePerfilScreen> with SingleTicker
               tooltip: fabConfig.tooltip,
             )
           : null,
-        floatingActionButtonLocation: fabConfig != null
+        floatingActionButtonLocation: widget.showBottomNavigation && fabConfig != null
           ? FloatingActionButtonLocation.centerDocked
           : null,
         ),

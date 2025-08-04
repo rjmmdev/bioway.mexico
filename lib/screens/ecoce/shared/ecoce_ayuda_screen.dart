@@ -12,7 +12,12 @@ import 'utils/dialog_utils.dart';
 /// Pantalla de ayuda universal que funciona para todos los tipos de usuarios
 /// Obtiene la información del usuario desde la base de datos y aplica los colores correspondientes
 class EcoceAyudaScreen extends StatefulWidget {
-  const EcoceAyudaScreen({super.key});
+  final bool showBottomNavigation;
+  
+  const EcoceAyudaScreen({
+    super.key,
+    this.showBottomNavigation = true,
+  });
 
   @override
   State<EcoceAyudaScreen> createState() => _EcoceAyudaScreenState();
@@ -346,14 +351,16 @@ class _EcoceAyudaScreenState extends State<EcoceAyudaScreen> {
             ],
           ),
         ),
-        bottomNavigationBar: EcoceBottomNavigation(
-          selectedIndex: 2,
-          onItemTapped: _handleNavigation,
-          primaryColor: primaryColor,
-          items: navigationItems,
-          fabConfig: fabConfig,
-        ),
-        floatingActionButton: fabConfig != null
+        bottomNavigationBar: widget.showBottomNavigation
+          ? EcoceBottomNavigation(
+              selectedIndex: 2,
+              onItemTapped: _handleNavigation,
+              primaryColor: primaryColor,
+              items: navigationItems,
+              fabConfig: fabConfig,
+            )
+          : null,
+        floatingActionButton: widget.showBottomNavigation && fabConfig != null
           ? EcoceFloatingActionButton(
               onPressed: fabConfig.onPressed,
               icon: fabConfig.icon,
@@ -361,7 +368,7 @@ class _EcoceAyudaScreenState extends State<EcoceAyudaScreen> {
               tooltip: fabConfig.tooltip,
             )
           : null,
-        floatingActionButtonLocation: fabConfig != null
+        floatingActionButtonLocation: widget.showBottomNavigation && fabConfig != null
           ? FloatingActionButtonLocation.centerDocked
           : null,
         ),

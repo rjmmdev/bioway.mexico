@@ -853,11 +853,14 @@ class _ReceptorRecepcionPasosScreenState extends State<ReceptorRecepcionPasosScr
                           Expanded(
                             child: Row(
                               children: [
-                                Text(
-                                  '${lote['material']} - ${lote['peso']} kg',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
+                                Flexible(
+                                  child: Text(
+                                    '${lote['material']} - ${lote['peso']} kg',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 if (lote['es_sublote'] == true) ...[
@@ -911,6 +914,8 @@ class _ReceptorRecepcionPasosScreenState extends State<ReceptorRecepcionPasosScr
                           fontSize: 12,
                           color: Colors.grey[600],
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ],
                   ),

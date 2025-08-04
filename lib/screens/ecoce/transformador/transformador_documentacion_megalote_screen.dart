@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
+import '../../../services/firebase/firebase_manager.dart';
 import '../../../models/lotes/transformacion_model.dart';
 
 class TransformadorDocumentacionMegaloteScreen extends StatefulWidget {
@@ -23,6 +24,16 @@ class TransformadorDocumentacionMegaloteScreen extends StatefulWidget {
 
 class _TransformadorDocumentacionMegaloteScreenState extends State<TransformadorDocumentacionMegaloteScreen> {
   final FirebaseStorageService _storageService = FirebaseStorageService();
+  final FirebaseManager _firebaseManager = FirebaseManager();
+  
+  // Obtener Firestore de la instancia correcta (multi-tenant)
+  FirebaseFirestore get _firestore {
+    final app = _firebaseManager.currentApp;
+    if (app != null) {
+      return FirebaseFirestore.instanceFor(app: app);
+    }
+    return FirebaseFirestore.instance;
+  }
   
   // Mapa para almacenar archivos por tipo de documento
   final Map<String, List<PlatformFile>> _archivosPorDocumento = {
@@ -69,7 +80,7 @@ class _TransformadorDocumentacionMegaloteScreenState extends State<Transformador
 
   Future<void> _loadTransformacion() async {
     try {
-      final doc = await FirebaseFirestore.instance
+      final doc = await _firestore
           .collection('transformaciones')
           .doc(widget.transformacionId)
           .get();
@@ -210,7 +221,7 @@ class _TransformadorDocumentacionMegaloteScreenState extends State<Transformador
       }
       
       // Update transformacion status to 'completado' and save document URLs
-      await FirebaseFirestore.instance
+      await _firestore
           .collection('transformaciones')
           .doc(widget.transformacionId)
           .update({

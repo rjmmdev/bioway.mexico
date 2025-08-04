@@ -52,8 +52,8 @@ class _TransformadorMainScreenState extends State<TransformadorMainScreen> {
     _screens = [
       const TransformadorInicioScreen(),
       const TransformadorProduccionScreen(),
-      const EcoceAyudaScreen(),
-      const EcocePerfilScreen(),
+      const EcoceAyudaScreen(showBottomNavigation: false),
+      const EcocePerfilScreen(showBottomNavigation: false),
     ];
     _screensInitialized = true;
   }

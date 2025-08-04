@@ -1898,6 +1898,159 @@ class LoteUnificadoService {
     }
   }
 
+  /// Obtener estadísticas del transformador
+  /// - lotesRecibidos: Todos los sublotes que han entrado al perfil del transformador
+  /// - productosCreados: Total de transformaciones (megalotes) creadas
+  /// - materialProcesado: Suma del peso_total_entrada de las transformaciones del transformador
+  Future<Map<String, dynamic>> obtenerEstadisticasTransformador() async {
+    try {
+      debugPrint('╔════════════════════════════════════════════════════════════╗');
+      debugPrint('║      OBTENIENDO ESTADÍSTICAS TRANSFORMADOR                ║');
+      debugPrint('╚════════════════════════════════════════════════════════════╝');
+      
+      final userId = _currentUserId;
+      debugPrint('👤 Usuario ID: $userId');
+      
+      if (userId == null) {
+        debugPrint('❌ No hay usuario autenticado');
+        return {
+          'lotesRecibidos': 0,
+          'productosCreados': 0,
+          'materialProcesado': 0.0,
+        };
+      }
+
+      int lotesRecibidos = 0;
+      int productosCreados = 0;
+      double materialProcesado = 0.0;
+
+      // PASO 1: Obtener TODOS los sublotes recibidos por el transformador
+      // Buscar en la subcolección 'transformador' donde usuario_id == userId
+      debugPrint('\n═══ PASO 1: CONTANDO SUBLOTES RECIBIDOS ═══');
+      
+      try {
+        // Usar collectionGroup para buscar en todas las subcolecciones 'transformador'
+        final lotesTransformadorQuery = await _firestore
+            .collectionGroup('transformador')
+            .get();
+        
+        debugPrint('📊 Documentos encontrados en collectionGroup transformador: ${lotesTransformadorQuery.docs.length}');
+        
+        // Filtrar por usuario_id
+        int lotesDelUsuario = 0;
+        for (final doc in lotesTransformadorQuery.docs) {
+          final data = doc.data();
+          final usuarioId = data['usuario_id'] as String?;
+          
+          if (usuarioId == userId) {
+            lotesDelUsuario++;
+            final peso = (data['peso_entrada'] ?? data['peso'] ?? 0).toDouble();
+            debugPrint('  ✅ Sublote encontrado: ${doc.reference.parent.parent?.id} - Peso: $peso kg');
+          }
+        }
+        
+        lotesRecibidos = lotesDelUsuario;
+        debugPrint('📦 Total sublotes recibidos por este transformador: $lotesRecibidos');
+        
+      } catch (e) {
+        debugPrint('⚠️ Error obteniendo sublotes: $e');
+        debugPrint('Intentando método alternativo...');
+        
+        // Método alternativo: buscar lote por lote
+        try {
+          final lotesCollection = await _firestore.collection('lotes').get();
+          int lotesEncontrados = 0;
+          
+          for (final loteDoc in lotesCollection.docs) {
+            try {
+              final transformadorDoc = await _firestore
+                  .collection('lotes')
+                  .doc(loteDoc.id)
+                  .collection('transformador')
+                  .doc('data')
+                  .get();
+              
+              if (transformadorDoc.exists) {
+                final data = transformadorDoc.data();
+                final usuarioId = data?['usuario_id'] as String?;
+                
+                if (usuarioId == userId) {
+                  lotesEncontrados++;
+                  final peso = (data?['peso_entrada'] ?? data?['peso'] ?? 0).toDouble();
+                  debugPrint('  ✅ Sublote encontrado (método alternativo): ${loteDoc.id} - Peso: $peso kg');
+                }
+              }
+            } catch (e) {
+              // Ignorar errores individuales
+            }
+          }
+          
+          lotesRecibidos = lotesEncontrados;
+          debugPrint('📦 Total sublotes recibidos (método alternativo): $lotesRecibidos');
+        } catch (e) {
+          debugPrint('❌ Error en método alternativo: $e');
+        }
+      }
+      
+      // PASO 2: Obtener transformaciones del transformador y calcular material procesado
+      debugPrint('\n═══ PASO 2: CONTANDO MEGALOTES Y MATERIAL PROCESADO ═══');
+      
+      try {
+        final transformacionesQuery = await _firestore
+            .collection('transformaciones')
+            .where('usuario_id', isEqualTo: userId)
+            .where('tipo', isEqualTo: 'agrupacion_transformador')
+            .get();
+        
+        debugPrint('📊 Transformaciones encontradas: ${transformacionesQuery.docs.length}');
+        
+        for (final transformDoc in transformacionesQuery.docs) {
+          final data = transformDoc.data();
+          final estado = data['estado'] as String?;
+          final pesoTotalEntrada = (data['peso_total_entrada'] ?? 0).toDouble();
+          
+          // Contar productos creados (megalotes en cualquier estado)
+          if (estado == 'en_proceso' || estado == 'documentacion' || estado == 'completado') {
+            productosCreados++;
+            debugPrint('  🏭 Megalote ${transformDoc.id.substring(0, 8)} - Estado: $estado - Peso: $pesoTotalEntrada kg');
+          }
+          
+          // Sumar al material procesado (peso de TODAS las transformaciones)
+          materialProcesado += pesoTotalEntrada;
+        }
+        
+        debugPrint('🏭 Total productos creados: $productosCreados');
+        debugPrint('⚖️ Material procesado total: ${materialProcesado.toStringAsFixed(2)} kg');
+        
+      } catch (e) {
+        debugPrint('❌ Error obteniendo transformaciones: $e');
+      }
+      debugPrint('\nTotal de lotes únicos recibidos: $lotesRecibidos');
+      debugPrint('Productos creados (transformaciones): $productosCreados');
+      
+      // Convertir de kg a toneladas
+      materialProcesado = materialProcesado / 1000;
+      
+      debugPrint('\n=== RESULTADOS FINALES ===');
+      debugPrint('Lotes recibidos: $lotesRecibidos');
+      debugPrint('Productos creados: $productosCreados');
+      debugPrint('Material procesado: ${materialProcesado.toStringAsFixed(2)} toneladas');
+
+      return {
+        'lotesRecibidos': lotesRecibidos,
+        'productosCreados': productosCreados,
+        'materialProcesado': materialProcesado,
+      };
+    } catch (e) {
+      debugPrint('Error obteniendo estadísticas del transformador: $e');
+      return {
+        'lotesRecibidos': 0,
+        'productosCreados': 0,
+        'materialProcesado': 0.0,
+      };
+    }
+  }
+
   /// Stream de estadísticas del reciclador en tiempo real
   Stream<Map<String, dynamic>> streamEstadisticasReciclador() {
     final userId = _currentUserId;

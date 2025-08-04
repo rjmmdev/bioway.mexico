@@ -1227,14 +1227,22 @@ class EcoceProfileService {
       // 4. Limpiar el usuario del caché
       _userPathCache.remove(userId);
       
-      // 5. Intentar eliminar el usuario de Auth directamente (si es posible)
+      // 5. Marcar el usuario para eliminación de Auth por Cloud Function
+      // IMPORTANTE: NO usar _auth.currentUser?.delete() porque eso eliminaría al Maestro actual
+      // En su lugar, crear un documento en la colección de usuarios pendientes de eliminación
       try {
-        // NOTA: Esto solo funcionará si usamos Admin SDK
-        // En producción, la Cloud Function se encargará de esto
-        await _auth.currentUser?.delete();
+        debugPrint('📝 Marcando usuario $userId para eliminación de Auth por Cloud Function');
+        await _firestore.collection('users_pending_deletion').doc(userId).set({
+          'userId': userId,
+          'status': 'pending',
+          'created_at': FieldValue.serverTimestamp(),
+          'deleted_by': deletedBy,
+          'reason': 'Usuario eliminado por administrador maestro',
+        });
+        debugPrint('✅ Usuario marcado para eliminación de Auth. La Cloud Function lo procesará.');
       } catch (e) {
-        // Ignorar error - la Cloud Function se encargará
-        debugPrint('No se pudo eliminar directamente de Auth (esperado): $e');
+        debugPrint('⚠️ Error al marcar usuario para eliminación de Auth: $e');
+        // No es crítico, el usuario ya no puede acceder sin perfil
       }
       
       // El usuario será eliminado de Auth por la Cloud Function

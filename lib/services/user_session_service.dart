@@ -120,11 +120,17 @@ class UserSessionService {
     final profile = await getCurrentUserProfile();
     if (profile == null) return null;
     
+    // Obtener el UID del usuario actual de Firebase Auth
+    final currentUser = _authService.currentUser;
+    
     // Convertir el modelo a mapa completo con todos los campos
     return {
       'id': profile.id,
+      'userId': profile.id, // Agregar userId que es el mismo que id
+      'uid': currentUser?.uid ?? profile.id, // Agregar uid de Firebase Auth
       'nombre': profile.ecoceNombre,
       'folio': profile.ecoceFolio,
+      'ecoceFolio': profile.ecoceFolio, // Agregar ecoceFolio duplicado para compatibilidad
       'email': profile.ecoceCorreoContacto,
       'tipo': profile.tipoActorLabel,
       'tipoActor': profile.ecoceTipoActor,

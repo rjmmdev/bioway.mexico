@@ -5,6 +5,7 @@ import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/lote_service.dart';
+import '../../../services/lote_unificado_service.dart';
 import '../../../models/ecoce/ecoce_profile_model.dart';
 import '../../../models/lotes/lote_transformador_model.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
@@ -27,6 +28,7 @@ class TransformadorInicioScreen extends StatefulWidget {
 class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
   final UserSessionService _sessionService = UserSessionService();
   final LoteService _loteService = LoteService();
+  final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
   final int _selectedIndex = 0;
   
   EcoceProfileModel? _userProfile;
@@ -533,17 +535,18 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
   
   Future<void> _loadStatistics() async {
     try {
-      // Obtener todos los lotes del transformador
-      final lotes = await _loteService.getLotesTransformador().first;
+      // Obtener estadísticas usando el servicio unificado
+      final stats = await _loteUnificadoService.obtenerEstadisticasTransformador();
       
       if (mounted) {
         setState(() {
-          _lotesRecibidos = lotes.length;
-          _productosCreados = lotes.where((l) => l.estado == 'finalizado').length;
-          // Convertir de kg a toneladas
-          _materialProcesado = lotes.fold(0.0, (sum, lote) => sum + (lote.pesoIngreso ?? 0)) / 1000;
+          _lotesRecibidos = stats['lotesRecibidos'] ?? 0;
+          _productosCreados = stats['productosCreados'] ?? 0;
+          _materialProcesado = stats['materialProcesado'] ?? 0.0; // Ya viene en toneladas
         });
       }
+      
+      debugPrint('Estadísticas cargadas - Lotes: $_lotesRecibidos, Productos: $_productosCreados, Material: $_materialProcesado t');
     } catch (e) {
       debugPrint('Error cargando estadísticas: $e');
     }
@@ -582,7 +585,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F5F5),
         body: SafeArea(
-        child: CustomScrollView(
+          child: CustomScrollView(
           slivers: [
             // Header moderno con gradiente (estilo reciclador)
             SliverToBoxAdapter(
@@ -989,7 +992,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                           },
                         ),
                         
-                        const SizedBox(height: 100), // Espacio para el bottom nav
+                        const SizedBox(height: 20), // Espacio al final
                       ],
                     ),
                   ),
@@ -997,27 +1000,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
               ),
           ],
         ),
-      ),
-      
-      // Bottom Navigation Bar
-      bottomNavigationBar: EcoceBottomNavigation(
-        selectedIndex: _selectedIndex,
-        onItemTapped: _onBottomNavTapped,
-        primaryColor: Colors.orange,
-        items: EcoceNavigationConfigs.transformadorItems,
-        fabConfig: FabConfig(
-          icon: Icons.add,
-          onPressed: _onAddPressed,
         ),
-      ),
-      
-      // Floating Action Button
-      floatingActionButton: EcoceFloatingActionButton(
-        onPressed: _onAddPressed,
-        icon: Icons.add,
-        backgroundColor: Colors.orange,
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
   }

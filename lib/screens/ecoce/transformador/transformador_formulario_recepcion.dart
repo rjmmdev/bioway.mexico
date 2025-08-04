@@ -825,48 +825,6 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
           ),
         ),
       ),
-      bottomNavigationBar: EcoceBottomNavigation(
-        selectedIndex: 1, // Recibir
-        onItemTapped: (index) {
-          HapticFeedback.lightImpact();
-          switch (index) {
-            case 0:
-              Navigator.pushReplacementNamed(context, '/transformador_inicio');
-              break;
-            case 1:
-              break; // Ya estamos aquí
-            case 2:
-              TransformadorNavigationHelper.navigateToPendingSalida(context, replacement: true);
-              break;
-            case 3:
-              Navigator.pushReplacementNamed(context, '/transformador_perfil');
-              break;
-          }
-        },
-        primaryColor: Colors.orange,
-        items: const [
-          NavigationItem(
-            icon: Icons.home_rounded,
-            label: 'Inicio',
-            testKey: 'transformador_nav_inicio',
-          ),
-          NavigationItem(
-            icon: Icons.qr_code_scanner_rounded,
-            label: 'Recibir',
-            testKey: 'transformador_nav_recibir',
-          ),
-          NavigationItem(
-            icon: Icons.precision_manufacturing_rounded,
-            label: 'Producción',
-            testKey: 'transformador_nav_produccion',
-          ),
-          NavigationItem(
-            icon: Icons.person_outline_rounded,
-            label: 'Perfil',
-            testKey: 'transformador_nav_perfil',
-          ),
-        ],
-      ),
     );
   }
 

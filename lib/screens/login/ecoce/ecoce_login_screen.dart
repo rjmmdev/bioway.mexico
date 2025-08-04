@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 import '../../../utils/colors.dart';
 import '../../../services/firebase/auth_service.dart';
@@ -627,7 +628,6 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                                   _buildRegisterButton(),
                                   const SizedBox(height: 16),
 
-
                                   // Información adicional
                                   const SizedBox(height: 20),
                                   _buildInfoSection(),
@@ -983,6 +983,155 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
     );
   }
 
+
+  // BOTÓN TEMPORAL PARA CREAR MAESTRO - SOLO EMERGENCIAS
+  // COMENTADO DESPUÉS DE CREAR EXITOSAMENTE EL MAESTRO - MANTENER POR SI SE NECESITA EN EL FUTURO
+  /*
+  Widget _buildEmergencyMaestroButton() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.red.shade200,
+          width: 2,
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.warning_amber_rounded,
+            color: Colors.red.shade700,
+            size: 24,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '⚠️ BOTÓN DE EMERGENCIA - SOLO USAR SI NO HAY MAESTRO',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Colors.red.shade700,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isLoading ? null : _createEmergencyMaestro,
+              icon: const Icon(Icons.admin_panel_settings, size: 18),
+              label: const Text(
+                'Crear Usuario Maestro Temporal',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Usuario: maestro@ecoce.mx | Contraseña: Maestro123!',
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.red.shade600,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Función para crear un maestro de emergencia
+  Future<void> _createEmergencyMaestro() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      // Inicializar Firebase para ECOCE si no está inicializado
+      await _authService.initializeForPlatform(FirebasePlatform.ecoce);
+      
+      // Crear usuario en Firebase Auth
+      final userCredential = await _authService.createUserWithEmailAndPassword(
+        email: 'maestro@ecoce.mx',
+        password: 'Maestro123!',
+      );
+      
+      if (userCredential.user != null) {
+        final userId = userCredential.user!.uid;
+        
+        // Crear documento en la colección 'maestros'
+        final FirebaseManager firebaseManager = FirebaseManager();
+        final firestore = FirebaseFirestore.instanceFor(
+          app: firebaseManager.currentApp!,
+        );
+        
+        await firestore.collection('maestros').doc(userId).set({
+          'uid': userId,
+          'email': 'maestro@ecoce.mx',
+          'nombre': 'Administrador ECOCE Temporal',
+          'rol': 'maestro',
+          'created_at': FieldValue.serverTimestamp(),
+          'updated_at': FieldValue.serverTimestamp(),
+          'es_temporal': true,
+          'creado_por': 'sistema_emergencia',
+          'fecha_creacion': DateTime.now().toIso8601String(),
+        });
+        
+        // Cerrar sesión del usuario recién creado
+        await _authService.signOut();
+        
+        if (mounted) {
+          // Mostrar mensaje de éxito
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Maestro temporal creado exitosamente. Ya puedes iniciar sesión.'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 5),
+            ),
+          );
+          
+          // Llenar automáticamente los campos de login
+          _userController.text = 'maestro@ecoce.mx';
+          _passwordController.text = 'Maestro123!';
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        String errorMessage = 'Error al crear maestro: ';
+        if (e.toString().contains('email-already-in-use')) {
+          errorMessage = 'El usuario maestro ya existe. Usa las credenciales mostradas.';
+        } else {
+          errorMessage += e.toString();
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: BioWayColors.error,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+        
+        // Si el usuario ya existe, llenar los campos
+        if (e.toString().contains('email-already-in-use')) {
+          _userController.text = 'maestro@ecoce.mx';
+          _passwordController.text = 'Maestro123!';
+        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+  */
 
   Widget _buildInfoSection() {
     return Container(
