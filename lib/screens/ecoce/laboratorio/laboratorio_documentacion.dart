@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
 import '../../../services/lote_service.dart';
@@ -27,6 +28,82 @@ class _LaboratorioDocumentacionState extends State<LaboratorioDocumentacion> {
   final MuestraLaboratorioService _muestraService = MuestraLaboratorioService(); // NUEVO: Servicio independiente
   final FirebaseStorageService _storageService = FirebaseStorageService();
   bool _isLoading = false;
+
+  void _showLaboratorioSuccessDialog() {
+    HapticFeedback.lightImpact();
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Column(
+            children: [
+              const Icon(
+                Icons.check_circle,
+                color: Color(0xFF9333EA), // Morado de laboratorio
+                size: 60,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Documentación Cargada',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF9333EA), // Morado de laboratorio
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Los documentos se han guardado correctamente',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  // Navegar a la gestión de muestras en la pestaña de finalizados
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LaboratorioGestionMuestras(
+                        initialTab: 2, // Pestaña de Finalizados
+                      ),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF9333EA), // Morado de laboratorio
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Aceptar',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   void _onDocumentsSubmitted(Map<String, DocumentInfo> documents) async {
     if (_isLoading) return; // Evitar múltiples envíos
@@ -85,22 +162,7 @@ class _LaboratorioDocumentacionState extends State<LaboratorioDocumentacion> {
       if (mounted) {
         debugPrint('[LABORATORIO] Documentación completada, mostrando diálogo de éxito...');
         
-        DialogUtils.showSuccessDialog(
-          context,
-          title: 'Documentación Cargada',
-          message: 'Los documentos se han guardado correctamente',
-          onAccept: () {
-            // Navegar a la gestión de muestras en la pestaña de finalizados
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const LaboratorioGestionMuestras(
-                  initialTab: 2, // Pestaña de Finalizados
-                ),
-              ),
-            );
-          },
-        );
+        _showLaboratorioSuccessDialog();
       }
     } catch (e) {
       if (mounted) {

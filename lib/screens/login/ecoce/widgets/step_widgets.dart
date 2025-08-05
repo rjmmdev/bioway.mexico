@@ -1566,10 +1566,11 @@ class _OperationsStepState extends State<OperationsStep> {
     // Validar capacidad si se muestra esa sección
     if (widget.showCapacitySection) {
       final largo = widget.controllers['largo']!.text.trim();
+      final alto = widget.controllers['alto']!.text.trim();
       final ancho = widget.controllers['ancho']!.text.trim();
       final peso = widget.controllers['peso']!.text.trim();
       
-      if (largo.isEmpty || ancho.isEmpty || peso.isEmpty) {
+      if (largo.isEmpty || alto.isEmpty || ancho.isEmpty || peso.isEmpty) {
         setState(() {
           _errorMessage = 'Debes completar todas las dimensiones de capacidad';
         });
@@ -1577,7 +1578,7 @@ class _OperationsStepState extends State<OperationsStep> {
       }
       
       // Validar que sean números válidos
-      if (double.tryParse(largo) == null || double.tryParse(ancho) == null || double.tryParse(peso) == null) {
+      if (double.tryParse(largo) == null || double.tryParse(alto) == null || double.tryParse(ancho) == null || double.tryParse(peso) == null) {
         setState(() {
           _errorMessage = 'Las dimensiones deben ser números válidos';
         });
@@ -1585,7 +1586,7 @@ class _OperationsStepState extends State<OperationsStep> {
       }
       
       // Validar que sean valores positivos
-      if (double.parse(largo) <= 0 || double.parse(ancho) <= 0 || double.parse(peso) <= 0) {
+      if (double.parse(largo) <= 0 || double.parse(alto) <= 0 || double.parse(ancho) <= 0 || double.parse(peso) <= 0) {
         setState(() {
           _errorMessage = 'Las dimensiones deben ser mayores a cero';
         });
@@ -1680,6 +1681,7 @@ class _OperationsStepState extends State<OperationsStep> {
         if (widget.showCapacitySection) ...[
           CapacitySection(
             largoController: widget.controllers['largo']!,
+            altoController: widget.controllers['alto']!,
             anchoController: widget.controllers['ancho']!,
             weightController: widget.controllers['peso']!,
           ),
@@ -1732,6 +1734,7 @@ class _OperationsStepState extends State<OperationsStep> {
 /// Widget personalizado para input de dimensiones con formato X
 class DimensionsInput extends StatefulWidget {
   final TextEditingController largoController;
+  final TextEditingController altoController;
   final TextEditingController anchoController;
   final String label;
   final String? helperText;
@@ -1740,9 +1743,10 @@ class DimensionsInput extends StatefulWidget {
   const DimensionsInput({
     super.key,
     required this.largoController,
+    required this.altoController,
     required this.anchoController,
     this.label = 'Dimensiones (metros) *',
-    this.helperText = 'Formato: largo X ancho',
+    this.helperText = 'Formato: largo X alto X ancho',
     this.icon = Icons.straighten,
   });
 
@@ -1786,9 +1790,9 @@ class _DimensionsInputState extends State<DimensionsInput> {
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 16),
                   decoration: InputDecoration(
-                    hintText: '15.25',
+                    hintText: '10.5',
                     hintStyle: TextStyle(color: BioWayColors.textGrey.withValues(alpha: 0.5)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     border: InputBorder.none,
                   ),
                   inputFormatters: [
@@ -1797,7 +1801,35 @@ class _DimensionsInputState extends State<DimensionsInput> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: const Text(
+                  'X',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: BioWayColors.petBlue,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: TextFormField(
+                  controller: widget.altoController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16),
+                  decoration: InputDecoration(
+                    hintText: '3.5',
+                    hintStyle: TextStyle(color: BioWayColors.textGrey.withValues(alpha: 0.5)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    border: InputBorder.none,
+                  ),
+                  inputFormatters: [
+                    DecimalTextInputFormatter(),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: const Text(
                   'X',
                   style: TextStyle(
@@ -1814,9 +1846,9 @@ class _DimensionsInputState extends State<DimensionsInput> {
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 16),
                   decoration: InputDecoration(
-                    hintText: '15.20',
+                    hintText: '8.2',
                     hintStyle: TextStyle(color: BioWayColors.textGrey.withValues(alpha: 0.5)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     border: InputBorder.none,
                   ),
                   inputFormatters: [
@@ -1848,12 +1880,14 @@ class _DimensionsInputState extends State<DimensionsInput> {
 /// Sección de capacidad de prensado específica para Acopiador
 class CapacitySection extends StatelessWidget {
   final TextEditingController largoController;
+  final TextEditingController altoController;
   final TextEditingController anchoController;
   final TextEditingController weightController;
 
   const CapacitySection({
     super.key,
     required this.largoController,
+    required this.altoController,
     required this.anchoController,
     required this.weightController,
   });
@@ -1920,6 +1954,7 @@ class CapacitySection extends StatelessWidget {
 
           DimensionsInput(
             largoController: largoController,
+            altoController: altoController,
             anchoController: anchoController,
           ),
           const SizedBox(height: 16),

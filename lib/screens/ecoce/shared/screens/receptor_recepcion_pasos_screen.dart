@@ -108,7 +108,7 @@ class _ReceptorRecepcionPasosScreenState extends State<ReceptorRecepcionPasosScr
       case 'laboratorio':
         return BioWayColors.petBlue;
       case 'transformador':
-        return BioWayColors.ecoceGreen;
+        return Colors.orange;
       default:
         return BioWayColors.primaryGreen;
     }
@@ -696,23 +696,23 @@ class _ReceptorRecepcionPasosScreenState extends State<ReceptorRecepcionPasosScr
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.green[50],
+              color: _primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.green[300]!),
+              border: Border.all(color: _primaryColor.withValues(alpha: 0.3)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Icon(Icons.check_circle, color: Colors.green[700], size: 24),
+                    Icon(Icons.check_circle, color: _primaryColor, size: 24),
                     const SizedBox(width: 12),
                     Text(
                       'Entrega identificada',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Colors.green[700],
+                        color: _primaryColor,
                       ),
                     ),
                   ],
@@ -722,7 +722,7 @@ class _ReceptorRecepcionPasosScreenState extends State<ReceptorRecepcionPasosScr
                   'Transportista: ${_datosEntrega!['transportista_nombre'] ?? _datosEntrega!['transportista_folio']}',
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.green[700],
+                    color: _primaryColor,
                   ),
                 ),
                 Text(

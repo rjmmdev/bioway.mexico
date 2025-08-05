@@ -18,11 +18,39 @@ import '../../../models/lotes/lote_unificado_model.dart';
 import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
 import '../shared/widgets/weight_input_widget.dart';
-import '../shared/widgets/unified_container.dart';
 import '../shared/widgets/field_label.dart';
 import '../shared/utils/dialog_utils.dart';
-import 'transformador_documentacion_screen.dart';
 import 'utils/transformador_navigation_helper.dart';
+
+// Painter personalizado para la firma con color naranja
+class TransformadorSignaturePainter extends CustomPainter {
+  final List<Offset?> points;
+  final Color color;
+  final double strokeWidth;
+
+  TransformadorSignaturePainter({
+    required this.points,
+    required this.color,
+    this.strokeWidth = 2.0,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = strokeWidth;
+
+    for (int i = 0; i < points.length - 1; i++) {
+      if (points[i] != null && points[i + 1] != null) {
+        canvas.drawLine(points[i]!, points[i + 1]!, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(TransformadorSignaturePainter oldDelegate) => true;
+}
 
 class TransformadorFormularioSalida extends StatefulWidget {
   final String? loteId; // Individual
@@ -100,7 +128,6 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
   
   // Variables para la firma
   List<Offset?> _signaturePoints = [];
-  bool _hasSignature = false;
   
   // Variables para las fotos
   List<File> _photos = [];
@@ -238,7 +265,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
       setState(() {
         _pesoTotalOriginal = pesoTotal;
         if (_cantidadGeneradaController.text.isEmpty) {
-          _cantidadGeneradaController.text = pesoTotal.toStringAsFixed(2);
+          _cantidadGeneradaController.text = '0.00';
         }
         _isLoading = false;
       });
@@ -301,7 +328,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
       // Cargar firma si existe
       if (data['firma_operador'] != null) {
         _signatureUrl = data['firma_operador'];
-        _hasSignature = true;
+        // Note: _signaturePoints will remain empty but _signatureUrl indicates saved signature
       }
       
       // Cargar fotos si existen
@@ -479,7 +506,6 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
       onSignatureSaved: (points) {
         setState(() {
           _signaturePoints = List.from(points);
-          _hasSignature = points.isNotEmpty;
         });
         // NO guardar borrador automáticamente después de firmar para evitar duplicados
       },
@@ -500,7 +526,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
            _cantidadGeneradaController.text != _pesoTotalOriginal.toStringAsFixed(2) ||
            _comentariosController.text.isNotEmpty ||
            _procesosAplicados.values.any((selected) => selected) ||
-           _hasSignature ||
+           _signaturePoints.isNotEmpty ||
            _photos.isNotEmpty;
   }
   
@@ -509,7 +535,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
            _compuestoController.text.isNotEmpty &&
            _cantidadGeneradaController.text.isNotEmpty &&
            _procesosAplicados.values.any((selected) => selected) &&
-           _hasSignature &&
+           _signaturePoints.isNotEmpty &&
            _photos.isNotEmpty;
   }
 
@@ -541,7 +567,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
     }
     
     // Validar firma
-    if (!_hasSignature) {
+    if (_signaturePoints.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Por favor capture la firma del responsable'),
@@ -744,7 +770,9 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
             final existingLoteIds = existingLotes.map((l) => l['lote_id']).toSet();
             final currentLoteIds = lotesEntrada.map((l) => l['lote_id']).toSet();
             
-            if (existingLoteIds.intersection(currentLoteIds).isNotEmpty) {
+            // Verificar igualdad exacta: mismo número de lotes y todos coinciden
+            if (existingLoteIds.length == currentLoteIds.length &&
+                existingLoteIds.containsAll(currentLoteIds)) {
               existingId = doc.id;
               break;
             }
@@ -953,43 +981,15 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
         // Wait a moment for the database update to propagate
         await Future.delayed(const Duration(milliseconds: 1500));
         
-        // Navegar según el tipo de procesamiento
+        // Navegar a la pantalla de Producción en la pestaña de Documentación
         if (mounted) {
-          if (_esProcesamientoMultiple) {
-            // Para procesamiento múltiple (megalotes), volver a producción con tab Documentación
-            Navigator.of(context).pushNamedAndRemoveUntil(
-              '/transformador_produccion',
-              (route) => false,
-              arguments: {
-                'initialTab': 1, // Tab de Documentación
-                'showMegalotes': true, // Force show megalotes
-              },
-            );
-          } else {
-            // Para lotes individuales, ir a documentación
-            final result = await Navigator.push<bool>(
-              context,
-              MaterialPageRoute(
-                builder: (context) => TransformadorDocumentacionScreen(
-                  loteId: _loteIds.first,
-                  material: widget.tipoPolimero ?? _tipoPolimero ?? 'Material',
-                  peso: widget.peso ?? _pesoTotalOriginal,
-                ),
-              ),
-            );
-            
-            // If documentation was completed or user pressed back, return to production
-            if (mounted) {
-              // Determine which tab to show based on whether documentation was completed
-              final tabIndex = result == true ? 2 : 1; // Completados if true, Documentación if false
-              
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/transformador_produccion',
-                (route) => false,
-                arguments: {'initialTab': tabIndex},
-              );
-            }
-          }
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/transformador_produccion',
+            (route) => false,
+            arguments: {
+              'initialTab': 1, // Tab de Documentación
+            },
+          );
         }
       }
     } catch (e) {
@@ -1151,14 +1151,46 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
             key: _formKey,
             child: ListView(
               controller: _scrollController,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               children: [
             // Sección de información del lote
-            SectionCard(
-              icon: '📦',
-              title: 'Información del Lote',
-              children: [
-                Container(
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.inventory_2,
+                        color: _primaryColor,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Información del Lote',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: _primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: _primaryColor.withValues(alpha: 0.1),
@@ -1255,17 +1287,57 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                     ],
                   ),
                 ),
-              ],
+                ],
+              ),
             ),
             
+            const SizedBox(height: 20),
+            
             // Sección de peso de salida
-            SectionCard(
-              icon: '⚖️',
-              title: 'Peso de Salida',
-              children: [
-                WeightInputWidget(
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.scale,
+                        color: _primaryColor,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Peso de Salida',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: _primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  const FieldLabel(
+                    text: 'Peso de salida (kg)',
+                    isRequired: true,
+                  ),
+                  const SizedBox(height: 8),
+                  WeightInputWidget(
                   controller: _pesoSalidaController,
-                  label: 'Peso de salida en kilogramos',
+                  label: '',
                   primaryColor: _primaryColor,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -1278,120 +1350,237 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                     return null;
                   },
                 ),
-              ],
+                ],
+              ),
             ),
+            
+            const SizedBox(height: 20),
             
             // Sección de procesos aplicados
-            SectionCard(
-              icon: '🔬',
-              title: 'Procesos Aplicados *',
-              children: [
-                _buildProcesosAplicadosGrid(),
-              ],
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.science,
+                        color: _primaryColor,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Procesos Aplicados *',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: _primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  _buildProcesosAplicadosGrid(),
+                ],
+              ),
             ),
             
-            // Sección de producto generado
-            SectionCard(
-              icon: '📦',
-              title: 'Producto Generado',
-              children: [
-                TextFormField(
-                  controller: _productoGeneradoController,
-                  focusNode: _productoFocus,
-                  maxLength: 50,
-                  decoration: InputDecoration(
-                    hintText: 'Ej: Pellets de PET',
-                    counter: Text(
-                      '${_productoGeneradoController.text.length}/50',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    prefixIcon: Icon(
-                      Icons.inventory_2,
-                      color: _primaryColor,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: Colors.grey[300]!,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: _primaryColor,
-                        width: 2,
-                      ),
-                    ),
+            const SizedBox(height: 20),
+            
+            // Sección de producto generado (combinada)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor ingrese el producto generado';
-                    }
-                    return null;
-                  },
-                  onChanged: (value) {
-                    setState(() {}); // Para actualizar el contador
-                  },
-                ),
-              ],
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.precision_manufacturing,
+                        color: _primaryColor,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Producto Generado',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: _primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Campo de producto fabricado
+                  const FieldLabel(
+                    text: 'Producto fabricado',
+                    isRequired: true,
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _productoGeneradoController,
+                    focusNode: _productoFocus,
+                    maxLength: 50,
+                    decoration: InputDecoration(
+                      hintText: 'Ej: Pellets de PET',
+                      counter: Text(
+                        '${_productoGeneradoController.text.length}/50',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      prefixIcon: Icon(
+                        Icons.inventory_2,
+                        color: _primaryColor,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: Colors.grey[300]!,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: _primaryColor,
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor ingrese el producto generado';
+                      }
+                      return null;
+                    },
+                    onChanged: (value) {
+                      setState(() {}); // Para actualizar el contador
+                    },
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Campo de cantidad generada
+                  const FieldLabel(
+                    text: 'Cantidad generada',
+                    isRequired: true,
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _cantidadGeneradaController,
+                    focusNode: _cantidadFocus,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      hintText: 'Ej: 500 unidades',
+                      prefixIcon: Icon(
+                        Icons.numbers,
+                        color: _primaryColor,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: Colors.grey[300]!,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: _primaryColor,
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor ingrese la cantidad generada';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
             ),
             
-            // Sección de cantidad generada
-            SectionCard(
-              icon: '🧪',
-              title: 'Cantidad Generada',
-              children: [
-                TextFormField(
-                  controller: _cantidadGeneradaController,
-                  focusNode: _cantidadFocus,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    hintText: 'Ej: 500 unidades',
-                    prefixIcon: Icon(
-                      Icons.numbers,
-                      color: _primaryColor,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: Colors.grey[300]!,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: _primaryColor,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor ingrese la cantidad generada';
-                    }
-                    return null;
-                  },
-                ),
-              ],
-            ),
+            const SizedBox(height: 20),
             
             // Sección de datos del responsable
-            SectionCard(
-              icon: '👤',
-              title: 'Datos del Responsable',
-              children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.person,
+                        color: _primaryColor,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Datos del Responsable',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: _primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  const FieldLabel(
+                    text: 'Nombre del operador',
+                    isRequired: true,
+                  ),
+                  const SizedBox(height: 8),
                 TextFormField(
                   controller: _operadorController,
                   focusNode: _operadorFocus,
                   textCapitalization: TextCapitalization.words,
                   decoration: InputDecoration(
-                    labelText: 'Nombre del operador',
                     hintText: 'Ej: Juan Pérez',
                     prefixIcon: Icon(
                       Icons.person,
@@ -1431,109 +1620,291 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                       isRequired: true,
                     ),
                     const SizedBox(height: 8),
-                    InkWell(
-                      onTap: _showSignatureDialog,
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
+                    GestureDetector(
+                      onTap: _signaturePoints.isEmpty ? () => _showSignatureDialog() : null,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        height: _signaturePoints.isNotEmpty ? 150 : 100,
                         width: double.infinity,
-                        height: 150,
                         decoration: BoxDecoration(
-                          border: Border.all(
-                            color: _hasSignature
-                                ? Colors.green
-                                : Colors.grey[300]!,
-                            width: 2,
-                            style: BorderStyle.solid,
-                          ),
+                          color: _signaturePoints.isNotEmpty 
+                              ? _primaryColor.withOpacity(0.05)
+                              : Colors.grey[50],
                           borderRadius: BorderRadius.circular(12),
-                          color: Colors.grey[50],
+                          border: Border.all(
+                            color: _signaturePoints.isNotEmpty 
+                                ? _primaryColor 
+                                : Colors.grey[300]!,
+                            width: _signaturePoints.isNotEmpty ? 2 : 1,
+                          ),
                         ),
-                        child: Center(
-                          child: _hasSignature
-                              ? Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(
-                                      Icons.check_circle,
-                                      size: 48,
-                                      color: Colors.green,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    const Text(
-                                      'Firma capturada',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.green,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Toque para modificar',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : Column(
+                        child: !_signaturePoints.isNotEmpty
+                            ? Center(
+                                child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(
                                       Icons.draw,
-                                      size: 48,
-                                      color: _primaryColor,
+                                      size: 32,
+                                      color: Colors.grey[400],
                                     ),
-                                    const SizedBox(height: 8),
+                                    const SizedBox(height: 4),
                                     Text(
                                       'Toque para firmar',
                                       style: TextStyle(
-                                        fontSize: 16,
-                                        color: _primaryColor,
-                                        fontWeight: FontWeight.w500,
+                                        color: Colors.grey[600],
+                                        fontSize: 14,
                                       ),
                                     ),
                                   ],
                                 ),
-                        ),
+                              )
+                            : Stack(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Center(
+                                      child: AspectRatio(
+                                        aspectRatio: 2.5,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: Colors.grey[200]!),
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(8),
+                                            child: FittedBox(
+                                              fit: BoxFit.contain,
+                                              child: SizedBox(
+                                                width: 300,
+                                                height: 300,
+                                                child: _signatureUrl != null
+                                                ? Image.network(
+                                                    _signatureUrl!,
+                                                    fit: BoxFit.contain,
+                                                    loadingBuilder: (context, child, loadingProgress) {
+                                                      if (loadingProgress == null) return child;
+                                                      return Center(
+                                                        child: CircularProgressIndicator(
+                                                          value: loadingProgress.expectedTotalBytes != null
+                                                              ? loadingProgress.cumulativeBytesLoaded /
+                                                                  loadingProgress.expectedTotalBytes!
+                                                              : null,
+                                                          color: _primaryColor,
+                                                        ),
+                                                      );
+                                                    },
+                                                    errorBuilder: (context, error, stackTrace) {
+                                                      return Center(
+                                                        child: Column(
+                                                          mainAxisAlignment: MainAxisAlignment.center,
+                                                          children: [
+                                                            Icon(
+                                                              Icons.error_outline,
+                                                              color: Colors.red[300],
+                                                              size: 30,
+                                                            ),
+                                                            const SizedBox(height: 4),
+                                                            Text(
+                                                              'Error al cargar',
+                                                              style: TextStyle(
+                                                                fontSize: 12,
+                                                                color: Colors.red[300],
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      );
+                                                    },
+                                                  )
+                                                : CustomPaint(
+                                                    size: const Size(300, 120),
+                                                    painter: TransformadorSignaturePainter(
+                                                      points: _signaturePoints,
+                                                      color: _primaryColor,
+                                                      strokeWidth: 2.0,
+                                                    ),
+                                                  ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            shape: BoxShape.circle,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(0.1),
+                                                blurRadius: 4,
+                                              ),
+                                            ],
+                                          ),
+                                          child: IconButton(
+                                            onPressed: _showSignatureDialog,
+                                            icon: const Icon(Icons.edit, size: 20),
+                                            color: _primaryColor,
+                                            padding: const EdgeInsets.all(8),
+                                            constraints: const BoxConstraints(
+                                              minWidth: 36,
+                                              minHeight: 36,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            shape: BoxShape.circle,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(0.1),
+                                                blurRadius: 4,
+                                              ),
+                                            ],
+                                          ),
+                                          child: IconButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                _signaturePoints.clear();
+                                              });
+                                            },
+                                            icon: const Icon(Icons.clear, size: 20),
+                                            color: Colors.red,
+                                            padding: const EdgeInsets.all(8),
+                                            constraints: const BoxConstraints(
+                                              minWidth: 36,
+                                              minHeight: 36,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                       ),
                     ),
                   ],
                 ),
-              ],
+                ],
+              ),
             ),
+            
+            const SizedBox(height: 20),
             
             // Sección de evidencia fotográfica
-            SectionCard(
-              icon: '📷',
-              title: 'Evidencia Fotográfica',
-              children: [
-                PhotoEvidenceWidget(
-                  title: '', // Empty title since SectionCard already provides it
-                  onPhotosChanged: (photos) {
-                    setState(() {
-                      _photos = photos;
-                    });
-                  },
-                  primaryColor: _primaryColor,
-                  isRequired: true,
-                  showCounter: true,
-                ),
-              ],
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.camera_alt,
+                        color: _primaryColor,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Evidencia Fotográfica',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: _primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  PhotoEvidenceWidget(
+                    title: '', // Empty title since we already have it
+                    onPhotosChanged: (photos) {
+                      setState(() {
+                        _photos = photos;
+                      });
+                    },
+                    primaryColor: _primaryColor,
+                    isRequired: true,
+                    showCounter: true,
+                  ),
+                ],
+              ),
             ),
             
+            const SizedBox(height: 20),
+            
             // Sección de comentarios
-            SectionCard(
-              icon: '💬',
-              title: 'Comentarios',
-              children: [
-                TextFormField(
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.comment,
+                        color: _primaryColor,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Comentarios',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: _primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  const FieldLabel(
+                    text: 'Comentarios adicionales',
+                    isRequired: false,
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
                   controller: _comentariosController,
                   focusNode: _comentariosFocus,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    hintText: 'Comentarios adicionales (opcional)',
+                    hintText: 'Ingrese observaciones adicionales',
                     alignLabelWithHint: true,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -1554,28 +1925,31 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                   ),
                   onChanged: (_) => _markAsUnsaved(),
                 ),
-              ],
+                ],
+              ),
             ),
             
             const SizedBox(height: 32),
             
             // Botón de procesar salida
-            ElevatedButton(
-              onPressed: _procesarSalida,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _primaryColor,
-                minimumSize: const Size(double.infinity, 56),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            SizedBox(
+              height: 56,
+              child: ElevatedButton(
+                onPressed: _procesarSalida,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 2,
                 ),
-                elevation: 3,
-              ),
-              child: const Text(
-                'Procesar Salida',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                child: const Text(
+                  'Procesar Salida',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),

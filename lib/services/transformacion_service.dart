@@ -583,4 +583,77 @@ class TransformacionService {
       throw Exception('Error al registrar toma de muestra: $e');
     }
   }
+  
+  /// Actualiza la documentación de una transformación
+  /// Ahora recibe Map<String, String> en lugar de Map<String, List<String>>
+  Future<void> actualizarDocumentacion({
+    required String transformacionId,
+    required Map<String, String> documentos,
+  }) async {
+    try {
+      print('[TransformacionService] Actualizando documentación de transformación: $transformacionId');
+      
+      // Verificar que el usuario actual es el dueño de la transformación
+      final transformacion = await obtenerTransformacion(transformacionId);
+      if (transformacion == null) {
+        throw Exception('Transformación no encontrada');
+      }
+      
+      final currentUser = _authService.currentUser;
+      if (currentUser?.uid != transformacion.usuarioId) {
+        throw Exception('No tienes permisos para actualizar esta transformación');
+      }
+      
+      // Actualizar documentos en Firestore
+      // Ahora guardamos strings individuales en lugar de arrays
+      await _firestore.collection('transformaciones').doc(transformacionId).update({
+        'documentos_asociados': documentos,
+        'fecha_documentacion': FieldValue.serverTimestamp(),
+        'documentacion_completada': true,
+      });
+      
+      print('[TransformacionService] Documentación actualizada exitosamente');
+    } catch (e) {
+      print('[TransformacionService] Error al actualizar documentación: $e');
+      throw Exception('Error al actualizar documentación: $e');
+    }
+  }
+  
+  /// Actualiza el estado de una transformación
+  Future<void> actualizarEstadoTransformacion({
+    required String transformacionId,
+    required String nuevoEstado,
+  }) async {
+    try {
+      print('[TransformacionService] Actualizando estado de transformación: $transformacionId a $nuevoEstado');
+      
+      // Verificar que el usuario actual es el dueño de la transformación
+      final transformacion = await obtenerTransformacion(transformacionId);
+      if (transformacion == null) {
+        throw Exception('Transformación no encontrada');
+      }
+      
+      final currentUser = _authService.currentUser;
+      if (currentUser?.uid != transformacion.usuarioId) {
+        throw Exception('No tienes permisos para actualizar esta transformación');
+      }
+      
+      // Actualizar estado
+      final Map<String, dynamic> updates = {
+        'estado': nuevoEstado,
+      };
+      
+      // Si el estado es completado, agregar fecha de fin
+      if (nuevoEstado == 'completado') {
+        updates['fecha_fin'] = FieldValue.serverTimestamp();
+      }
+      
+      await _firestore.collection('transformaciones').doc(transformacionId).update(updates);
+      
+      print('[TransformacionService] Estado actualizado exitosamente');
+    } catch (e) {
+      print('[TransformacionService] Error al actualizar estado: $e');
+      throw Exception('Error al actualizar estado: $e');
+    }
+  }
 }

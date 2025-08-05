@@ -18,8 +18,39 @@ import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/form_widgets.dart';
 import '../shared/widgets/dialog_utils.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
+import '../shared/widgets/field_label.dart' as field_label;
+import '../shared/utils/shared_input_decorations.dart';
 import 'utils/transformador_navigation_helper.dart';
 
+/// Painter personalizado para dibujar la firma con el color definido
+class SignaturePainter extends CustomPainter {
+  final List<Offset?> points;
+  final double strokeWidth;
+  final Color color;
+
+  SignaturePainter({
+    required this.points,
+    this.strokeWidth = 2.0,
+    this.color = Colors.orange,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = strokeWidth;
+
+    for (int i = 0; i < points.length - 1; i++) {
+      if (points[i] != null && points[i + 1] != null) {
+        canvas.drawLine(points[i]!, points[i + 1]!, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(SignaturePainter oldDelegate) => true;
+}
 
 class TransformadorFormularioRecepcion extends StatefulWidget {
   final List<Map<String, dynamic>> lotes;
@@ -51,9 +82,9 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
   // Controladores
   final TextEditingController _transportistaController = TextEditingController();
   final TextEditingController _pesoTotalOriginalController = TextEditingController();
-  final TextEditingController _pesoRecibidoController = TextEditingController();
   final TextEditingController _calidadMaterialController = TextEditingController();
   final TextEditingController _observacionesController = TextEditingController();
+  final TextEditingController _operadorController = TextEditingController();
   
   // Firma
   List<Offset?> _signaturePoints = [];
@@ -75,6 +106,12 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
   }
 
   void _initializeForm() async {
+    // Pre-cargar nombre del operador
+    final userData = _userSession.getUserData();
+    if (userData != null && userData['nombre'] != null) {
+      _operadorController.text = userData['nombre'];
+    }
+    
     setState(() {
       _isLoading = false;
     });
@@ -88,9 +125,9 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
       // Pre-cargar peso total
       final pesoTotal = _datosEntrega!['peso_total'] ?? 0.0;
       _pesoTotalOriginalController.text = pesoTotal.toString();
-      _pesoRecibidoController.text = pesoTotal.toString();
     }
   }
+
 
   void _captureSignature() async {
     // Primero ocultar el teclado
@@ -161,8 +198,8 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
             'usuario_id': _authService.currentUser?.uid,
             'fecha_entrada': FieldValue.serverTimestamp(),
             'fecha_creacion': FieldValue.serverTimestamp(),
-            'peso_entrada': double.tryParse(_pesoRecibidoController.text) ?? lote['peso'],
-            'peso_recibido': double.tryParse(_pesoRecibidoController.text) ?? lote['peso'],
+            'peso_entrada': lote['peso'],
+            'peso_recibido': lote['peso'],
             'tipos_analisis': [_tipoProcesamiento],
             'producto_fabricado': _tipoProcesamiento == 'pellets' ? 'Pellets' : 
                                _tipoProcesamiento == 'hojuelas' ? 'Hojuelas' : 'Otros',
@@ -589,44 +626,34 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                       ),
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _pesoRecibidoController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'Peso Recibido (kg)',
-                        prefixIcon: Icon(Icons.scale),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor ingrese el peso recibido';
-                        }
-                        final peso = double.tryParse(value);
-                        if (peso == null || peso <= 0) {
-                          return 'Ingrese un peso válido';
-                        }
-                        return null;
-                      },
+                    
+                    // Calidad del Material con marco gris
+                    const field_label.FieldLabel(
+                      text: 'Calidad del Material',
+                      isRequired: true,
                     ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _calidadMaterialController,
-                      maxLines: 2,
-                      decoration: InputDecoration(
-                        labelText: 'Calidad del Material',
-                        prefixIcon: Icon(Icons.star),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[300]!),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor describa la calidad del material';
-                        }
-                        return null;
-                      },
+                      child: TextFormField(
+                        controller: _calidadMaterialController,
+                        maxLines: 2,
+                        decoration: InputDecoration(
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Por favor describa la calidad del material';
+                          }
+                          return null;
+                        },
+                      ),
                     ),
                   ],
                 ),
@@ -669,14 +696,26 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                       ],
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _observacionesController,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        labelText: 'Observaciones adicionales (opcional)',
-                        prefixIcon: Icon(Icons.comment),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    
+                    // Observaciones con marco gris
+                    const field_label.FieldLabel(
+                      text: 'Observaciones adicionales',
+                      isRequired: false,
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[300]!),
+                      ),
+                      child: TextFormField(
+                        controller: _observacionesController,
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         ),
                       ),
                     ),
@@ -686,7 +725,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
               
               const SizedBox(height: 16),
               
-              // Firma
+              // Datos del Responsable
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -706,14 +745,24 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                     Row(
                       children: [
                         Icon(
-                          Icons.draw,
+                          Icons.person,
                           color: Colors.orange,
                           size: 24,
                         ),
                         const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Datos del Responsable que Recibe el Material',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                         const Text(
-                          'Firma del Responsable',
+                          '*',
                           style: TextStyle(
+                            color: Colors.red,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -721,50 +770,165 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                       ],
                     ),
                     const SizedBox(height: 16),
+                    
+                    // Nombre del Operador
+                    const field_label.FieldLabel(
+                      text: 'Nombre del Operador',
+                      isRequired: true,
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _operadorController,
+                      decoration: SharedInputDecorations.ecoceStyle(
+                        hintText: 'Ingrese el nombre completo',
+                        primaryColor: Colors.orange,
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Ingrese el nombre del operador';
+                        }
+                        if (value.length < 3) {
+                          return 'El nombre debe tener al menos 3 caracteres';
+                        }
+                        return null;
+                      },
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // Firma del Operador
+                    const field_label.FieldLabel(
+                      text: 'Firma',
+                      isRequired: true,
+                    ),
+                    const SizedBox(height: 8),
                     GestureDetector(
-                      onTap: _captureSignature,
-                      child: Container(
-                        height: 150,
+                      onTap: _signaturePoints.isEmpty ? _captureSignature : null,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        height: _signaturePoints.isNotEmpty ? 150 : 100,
+                        width: double.infinity,
                         decoration: BoxDecoration(
-                          color: Colors.grey[50],
+                          color: _signaturePoints.isNotEmpty 
+                              ? Colors.orange.withValues(alpha: 0.05)
+                              : Colors.grey[50],
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: _signaturePoints.isEmpty
-                                ? Colors.grey[300]!
-                                : Colors.orange,
-                            width: 2,
+                            color: _signaturePoints.isNotEmpty 
+                                ? Colors.orange 
+                                : Colors.grey[300]!,
+                            width: _signaturePoints.isNotEmpty ? 2 : 1,
                           ),
                         ),
-                        child: _signaturePoints.isEmpty
+                        child: !_signaturePoints.isNotEmpty
                             ? Center(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(
-                                      Icons.touch_app,
-                                      size: 48,
+                                      Icons.draw,
+                                      size: 32,
                                       color: Colors.grey[400],
                                     ),
-                                    const SizedBox(height: 8),
+                                    const SizedBox(height: 4),
                                     Text(
                                       'Toque para firmar',
                                       style: TextStyle(
                                         color: Colors.grey[600],
-                                        fontSize: 16,
+                                        fontSize: 14,
                                       ),
                                     ),
                                   ],
                                 ),
                               )
-                            : ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: CustomPaint(
-                                  size: const Size(double.infinity, 150),
-                                  painter: SignaturePainter(
-                                    _signaturePoints,
-                                    strokeWidth: 2.0,
+                            : Stack(
+                                children: [
+                                  Center(
+                                    child: AspectRatio(
+                                      aspectRatio: 2.5,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: FittedBox(
+                                            fit: BoxFit.contain,
+                                            child: SizedBox(
+                                              width: 300,
+                                              height: 300,
+                                              child: CustomPaint(
+                                                painter: SignaturePainter(
+                                                  points: _signaturePoints,
+                                                  strokeWidth: 2.0,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            shape: BoxShape.circle,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(alpha: 0.1),
+                                                blurRadius: 4,
+                                              ),
+                                            ],
+                                          ),
+                                          child: IconButton(
+                                            onPressed: _captureSignature,
+                                            icon: const Icon(Icons.edit, size: 20),
+                                            color: Colors.orange,
+                                            padding: const EdgeInsets.all(8),
+                                            constraints: const BoxConstraints(
+                                              minWidth: 36,
+                                              minHeight: 36,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            shape: BoxShape.circle,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(alpha: 0.1),
+                                                blurRadius: 4,
+                                              ),
+                                            ],
+                                          ),
+                                          child: IconButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                _signaturePoints.clear();
+                                              });
+                                            },
+                                            icon: const Icon(Icons.clear, size: 20),
+                                            color: Colors.red,
+                                            padding: const EdgeInsets.all(8),
+                                            constraints: const BoxConstraints(
+                                              minWidth: 36,
+                                              minHeight: 36,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                       ),
                     ),
@@ -832,9 +996,9 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
   void dispose() {
     _transportistaController.dispose();
     _pesoTotalOriginalController.dispose();
-    _pesoRecibidoController.dispose();
     _calidadMaterialController.dispose();
     _observacionesController.dispose();
+    _operadorController.dispose();
     super.dispose();
   }
 }

@@ -23,6 +23,8 @@ class TransformacionModel {
   final List<String> muestrasLaboratorioIds;
   final bool tieneMuestraLaboratorio;
   final double pesoMuestrasTotal;
+  // Campos adicionales para transformador
+  final Map<String, dynamic> datosAdicionales;
   
   TransformacionModel({
     required this.id,
@@ -45,10 +47,12 @@ class TransformacionModel {
     List<String>? muestrasLaboratorioIds,
     bool? tieneMuestraLaboratorio,
     double? pesoMuestrasTotal,
+    Map<String, dynamic>? datosAdicionales,
   }) : muestrasLaboratorio = muestrasLaboratorio ?? [],
        muestrasLaboratorioIds = muestrasLaboratorioIds ?? [],
        tieneMuestraLaboratorio = tieneMuestraLaboratorio ?? false,
-       pesoMuestrasTotal = pesoMuestrasTotal ?? 0.0;
+       pesoMuestrasTotal = pesoMuestrasTotal ?? 0.0,
+       datosAdicionales = datosAdicionales ?? {};
   
   factory TransformacionModel.fromFirestore(DocumentSnapshot doc) {
     print('[TransformacionModel] Iniciando conversión desde Firestore para doc: ${doc.id}');
@@ -133,13 +137,23 @@ class TransformacionModel {
       throw Exception('Error al procesar lotes_entrada: $e');
     }
     
-    // Validar documentos_asociados
+    // Validar documentos_asociados - COMPATIBLE CON AMBOS FORMATOS
     Map<String, String> documentosAsociados = {};
     try {
       final docsRaw = data['documentos_asociados'];
       if (docsRaw != null) {
         if (docsRaw is Map) {
-          documentosAsociados = Map<String, String>.from(docsRaw);
+          // Iterar sobre cada entrada del mapa
+          docsRaw.forEach((key, value) {
+            if (value is String) {
+              // Nuevo formato: string directo
+              documentosAsociados[key] = value;
+            } else if (value is List && value.isNotEmpty) {
+              // Formato antiguo: array de strings, tomar el primero
+              documentosAsociados[key] = value.first.toString();
+              print('[TransformacionModel] Convertido array a string para documento: $key');
+            }
+          });
         } else {
           print('[TransformacionModel] ADVERTENCIA: documentos_asociados no es Map, es: ${docsRaw.runtimeType}');
         }
@@ -172,6 +186,15 @@ class TransformacionModel {
       muestrasLaboratorioIds: _convertirAListaString(data['muestras_laboratorio_ids'], 'muestras_laboratorio_ids'),
       tieneMuestraLaboratorio: data['tiene_muestra_laboratorio'] ?? false,
       pesoMuestrasTotal: _convertirADouble(data['peso_muestras_total'], 'peso_muestras_total'),
+      // Capturar todos los campos adicionales para transformador
+      datosAdicionales: {
+        'peso_salida': data['peso_salida'],
+        'cantidad_producto': data['cantidad_producto'],
+        'producto_fabricado': data['producto_fabricado'],
+        'compuesto_67': data['compuesto_67'],
+        'porcentaje_material_reciclado': data['porcentaje_material_reciclado'],
+        'tipo_polimero': data['tipo_polimero'],
+      },
     );
   }
   
@@ -242,6 +265,12 @@ class TransformacionModel {
       'observaciones': observaciones,
       'muestras_laboratorio': muestrasLaboratorio,
       'material_predominante': materialPredominante,
+      // Nuevos campos
+      'muestras_laboratorio_ids': muestrasLaboratorioIds,
+      'tiene_muestra_laboratorio': tieneMuestraLaboratorio,
+      'peso_muestras_total': pesoMuestrasTotal,
+      // Incluir campos adicionales
+      ...datosAdicionales,
     };
   }
   
@@ -344,7 +373,7 @@ class TransformacionModel {
   }
   
   /// Getter para acceder a los datos raw (para compatibilidad)
-  Map<String, dynamic> get datos => toMap();
+  Map<String, dynamic> get datos => datosAdicionales;
 }
 
 /// Modelo para representar un lote de entrada en la transformación

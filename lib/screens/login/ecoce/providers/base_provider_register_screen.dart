@@ -35,6 +35,7 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
     'colonia': TextEditingController(),
     'referencias': TextEditingController(),
     'largo': TextEditingController(),
+    'alto': TextEditingController(),
     'ancho': TextEditingController(),
     'peso': TextEditingController(),
     'linkRedSocial': TextEditingController(),
@@ -234,11 +235,12 @@ abstract class BaseProviderRegisterScreenState<T extends BaseProviderRegisterScr
       
       if (providerType == 'Acopiador' || providerType == 'Planta de Separación') {
         final largo = double.tryParse(_controllers['largo']!.text);
+        final alto = double.tryParse(_controllers['alto']!.text);
         final ancho = double.tryParse(_controllers['ancho']!.text);
         final peso = double.tryParse(_controllers['peso']!.text);
         
-        if (largo != null && ancho != null) {
-          dimensionesCapacidad = {'largo': largo, 'ancho': ancho};
+        if (largo != null && alto != null && ancho != null) {
+          dimensionesCapacidad = {'largo': largo, 'alto': alto, 'ancho': ancho};
         }
         pesoCapacidad = peso;
       }

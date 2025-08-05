@@ -1004,6 +1004,49 @@ NEVER hardcode colors. Always use `BioWayColors` constants:
 - **States**: `documentacion`, `en_proceso`, `completado`
 - **Documentation**: `docs/FLUJO_COMPLETO_TRANSFORMADOR.md`
 
+### Critical Fixes (2025-01-30) - Laboratory Module Improvements
+
+#### Material Filter Fix for Laboratory
+- **Problem**: Material filters not working for megalotes with >50% material composition
+- **Root Cause**: Missing EPF- prefix handling in material comparison
+- **Solution**: Added `_megaloteContieneMaterial()` method identical to Reciclador's implementation
+- **Files Modified**:
+  - `lib/screens/ecoce/laboratorio/laboratorio_gestion_muestras.dart` - Added material filter logic
+
+#### Laboratory UI/UX Improvements
+- **Removed Features**: Presentation filter and ID search removed from Management screen
+- **Weight Buttons**: Changed from [100, 250, 500, 1000]kg to [5, 10, 25, 50]kg for appropriate sample sizes
+- **Scroll Behavior**: Implemented ListView-based scroll where filters move with content
+- **Success Dialog**: Added confirmation dialog after documentation upload
+- **Files Modified**:
+  - `lib/screens/ecoce/laboratorio/laboratorio_toma_muestra_megalote_screen.dart` - Updated weight buttons
+  - `lib/screens/ecoce/laboratorio/laboratorio_gestion_muestras.dart` - Scroll behavior and filters
+  - `lib/screens/ecoce/laboratorio/laboratorio_documentacion.dart` - Success dialog
+
+#### Laboratory Form Enhancements
+- **Numeric Keyboards**: Added for OIT, MFI, Densidad fields with decimal support
+- **Responsible Person Data**: Added name and signature capture fields
+- **Signature Consistency**: Fixed AspectRatio (2.0) and Size (300x300) to match other forms
+- **Files Modified**:
+  - `lib/screens/ecoce/laboratorio/laboratorio_formulario.dart` - Added responsible person fields and numeric inputs
+
+#### Icon Consistency Update
+- **Problem**: Inconsistent icons (emojis vs Material icons) in form cards
+- **Solution**: Replaced emoji icons with Material Design icons
+- **Changes**:
+  - '👤' → Icons.person (purple theme color)
+  - '⚖️' → Icons.scale (purple theme color)
+- **Files Modified**:
+  - `lib/screens/ecoce/laboratorio/laboratorio_toma_muestra_megalote_screen.dart`
+  - `lib/screens/ecoce/laboratorio/laboratorio_formulario.dart`
+
+#### Double AppBar Fix
+- **Problem**: Duplicate AppBar in documentation screen
+- **Root Cause**: DocumentUploadPerRequirementWidget creating second AppBar
+- **Solution**: Added `showAppBar: false` parameter
+- **Files Modified**:
+  - `lib/screens/ecoce/laboratorio/laboratorio_documentacion.dart` - Line 177
+
 ## Cloud Functions
 
 ### Implemented Functions
