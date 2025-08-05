@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../utils/ui_constants.dart';
 
 /// Modal bottom sheet estándar
 class StandardBottomSheet extends StatelessWidget {
@@ -23,41 +24,41 @@ class StandardBottomSheet extends StatelessWidget {
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
+          topLeft: Radius.circular(UIConstants.borderRadiusXL),
+          topRight: Radius.circular(UIConstants.borderRadiusXL),
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsetsConstants.paddingAll20,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Handle bar
             Container(
-              width: 40,
-              height: 4,
+              width: UIConstants.buttonHeightMedium,
+              height: UIConstants.spacing4,
               decoration: BoxDecoration(
                 color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(UIConstants.borderRadiusTiny),
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: UIConstants.spacing20),
             // Title
             Text(
               title,
               style: const TextStyle(
-                fontSize: 18,
+                fontSize: UIConstants.fontSizeBody + 2,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: UIConstants.spacing20),
             // Content
             content,
             if (actions != null) ...[
-              const SizedBox(height: 20),
+              SizedBox(height: UIConstants.spacing20),
               ...actions!,
             ],
-            const SizedBox(height: 10),
+            SizedBox(height: UIConstants.spacing10),
           ],
         ),
       ),
@@ -88,17 +89,17 @@ class InfoCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadiusConstants.borderRadiusSmall,
       child: Container(
         padding: EdgeInsets.all(screenWidth * 0.04),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadiusConstants.borderRadiusSmall,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+              color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
+              blurRadius: UIConstants.blurRadiusSmall,
+              offset: Offset(0, UIConstants.offsetY),
             ),
           ],
         ),
@@ -108,7 +109,7 @@ class InfoCard extends StatelessWidget {
               Icon(
                 icon,
                 color: iconColor ?? Colors.grey[600],
-                size: 24,
+                size: UIConstants.iconSizeMedium,
               ),
               SizedBox(width: screenWidth * 0.03),
             ],
@@ -123,7 +124,7 @@ class InfoCard extends StatelessWidget {
                       color: const Color(0xFF606060),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: UIConstants.spacing4),
                   Text(
                     value,
                     style: TextStyle(
@@ -172,10 +173,10 @@ class StatusChip extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(
           color: borderColor,
-          width: 1,
+          width: UIConstants.borderWidthThin,
         ),
       ),
       child: Text(

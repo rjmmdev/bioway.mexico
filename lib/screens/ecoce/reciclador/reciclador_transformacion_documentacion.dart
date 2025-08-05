@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../services/transformacion_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
@@ -82,25 +83,25 @@ class _RecicladorTransformacionDocumentacionState extends State<RecicladorTransf
           children: [
             Icon(
               Icons.check_circle,
-              size: 80,
+              size: UIConstants.iconSizeDialog,
               color: BioWayColors.success,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: UIConstants.spacing16),
             const Text(
               'Documentación ya enviada',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: UIConstants.fontSizeLarge,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: UIConstants.spacing8),
             Text(
               'Los documentos de este megalote ya fueron cargados',
               style: TextStyle(
                 color: Colors.grey[600],
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: UIConstants.spacing24),
             ElevatedButton.icon(
               onPressed: () => Navigator.pop(context),
               icon: const Icon(Icons.arrow_back),
@@ -241,13 +242,13 @@ class _RecicladorTransformacionDocumentacionState extends State<RecicladorTransf
                     children: [
                       Icon(
                         Icons.error_outline,
-                        size: 64,
+                        size: UIConstants.iconSizeXLarge,
                         color: Colors.grey[400],
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: UIConstants.spacing16),
                       const Text(
                         'Transformación no encontrada',
-                        style: TextStyle(fontSize: 16),
+                        style: TextStyle(fontSize: UIConstants.fontSizeBody),
                       ),
                     ],
                   ),

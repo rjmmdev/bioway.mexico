@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../services/lote_service.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../services/user_session_service.dart';
@@ -675,7 +676,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
       backgroundColor: BioWayColors.backgroundGrey,
       appBar: AppBar(
         backgroundColor: BioWayColors.ecoceGreen,
-        elevation: 0,
+        elevation: UIConstants.elevationNone,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () {
@@ -688,7 +689,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
             ? 'Procesar ${widget.lotesIds?.length ?? 0} Lotes'
             : 'Formulario de Salida',
           style: const TextStyle(
-            fontSize: 18,
+            fontSize: UIConstants.fontSizeLarge,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -701,7 +702,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
               // Header verde
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing20, vertical: UIConstants.spacing16),
             decoration: BoxDecoration(
               color: BioWayColors.ecoceGreen,
               borderRadius: const BorderRadius.only(
@@ -715,23 +716,23 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                 Text(
                   'Registra la salida del material',
                   style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white.withValues(alpha: 0.9),
+                    fontSize: UIConstants.fontSizeBody,
+                    color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: UIConstants.spacing8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12, vertical: UIConstants.spacing4 + 2),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20),
+                    color: Colors.white.withValues(alpha: UIConstants.opacityMediumLow),
+                    borderRadius: BorderRadiusConstants.borderRadiusLarge,
                   ),
                   child: Text(
                     _isMultipleLotes
                       ? '${widget.lotesIds?.length ?? 0} lotes seleccionados'
                       : 'Lote ${widget.loteId}',
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: UIConstants.fontSizeMedium,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),
@@ -744,7 +745,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
           // Formulario
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsetsConstants.paddingAll20,
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -753,13 +754,13 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                     if (_isMultipleLotes && _lotesParaProcesar.isNotEmpty) ...[
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: EdgeInsetsConstants.paddingAll16,
+                        margin: EdgeInsets.only(bottom: UIConstants.spacing16),
                         decoration: BoxDecoration(
-                          color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(16),
+                          color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityLow),
+                          borderRadius: BorderRadiusConstants.borderRadiusLarge,
                           border: Border.all(
-                            color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
+                            color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityMedium),
                           ),
                         ),
                         child: Column(
@@ -771,9 +772,9 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                 Icon(
                                   Icons.merge_type,
                                   color: BioWayColors.ecoceGreen,
-                                  size: 24,
+                                  size: UIConstants.iconSizeMedium,
                                 ),
-                                const SizedBox(width: 8),
+                                SizedBox(width: UIConstants.spacing8),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -781,14 +782,14 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                       const Text(
                                         'Lotes a procesar juntos',
                                         style: TextStyle(
-                                          fontSize: 16,
+                                          fontSize: UIConstants.fontSizeBody,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                       Text(
                                         '${_lotesParaProcesar.length} lotes seleccionados',
                                         style: TextStyle(
-                                          fontSize: 12,
+                                          fontSize: UIConstants.fontSizeXSmall,
                                           color: Colors.grey[600],
                                         ),
                                       ),
@@ -797,7 +798,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 12),
+                            SizedBox(height: UIConstants.spacing12),
                             // Limitar la altura si hay muchos lotes
                             ConstrainedBox(
                               constraints: BoxConstraints(
@@ -807,39 +808,39 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                 physics: const BouncingScrollPhysics(),
                                 child: Column(
                                   children: _lotesParaProcesar.map((lote) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 8),
+                                    padding: EdgeInsets.only(bottom: UIConstants.spacing8),
                                     child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12, vertical: UIConstants.spacing8),
                                       decoration: BoxDecoration(
                                         color: Colors.white,
-                                        borderRadius: BorderRadius.circular(8),
+                                        borderRadius: BorderRadiusConstants.borderRadiusSmall,
                                         border: Border.all(
-                                          color: Colors.grey.withValues(alpha: 0.2),
+                                          color: Colors.grey.withValues(alpha: UIConstants.opacityMediumLow),
                                         ),
                                       ),
                                       child: Row(
                                         children: [
                                           Container(
-                                            width: 8,
-                                            height: 8,
+                                            width: UIConstants.spacing8,
+                                            height: UIConstants.spacing8,
                                             decoration: BoxDecoration(
                                               color: _getMaterialColor(lote.datosGenerales.tipoMaterial),
                                               shape: BoxShape.circle,
                                             ),
                                           ),
-                                          const SizedBox(width: 8),
+                                          SizedBox(width: UIConstants.spacing8),
                                           Expanded(
                                             flex: 2,
                                             child: Text(
                                               'Lote ${lote.id.substring(0, 8).toUpperCase()}',
                                               style: const TextStyle(
-                                                fontSize: 13,
+                                                fontSize: UIConstants.fontSizeSmall,
                                                 fontWeight: FontWeight.w600,
                                               ),
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
-                                          const SizedBox(width: 8),
+                                          SizedBox(width: UIConstants.spacing8),
                                           Expanded(
                                             flex: 3,
                                             child: Column(
@@ -848,7 +849,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                                 Text(
                                                   lote.datosGenerales.tipoMaterial,
                                                   style: TextStyle(
-                                                    fontSize: 12,
+                                                    fontSize: UIConstants.fontSizeXSmall,
                                                     color: _getMaterialColor(lote.datosGenerales.tipoMaterial),
                                                     fontWeight: FontWeight.w600,
                                                   ),
@@ -857,7 +858,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                                 Text(
                                                   '${lote.pesoActual.toStringAsFixed(2)} kg',
                                                   style: TextStyle(
-                                                    fontSize: 13,
+                                                    fontSize: UIConstants.fontSizeSmall,
                                                     color: Colors.grey[700],
                                                     fontWeight: FontWeight.w500,
                                                   ),
@@ -873,12 +874,12 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                               ),
                             ),
                             // Mostrar peso total
-                            const SizedBox(height: 8),
+                            SizedBox(height: UIConstants.spacing8),
                             Container(
                               width: double.infinity,
-                              padding: const EdgeInsets.all(12),
+                              padding: EdgeInsetsConstants.paddingAll12,
                               decoration: BoxDecoration(
-                                color: BioWayColors.ecoceGreen.withValues(alpha: 0.05),
+                                color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityVeryLow),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(
@@ -887,14 +888,14 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                   const Text(
                                     'Peso total a procesar:',
                                     style: TextStyle(
-                                      fontSize: 14,
+                                      fontSize: UIConstants.fontSizeMedium,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                   Text(
                                     '${_pesoTotalOriginal.toStringAsFixed(2)} kg',
                                     style: const TextStyle(
-                                      fontSize: 16,
+                                      fontSize: UIConstants.fontSizeBody,
                                       fontWeight: FontWeight.bold,
                                       color: BioWayColors.ecoceGreen,
                                     ),
@@ -909,13 +910,13 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                     // Tarjeta de Características del Lote
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(20),
+                      padding: EdgeInsetsConstants.paddingAll20,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
+                            color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
                             blurRadius: 10,
                             offset: const Offset(0, 5),
                           ),
@@ -928,20 +929,20 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                             children: [
                               const Text(
                                 '📦',
-                                style: TextStyle(fontSize: 24),
+                                style: TextStyle(fontSize: UIConstants.fontSizeTitle),
                               ),
-                              const SizedBox(width: 10),
+                              SizedBox(width: UIConstants.spacing8 + 2),
                               Text(
                                 'Características del Lote',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: UIConstants.fontSizeLarge,
                                   fontWeight: FontWeight.bold,
                                   color: BioWayColors.darkGreen,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 20),
+                          SizedBox(height: UIConstants.spacing20),
                           
                           // Peso Resultante
                           WeightInputWidget(
@@ -966,30 +967,30 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                             },
                           ),
                           
-                          const SizedBox(height: 20),
+                          SizedBox(height: UIConstants.spacing20),
                           
                           // Merma calculada
                           Text(
                             'Merma calculada',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: UIConstants.fontSizeMedium,
                               fontWeight: FontWeight.w600,
                               color: BioWayColors.textGrey,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: UIConstants.spacing8),
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
                             decoration: BoxDecoration(
                               color: _mermaCalculada > 0 
-                                  ? Colors.orange.withValues(alpha: 0.1)
-                                  : Colors.grey.withValues(alpha: 0.1),
+                                  ? Colors.orange.withValues(alpha: UIConstants.opacityLow)
+                                  : Colors.grey.withValues(alpha: UIConstants.opacityLow),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: _mermaCalculada > 0
-                                    ? Colors.orange.withValues(alpha: 0.3)
-                                    : Colors.grey.withValues(alpha: 0.3),
+                                    ? Colors.orange.withValues(alpha: UIConstants.opacityMedium)
+                                    : Colors.grey.withValues(alpha: UIConstants.opacityMedium),
                                 width: 1,
                               ),
                             ),
@@ -999,16 +1000,16 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                 Text(
                                   '${_mermaCalculada.toStringAsFixed(3)} kg',
                                   style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: UIConstants.fontSizeBody,
                                     fontWeight: FontWeight.bold,
                                     color: _mermaCalculada > 0 ? Colors.orange : Colors.grey[700],
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                SizedBox(height: UIConstants.spacing4),
                                 Text(
                                   'Peso neto aprovechable: ${_pesoNetoAprovechable.toStringAsFixed(2)} kg',
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: UIConstants.fontSizeXSmall,
                                     color: Colors.grey[600],
                                   ),
                                 ),
@@ -1016,7 +1017,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                             ),
                           ),
                           
-                          const SizedBox(height: 20),
+                          SizedBox(height: UIConstants.spacing20),
                           
                           // Procesos Aplicados
                           Row(
@@ -1024,23 +1025,23 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                               Text(
                                 'Procesos Aplicados',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: UIConstants.fontSizeMedium,
                                   fontWeight: FontWeight.w600,
                                   color: BioWayColors.textGrey,
                                 ),
                               ),
-                              const SizedBox(width: 4),
+                              SizedBox(width: UIConstants.spacing4),
                               Text(
                                 '*',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: UIConstants.fontSizeMedium,
                                   fontWeight: FontWeight.w600,
                                   color: BioWayColors.error,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: UIConstants.spacing12),
                           ..._procesosAplicados.entries.map((entry) {
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 8),
@@ -1062,7 +1063,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                       width: entry.value ? 2 : 1,
                                     ),
                                     color: entry.value 
-                                        ? BioWayColors.ecoceGreen.withValues(alpha: 0.1)
+                                        ? BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityLow)
                                         : Colors.transparent,
                                   ),
                                   child: Row(
@@ -1085,16 +1086,16 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                         child: entry.value
                                             ? const Icon(
                                                 Icons.check,
-                                                size: 16,
+                                                size: UIConstants.iconSizeSmall,
                                                 color: Colors.white,
                                               )
                                             : null,
                                       ),
-                                      const SizedBox(width: 12),
+                                      SizedBox(width: UIConstants.spacing12),
                                       Text(
                                         entry.key,
                                         style: TextStyle(
-                                          fontSize: 16,
+                                          fontSize: UIConstants.fontSizeBody,
                                           fontWeight: entry.value ? FontWeight.w600 : FontWeight.normal,
                                           color: entry.value 
                                               ? BioWayColors.ecoceGreen 
@@ -1111,18 +1112,18 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                       ),
                     ),
                     
-                    const SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spacing20),
                     
                     // Tarjeta de Datos del Responsable
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(20),
+                      padding: EdgeInsetsConstants.paddingAll20,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
+                            color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
                             blurRadius: 10,
                             offset: const Offset(0, 5),
                           ),
@@ -1135,20 +1136,20 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                             children: [
                               const Text(
                                 '👤',
-                                style: TextStyle(fontSize: 24),
+                                style: TextStyle(fontSize: UIConstants.fontSizeTitle),
                               ),
-                              const SizedBox(width: 10),
+                              SizedBox(width: UIConstants.spacing8 + 2),
                               Text(
                                 'Datos del Responsable',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: UIConstants.fontSizeLarge,
                                   fontWeight: FontWeight.bold,
                                   color: BioWayColors.darkGreen,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 20),
+                          SizedBox(height: UIConstants.spacing20),
                           
                           // Nombre del Operador
                           Row(
@@ -1156,23 +1157,23 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                               Text(
                                 'Nombre del Operador',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: UIConstants.fontSizeMedium,
                                   fontWeight: FontWeight.w600,
                                   color: BioWayColors.textGrey,
                                 ),
                               ),
-                              const SizedBox(width: 4),
+                              SizedBox(width: UIConstants.spacing4),
                               Text(
                                 '*',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: UIConstants.fontSizeMedium,
                                   fontWeight: FontWeight.w600,
                                   color: BioWayColors.error,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: UIConstants.spacing8),
                           TextFormField(
                             controller: _operadorController,
                             maxLength: 50,
@@ -1187,7 +1188,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide(
-                                  color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
+                                  color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityMedium),
                                   width: 1,
                                 ),
                               ),
@@ -1211,7 +1212,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                             },
                           ),
                           
-                          const SizedBox(height: 20),
+                          SizedBox(height: UIConstants.spacing20),
                           
                           // Firma del Operador
                           Row(
@@ -1219,23 +1220,23 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                               Text(
                                 'Firma del Operador',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: UIConstants.fontSizeMedium,
                                   fontWeight: FontWeight.w600,
                                   color: BioWayColors.textGrey,
                                 ),
                               ),
-                              const SizedBox(width: 4),
+                              SizedBox(width: UIConstants.spacing4),
                               Text(
                                 '*',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: UIConstants.fontSizeMedium,
                                   fontWeight: FontWeight.w600,
                                   color: BioWayColors.error,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: UIConstants.spacing8),
                           GestureDetector(
                             onTap: _hasSignature ? null : () => _showSignatureDialog(),
                             child: AnimatedContainer(
@@ -1244,7 +1245,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                               width: double.infinity,
                               decoration: BoxDecoration(
                                 color: _hasSignature 
-                                    ? BioWayColors.ecoceGreen.withValues(alpha: 0.05)
+                                    ? BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityVeryLow)
                                     : Colors.grey[100],
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
@@ -1261,14 +1262,14 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                         children: [
                                           Icon(
                                             Icons.draw,
-                                            size: 32,
+                                            size: UIConstants.iconSizeLarge,
                                             color: Colors.grey[400],
                                           ),
-                                          const SizedBox(height: 8),
+                                          SizedBox(height: UIConstants.spacing8),
                                           Text(
                                             'Toca para firmar',
                                             style: TextStyle(
-                                              fontSize: 14,
+                                              fontSize: UIConstants.fontSizeMedium,
                                               color: Colors.grey[600],
                                             ),
                                           ),
@@ -1278,14 +1279,14 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                   : Stack(
                                       children: [
                                         Container(
-                                          padding: const EdgeInsets.all(12),
+                                          padding: EdgeInsetsConstants.paddingAll12,
                                           child: Center(
                                             child: AspectRatio(
                                               aspectRatio: 2.0,
                                               child: Container(
                                                 decoration: BoxDecoration(
                                                   color: Colors.white,
-                                                  borderRadius: BorderRadius.circular(8),
+                                                  borderRadius: BorderRadiusConstants.borderRadiusSmall,
                                                   border: Border.all(
                                                     color: Colors.grey[200]!,
                                                     width: 1,
@@ -1317,14 +1318,14 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                                                   Icon(
                                                                     Icons.error_outline,
                                                                     color: Colors.red[300],
-                                                                    size: 30,
+                                                                    size: UIConstants.iconSizeLarge - 2,
                                                                   ),
-                                                                  const SizedBox(height: 4),
+                                                                  SizedBox(height: UIConstants.spacing4),
                                                                   Text(
                                                                     'Error al cargar',
                                                                     style: TextStyle(
                                                                       color: Colors.red[300],
-                                                                      fontSize: 10,
+                                                                      fontSize: UIConstants.fontSizeXSmall - 2,
                                                                     ),
                                                                   ),
                                                                 ],
@@ -1341,7 +1342,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                                               painter: SignaturePainter(
                                                                 points: _signaturePoints,
                                                                 color: BioWayColors.darkGreen,
-                                                                strokeWidth: 2.0,
+                                                                strokeWidth: UIConstants.strokeWidth,
                                                               ),
                                                             ),
                                                           ),
@@ -1363,7 +1364,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                                   shape: BoxShape.circle,
                                                   boxShadow: [
                                                     BoxShadow(
-                                                      color: Colors.black.withValues(alpha: 0.1),
+                                                      color: Colors.black.withValues(alpha: UIConstants.opacityLow),
                                                       blurRadius: 4,
                                                     ),
                                                   ],
@@ -1373,7 +1374,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                                   icon: Icon(
                                                     Icons.edit,
                                                     color: BioWayColors.ecoceGreen,
-                                                    size: 20,
+                                                    size: UIConstants.iconSizeMedium,
                                                   ),
                                                   constraints: const BoxConstraints(
                                                     minWidth: 32,
@@ -1382,14 +1383,14 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                                   padding: EdgeInsets.zero,
                                                 ),
                                               ),
-                                              const SizedBox(width: 8),
+                                              SizedBox(width: UIConstants.spacing8),
                                               Container(
                                                 decoration: BoxDecoration(
                                                   color: Colors.white,
                                                   shape: BoxShape.circle,
                                                   boxShadow: [
                                                     BoxShadow(
-                                                      color: Colors.black.withValues(alpha: 0.1),
+                                                      color: Colors.black.withValues(alpha: UIConstants.opacityLow),
                                                       blurRadius: 4,
                                                     ),
                                                   ],
@@ -1405,7 +1406,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                                   icon: const Icon(
                                                     Icons.clear,
                                                     color: Colors.red,
-                                                    size: 20,
+                                                    size: UIConstants.iconSizeMedium,
                                                   ),
                                                   constraints: const BoxConstraints(
                                                     minWidth: 32,
@@ -1425,19 +1426,19 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                       ),
                     ),
                     
-                    const SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spacing20),
                     
                     // Mostrar fotos existentes si las hay
                     if (_existingPhotoUrls.isNotEmpty) ...[
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(20),
+                        padding: EdgeInsetsConstants.paddingAll20,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadiusConstants.borderRadiusLarge,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
+                              color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
                               blurRadius: 10,
                               offset: const Offset(0, 5),
                             ),
@@ -1449,18 +1450,18 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                             Row(
                               children: [
                                 Icon(Icons.photo_library, color: BioWayColors.ecoceGreen),
-                                const SizedBox(width: 8),
+                                SizedBox(width: UIConstants.spacing8),
                                 Text(
                                   'Evidencias Guardadas',
                                   style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: UIConstants.fontSizeBody,
                                     fontWeight: FontWeight.bold,
                                     color: BioWayColors.darkGreen,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: UIConstants.spacing16),
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
@@ -1471,7 +1472,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
+                                      color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityMedium),
                                       width: 2,
                                     ),
                                   ),
@@ -1509,7 +1510,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: UIConstants.spacing20),
                     ],
                     
                     // Tarjeta de Evidencia Fotográfica para agregar nuevas
@@ -1522,18 +1523,18 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                       primaryColor: BioWayColors.ecoceGreen,
                     ),
                     
-                    const SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spacing20),
                     
                     // Tarjeta de Comentarios
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(20),
+                      padding: EdgeInsetsConstants.paddingAll20,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
+                            color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
                             blurRadius: 10,
                             offset: const Offset(0, 5),
                           ),
@@ -1546,20 +1547,20 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                             children: [
                               const Text(
                                 '💬',
-                                style: TextStyle(fontSize: 24),
+                                style: TextStyle(fontSize: UIConstants.fontSizeTitle),
                               ),
-                              const SizedBox(width: 10),
+                              SizedBox(width: UIConstants.spacing8 + 2),
                               Text(
                                 'Comentarios',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: UIConstants.fontSizeLarge,
                                   fontWeight: FontWeight.bold,
                                   color: BioWayColors.darkGreen,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 20),
+                          SizedBox(height: UIConstants.spacing20),
                           
                           TextFormField(
                             controller: _comentariosController,
@@ -1576,7 +1577,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide(
-                                  color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
+                                  color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityMedium),
                                   width: 1,
                                 ),
                               ),
@@ -1593,7 +1594,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                       ),
                     ),
                     
-                    const SizedBox(height: 30),
+                    SizedBox(height: UIConstants.spacing32 - 2),
                     
                     // Botones de acción
                     Row(
@@ -1601,7 +1602,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                         // Botón guardar parcial
                         Expanded(
                           child: SizedBox(
-                            height: 56,
+                            height: UIConstants.buttonHeight,
                             child: OutlinedButton(
                               onPressed: _isLoading ? null : () => _guardarFormulario(esGuardadoParcial: true),
                               style: OutlinedButton.styleFrom(
@@ -1616,7 +1617,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                               child: Text(
                                 'Guardar Cambios',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: UIConstants.fontSizeMedium,
                                   fontWeight: FontWeight.bold,
                                   color: BioWayColors.ecoceGreen,
                                 ),
@@ -1628,7 +1629,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                         // Botón confirmar
                         Expanded(
                           child: SizedBox(
-                            height: 56,
+                            height: UIConstants.buttonHeight,
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : () => _guardarFormulario(esGuardadoParcial: false),
                               style: ElevatedButton.styleFrom(
@@ -1642,7 +1643,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                               child: const Text(
                                 'Siguiente',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: UIConstants.fontSizeBody,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -1652,7 +1653,7 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
                       ],
                     ),
                     
-                    const SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spacing20),
                   ],
                 ),
               ),

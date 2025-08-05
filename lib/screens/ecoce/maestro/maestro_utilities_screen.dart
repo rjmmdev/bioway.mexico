@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../shared/widgets/common_widgets.dart';
 
 class MaestroUtilitiesScreen extends StatefulWidget {
@@ -75,34 +76,34 @@ class _MaestroUtilitiesScreenState extends State<MaestroUtilitiesScreen> {
       appBar: AppBar(
         title: const Text('Mantenimiento del Sistema'),
         backgroundColor: BioWayColors.ecoceGreen,
-        elevation: 0,
+        elevation: UIConstants.elevationNone,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsetsConstants.paddingAll20,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             
             // Sección de Limpieza de Usuarios Pendientes
             Card(
-              elevation: 4,
+              elevation: UIConstants.elevationMedium,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadiusConstants.borderRadiusMedium,
               ),
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsetsConstants.paddingAll20,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
                         Icon(Icons.person_remove, color: BioWayColors.error),
-                        const SizedBox(width: 12),
+                        SizedBox(width: UIConstants.spacing12),
                         const Expanded(
                           child: Text(
                             'Limpiar Usuarios Pendientes de Eliminación',
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: UIConstants.fontSizeBody + 2,
                               fontWeight: FontWeight.bold,
                             ),
                             maxLines: 2,
@@ -111,13 +112,13 @@ class _MaestroUtilitiesScreenState extends State<MaestroUtilitiesScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     const Text(
                       'Elimina los registros antiguos de la colección "users_pending_deletion" '
                       'que tienen más de 30 días de antigüedad.',
                       style: TextStyle(color: Colors.grey),
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spacing20),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
@@ -126,9 +127,9 @@ class _MaestroUtilitiesScreenState extends State<MaestroUtilitiesScreen> {
                         label: const Text('Limpiar Registros Antiguos'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: BioWayColors.error,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: EdgeInsets.symmetric(vertical: UIConstants.spacing16),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadiusConstants.borderRadiusMedium,
                           ),
                         ),
                       ),
@@ -141,17 +142,17 @@ class _MaestroUtilitiesScreenState extends State<MaestroUtilitiesScreen> {
             
             // Mostrar resultados
             if (_lastResult.isNotEmpty) ...[
-              const SizedBox(height: 20),
+              SizedBox(height: UIConstants.spacing20),
               Card(
-                elevation: 4,
+                elevation: UIConstants.elevationMedium,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadiusConstants.borderRadiusMedium,
                 ),
                 color: _lastResult.contains('Error') 
-                  ? BioWayColors.error.withValues(alpha:0.1)
-                  : BioWayColors.success.withValues(alpha:0.1),
+                  ? BioWayColors.error.withValues(alpha: UIConstants.opacityLow)
+                  : BioWayColors.success.withValues(alpha: UIConstants.opacityLow),
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsetsConstants.paddingAll20,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -165,19 +166,19 @@ class _MaestroUtilitiesScreenState extends State<MaestroUtilitiesScreen> {
                               ? BioWayColors.error 
                               : BioWayColors.success,
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: UIConstants.spacing12),
                           Text(
                             _lastResult.contains('Error') 
                               ? 'Error' 
                               : 'Resultado',
                             style: const TextStyle(
-                              fontSize: 16,
+                              fontSize: UIConstants.fontSizeBody,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: UIConstants.spacing12),
                       Text(
                         _lastResult,
                         style: TextStyle(
@@ -194,11 +195,11 @@ class _MaestroUtilitiesScreenState extends State<MaestroUtilitiesScreen> {
             
             // Loading indicator
             if (_isLoading) ...[
-              const SizedBox(height: 40),
+              SizedBox(height: UIConstants.spacing40),
               const Center(
                 child: CircularProgressIndicator(),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: UIConstants.spacing16),
               const Center(
                 child: Text(
                   'Procesando...',
@@ -217,19 +218,19 @@ class _MaestroUtilitiesScreenState extends State<MaestroUtilitiesScreen> {
   
   Widget _buildStatRow(String label, dynamic value, Color color) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.symmetric(vertical: UIConstants.spacing8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
-            style: const TextStyle(fontSize: 16),
+            style: TextStyle(fontSize: UIConstants.fontSizeBody),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing16, vertical: UIConstants.spacing8 - 2),
             decoration: BoxDecoration(
-              color: color.withValues(alpha:0.1),
-              borderRadius: BorderRadius.circular(20),
+              color: color.withValues(alpha: UIConstants.opacityLow),
+              borderRadius: BorderRadiusConstants.borderRadiusLarge,
             ),
             child: Text(
               value.toString(),

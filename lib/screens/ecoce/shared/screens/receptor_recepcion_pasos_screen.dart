@@ -281,13 +281,13 @@ class _ReceptorRecepcionPasosScreenState extends State<ReceptorRecepcionPasosScr
   Widget build(BuildContext context) {
     final currentStepInfo = _steps[_currentStep];
     
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: _currentStep == 0,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
         if (_currentStep > 0) {
           _previousStep();
-          return false;
         }
-        return true;
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F5F5),

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../utils/colors.dart';
+import '../../../../utils/ui_constants.dart';
 
 class FormFieldBuilder {
   /// Construye un TextFormField estándar con el diseño del proyecto
@@ -39,26 +40,26 @@ class FormFieldBuilder {
         prefixIcon: Icon(icon, color: BioWayColors.petBlue),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: BioWayColors.lightGrey.withValues(alpha: 0.5),
+        fillColor: BioWayColors.lightGrey.withValues(alpha: UIConstants.opacityMediumHigh),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadiusConstants.borderRadiusMedium,
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: BioWayColors.lightGrey, width: 1),
+          borderRadius: BorderRadiusConstants.borderRadiusMedium,
+          borderSide: BorderSide(color: BioWayColors.lightGrey, width: UIConstants.borderWidthThin),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: BioWayColors.petBlue, width: 2),
+          borderRadius: BorderRadiusConstants.borderRadiusMedium,
+          borderSide: BorderSide(color: BioWayColors.petBlue, width: UIConstants.borderWidthThick - 0.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: BioWayColors.error, width: 1),
+          borderRadius: BorderRadiusConstants.borderRadiusMedium,
+          borderSide: BorderSide(color: BioWayColors.error, width: UIConstants.borderWidthThin),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: BioWayColors.error, width: 2),
+          borderRadius: BorderRadiusConstants.borderRadiusMedium,
+          borderSide: BorderSide(color: BioWayColors.error, width: UIConstants.borderWidthThick - 0.5),
         ),
         counterText: maxLength != null ? '' : null,
       ),
@@ -73,25 +74,25 @@ class FormFieldBuilder {
         Text(
           'Paso $currentStep de $totalSteps',
           style: const TextStyle(
-            fontSize: 14,
+            fontSize: UIConstants.fontSizeMedium,
             color: BioWayColors.petBlue,
             fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: UIConstants.spacing4),
         Text(
           title,
           style: const TextStyle(
-            fontSize: 24,
+            fontSize: UIConstants.fontSizeTitle,
             fontWeight: FontWeight.bold,
             color: BioWayColors.darkGreen,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: UIConstants.spacing4),
         Text(
           subtitle,
           style: const TextStyle(
-            fontSize: 14,
+            fontSize: UIConstants.fontSizeMedium,
             color: BioWayColors.textGrey,
           ),
         ),
@@ -118,17 +119,17 @@ class FormFieldBuilder {
                 side: BorderSide(
                   color: isLoading ? BioWayColors.lightGrey : BioWayColors.petBlue,
                 ),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadiusConstants.borderRadiusLarge),
+                padding: EdgeInsets.symmetric(vertical: UIConstants.spacing16),
                 foregroundColor: isLoading ? BioWayColors.lightGrey : BioWayColors.petBlue,
               ),
               child: const Text(
                 'Anterior',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: UIConstants.fontSizeBody, fontWeight: FontWeight.bold),
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: UIConstants.spacing16),
         ],
         Expanded(
           child: ElevatedButton(
@@ -136,15 +137,15 @@ class FormFieldBuilder {
             style: ElevatedButton.styleFrom(
               backgroundColor: isLoading ? BioWayColors.lightGrey : nextColor,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              elevation: 2,
+              elevation: UIConstants.elevationLow,
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
             child: isLoading
                 ? const SizedBox(
-              width: 20,
-              height: 20,
+              width: UIConstants.iconSizeLarge - 12,
+              height: UIConstants.iconSizeLarge - 12,
               child: CircularProgressIndicator(
-                strokeWidth: 2,
+                strokeWidth: UIConstants.borderWidthThick - 0.5,
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
             )
@@ -152,16 +153,16 @@ class FormFieldBuilder {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (nextIcon == Icons.check) Icon(nextIcon, color: Colors.white),
-                if (nextIcon == Icons.check) const SizedBox(width: 8),
+                if (nextIcon == Icons.check) SizedBox(width: UIConstants.spacing8),
                 Text(
                   nextLabel,
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: UIConstants.fontSizeBody,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                 ),
-                if (nextIcon != Icons.check) const SizedBox(width: 8),
+                if (nextIcon != Icons.check) SizedBox(width: UIConstants.spacing8),
                 if (nextIcon != Icons.check) Icon(nextIcon, color: Colors.white),
               ],
             ),
@@ -183,14 +184,14 @@ class FormFieldBuilder {
     double borderWidth = 1,
   }) {
     return Container(
-      padding: padding ?? const EdgeInsets.all(20),
+      padding: padding ?? EdgeInsetsConstants.paddingAll20,
       decoration: BoxDecoration(
         color: hasGradient ? null : (backgroundColor ?? Colors.white),
         gradient: hasGradient
             ? LinearGradient(
           colors: [
-            BioWayColors.petBlue.withValues(alpha: 0.05),
-            BioWayColors.petBlue.withValues(alpha: 0.02),
+            BioWayColors.petBlue.withValues(alpha: UIConstants.opacityVeryLow),
+            BioWayColors.petBlue.withValues(alpha: UIConstants.opacityVeryLow - 0.03),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -218,8 +219,8 @@ class FormFieldBuilder {
   }) {
     return Row(
       children: [
-        Icon(icon, color: iconColor, size: 24),
-        const SizedBox(width: 8),
+        Icon(icon, color: iconColor, size: UIConstants.iconSizeMedium),
+        SizedBox(width: UIConstants.spacing8),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,17 +228,17 @@ class FormFieldBuilder {
               Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: UIConstants.fontSizeBody,
                   fontWeight: FontWeight.bold,
                   color: BioWayColors.darkGreen,
                 ),
               ),
               if (subtitle != null) ...[
-                const SizedBox(height: 2),
+                SizedBox(height: UIConstants.spacing4 / 2),
                 Text(
                   subtitle,
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: UIConstants.fontSizeSmall - 1,
                     color: BioWayColors.textGrey,
                   ),
                 ),
@@ -339,13 +340,13 @@ class FormFieldBuilder {
               children: [
                 Row(
                   children: [
-                    Icon(icon, color: iconColor, size: 24),
-                    const SizedBox(width: 8),
+                    Icon(icon, color: iconColor, size: UIConstants.iconSizeMedium),
+                    SizedBox(width: UIConstants.spacing8),
                     Expanded(
                       child: Text(
                         title,
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: UIConstants.fontSizeBody,
                           fontWeight: FontWeight.bold,
                           color: BioWayColors.darkGreen,
                         ),
@@ -353,11 +354,11 @@ class FormFieldBuilder {
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: UIConstants.spacing4),
                 Text(
                   description,
                   style: const TextStyle(
-                    fontSize: 14,
+                    fontSize: UIConstants.fontSizeMedium,
                     color: BioWayColors.textGrey,
                   ),
                 ),

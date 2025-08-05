@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 import '../../utils/colors.dart';
+import '../../utils/ui_constants.dart';
 
 class MapSelectorDialog extends StatefulWidget {
   final LatLng initialPosition;
@@ -118,24 +119,24 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: EdgeInsets.all(20),
+      insetPadding: EdgeInsets.all(UIConstants.spacing20),
       child: Container(
         width: screenWidth * 0.9,
         height: screenHeight * 0.8,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadiusConstants.borderRadiusXLarge,
         ),
         child: Column(
           children: [
             // Header
             Container(
-              padding: EdgeInsets.all(20),
+              padding: EdgeInsetsConstants.paddingAll20,
               decoration: BoxDecoration(
                 color: BioWayColors.primaryGreen,
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
+                  topLeft: Radius.circular(UIConstants.spacing20),
+                  topRight: Radius.circular(UIConstants.spacing20),
                 ),
               ),
               child: Row(
@@ -143,15 +144,15 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
                   Icon(
                     Icons.location_on,
                     color: Colors.white,
-                    size: 24,
+                    size: UIConstants.iconSizeMedium,
                   ),
-                  SizedBox(width: 12),
+                  SizedBox(width: UIConstants.spacing12),
                   Expanded(
                     child: Text(
                       widget.title,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
+                        fontSize: UIConstants.fontSizeLarge,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -166,16 +167,16 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
             
             // Instrucciones
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              color: BioWayColors.lightGreen.withValues(alpha: 0.1),
+              padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing20, vertical: UIConstants.spacing12),
+              color: BioWayColors.lightGreen.withValues(alpha: UIConstants.opacityVeryLow),
               child: Row(
                 children: [
                   Icon(
                     Icons.touch_app,
                     color: BioWayColors.primaryGreen,
-                    size: 20,
+                    size: UIConstants.iconSizeBody,
                   ),
-                  SizedBox(width: 8),
+                  SizedBox(width: UIConstants.spacing8),
                   Expanded(
                     child: Text(
                       'Mueve el mapa para posicionar el marcador en tu ubicación exacta',
@@ -196,7 +197,7 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
                   GoogleMap(
                     initialCameraPosition: CameraPosition(
                       target: widget.initialPosition,
-                      zoom: 17.0,
+                      zoom: UIConstants.mapZoomDefault,
                     ),
                     onMapCreated: (controller) {
                       _mapController = controller;
@@ -216,19 +217,19 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         AnimatedContainer(
-                          duration: Duration(milliseconds: 200),
+                          duration: Duration(milliseconds: UIConstants.animationDurationShort),
                           transform: Matrix4.translationValues(
                             0,
-                            _isMoving ? -10 : 0,
+                            _isMoving ? -UIConstants.spacing10 : 0,
                             0,
                           ),
                           child: Icon(
                             Icons.location_on,
-                            size: 50,
+                            size: UIConstants.iconSizeDialog,
                             color: BioWayColors.error,
                             shadows: [
                               Shadow(
-                                blurRadius: 12,
+                                blurRadius: UIConstants.blurRadiusMedium,
                                 color: Colors.black.withValues(alpha: 0.3),
                                 offset: Offset(0, 3),
                               ),
@@ -237,11 +238,11 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
                         ),
                         // Sombra del marcador
                         AnimatedContainer(
-                          duration: Duration(milliseconds: 200),
-                          width: _isMoving ? 15 : 10,
-                          height: 4,
+                          duration: Duration(milliseconds: UIConstants.animationDurationShort),
+                          width: _isMoving ? UIConstants.spacing15 : UIConstants.spacing10,
+                          height: UIConstants.spacing4,
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.2),
+                            color: Colors.black.withValues(alpha: UIConstants.opacityLow),
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -251,20 +252,20 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
                   
                   // Información de coordenadas y dirección
                   Positioned(
-                    top: 10,
-                    left: 10,
-                    right: 10,
+                    top: UIConstants.spacing10,
+                    left: UIConstants.spacing10,
+                    right: UIConstants.spacing10,
                     child: Column(
                       children: [
                         Container(
-                          padding: EdgeInsets.all(12),
+                          padding: EdgeInsetsConstants.paddingAll12,
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            borderRadius: BorderRadius.circular(10),
+                            color: Colors.white.withValues(alpha: UIConstants.opacityVeryHigh),
+                            borderRadius: BorderRadiusConstants.borderRadiusMedium,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 4,
+                                color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
+                                blurRadius: UIConstants.blurRadiusSmall,
                                 offset: Offset(0, 2),
                               ),
                             ],
@@ -273,16 +274,16 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
                             children: [
                               Icon(
                                 Icons.gps_fixed,
-                                size: 16,
+                                size: UIConstants.iconSizeSmall,
                                 color: BioWayColors.darkGreen,
                               ),
-                              SizedBox(width: 8),
+                              SizedBox(width: UIConstants.spacing8),
                               Expanded(
                                 child: Text(
                                   'Lat: ${_currentPosition.latitude.toStringAsFixed(6)}, '
                                   'Lng: ${_currentPosition.longitude.toStringAsFixed(6)}',
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: UIConstants.fontSizeSmall,
                                     color: BioWayColors.darkGreen,
                                     fontFamily: 'monospace',
                                   ),
@@ -292,9 +293,9 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
                           ),
                         ),
                         if (_addressComponents != null) ...[
-                          SizedBox(height: 8),
+                          SizedBox(height: UIConstants.spacing8),
                           Container(
-                            padding: EdgeInsets.all(12),
+                            padding: EdgeInsetsConstants.paddingAll12,
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.9),
                               borderRadius: BorderRadius.circular(10),
@@ -309,10 +310,10 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
                             child: _isLoadingAddress
                                 ? Center(
                                     child: SizedBox(
-                                      width: 20,
-                                      height: 20,
+                                      width: UIConstants.iconSizeBody,
+                                      height: UIConstants.iconSizeBody,
                                       child: CircularProgressIndicator(
-                                        strokeWidth: 2,
+                                        strokeWidth: UIConstants.borderWidthMedium,
                                         valueColor: AlwaysStoppedAnimation<Color>(
                                           BioWayColors.primaryGreen,
                                         ),
@@ -326,21 +327,21 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
                                         children: [
                                           Icon(
                                             Icons.location_on,
-                                            size: 16,
+                                            size: UIConstants.iconSizeSmall,
                                             color: BioWayColors.darkGreen,
                                           ),
-                                          SizedBox(width: 8),
+                                          SizedBox(width: UIConstants.spacing8),
                                           Text(
                                             'Dirección detectada:',
                                             style: TextStyle(
-                                              fontSize: 12,
+                                              fontSize: UIConstants.fontSizeSmall,
                                               fontWeight: FontWeight.bold,
                                               color: BioWayColors.darkGreen,
                                             ),
                                           ),
                                         ],
                                       ),
-                                      SizedBox(height: 4),
+                                      SizedBox(height: UIConstants.spacing4),
                                       Text(
                                         '${_addressComponents!['calle']}, ${_addressComponents!['colonia']}, '
                                         '${_addressComponents!['municipio']}, ${_addressComponents!['estado']} '
@@ -363,12 +364,12 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
             
             // Botones
             Container(
-              padding: EdgeInsets.all(20),
+              padding: EdgeInsetsConstants.paddingAll20,
               decoration: BoxDecoration(
                 color: Colors.grey[50],
                 borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
+                  bottomLeft: Radius.circular(UIConstants.spacing20),
+                  bottomRight: Radius.circular(UIConstants.spacing20),
                 ),
               ),
               child: Row(
@@ -377,10 +378,10 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
                     child: OutlinedButton(
                       onPressed: () => Navigator.of(context).pop(),
                       style: OutlinedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.symmetric(vertical: UIConstants.spacing16),
                         side: BorderSide(color: BioWayColors.textGrey),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadiusConstants.borderRadiusMedium,
                         ),
                       ),
                       child: Text(
@@ -393,7 +394,7 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
                       ),
                     ),
                   ),
-                  SizedBox(width: 16),
+                  SizedBox(width: UIConstants.spacing16),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
@@ -404,17 +405,17 @@ class _MapSelectorDialogState extends State<MapSelectorDialog> {
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: BioWayColors.primaryGreen,
-                        padding: EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.symmetric(vertical: UIConstants.spacing16),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadiusConstants.borderRadiusMedium,
                         ),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.check, color: Colors.white),
-                          SizedBox(width: 8),
+                          SizedBox(width: UIConstants.spacing8),
                           Text(
                             'Confirmar',
                             style: TextStyle(

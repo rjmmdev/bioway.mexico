@@ -156,11 +156,8 @@ class _RepositorioInicioScreenState extends State<RepositorioInicioScreen>
   
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // Prevenir que el botón atrás cierre la sesión
-        return false;
-      },
+    return PopScope(
+      canPop: false, // Prevenir que el botón atrás cierre la sesión
       child: Scaffold(
         backgroundColor: const Color(0xFFF8F9FA),
         body: CustomScrollView(

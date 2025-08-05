@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../models/lotes/lote_unificado_model.dart';
 import '../../../models/ecoce/ecoce_profile_model.dart';
 import '../../../services/lote_service.dart';
@@ -239,7 +240,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                 children: [
                   // Título y acciones
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                    padding: EdgeInsets.fromLTRB(UIConstants.spacing20, UIConstants.spacing16, UIConstants.spacing20, UIConstants.spacing16),
                     child: Row(
                       children: [
                         Expanded(
@@ -249,17 +250,17 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                               Text(
                                 'Historial de Lotes',
                                 style: TextStyle(
-                                  fontSize: 32,
+                                  fontSize: UIConstants.fontSizeTitle + 8, // 32
                                   fontWeight: FontWeight.w800,
                                   color: _primaryColor,
                                   height: 1.1,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(height: UIConstants.spacing4),
                               Text(
                                 'Gestiona y consulta tus registros',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: UIConstants.fontSizeMedium,
                                   color: Colors.grey[600],
                                 ),
                               ),
@@ -269,8 +270,8 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                         // Botón de filtros
                         Container(
                           decoration: BoxDecoration(
-                            color: _primaryColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
+                            color: _primaryColor.withValues(alpha: UIConstants.opacityLow),
+                            borderRadius: BorderRadiusConstants.borderRadiusMedium,
                           ),
                           child: IconButton(
                             icon: Stack(
@@ -284,8 +285,8 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                                     right: 0,
                                     top: 0,
                                     child: Container(
-                                      width: 8,
-                                      height: 8,
+                                      width: UIConstants.spacing8,
+                                      height: UIConstants.spacing8,
                                       decoration: BoxDecoration(
                                         color: Colors.orange,
                                         shape: BoxShape.circle,
@@ -305,11 +306,11 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                   
                   // Barra de búsqueda moderna
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                    padding: EdgeInsets.fromLTRB(UIConstants.spacing20, 0, UIConstants.spacing20, UIConstants.spacing20),
                     child: Container(
                       decoration: BoxDecoration(
                         color: const Color(0xFFF5F6F7),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadiusConstants.borderRadiusLarge,
                       ),
                       child: TextField(
                         controller: _searchController,
@@ -318,19 +319,19 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                           hintText: 'Buscar por ID, material o fuente',
                           hintStyle: TextStyle(
                             color: Colors.grey[500],
-                            fontSize: 15,
+                            fontSize: UIConstants.fontSizeMedium + 1, // 15
                           ),
                           prefixIcon: Icon(
                             Icons.search,
                             color: Colors.grey[500],
-                            size: 22,
+                            size: UIConstants.iconSizeMedium - 2, // 22
                           ),
                           suffixIcon: _searchController.text.isNotEmpty
                               ? IconButton(
                                   icon: Icon(
                                     Icons.clear,
                                     color: Colors.grey[500],
-                                    size: 20,
+                                    size: UIConstants.fontSizeXLarge,
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -340,9 +341,9 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                                 )
                               : null,
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 16,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: UIConstants.spacing20,
+                            vertical: UIConstants.spacing16,
                           ),
                         ),
                         onChanged: (value) => setState(() {}),
@@ -357,21 +358,21 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
             if (_filtroMaterial != 'Todos' || _filtroPresentacion != 'Todas')
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing20, vertical: UIConstants.spacing12),
                 color: Colors.orange.shade50,
                 child: Row(
                   children: [
                     Icon(
                       Icons.info_outline,
-                      size: 16,
+                      size: UIConstants.iconSizeSmall,
                       color: Colors.orange.shade700,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: UIConstants.spacing8),
                     Expanded(
                       child: Text(
                         'Filtros activos: ${_getActiveFiltersText()}',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: UIConstants.fontSizeSmall,
                           color: Colors.orange.shade700,
                         ),
                       ),
@@ -384,13 +385,13 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                         });
                       },
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        minimumSize: const Size(0, 32),
+                        padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12),
+                        minimumSize: Size(0, UIConstants.spacing32),
                       ),
                       child: Text(
                         'Limpiar',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: UIConstants.fontSizeSmall,
                           color: Colors.orange.shade700,
                           fontWeight: FontWeight.w600,
                         ),
@@ -409,7 +410,7 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                   : _lotesFiltrados.isEmpty
                       ? _buildEmptyState()
                       : ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                          padding: EdgeInsets.fromLTRB(UIConstants.spacing16, UIConstants.spacing16, UIConstants.spacing16, UIConstants.spacing40 + UIConstants.spacing40 + UIConstants.spacing20), // 100
                           itemCount: _lotesFiltrados.length,
                           itemBuilder: (context, index) {
                             final lote = _lotesFiltrados[index];
@@ -485,25 +486,25 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
             children: [
             // Handle
             Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
+              margin: EdgeInsets.only(top: UIConstants.spacing12),
+              width: UIConstants.spacing40,
+              height: UIConstants.spacing4,
               decoration: BoxDecoration(
                 color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(UIConstants.elevationLow),
               ),
             ),
             
             // Título
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsetsConstants.paddingAll20,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Filtrar lotes',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: UIConstants.fontSizeXLarge,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -527,22 +528,22 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
             
             // Filtros por material
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsetsConstants.paddingHorizontal20,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Material',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: UIConstants.fontSizeBody,
                       fontWeight: FontWeight.w600,
                       color: Colors.black87,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: UIConstants.spacing12),
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: UIConstants.spacing8,
+                    runSpacing: UIConstants.spacing8,
                     children: ['Todos', 'PEBD', 'PP', 'Multilaminado'].map((material) {
                       final isSelected = _filtroMaterial == material;
                       return ChoiceChip(
@@ -572,26 +573,26 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
               ),
             ),
             
-            const SizedBox(height: 24),
+            SizedBox(height: UIConstants.spacing24),
             
             // Filtros por presentación
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsetsConstants.paddingHorizontal20,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
                     'Presentación',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: UIConstants.fontSizeBody,
                       fontWeight: FontWeight.w600,
                       color: Colors.black87,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: UIConstants.spacing12),
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: UIConstants.spacing8,
+                    runSpacing: UIConstants.spacing8,
                     children: ['Todas', 'Pacas', 'Sacos'].map((presentacion) {
                       final isSelected = _filtroPresentacion == presentacion;
                       return ChoiceChip(
@@ -633,16 +634,16 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _primaryColor,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: EdgeInsets.symmetric(vertical: UIConstants.spacing16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
+                  child: Text(
                     'Aplicar filtros',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: UIConstants.fontSizeBody,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -670,10 +671,10 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
       children: [
             // Ilustración moderna
             Container(
-              width: 120,
-              height: 120,
+              width: UIConstants.iconContainerXLarge,
+              height: UIConstants.iconContainerXLarge,
               decoration: BoxDecoration(
-                color: _primaryColor.withValues(alpha: 0.05),
+                color: _primaryColor.withValues(alpha: UIConstants.opacityVeryLow),
                 shape: BoxShape.circle,
               ),
               child: Stack(
@@ -681,29 +682,29 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                 children: [
                   Icon(
                     Icons.inventory_2_outlined,
-                    size: 60,
-                    color: _primaryColor.withValues(alpha: 0.3),
+                    size: UIConstants.iconSizeDialog,
+                    color: _primaryColor.withValues(alpha: UIConstants.opacityMedium),
                   ),
                   Positioned(
                     right: 25,
                     bottom: 25,
                     child: Container(
-                      width: 36,
-                      height: 36,
+                      width: UIConstants.spacing32 + UIConstants.spacing4, // 36
+                      height: UIConstants.spacing32 + UIConstants.spacing4, // 36
                       decoration: BoxDecoration(
                         color: Colors.orange,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.orange.withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                            color: Colors.orange.withValues(alpha: UIConstants.opacityMedium),
+                            blurRadius: UIConstants.elevationHigh,
+                            offset: Offset(0, UIConstants.elevationLow),
                           ),
                         ],
                       ),
                       child: const Icon(
                         Icons.search_off,
-                        size: 20,
+                        size: UIConstants.fontSizeXLarge,
                         color: Colors.white,
                       ),
                     ),
@@ -711,28 +712,28 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: UIConstants.spacing24),
             const Text(
               'No hay lotes que mostrar',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: UIConstants.fontSizeXLarge,
                 fontWeight: FontWeight.w600,
                 color: Colors.black87,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: UIConstants.spacing8),
             Text(
               _searchController.text.isNotEmpty
                   ? 'No se encontraron resultados para tu búsqueda'
                   : 'Comienza creando tu primer lote',
               style: TextStyle(
-                fontSize: 15,
+                fontSize: UIConstants.fontSizeMedium + 1, // 15
                 color: Colors.grey[600],
                 height: 1.4,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: UIConstants.spacing32),
             if (_searchController.text.isNotEmpty)
               OutlinedButton(
                 onPressed: () {
@@ -744,12 +745,12 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                 },
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: _primaryColor),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: UIConstants.spacing24,
+                    vertical: UIConstants.spacing12,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadiusConstants.borderRadiusRound,
                   ),
                 ),
                 child: Text(
@@ -768,12 +769,12 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _primaryColor,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: UIConstants.spacing24,
+                    vertical: UIConstants.spacing12,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadiusConstants.borderRadiusRound,
                   ),
                   elevation: 0,
                 ),
@@ -785,14 +786,14 @@ class _OrigenLotesScreenState extends State<OrigenLotesScreen> {
     if (isKeyboardVisible) {
       return SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(40),
+          padding: EdgeInsets.all(UIConstants.spacing40),
           child: content,
         ),
       );
     } else {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(40),
+          padding: EdgeInsets.all(UIConstants.spacing40),
           child: content,
         ),
       );

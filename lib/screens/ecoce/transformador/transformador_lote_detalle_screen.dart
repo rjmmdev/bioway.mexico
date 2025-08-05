@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import 'transformador_inicio_screen.dart';
 import '../shared/widgets/qr_code_display_widget.dart';
 
@@ -47,7 +48,7 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
     super.initState();
     
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: Duration(milliseconds: UIConstants.animationDurationLong),
       vsync: this,
     );
 
@@ -97,7 +98,7 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
     final isSmallScreen = screenWidth < 360;
     
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.symmetric(vertical: UIConstants.spacing8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -107,7 +108,7 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
               size: isSmallScreen ? 18 : 20,
               color: _primaryColor,
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: UIConstants.spacing8),
           ],
           SizedBox(
             width: isSmallScreen ? 100 : 120,
@@ -151,12 +152,12 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0,
+        elevation: UIConstants.elevationNone,
         title: Text(
           widget.mostrarMensajeExito ? 'Lote Creado' : 'Detalles del Lote',
           style: const TextStyle(
             color: Colors.black87,
-            fontSize: 20,
+            fontSize: UIConstants.fontSizeLarge,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -172,7 +173,7 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsetsConstants.paddingAll16,
           child: Column(
             children: [
               // Mensaje de éxito animado
@@ -182,42 +183,42 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
                   child: ScaleTransition(
                     scale: _scaleAnimation,
                     child: Container(
-                      margin: const EdgeInsets.only(bottom: 24),
-                      padding: const EdgeInsets.all(20),
+                      margin: EdgeInsets.only(bottom: UIConstants.spacing24),
+                      padding: EdgeInsetsConstants.paddingAll20,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
                             BioWayColors.success,
-                            BioWayColors.success.withValues(alpha: 0.8),
+                            BioWayColors.success.withValues(alpha: UIConstants.opacityVeryHigh),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadiusConstants.borderRadiusLarge,
                         boxShadow: [
                           BoxShadow(
-                            color: BioWayColors.success.withValues(alpha: 0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
+                            color: BioWayColors.success.withValues(alpha: UIConstants.opacityMediumLow),
+                            blurRadius: UIConstants.blurRadiusLarge,
+                            offset: Offset(0, UIConstants.spacing8 + 2),
                           ),
                         ],
                       ),
                       child: Row(
                         children: [
                           Container(
-                            width: 56,
-                            height: 56,
+                            width: UIConstants.buttonHeightLarge,
+                            height: UIConstants.buttonHeightLarge,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
+                              color: Colors.white.withValues(alpha: UIConstants.opacityMediumLow),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.check_circle,
                               color: Colors.white,
-                              size: 32,
+                              size: UIConstants.iconSizeLarge,
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          SizedBox(width: UIConstants.spacing16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,16 +227,16 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
                                   '¡Lote creado exitosamente!',
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 18,
+                                    fontSize: UIConstants.fontSizeBody + 2,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                SizedBox(height: UIConstants.spacing4),
                                 Text(
                                   'ID: ${widget.firebaseId}',
                                   style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.9),
-                                    fontSize: 14,
+                                    color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
+                                    fontSize: UIConstants.fontSizeMedium,
                                   ),
                                 ),
                               ],
@@ -249,29 +250,29 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
               
               // Vista previa del lote - Card informativa
               Container(
-                margin: const EdgeInsets.only(bottom: 24),
+                margin: EdgeInsets.only(bottom: UIConstants.spacing24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Vista previa',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: UIConstants.fontSizeMedium,
                         fontWeight: FontWeight.w600,
                         color: Colors.grey[700],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: UIConstants.spacing12),
                     Container(
-                      padding: const EdgeInsets.all(20),
+                      padding: EdgeInsetsConstants.paddingAll20,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadiusConstants.borderRadiusMedium,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
+                            color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
+                            blurRadius: UIConstants.blurRadiusMedium,
+                            offset: Offset(0, UIConstants.spacing4 + 1),
                           ),
                         ],
                       ),
@@ -281,18 +282,18 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(12),
+                                padding: EdgeInsetsConstants.paddingAll12,
                                 decoration: BoxDecoration(
-                                  color: _primaryColor.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(12),
+                                  color: _primaryColor.withValues(alpha: UIConstants.opacityLow),
+                                  borderRadius: BorderRadiusConstants.borderRadiusMedium,
                                 ),
                                 child: Icon(
                                   Icons.factory,
                                   color: _primaryColor,
-                                  size: 24,
+                                  size: UIConstants.iconSizeMedium,
                                 ),
                               ),
-                              const SizedBox(width: 16),
+                              SizedBox(width: UIConstants.spacing16),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,16 +301,16 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
                                     Text(
                                       'Lote ${widget.firebaseId}',
                                       style: const TextStyle(
-                                        fontSize: 16,
+                                        fontSize: UIConstants.fontSizeBody,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.black87,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
+                                    SizedBox(height: UIConstants.spacing4),
                                     Text(
                                       widget.productoFabricado,
                                       style: TextStyle(
-                                        fontSize: 14,
+                                        fontSize: UIConstants.fontSizeMedium,
                                         color: Colors.grey[600],
                                       ),
                                     ),
@@ -318,7 +319,7 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
                               ),
                             ],
                           ),
-                          const SizedBox(height: 20),
+                          SizedBox(height: UIConstants.spacing20),
                           _buildInfoRow('Peso:', '${widget.peso} kg', icon: Icons.scale),
                           _buildInfoRow('Producto:', widget.productoFabricado, icon: Icons.inventory_2),
                           if (widget.tipoPolimero != null)
@@ -351,12 +352,12 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
               ),
 
               // Información adicional del lote
-              const SizedBox(height: 24),
+              SizedBox(height: UIConstants.spacing24),
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsetsConstants.paddingAll20,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadiusConstants.borderRadiusMedium,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.05),
@@ -373,25 +374,25 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
                         Icon(
                           Icons.info_outline,
                           color: _primaryColor,
-                          size: 24,
+                          size: UIConstants.iconSizeMedium,
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: UIConstants.spacing8),
                         const Text(
                           'Información Adicional',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: UIConstants.fontSizeBody + 2,
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsetsConstants.paddingAll16,
                       decoration: BoxDecoration(
                         color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadiusConstants.borderRadiusMedium,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -399,16 +400,16 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
                           const Text(
                             'Composición del Material',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: UIConstants.fontSizeMedium,
                               fontWeight: FontWeight.w600,
                               color: Colors.black87,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: UIConstants.spacing8),
                           Text(
                             widget.composicionMaterial,
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: UIConstants.fontSizeMedium,
                               color: Colors.grey[700],
                             ),
                           ),
@@ -416,12 +417,12 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
                       ),
                     ),
                     if (widget.comentarios != null && widget.comentarios!.isNotEmpty) ...[
-                      const SizedBox(height: 16),
+                      SizedBox(height: UIConstants.spacing16),
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: EdgeInsetsConstants.paddingAll16,
                         decoration: BoxDecoration(
                           color: Colors.blue[50],
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadiusConstants.borderRadiusMedium,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -429,16 +430,16 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
                             const Text(
                               'Comentarios',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: UIConstants.fontSizeMedium,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.black87,
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(height: UIConstants.spacing8),
                             Text(
                               widget.comentarios!,
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: UIConstants.fontSizeMedium,
                                 color: Colors.grey[700],
                               ),
                             ),
@@ -451,22 +452,22 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
               ),
 
               if (widget.mostrarMensajeExito) ...[
-                const SizedBox(height: 32),
+                SizedBox(height: UIConstants.spacing32),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: _navegarAInicio,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _primaryColor,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: EdgeInsets.symmetric(vertical: UIConstants.spacing16),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadiusConstants.borderRadiusMedium,
                       ),
                     ),
                     child: const Text(
                       'Ir al inicio',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: UIConstants.fontSizeBody,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),
@@ -475,7 +476,7 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
                 ),
               ],
 
-              const SizedBox(height: 40),
+              SizedBox(height: UIConstants.spacing40),
             ],
           ),
         ),

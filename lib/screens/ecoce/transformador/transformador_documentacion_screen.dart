@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../services/transformacion_service.dart';
@@ -37,7 +38,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         backgroundColor: Colors.orange,
-        elevation: 0,
+        elevation: UIConstants.elevationNone,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () {
@@ -48,7 +49,7 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
         title: const Text(
           'Documentación',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: UIConstants.fontSizeBody + 2,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -173,47 +174,47 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
       builder: (BuildContext context) {
         return Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadiusConstants.borderRadiusLarge,
           ),
           child: Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsetsConstants.paddingAll24,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 80,
-                  height: 80,
+                  width: UIConstants.iconSizeDialog + UIConstants.spacing20,
+                  height: UIConstants.iconSizeDialog + UIConstants.spacing20,
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withValues(alpha: UIConstants.opacityLow),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.check_circle,
                     color: Colors.orange,
-                    size: 48,
+                    size: UIConstants.iconSizeLarge + UIConstants.spacing24,
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: UIConstants.spacing24),
                 const Text(
                   'Documentación Cargada',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: UIConstants.fontSizeLarge,
                     fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: UIConstants.spacing16),
                 Text(
                   widget.transformacionId != null 
                     ? 'Los documentos del megalote se han guardado correctamente.'
                     : 'Los documentos se han guardado correctamente. El lote ha sido completado.',
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: UIConstants.fontSizeBody,
                     color: Colors.black54,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: UIConstants.spacing24),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -223,15 +224,15 @@ class _TransformadorDocumentacionScreenState extends State<TransformadorDocument
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: EdgeInsets.symmetric(vertical: UIConstants.spacing12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadiusConstants.borderRadiusSmall,
                       ),
                     ),
                     child: const Text(
                       'Aceptar',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: UIConstants.fontSizeBody,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),

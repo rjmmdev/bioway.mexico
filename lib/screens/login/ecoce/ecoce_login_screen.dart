@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
@@ -70,7 +71,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
   void _setupAnimations() {
     // Logo animations
     _logoController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: Duration(milliseconds: UIConstants.animationDurationLong + 300),
       vsync: this,
     );
 
@@ -92,7 +93,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
 
     // Form animations
     _formController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
+      duration: Duration(milliseconds: UIConstants.animationDurationLong * 2),
       vsync: this,
     );
 
@@ -114,10 +115,10 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
   }
 
   void _startAnimations() async {
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(Duration(milliseconds: UIConstants.animationDurationMedium));
     _logoController.forward();
 
-    await Future.delayed(const Duration(milliseconds: 400));
+    await Future.delayed(Duration(milliseconds: UIConstants.animationDurationMedium + 100));
     _formController.forward();
   }
 
@@ -270,17 +271,17 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                 content: const Row(
                   children: [
                     Icon(Icons.check_circle, color: Colors.white),
-                    SizedBox(width: 12),
+                    SizedBox(width: UIConstants.spacing12),
                     Text('Login ECOCE exitoso'),
                   ],
                 ),
                 backgroundColor: BioWayColors.ecoceGreen,
                 behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.all(20),
+                margin: EdgeInsetsConstants.paddingAll20,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(UIConstants.spacing10),
                 ),
-                duration: const Duration(seconds: 2),
+                duration: Duration(seconds: 2),
               ),
             );
 
@@ -328,7 +329,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
               content: Row(
                 children: [
                   const Icon(Icons.error, color: Colors.white),
-                  const SizedBox(width: 12),
+                  SizedBox(width: UIConstants.spacing12),
                   Expanded(
                     child: Text('Error: ${e.toString()}'),
                   ),
@@ -336,9 +337,9 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
               ),
               backgroundColor: BioWayColors.error,
               behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.all(20),
+              margin: EdgeInsetsConstants.paddingAll20,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(UIConstants.spacing10),
               ),
             ),
           );
@@ -368,7 +369,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
             child: child,
           );
         },
-        transitionDuration: const Duration(milliseconds: 400),
+        transitionDuration: Duration(milliseconds: UIConstants.animationDurationMedium),
       ),
     );
   }
@@ -448,8 +449,8 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
             scale: _logoScaleAnimation.value,
             child: SvgPicture.asset(
               'assets/logos/ecoce_logo.svg',
-              width: 140,
-              height: 140,
+              width: UIConstants.logoSize,
+              height: UIConstants.logoSize,
             ),
           ),
         );
@@ -478,29 +479,29 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing24),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 40),
+                        SizedBox(height: UIConstants.spacing40),
 
                         // Logo animado
                         _buildLogo(),
 
-                        const SizedBox(height: 16),
+                        SizedBox(height: UIConstants.spacing16),
 
                         // Título principal
                         Text(
                           'Sistema de Trazabilidad',
                           style: TextStyle(
-                            fontSize: 20,
+                            fontSize: UIConstants.fontSizeLarge,
                             fontWeight: FontWeight.w600,
                             color: BioWayColors.ecoceDark,
-                            letterSpacing: 0.2,
+                            letterSpacing: UIConstants.letterSpacingSmall,
                           ),
                         ),
 
-                        const SizedBox(height: 24),
+                        SizedBox(height: UIConstants.spacing24),
 
                         // Formulario animado
                         AnimatedBuilder(
@@ -515,26 +516,26 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                             );
                           },
                           child: Container(
-                            constraints: const BoxConstraints(maxWidth: 400),
-                            padding: const EdgeInsets.all(28),
+                            constraints: BoxConstraints(maxWidth: UIConstants.maxWidthDialog),
+                            padding: EdgeInsets.all(UIConstants.spacing24 + UIConstants.spacing4),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(24),
+                              borderRadius: BorderRadiusConstants.borderRadiusXLarge,
                               border: Border.all(
-                                color: BioWayColors.ecoceGreen.withValues(alpha: 0.25),
-                                width: 2,
+                                color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityMediumLow),
+                                width: UIConstants.borderWidthThick,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: BioWayColors.ecoceGreen.withValues(alpha: 0.12),
-                                  blurRadius: 40,
-                                  offset: const Offset(0, 20),
-                                  spreadRadius: -5,
+                                  color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityLow + 0.02),
+                                  blurRadius: UIConstants.blurRadiusXLarge,
+                                  offset: Offset(0, UIConstants.spacing20),
+                                  spreadRadius: -UIConstants.spacing4 - 1,
                                 ),
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.08),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 10),
+                                  color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow + 0.03),
+                                  blurRadius: UIConstants.blurRadiusLarge,
+                                  offset: Offset(0, UIConstants.spacing10),
                                 ),
                               ],
                             ),
@@ -545,11 +546,11 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                                 children: [
                                   // Campo de usuario
                                   _buildUserField(),
-                                  const SizedBox(height: 20),
+                                  SizedBox(height: UIConstants.spacing20),
 
                                   // Campo de contraseña
                                   _buildPasswordField(),
-                                  const SizedBox(height: 12),
+                                  SizedBox(height: UIConstants.spacing12),
 
                                   // Enlace ¿Olvidaste tu contraseña?
                                   Align(
@@ -563,32 +564,32 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                                       child: const Text(
                                         '¿Olvidaste tu contraseña?',
                                         style: TextStyle(
-                                          fontSize: 13,
+                                          fontSize: UIConstants.fontSizeSmall,
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(height: 24),
+                                  SizedBox(height: UIConstants.spacing24),
 
                                   // Botón de inicio de sesión
                                   _buildLoginButton(),
-                                  const SizedBox(height: 12),
+                                  SizedBox(height: UIConstants.spacing12),
                                   
                                   // Botón de repositorio
                                   _buildRepositoryButton(),
-                                  const SizedBox(height: 20),
+                                  SizedBox(height: UIConstants.spacing20),
 
                                   // Divisor
                                   _buildDivider(),
-                                  const SizedBox(height: 20),
+                                  SizedBox(height: UIConstants.spacing20),
 
                                   // Botón de registro
                                   _buildRegisterButton(),
-                                  const SizedBox(height: 16),
+                                  SizedBox(height: UIConstants.spacing16),
 
                                   // Información adicional
-                                  const SizedBox(height: 20),
+                                  SizedBox(height: UIConstants.spacing20),
                                   _buildInfoSection(),
                                 ],
                               ),
@@ -597,7 +598,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                         ),
 
 
-                        const SizedBox(height: 20),
+                        SizedBox(height: UIConstants.spacing20),
                       ],
                     ),
                   ),
@@ -618,21 +619,21 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
           children: [
             Icon(
               Icons.account_circle_outlined,
-              size: 16,
+              size: UIConstants.iconSizeSmall,
               color: BioWayColors.ecoceGreen,
             ),
-            const SizedBox(width: 6),
+            SizedBox(width: UIConstants.spacing4 + 2),
             Text(
               'Correo o Folio',
               style: TextStyle(
                 color: BioWayColors.ecoceDark,
-                fontSize: 14,
+                fontSize: UIConstants.fontSizeMedium,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: UIConstants.spacing8),
         TextFormField(
           controller: _userController,
           focusNode: _userFocusNode,
@@ -644,38 +645,38 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
             hintText: 'correo@ejemplo.com o A0000001',
             hintStyle: TextStyle(
               color: Colors.grey.shade400,
-              fontSize: 14,
+              fontSize: UIConstants.fontSizeMedium,
             ),
             prefixIcon: Icon(
               Icons.person_outline,
               color: BioWayColors.ecoceGreen,
-              size: 22,
+              size: UIConstants.iconSizeSmall + 6,
             ),
             filled: true,
             fillColor: const Color(0xFFF6FBF8),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide(
-                color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
-                width: 1.5,
+                color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityMedium),
+                width: UIConstants.borderWidthMedium,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide(
                 color: BioWayColors.ecoceGreen,
-                width: 2.5,
+                width: UIConstants.borderWidthThick,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: const BorderSide(
                 color: BioWayColors.error,
-                width: 2,
+                width: UIConstants.borderWidthThick - 0.5,
               ),
             ),
           ),
@@ -707,21 +708,21 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
           children: [
             Icon(
               Icons.lock_outlined,
-              size: 16,
+              size: UIConstants.iconSizeSmall,
               color: BioWayColors.ecoceGreen,
             ),
-            const SizedBox(width: 6),
+            SizedBox(width: UIConstants.spacing4 + 2),
             Text(
               'Contraseña',
               style: TextStyle(
                 color: BioWayColors.ecoceDark,
-                fontSize: 14,
+                fontSize: UIConstants.fontSizeMedium,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: UIConstants.spacing8),
         TextFormField(
           controller: _passwordController,
           focusNode: _passwordFocusNode,
@@ -732,12 +733,12 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
             hintText: '••••••••',
             hintStyle: TextStyle(
               color: Colors.grey.shade400,
-              fontSize: 14,
+              fontSize: UIConstants.fontSizeMedium,
             ),
             prefixIcon: Icon(
               Icons.lock_outline,
               color: BioWayColors.ecoceGreen,
-              size: 22,
+              size: UIConstants.iconSizeSmall + 6,
             ),
             suffixIcon: IconButton(
               icon: Icon(
@@ -745,7 +746,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                     ? Icons.visibility_off_outlined
                     : Icons.visibility_outlined,
                 color: BioWayColors.ecoceGreen,
-                size: 22,
+                size: UIConstants.iconSizeSmall + 6,
               ),
               onPressed: () {
                 setState(() {
@@ -756,28 +757,28 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
             filled: true,
             fillColor: const Color(0xFFF6FBF8),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide(
-                color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
-                width: 1.5,
+                color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityMedium),
+                width: UIConstants.borderWidthMedium,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide(
                 color: BioWayColors.ecoceGreen,
-                width: 2.5,
+                width: UIConstants.borderWidthThick,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: const BorderSide(
                 color: BioWayColors.error,
-                width: 2,
+                width: UIConstants.borderWidthThick - 0.5,
               ),
             ),
           ),
@@ -798,33 +799,33 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
   Widget _buildLoginButton() {
     return SizedBox(
       width: double.infinity,
-      height: 52,
+      height: UIConstants.buttonHeightCompact,
       child: ElevatedButton(
         onPressed: _isLoading ? null : () => _handleLogin(),
         style: ElevatedButton.styleFrom(
           backgroundColor: BioWayColors.ecoceGreen,
           foregroundColor: Colors.white,
-          elevation: _isLoading ? 0 : 3,
-          shadowColor: BioWayColors.ecoceGreen.withValues(alpha: 0.4),
+          elevation: _isLoading ? 0 : UIConstants.elevationLow + 1,
+          shadowColor: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityMedium + 0.1),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadiusConstants.borderRadiusMedium,
           ),
         ),
         child: _isLoading
             ? const SizedBox(
-          width: 24,
-          height: 24,
+          width: UIConstants.iconSizeMedium,
+          height: UIConstants.iconSizeMedium,
           child: CircularProgressIndicator(
             color: Colors.white,
-            strokeWidth: 2.5,
+            strokeWidth: UIConstants.borderWidthThick,
           ),
         )
             : const Text(
           'Iniciar Sesión',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: UIConstants.fontSizeBody,
             fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
+            letterSpacing: UIConstants.letterSpacingMedium,
           ),
         ),
       ),
@@ -848,12 +849,12 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing16),
           child: Text(
             'o',
             style: TextStyle(
               color: Colors.grey.shade500,
-              fontSize: 14,
+              fontSize: UIConstants.fontSizeMedium,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -878,24 +879,24 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
   Widget _buildRepositoryButton() {
     return SizedBox(
       width: double.infinity,
-      height: 52,
+      height: UIConstants.buttonHeightCompact,
       child: ElevatedButton.icon(
         onPressed: _isLoading ? null : () => _handleLogin(goToRepository: true),
-        icon: const Icon(Icons.inventory_2_outlined, size: 20),
+        icon: Icon(Icons.inventory_2_outlined, size: UIConstants.iconSizeLarge - 12),
         label: const Text(
           'Acceder al Repositorio',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: UIConstants.fontSizeBody,
             fontWeight: FontWeight.w600,
           ),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: BioWayColors.ecoceDark,
           foregroundColor: Colors.white,
-          elevation: _isLoading ? 0 : 3,
-          shadowColor: BioWayColors.ecoceDark.withValues(alpha: 0.3),
+          elevation: _isLoading ? 0 : UIConstants.elevationLow + 1,
+          shadowColor: BioWayColors.ecoceDark.withValues(alpha: UIConstants.opacityMedium),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadiusConstants.borderRadiusMedium,
           ),
         ),
       ),
@@ -905,18 +906,18 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
   Widget _buildRegisterButton() {
     return SizedBox(
       width: double.infinity,
-      height: 52,
+      height: UIConstants.buttonHeightCompact,
       child: OutlinedButton(
         onPressed: _handleRegister,
         style: OutlinedButton.styleFrom(
           foregroundColor: BioWayColors.ecoceGreen,
-          backgroundColor: BioWayColors.ecoceGreen.withValues(alpha: 0.05),
+          backgroundColor: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityVeryLow),
           side: BorderSide(
-            color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
-            width: 1.5,
+            color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityMedium),
+            width: UIConstants.borderWidthMedium,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadiusConstants.borderRadiusMedium,
           ),
         ),
         child: Row(
@@ -924,16 +925,16 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
           children: [
             Icon(
               Icons.person_add_outlined,
-              size: 20,
+              size: UIConstants.iconSizeLarge - 12,
               color: BioWayColors.ecoceGreen,
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: UIConstants.spacing8),
             const Text(
               'Registrar Proveedor',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: UIConstants.fontSizeBody,
                 fontWeight: FontWeight.w600,
-                letterSpacing: 0.3,
+                letterSpacing: UIConstants.letterSpacingSmall,
               ),
             ),
           ],
@@ -951,7 +952,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.red.shade50,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadiusConstants.borderRadiusMedium,
         border: Border.all(
           color: Colors.red.shade200,
           width: 2,
@@ -964,7 +965,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
             color: Colors.red.shade700,
             size: 24,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: UIConstants.spacing8),
           Text(
             '⚠️ BOTÓN DE EMERGENCIA - SOLO USAR SI NO HAY MAESTRO',
             style: TextStyle(
@@ -974,7 +975,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: UIConstants.spacing8),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -994,7 +995,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: UIConstants.spacing8),
           Text(
             'Usuario: maestro@ecoce.mx | Contraseña: Maestro123!',
             style: TextStyle(
@@ -1094,13 +1095,13 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
 
   Widget _buildInfoSection() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsetsConstants.paddingAll16,
       decoration: BoxDecoration(
-        color: BioWayColors.ecoceGreen.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
+        color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityVeryLow),
+        borderRadius: BorderRadiusConstants.borderRadiusMedium,
         border: Border.all(
-          color: BioWayColors.ecoceGreen.withValues(alpha: 0.2),
-          width: 1,
+          color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityMediumLow),
+          width: UIConstants.borderWidthThin,
         ),
       ),
       child: Row(
@@ -1108,14 +1109,14 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
           Icon(
             Icons.info_outline,
             color: BioWayColors.ecoceGreen,
-            size: 20,
+            size: UIConstants.iconSizeLarge - 12,
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: UIConstants.spacing12),
           Expanded(
             child: Text(
               'Sistema exclusivo para proveedores de ECOCE',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: UIConstants.fontSizeSmall - 1,
                 color: BioWayColors.ecoceDark,
               ),
             ),
@@ -1154,38 +1155,38 @@ class ECOCEBackgroundPainter extends CustomPainter {
     
     // Círculo grande superior
     final circle1Center = Offset(size.width * 0.8, size.height * 0.1);
-    paint.color = BioWayColors.ecoceGreen.withValues(alpha: 0.05);
-    canvas.drawCircle(circle1Center, 120, paint);
+    paint.color = BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityVeryLow);
+    canvas.drawCircle(circle1Center, UIConstants.iconContainerXLarge, paint);
     
-    paint.color = BioWayColors.ecoceGreen.withValues(alpha: 0.03);
-    canvas.drawCircle(circle1Center, 140, paint);
+    paint.color = BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityVeryLow - 0.02);
+    canvas.drawCircle(circle1Center, UIConstants.iconContainerXLarge + UIConstants.spacing20, paint);
     
     // Círculo mediano centro-izquierda
     final circle2Center = Offset(size.width * 0.1, size.height * 0.4);
-    paint.color = BioWayColors.ecoceGreen.withValues(alpha: 0.04);
-    canvas.drawCircle(circle2Center, 80, paint);
+    paint.color = BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityVeryLow - 0.01);
+    canvas.drawCircle(circle2Center, UIConstants.iconSizeDialog + UIConstants.spacing20, paint);
     
     // Círculo pequeño inferior-derecha
     final circle3Center = Offset(size.width * 0.9, size.height * 0.8);
-    paint.color = BioWayColors.ecoceGreen.withValues(alpha: 0.06);
-    canvas.drawCircle(circle3Center, 60, paint);
+    paint.color = BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityVeryLow + 0.01);
+    canvas.drawCircle(circle3Center, UIConstants.iconSizeDialog, paint);
     
     // Patrón de hojas estilizadas
     paint.style = PaintingStyle.stroke;
-    paint.strokeWidth = 2;
+    paint.strokeWidth = UIConstants.borderWidthThick - 0.5;
     
     // Hoja 1 - superior izquierda
-    _drawLeaf(canvas, paint, Offset(size.width * 0.15, size.height * 0.2), 30, -0.5);
+    _drawLeaf(canvas, paint, Offset(size.width * 0.15, size.height * 0.2), UIConstants.radiusRound, -0.5);
     
     // Hoja 2 - centro derecha
-    _drawLeaf(canvas, paint, Offset(size.width * 0.85, size.height * 0.5), 25, 0.8);
+    _drawLeaf(canvas, paint, Offset(size.width * 0.85, size.height * 0.5), UIConstants.spacing24 + 1, 0.8);
     
     // Hoja 3 - inferior izquierda
-    _drawLeaf(canvas, paint, Offset(size.width * 0.2, size.height * 0.75), 20, -0.3);
+    _drawLeaf(canvas, paint, Offset(size.width * 0.2, size.height * 0.75), UIConstants.spacing20, -0.3);
     
     // Elementos geométricos flotantes
     paint.style = PaintingStyle.fill;
-    paint.color = BioWayColors.ecoceGreen.withValues(alpha: 0.03);
+    paint.color = BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityVeryLow - 0.02);
     
     // Triángulo superior
     final triangle1 = Path()
@@ -1196,12 +1197,12 @@ class ECOCEBackgroundPainter extends CustomPainter {
     canvas.drawPath(triangle1, paint);
     
     // Hexágono centro
-    _drawHexagon(canvas, paint, Offset(size.width * 0.7, size.height * 0.35), 15);
+    _drawHexagon(canvas, paint, Offset(size.width * 0.7, size.height * 0.35), UIConstants.radiusLarge - 1);
     
     // Líneas de conexión sutiles
     paint.style = PaintingStyle.stroke;
-    paint.strokeWidth = 0.5;
-    paint.color = BioWayColors.ecoceGreen.withValues(alpha: 0.05);
+    paint.strokeWidth = UIConstants.borderWidthThin / 2;
+    paint.color = BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityVeryLow);
     
     final connectionPath = Path()
       ..moveTo(size.width * 0.1, size.height * 0.3)
@@ -1217,7 +1218,7 @@ class ECOCEBackgroundPainter extends CustomPainter {
     canvas.translate(position.dx, position.dy);
     canvas.rotate(rotation);
     
-    paint.color = BioWayColors.ecoceGreen.withValues(alpha: 0.08);
+    paint.color = BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityLow - 0.02);
     
     final leafPath = Path()
       ..moveTo(0, 0)
@@ -1227,8 +1228,8 @@ class ECOCEBackgroundPainter extends CustomPainter {
     canvas.drawPath(leafPath, paint);
     
     // Vena central
-    paint.strokeWidth = 1;
-    paint.color = BioWayColors.ecoceGreen.withValues(alpha: 0.06);
+    paint.strokeWidth = UIConstants.borderWidthThin;
+    paint.color = BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityVeryLow + 0.01);
     canvas.drawLine(Offset(0, 0), Offset(size, 0), paint);
     
     canvas.restore();

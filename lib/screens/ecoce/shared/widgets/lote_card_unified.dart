@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../utils/ui_constants.dart';
 import '../utils/material_utils.dart';
 
 /// Widget unificado para mostrar tarjetas de lotes
@@ -112,26 +113,26 @@ class LoteCard extends StatelessWidget {
     final fecha = lote['fecha'] ?? lote['fechaCreacion'];
     
     return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: UIConstants.elevationSmall,
+      margin: EdgeInsets.symmetric(horizontal: UIConstants.spacing16, vertical: UIConstants.spacing8),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadiusConstants.borderRadiusMedium,
       ),
       child: InkWell(
         onTap: onTap != null ? () {
           HapticFeedback.lightImpact();
           onTap!();
         } : null,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadiusConstants.borderRadiusMedium,
         child: Padding(
-          padding: EdgeInsets.all(isTablet ? 20 : 16),
+          padding: EdgeInsets.all(isTablet ? UIConstants.spacing20 : UIConstants.spacing16),
           child: Column(
             children: [
               // Header Row
               Row(
                 children: [
                   _buildMaterialIcon(material),
-                  const SizedBox(width: 12),
+                  SizedBox(width: UIConstants.spacing12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,7 +143,7 @@ class LoteCard extends StatelessWidget {
                               child: Text(
                                 'Lote #$id',
                                 style: TextStyle(
-                                  fontSize: isTablet ? 18 : 16,
+                                  fontSize: isTablet ? UIConstants.fontSizeBody + 2 : UIConstants.fontSizeBody,
                                   fontWeight: FontWeight.bold,
                                 ),
                                 overflow: TextOverflow.ellipsis,
@@ -150,16 +151,16 @@ class LoteCard extends StatelessWidget {
                               ),
                             ),
                             if (showStatus && estado != null) ...[
-                              const SizedBox(width: 8),
+                              SizedBox(width: UIConstants.spacing8),
                               _buildStatusChip(estado),
                             ],
                           ],
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: UIConstants.spacing4),
                         Text(
                           origen,
                           style: TextStyle(
-                            fontSize: isTablet ? 14 : 12,
+                            fontSize: isTablet ? UIConstants.fontSizeMedium : UIConstants.fontSizeSmall,
                             color: Colors.grey[600],
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -174,12 +175,12 @@ class LoteCard extends StatelessWidget {
                     _buildActionButtons(context),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: UIConstants.spacing16),
               
               // Info Chips
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: UIConstants.spacing8,
+                runSpacing: UIConstants.spacing8,
                 children: [
                   _buildInfoChip(
                     Icons.category,
@@ -220,16 +221,16 @@ class LoteCard extends StatelessWidget {
   
   Widget _buildMaterialIcon(String material) {
     return Container(
-      width: 48,
-      height: 48,
+      width: UIConstants.iconSizeLarge + UIConstants.spacing20,
+      height: UIConstants.iconSizeLarge + UIConstants.spacing20,
       decoration: BoxDecoration(
-        color: MaterialUtils.getMaterialColor(material).withValues(alpha:0.1),
-        borderRadius: BorderRadius.circular(8),
+        color: MaterialUtils.getMaterialColor(material).withValues(alpha: UIConstants.opacityLow),
+        borderRadius: BorderRadiusConstants.borderRadiusSmall,
       ),
       child: Icon(
         MaterialUtils.getMaterialIcon(material),
         color: MaterialUtils.getMaterialColor(material),
-        size: 24,
+        size: UIConstants.iconSizeMedium,
       ),
     );
   }
@@ -238,10 +239,10 @@ class LoteCard extends StatelessWidget {
     if (actionButtonText != null && onActionTap != null) {
       // Botón de acción personalizado
       return SizedBox(
-        height: 36,
+        height: UIConstants.buttonHeightSmall + UIConstants.spacing4,
         child: ElevatedButton.icon(
           onPressed: onActionTap,
-          icon: Icon(actionButtonIcon ?? Icons.arrow_forward, size: 18),
+          icon: Icon(actionButtonIcon ?? Icons.arrow_forward, size: UIConstants.iconSizeBody + 2),
           label: Flexible(
             child: Text(
               actionButtonText!,
@@ -252,9 +253,9 @@ class LoteCard extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: actionButtonColor ?? Theme.of(context).primaryColor,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadiusConstants.borderRadiusSmall,
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12),
           ),
         ),
       );
@@ -268,14 +269,14 @@ class LoteCard extends StatelessWidget {
         icon: const Icon(Icons.qr_code),
         tooltip: 'Ver código QR',
         style: IconButton.styleFrom(
-          backgroundColor: Colors.black.withValues(alpha:0.05),
+          backgroundColor: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadiusConstants.borderRadiusSmall,
           ),
         ),
       );
     }
-    return const SizedBox.shrink();
+    return SizedBox.shrink();
   }
   
   Widget _buildStatusChip(String estado) {
@@ -295,16 +296,16 @@ class LoteCard extends StatelessWidget {
     }
     
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing8, vertical: UIConstants.spacing4 / 2),
       decoration: BoxDecoration(
-        color: statusColor.withValues(alpha:0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: statusColor.withValues(alpha:0.5)),
+        color: statusColor.withValues(alpha: UIConstants.opacityLow),
+        borderRadius: BorderRadiusConstants.borderRadiusMedium,
+        border: Border.all(color: statusColor.withValues(alpha: UIConstants.opacityHigh)),
       ),
       child: Text(
         estado,
         style: TextStyle(
-          fontSize: 10,
+          fontSize: UIConstants.fontSizeSmall - 2,
           fontWeight: FontWeight.bold,
           color: statusColor,
         ),
@@ -314,23 +315,23 @@ class LoteCard extends StatelessWidget {
   
   Widget _buildInfoChip(IconData icon, String label, Color color) {
     return Container(
-      constraints: const BoxConstraints(maxWidth: 150),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      constraints: BoxConstraints(maxWidth: UIConstants.maxContentWidth / 4),
+      padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12, vertical: UIConstants.spacing8 - 2),
       decoration: BoxDecoration(
-        color: color.withValues(alpha:0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha:0.3)),
+        color: color.withValues(alpha: UIConstants.opacityLow),
+        borderRadius: BorderRadiusConstants.borderRadiusLarge,
+        border: Border.all(color: color.withValues(alpha: UIConstants.opacityMedium)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
+          Icon(icon, size: UIConstants.fontSizeMedium, color: color),
+          SizedBox(width: UIConstants.spacing4),
           Flexible(
             child: Text(
               label,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: UIConstants.fontSizeSmall,
                 color: color,
                 fontWeight: FontWeight.w500,
               ),

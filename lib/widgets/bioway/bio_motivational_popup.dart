@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import '../../utils/ui_constants.dart';
 
 class BioMotivationalPopup extends StatefulWidget {
   final String message;
@@ -46,7 +47,7 @@ class _BioMotivationalPopupState extends State<BioMotivationalPopup>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 500),
+      duration: Duration(milliseconds: UIConstants.animationDurationLong),
       vsync: this,
     );
 
@@ -68,7 +69,7 @@ class _BioMotivationalPopupState extends State<BioMotivationalPopup>
 
     _controller.forward();
 
-    Future.delayed(const Duration(seconds: 2), () {
+    Future.delayed(Duration(seconds: 2), () {
       if (mounted && widget.onClose != null) {
         widget.onClose!();
       }
@@ -92,16 +93,16 @@ class _BioMotivationalPopupState extends State<BioMotivationalPopup>
             child: Transform.scale(
               scale: _scaleAnimation.value,
               child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 40),
-                padding: const EdgeInsets.all(24),
+                margin: EdgeInsets.symmetric(horizontal: UIConstants.spacing40),
+                padding: EdgeInsetsConstants.paddingAll24,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadiusConstants.borderRadiusXLarge,
                   boxShadow: [
                     BoxShadow(
-                      color: widget.color.withValues(alpha:0.3),
-                      blurRadius: 20,
-                      spreadRadius: 5,
+                      color: widget.color.withValues(alpha: UIConstants.opacityMedium),
+                      blurRadius: UIConstants.blurRadiusXLarge - 5,
+                      spreadRadius: UIConstants.spacing4 + 1,
                     ),
                   ],
                 ),
@@ -110,14 +111,14 @@ class _BioMotivationalPopupState extends State<BioMotivationalPopup>
                   children: [
                     Text(
                       widget.emoji,
-                      style: const TextStyle(fontSize: 60),
+                      style: TextStyle(fontSize: UIConstants.iconSizeDialog),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     Text(
                       widget.message,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: UIConstants.fontSizeLarge,
                         fontWeight: FontWeight.bold,
                         color: widget.color,
                       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../services/lote_service.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
@@ -111,7 +112,7 @@ class _RecicladorDocumentacionState extends State<RecicladorDocumentacion> {
         builder: (BuildContext dialogContext) {
           return AlertDialog(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadiusConstants.borderRadiusLarge,
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -119,22 +120,22 @@ class _RecicladorDocumentacionState extends State<RecicladorDocumentacion> {
                 Icon(
                   Icons.check_circle,
                   color: BioWayColors.success,
-                  size: 80,
+                  size: UIConstants.iconSizeDialog,
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: UIConstants.spacing20),
                 const Text(
                   'Documentación Completada',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: UIConstants.fontSizeXLarge,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: UIConstants.spacing8 + 2),
                 Text(
                   'Se han cargado ${documents.length} documentos exitosamente',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: UIConstants.fontSizeBody,
                     color: BioWayColors.textGrey,
                   ),
                 ),
@@ -170,7 +171,7 @@ class _RecicladorDocumentacionState extends State<RecicladorDocumentacion> {
                   style: TextStyle(
                     color: BioWayColors.ecoceGreen,
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: UIConstants.fontSizeBody,
                   ),
                 ),
               ),
@@ -203,8 +204,10 @@ class _RecicladorDocumentacionState extends State<RecicladorDocumentacion> {
       );
     }
     
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
         // Navegar a la pantalla de administración de lotes en la pestaña Completados
         Navigator.pushReplacement(
           context,
@@ -214,13 +217,12 @@ class _RecicladorDocumentacionState extends State<RecicladorDocumentacion> {
             ),
           ),
         );
-        return false;
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F5F5),
         appBar: AppBar(
           backgroundColor: BioWayColors.ecoceGreen,
-          elevation: 0,
+          elevation: UIConstants.elevationNone,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
             onPressed: () {
@@ -238,7 +240,7 @@ class _RecicladorDocumentacionState extends State<RecicladorDocumentacion> {
           title: const Text(
             'Documentación Técnica',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: UIConstants.fontSizeLarge,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),

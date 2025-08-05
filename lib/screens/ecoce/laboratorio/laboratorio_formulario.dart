@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../services/lote_service.dart';
 // import '../../../services/lote_unificado_service.dart'; // No se usa actualmente
 import '../../../services/muestra_laboratorio_service.dart'; // NUEVO: Servicio independiente
@@ -24,7 +25,7 @@ class SignaturePainter extends CustomPainter {
 
   SignaturePainter({
     required this.points,
-    this.strokeWidth = 2.0,
+    this.strokeWidth = UIConstants.strokeWidth,
   });
 
   @override
@@ -165,7 +166,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
       final canvas = Canvas(recorder);
       final painter = SignaturePainter(
         points: _signaturePoints,
-        strokeWidth: 2.0,
+        strokeWidth: UIConstants.strokeWidth,
       );
       
       const size = Size(300, 300);
@@ -211,7 +212,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
           backgroundColor: BioWayColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadiusConstants.borderRadiusSmall,
           ),
         ),
       );
@@ -225,7 +226,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
           backgroundColor: BioWayColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadiusConstants.borderRadiusSmall,
           ),
         ),
       );
@@ -333,7 +334,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
             backgroundColor: BioWayColors.success,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadiusConstants.borderRadiusSmall,
             ),
             duration: const Duration(seconds: 2),
           ),
@@ -365,7 +366,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
             backgroundColor: BioWayColors.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadiusConstants.borderRadiusSmall,
             ),
           ),
         );
@@ -414,23 +415,23 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
             Text(
               label,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: UIConstants.fontSizeMedium,
                 fontWeight: FontWeight.w600,
                 color: BioWayColors.textGrey,
               ),
             ),
-            const SizedBox(width: 4),
+            SizedBox(width: UIConstants.spacing4),
             Text(
               '*',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: UIConstants.fontSizeMedium,
                 fontWeight: FontWeight.w600,
                 color: BioWayColors.error,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: UIConstants.spacing8),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
@@ -439,7 +440,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
             hintText: hint,
             hintStyle: TextStyle(
               color: Colors.grey[400],
-              fontSize: 14,
+              fontSize: UIConstants.fontSizeMedium,
             ),
             suffixText: suffix,
             suffixStyle: const TextStyle(
@@ -449,32 +450,32 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
             filled: true,
             fillColor: BioWayColors.backgroundGrey,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide(
-                color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
+                color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityMediumLow),
                 width: 1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: const BorderSide(
                 color: BioWayColors.ecoceGreen,
                 width: 2,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: const BorderSide(
                 color: BioWayColors.error,
                 width: 2,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: const BorderSide(
                 color: BioWayColors.error,
                 width: 2,
@@ -515,23 +516,23 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
             Text(
               label,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: UIConstants.fontSizeMedium,
                 fontWeight: FontWeight.w600,
                 color: BioWayColors.textGrey,
               ),
             ),
-            const SizedBox(width: 4),
+            SizedBox(width: UIConstants.spacing4),
             Text(
               '*',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: UIConstants.fontSizeMedium,
                 fontWeight: FontWeight.w600,
                 color: BioWayColors.error,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: UIConstants.spacing8),
         TextFormField(
           controller: controller,
           maxLength: maxLength,
@@ -543,38 +544,38 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
             hintText: hint,
             hintStyle: TextStyle(
               color: Colors.grey[400],
-              fontSize: 14,
+              fontSize: UIConstants.fontSizeMedium,
             ),
             filled: true,
             fillColor: BioWayColors.backgroundGrey,
             counterText: '',
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide(
                 color: BioWayColors.backgroundGrey,
                 width: 1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide(
                 color: BioWayColors.ecoceGreen,
                 width: 2,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide(
                 color: BioWayColors.error,
                 width: 1,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide(
                 color: BioWayColors.error,
                 width: 2,
@@ -607,23 +608,23 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
             Text(
               label,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: UIConstants.fontSizeMedium,
                 fontWeight: FontWeight.w600,
                 color: BioWayColors.textGrey,
               ),
             ),
-            const SizedBox(width: 4),
+            SizedBox(width: UIConstants.spacing4),
             Text(
               '*',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: UIConstants.fontSizeMedium,
                 fontWeight: FontWeight.w600,
                 color: BioWayColors.error,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: UIConstants.spacing8),
         TextFormField(
           controller: controller,
           maxLength: maxLength,
@@ -632,38 +633,38 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
             hintText: hint,
             hintStyle: TextStyle(
               color: Colors.grey[400],
-              fontSize: 14,
+              fontSize: UIConstants.fontSizeMedium,
             ),
             filled: true,
             fillColor: BioWayColors.backgroundGrey,
             counterText: '',
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide(
-                color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
+                color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityMediumLow),
                 width: 1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: const BorderSide(
                 color: BioWayColors.ecoceGreen,
                 width: 2,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: const BorderSide(
                 color: BioWayColors.error,
                 width: 2,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: const BorderSide(
                 color: BioWayColors.error,
                 width: 2,
@@ -688,12 +689,12 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
         const Text(
           'Temperatura de Fusión*',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: UIConstants.fontSizeBody,
             fontWeight: FontWeight.w600,
             color: BioWayColors.darkGreen,
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: UIConstants.spacing12),
         
         // Radio buttons para tipo de temperatura
         Row(
@@ -711,7 +712,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                   });
                 },
                 activeColor: BioWayColors.ecoceGreen,
-                contentPadding: EdgeInsets.zero,
+                contentPadding: EdgeInsetsConstants.paddingNone,
                 dense: true,
               ),
             ),
@@ -727,18 +728,18 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                   });
                 },
                 activeColor: BioWayColors.ecoceGreen,
-                contentPadding: EdgeInsets.zero,
+                contentPadding: EdgeInsetsConstants.paddingNone,
                 dense: true,
               ),
             ),
           ],
         ),
         
-        const SizedBox(height: 12),
+        SizedBox(height: UIConstants.spacing12),
         
         // Selector de unidad
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12),
           decoration: BoxDecoration(
             color: Colors.grey[50],
             borderRadius: BorderRadius.circular(12),
@@ -771,7 +772,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
           ),
         ),
         
-        const SizedBox(height: 16),
+        SizedBox(height: UIConstants.spacing16),
         
         // Campos de temperatura según la selección
         if (_isTemperaturaUnica)
@@ -794,7 +795,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                   pattern: '5.5',
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: UIConstants.spacing16),
               Expanded(
                 child: _buildNumericField(
                   label: 'Máxima $_unidadTemperatura',
@@ -816,7 +817,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
       backgroundColor: BioWayColors.backgroundGrey,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0,
+        elevation: UIConstants.elevationNone,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: BioWayColors.darkGreen),
           onPressed: () {
@@ -827,7 +828,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
         title: const Text(
           'Formulario de Muestra',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: UIConstants.fontSizeXLarge,
             fontWeight: FontWeight.bold,
             color: BioWayColors.darkGreen,
           ),
@@ -851,7 +852,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
               // Header con información de la muestra
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsetsConstants.paddingAll20,
                 color: Colors.white,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -865,14 +866,14 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                             const Text(
                               'Muestra ID',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: UIConstants.fontSizeSmall,
                                 color: BioWayColors.textGrey,
                               ),
                             ),
                             Text(
                               widget.muestraId,
                               style: const TextStyle(
-                                fontSize: 18,
+                                fontSize: UIConstants.fontSizeLarge,
                                 fontWeight: FontWeight.bold,
                                 color: BioWayColors.darkGreen,
                               ),
@@ -880,18 +881,18 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                           ],
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: UIConstants.spacing16,
+                            vertical: UIConstants.spacing8,
                           ),
                           decoration: BoxDecoration(
-                            color: BioWayColors.info.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
+                            color: BioWayColors.info.withValues(alpha: UIConstants.opacityLow),
+                            borderRadius: BorderRadiusConstants.borderRadiusLarge,
                           ),
                           child: Text(
                             '${(widget.datosMuestra['peso_muestra'] ?? 0.0).toStringAsFixed(2)} kg',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: UIConstants.fontSizeMedium,
                               fontWeight: FontWeight.bold,
                               color: BioWayColors.info,
                             ),
@@ -903,19 +904,19 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                 ),
               ),
 
-              const SizedBox(height: 16),
+              SizedBox(height: UIConstants.spacing16),
 
               // Tarjeta de Características de la Muestra
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.all(20),
+                margin: EdgeInsets.symmetric(horizontal: UIConstants.spacing20),
+                padding: EdgeInsetsConstants.paddingAll20,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadiusConstants.borderRadiusMedium,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
+                      color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
+                      blurRadius: UIConstants.blurRadiusMedium,
                       offset: const Offset(0, 4),
                     ),
                   ],
@@ -926,10 +927,10 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(8),
+                          padding: EdgeInsetsConstants.paddingAll8,
                           decoration: BoxDecoration(
-                            color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
+                            color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityLow),
+                            borderRadius: BorderRadiusConstants.borderRadiusSmall,
                           ),
                           child: Icon(
                             Icons.science,
@@ -937,7 +938,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                             size: 20,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: UIConstants.spacing12),
                         const Text(
                           'Características de la Muestra',
                           style: TextStyle(
@@ -948,7 +949,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spacing20),
                     
                     _buildNumericField(
                       label: 'Humedad',
@@ -957,7 +958,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                       suffix: '%',
                       pattern: '100.00',
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     
                     _buildNumericField(
                       label: 'Pellets por Gramo',
@@ -965,7 +966,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                       hint: 'Ej: 25.50',
                       pattern: '10.2',
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     
                     _buildStringField(
                       label: 'Tipo de Polímero (FTIR)',
@@ -973,10 +974,10 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                       hint: 'Ej: Polietileno de baja densidad',
                       maxLength: 30,
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spacing20),
                     
                     _buildTemperatureSection(),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     
                     _buildNumericField(
                       label: 'Contenido Orgánico',
@@ -985,7 +986,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                       suffix: '%',
                       pattern: '100.00',
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     
                     _buildNumericField(
                       label: 'Contenido Inorgánico',
@@ -994,7 +995,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                       suffix: '%',
                       pattern: '100.00',
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     
                     _buildDecimalField(
                       label: 'Tiempo de Inducción de Oxidación (OIT)',
@@ -1002,7 +1003,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                       hint: 'Ej: 45',
                       maxLength: 6,
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     
                     _buildDecimalField(
                       label: 'Índice de fluidez (MFI)',
@@ -1010,7 +1011,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                       hint: 'Ej: 2.16',
                       maxLength: 10,
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     
                     _buildDecimalField(
                       label: 'Densidad',
@@ -1022,19 +1023,19 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                 ),
               ),
 
-              const SizedBox(height: 16),
+              SizedBox(height: UIConstants.spacing16),
 
               // Tarjeta de Análisis
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.all(20),
+                margin: EdgeInsets.symmetric(horizontal: UIConstants.spacing20),
+                padding: EdgeInsetsConstants.paddingAll20,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadiusConstants.borderRadiusMedium,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
+                      color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
+                      blurRadius: UIConstants.blurRadiusMedium,
                       offset: const Offset(0, 4),
                     ),
                   ],
@@ -1045,10 +1046,10 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(8),
+                          padding: EdgeInsetsConstants.paddingAll8,
                           decoration: BoxDecoration(
-                            color: BioWayColors.info.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
+                            color: BioWayColors.info.withValues(alpha: UIConstants.opacityLow),
+                            borderRadius: BorderRadiusConstants.borderRadiusSmall,
                           ),
                           child: Icon(
                             Icons.analytics,
@@ -1056,7 +1057,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                             size: 20,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: UIConstants.spacing12),
                         const Text(
                           'Análisis',
                           style: TextStyle(
@@ -1067,7 +1068,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spacing20),
                     
                     _buildStringField(
                       label: 'Norma o Método de Referencia',
@@ -1075,7 +1076,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                       hint: 'Ej: ASTM D5511-18',
                       maxLength: 50,
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     
                     _buildStringField(
                       label: 'Observaciones / Interpretación Técnica',
@@ -1084,14 +1085,14 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                       maxLength: 200,
                       maxLines: 4,
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spacing20),
                     
                     // Checkbox de cumplimiento
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsetsConstants.paddingAll16,
                       decoration: BoxDecoration(
                         color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadiusConstants.borderRadiusMedium,
                         border: Border.all(
                           color: Colors.grey[300]!,
                         ),
@@ -1107,7 +1108,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                               color: BioWayColors.darkGreen,
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: UIConstants.spacing16),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
@@ -1118,9 +1119,9 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                                     _cumpleRequisitos = true;
                                   });
                                 },
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadiusConstants.borderRadiusSmall,
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12, vertical: UIConstants.spacing8),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -1147,11 +1148,11 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                                               )
                                             : null,
                                       ),
-                                      const SizedBox(width: 8),
+                                      SizedBox(width: UIConstants.spacing8),
                                       Text(
                                         'Sí',
                                         style: TextStyle(
-                                          fontSize: 15,
+                                          fontSize: UIConstants.fontSizeMedium + 1,
                                           fontWeight: _cumpleRequisitos == true 
                                               ? FontWeight.w600 
                                               : FontWeight.normal,
@@ -1164,7 +1165,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 32),
+                              SizedBox(width: UIConstants.spacing32),
                               // Opción No
                               InkWell(
                                 onTap: () {
@@ -1172,9 +1173,9 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                                     _cumpleRequisitos = false;
                                   });
                                 },
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadiusConstants.borderRadiusSmall,
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12, vertical: UIConstants.spacing8),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -1201,11 +1202,11 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                                               )
                                             : null,
                                       ),
-                                      const SizedBox(width: 8),
+                                      SizedBox(width: UIConstants.spacing8),
                                       Text(
                                         'No',
                                         style: TextStyle(
-                                          fontSize: 15,
+                                          fontSize: UIConstants.fontSizeMedium + 1,
                                           fontWeight: _cumpleRequisitos == false 
                                               ? FontWeight.w600 
                                               : FontWeight.normal,
@@ -1227,19 +1228,19 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              SizedBox(height: UIConstants.spacing20),
               
               // Datos del responsable
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.all(20),
+                margin: EdgeInsets.symmetric(horizontal: UIConstants.spacing20),
+                padding: EdgeInsetsConstants.paddingAll20,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadiusConstants.borderRadiusMedium,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
+                      color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
+                      blurRadius: UIConstants.blurRadiusMedium,
                       offset: const Offset(0, 5),
                     ),
                   ],
@@ -1254,7 +1255,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                           color: const Color(0xFF9333EA),
                           size: 24,
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: UIConstants.spacing12),
                         Text(
                           'Datos del Responsable',
                           style: TextStyle(
@@ -1263,7 +1264,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                             color: const Color(0xFF9333EA),
                           ),
                         ),
-                        const SizedBox(width: 4),
+                        SizedBox(width: UIConstants.spacing4),
                         const Text(
                           '*',
                           style: TextStyle(
@@ -1274,7 +1275,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spacing20),
                     
                     // Nombre del Responsable
                     Column(
@@ -1285,23 +1286,23 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                             Text(
                               'Nombre',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: UIConstants.fontSizeMedium,
                                 fontWeight: FontWeight.w600,
                                 color: BioWayColors.textGrey,
                               ),
                             ),
-                            const SizedBox(width: 4),
+                            SizedBox(width: UIConstants.spacing4),
                             Text(
                               '*',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: UIConstants.fontSizeMedium,
                                 fontWeight: FontWeight.w600,
                                 color: BioWayColors.error,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: UIConstants.spacing8),
                         TextFormField(
                           controller: _nombreResponsableController,
                           maxLength: 50,
@@ -1314,18 +1315,18 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                             filled: true,
                             fillColor: const Color(0xFFF5F5F5),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadiusConstants.borderRadiusMedium,
                               borderSide: BorderSide.none,
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadiusConstants.borderRadiusMedium,
                               borderSide: BorderSide(
-                                color: const Color(0xFF9333EA).withValues(alpha: 0.3),
+                                color: const Color(0xFF9333EA).withValues(alpha: UIConstants.opacityMediumLow),
                                 width: 1,
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadiusConstants.borderRadiusMedium,
                               borderSide: const BorderSide(
                                 color: Color(0xFF9333EA),
                                 width: 2,
@@ -1346,7 +1347,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                       ],
                     ),
                     
-                    const SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spacing20),
                     
                     // Firma del Responsable
                     Column(
@@ -1357,23 +1358,23 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                             Text(
                               'Firma',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: UIConstants.fontSizeMedium,
                                 fontWeight: FontWeight.w600,
                                 color: BioWayColors.textGrey,
                               ),
                             ),
-                            const SizedBox(width: 4),
+                            SizedBox(width: UIConstants.spacing4),
                             Text(
                               '*',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: UIConstants.fontSizeMedium,
                                 fontWeight: FontWeight.w600,
                                 color: BioWayColors.error,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: UIConstants.spacing8),
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () {
@@ -1387,9 +1388,9 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                             width: double.infinity,
                             decoration: BoxDecoration(
                               color: _signaturePoints.isNotEmpty 
-                                  ? const Color(0xFF9333EA).withValues(alpha: 0.05)
+                                  ? const Color(0xFF9333EA).withValues(alpha: UIConstants.opacityVeryLow)
                                   : Colors.grey[50],
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadiusConstants.borderRadiusMedium,
                               border: Border.all(
                                 color: _signaturePoints.isNotEmpty 
                                     ? const Color(0xFF9333EA) 
@@ -1407,11 +1408,11 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                                           size: 32,
                                           color: Colors.grey[400],
                                         ),
-                                        const SizedBox(height: 8),
+                                        SizedBox(height: UIConstants.spacing8),
                                         Text(
                                           'Toque para firmar',
                                           style: TextStyle(
-                                            fontSize: 14,
+                                            fontSize: UIConstants.fontSizeMedium,
                                             color: Colors.grey[600],
                                           ),
                                         ),
@@ -1421,21 +1422,21 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                                 : Stack(
                                     children: [
                                       Container(
-                                        padding: const EdgeInsets.all(12),
+                                        padding: EdgeInsetsConstants.paddingAll12,
                                         child: Center(
                                           child: AspectRatio(
                                             aspectRatio: 2.0,
                                             child: Container(
                                               decoration: BoxDecoration(
                                                 color: Colors.white,
-                                                borderRadius: BorderRadius.circular(8),
+                                                borderRadius: BorderRadiusConstants.borderRadiusSmall,
                                                 border: Border.all(
                                                   color: Colors.grey[200]!,
                                                   width: 1,
                                                 ),
                                               ),
                                               child: ClipRRect(
-                                                borderRadius: BorderRadius.circular(7),
+                                                borderRadius: BorderRadius.circular(UIConstants.radiusSmall + 1),
                                                 child: FittedBox(
                                                   fit: BoxFit.contain,
                                                   child: SizedBox(
@@ -1444,7 +1445,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                                                     child: CustomPaint(
                                                       painter: SignaturePainter(
                                                         points: _signaturePoints,
-                                                        strokeWidth: 2.0,
+                                                        strokeWidth: UIConstants.strokeWidth,
                                                       ),
                                                     ),
                                                   ),
@@ -1466,8 +1467,8 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                                                 shape: BoxShape.circle,
                                                 boxShadow: [
                                                   BoxShadow(
-                                                    color: Colors.black.withValues(alpha: 0.1),
-                                                    blurRadius: 4,
+                                                    color: Colors.black.withValues(alpha: UIConstants.opacityLow),
+                                                    blurRadius: UIConstants.blurRadiusSmall,
                                                   ),
                                                 ],
                                               ),
@@ -1482,18 +1483,18 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                                                   minWidth: 32,
                                                   minHeight: 32,
                                                 ),
-                                                padding: EdgeInsets.zero,
+                                                padding: EdgeInsetsConstants.paddingNone,
                                               ),
                                             ),
-                                            const SizedBox(width: 8),
+                                            SizedBox(width: UIConstants.spacing8),
                                             Container(
                                               decoration: BoxDecoration(
                                                 color: Colors.white,
                                                 shape: BoxShape.circle,
                                                 boxShadow: [
                                                   BoxShadow(
-                                                    color: Colors.black.withValues(alpha: 0.1),
-                                                    blurRadius: 4,
+                                                    color: Colors.black.withValues(alpha: UIConstants.opacityLow),
+                                                    blurRadius: UIConstants.blurRadiusSmall,
                                                   ),
                                                 ],
                                               ),
@@ -1512,7 +1513,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                                                   minWidth: 32,
                                                   minHeight: 32,
                                                 ),
-                                                padding: EdgeInsets.zero,
+                                                padding: EdgeInsetsConstants.paddingNone,
                                               ),
                                             ),
                                           ],
@@ -1528,11 +1529,11 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              SizedBox(height: UIConstants.spacing20),
 
               // Botón de confirmación
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
+                margin: EdgeInsets.symmetric(horizontal: UIConstants.spacing20),
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
@@ -1541,9 +1542,9 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                     backgroundColor: BioWayColors.ecoceGreen,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
+                      borderRadius: BorderRadiusConstants.borderRadiusRound,
                     ),
-                    elevation: 3,
+                    elevation: UIConstants.elevationMedium,
                   ),
                   child: const Text(
                     'Confirmar Análisis de la Muestra',
@@ -1555,7 +1556,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                 ),
               ),
 
-              const SizedBox(height: 40),
+              SizedBox(height: UIConstants.spacing40),
             ],
           ),
         ),
@@ -1563,7 +1564,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
           // Loading overlay
           if (_isLoading)
             Container(
-              color: Colors.black.withValues(alpha: 0.5),
+              color: Colors.black.withValues(alpha: UIConstants.opacityMedium),
               child: const Center(
                 child: CircularProgressIndicator(
                   color: Color(0xFF9333EA), // Purple for laboratorio

@@ -8,6 +8,7 @@ import 'dart:typed_data';
 import 'package:screenshot/screenshot.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import 'origen_config.dart';
 import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/photo_evidence_widget.dart';
@@ -103,10 +104,10 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
     _comentariosFocus.addListener(() {
       if (_comentariosFocus.hasFocus) {
         // Esperar un momento para que el teclado aparezca
-        Future.delayed(const Duration(milliseconds: 300), () {
+        Future.delayed(UIConstants.animationNormal, () {
           _scrollController.animateTo(
             _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
+            duration: UIConstants.animationNormal,
             curve: Curves.easeOut,
           );
         });
@@ -133,7 +134,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
     FocusScope.of(context).unfocus();
     
     // Esperar un breve momento para que el teclado se oculte completamente
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(UIConstants.animationNormal);
     
     if (!mounted) return;
     
@@ -281,7 +282,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
               title: const Text(
                 'Crear Nuevo Lote',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: UIConstants.fontSizeLarge,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
@@ -306,7 +307,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                             vertical: screenHeight * 0.005,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha:0.2),
+                            color: Colors.white.withValues(alpha:UIConstants.opacityMediumLow),
                             borderRadius: BorderRadius.circular(screenWidth * 0.04),
                           ),
                           child: Text(
@@ -346,7 +347,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                       children: [
                         // Origen del Material
                         const FieldLabel(text: 'Origen del Material', isRequired: true),
-                        const SizedBox(height: 8),
+                        SizedBox(height: UIConstants.spacing8),
                         Row(
                           children: [
                             Expanded(
@@ -390,11 +391,11 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                           ],
                         ),
                         
-                        const SizedBox(height: 20),
+                        SizedBox(height: UIConstants.spacing20),
                         
                         // Fuente del Material
                         const FieldLabel(text: 'Fuente del Material', isRequired: true),
-                        const SizedBox(height: 8),
+                        SizedBox(height: UIConstants.spacing8),
                         DropdownButtonFormField<String>(
                           value: _fuenteMaterialSeleccionada,
                           decoration: SharedInputDecorations.ecoceStyle(
@@ -418,7 +419,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                                       size: screenWidth * 0.05,
                                       color: _primaryColor.withValues(alpha:0.7),
                                     ),
-                                    SizedBox(width: screenWidth * 0.03),
+                                    SizedBox(width: UIConstants.spacing12),
                                     Expanded(
                                       child: Text(
                                         fuente,
@@ -483,7 +484,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                                 },
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: UIConstants.spacing12),
                             Expanded(
                               child: _buildPresentacionOption(
                                 svgPath: 'assets/images/icons/sacos.svg',
@@ -499,7 +500,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                                 },
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: UIConstants.spacing12),
                             Expanded(
                               child: _buildPresentacionOption(
                                 icon: Icons.more_horiz,
@@ -519,7 +520,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                         
                         // Campo de texto para "Otro"
                         if (_presentacionSeleccionada == 'Otro') ...[
-                          const SizedBox(height: 16),
+                          SizedBox(height: UIConstants.spacing16),
                           TextFormField(
                             controller: _otraPresentacionController,
                             decoration: SharedInputDecorations.ecoceStyle(
@@ -533,11 +534,11 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                           ),
                         ],
                         
-                        const SizedBox(height: 20),
+                        SizedBox(height: UIConstants.spacing20),
                         
                         // Tipo de Polímero (lista desplegable)
                         const FieldLabel(text: 'Tipo de Polímero', isRequired: true),
-                        const SizedBox(height: 8),
+                        SizedBox(height: UIConstants.spacing8),
                         DropdownButtonFormField<String>(
                           value: _tipoPolimeroSeleccionado,
                           decoration: SharedInputDecorations.ecoceStyle(
@@ -558,7 +559,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                           // Sin validación para diseño visual
                         ),
                         
-                        const SizedBox(height: 20),
+                        SizedBox(height: UIConstants.spacing20),
                         
                         // Peso en kilogramos (decimal)
                         WeightInputWidget(
@@ -569,11 +570,11 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                           isRequired: true,
                         ),
                         
-                        const SizedBox(height: 20),
+                        SizedBox(height: UIConstants.spacing20),
                         
                         // Condiciones del Material (hasta 100 caracteres)
                         const FieldLabel(text: 'Condiciones del Material', isRequired: true),
-                        const SizedBox(height: 8),
+                        SizedBox(height: UIConstants.spacing8),
                         TextFormField(
                           controller: _condicionesController,
                           focusNode: _condicionesFocus,
@@ -592,7 +593,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                       ],
                     ),
                     
-                    const SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spacing20),
                     
                     // Sección: Datos del Responsable
                     SectionCard(
@@ -602,7 +603,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                       children: [
                         // Nombre del Operador (hasta 50 caracteres)
                         const FieldLabel(text: 'Nombre del Operador', isRequired: true),
-                        const SizedBox(height: 8),
+                        SizedBox(height: UIConstants.spacing8),
                         TextFormField(
                           controller: _operadorController,
                           focusNode: _operadorFocus,
@@ -626,16 +627,16 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                           },
                         ),
                         
-                        const SizedBox(height: 20),
+                        SizedBox(height: UIConstants.spacing20),
                         
                         // Firma del Operador
                         const FieldLabel(text: 'Firma del Operador', isRequired: true),
-                        const SizedBox(height: 8),
+                        SizedBox(height: UIConstants.spacing8),
                         _buildSignatureArea(),
                       ],
                     ),
                     
-                    const SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spacing20),
                     
                     // Sección: Evidencia Fotográfica con múltiples fotos
                     PhotoEvidenceFormField(
@@ -647,7 +648,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                       primaryColor: _primaryColor,
                     ),
                     
-                    const SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spacing20),
                     
                     // Sección: Comentarios Adicionales
                     SectionCard(
@@ -671,35 +672,35 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                       ],
                     ),
                     
-                    const SizedBox(height: 30),
+                    SizedBox(height: UIConstants.spacing32 - 2),
                     
                     // Botón de confirmar
                     SizedBox(
                       width: double.infinity,
-                      height: 56,
+                      height: UIConstants.buttonHeight,
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _generarLote,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _primaryColor,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(28),
+                            borderRadius: BorderRadiusConstants.borderRadiusRound,
                           ),
-                          elevation: 3,
+                          elevation: UIConstants.elevationMedium - 1,
                         ),
                         child: _isLoading
                             ? const CircularProgressIndicator(color: Colors.white)
                             : const Text(
                                 'Continuar',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: UIConstants.fontSizeLarge,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                       ),
                     ),
                     
-                    const SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spacing20),
                   ],
                 ),
               ),
@@ -726,19 +727,19 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
         border: Border.all(
           color: _hasSignature 
               ? _primaryColor 
-              : _primaryColor.withValues(alpha:0.3),
+              : _primaryColor.withValues(alpha:UIConstants.opacityMedium),
           width: 1,
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadiusConstants.borderRadiusMedium,
       ),
       child: _hasSignature
           ? ClipRRect(
-              borderRadius: BorderRadius.circular(11),
+              borderRadius: BorderRadius.circular(UIConstants.radiusMedium - 1),
               child: Stack(
                 children: [
                   // Mostrar la firma guardada
                   Container(
-                    height: 250,
+                    height: UIConstants.qrSizeLarge,
                     width: double.infinity,
                     color: Colors.white,
                     child: FittedBox(
@@ -765,49 +766,49 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: UIConstants.spacing8,
+                            vertical: UIConstants.spacing4,
                           ),
                           decoration: BoxDecoration(
-                            color: BioWayColors.success.withValues(alpha:0.1),
-                            borderRadius: BorderRadius.circular(12),
+                            color: BioWayColors.success.withValues(alpha:UIConstants.opacityLow),
+                            borderRadius: BorderRadiusConstants.borderRadiusMedium,
                           ),
                           child: Row(
                             children: [
                               Icon(
                                 Icons.check_circle,
                                 color: BioWayColors.success,
-                                size: 16,
+                                size: UIConstants.iconSizeSmall,
                               ),
-                              const SizedBox(width: 4),
+                              SizedBox(width: UIConstants.spacing4),
                               Text(
                                 'Firmado',
                                 style: TextStyle(
                                   color: BioWayColors.success,
-                                  fontSize: 12,
+                                  fontSize: UIConstants.fontSizeXSmall + 1,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: UIConstants.spacing8),
                         IconButton(
                           onPressed: _showSignatureDialog,
                           icon: Icon(
                             Icons.edit,
                             color: _primaryColor,
-                            size: 20,
+                            size: UIConstants.fontSizeXLarge,
                           ),
-                          constraints: const BoxConstraints(
-                            minWidth: 32,
-                            minHeight: 32,
+                          constraints: BoxConstraints(
+                            minWidth: UIConstants.spacing32,
+                            minHeight: UIConstants.spacing32,
                           ),
                           padding: EdgeInsets.zero,
                           style: IconButton.styleFrom(
                             backgroundColor: Colors.white,
-                            elevation: 2,
+                            elevation: UIConstants.elevationLow,
                           ),
                         ),
                       ],
@@ -818,22 +819,22 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
             )
           : InkWell(
               onTap: _showSignatureDialog,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               child: SizedBox(
-                height: 56,
+                height: UIConstants.buttonHeight,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
                       Icons.edit,
                       color: _primaryColor,
-                      size: 24,
+                      size: UIConstants.iconSizeMedium,
                     ),
                     const SizedBox(width: 12),
                     Text(
                       'Firmar',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: UIConstants.fontSizeBody,
                         fontWeight: FontWeight.bold,
                         color: _primaryColor,
                       ),
@@ -860,10 +861,10 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
       child: Container(
         padding: EdgeInsets.symmetric(vertical: screenWidth * 0.05),
         decoration: BoxDecoration(
-          color: isSelected ? _primaryColor.withValues(alpha:0.1) : BioWayColors.backgroundGrey,
+          color: isSelected ? _primaryColor.withValues(alpha:UIConstants.opacityLow) : BioWayColors.backgroundGrey,
           borderRadius: BorderRadius.circular(screenWidth * 0.03),
           border: Border.all(
-            color: isSelected ? _primaryColor : _primaryColor.withValues(alpha:0.3),
+            color: isSelected ? _primaryColor : _primaryColor.withValues(alpha:UIConstants.opacityMedium),
             width: isSelected ? 2 : 1,
           ),
         ),

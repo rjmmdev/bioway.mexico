@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
 import '../shared/widgets/loading_indicator.dart';
@@ -284,7 +285,7 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadiusConstants.borderRadiusMedium,
           ),
           title: const Text('Rechazar Solicitud'),
           content: Column(
@@ -292,19 +293,19 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('¿Está seguro que desea rechazar la solicitud de ${datosPerfil['ecoce_nombre']}?'),
-              const SizedBox(height: 16),
+              SizedBox(height: UIConstants.spacing16),
               const Text(
                 'Esta acción eliminará:',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: UIConstants.spacing8),
               const Text('• La solicitud de registro'),
               const Text('• Los documentos subidos'),
               const Text('• El usuario de autenticación (si existe)'),
-              const SizedBox(height: 16),
+              SizedBox(height: UIConstants.spacing16),
               const Text(
                 'Esta acción no se puede deshacer.',
-                style: TextStyle(color: Colors.red, fontSize: 12),
+                style: TextStyle(color: Colors.red, fontSize: UIConstants.fontSizeSmall + 1),
               ),
             ],
           ),
@@ -318,7 +319,7 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: BioWayColors.error,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadiusConstants.borderRadiusSmall,
                 ),
               ),
               child: const Text(
@@ -470,12 +471,12 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
           builder: (context, setDialogState) {
             return AlertDialog(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadiusConstants.borderRadiusMedium,
               ),
               title: const Text(
                 'Filtrar por Tipo de Usuario',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: UIConstants.fontSizeLarge,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -522,7 +523,7 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
 
   Widget _buildFilterChip(String value, String label, StateSetter setDialogState) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.symmetric(vertical: UIConstants.spacing4),
       child: FilterChip(
         label: Text(label),
         selected: _filtrosTipoUsuario.contains(value),
@@ -546,11 +547,8 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // Prevenir que el botón atrás cierre la sesión
-        return false;
-      },
+    return PopScope(
+      canPop: false, // Prevenir que el botón atrás cierre la sesión
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle(
           statusBarColor: BioWayColors.ecoceGreen,
@@ -588,7 +586,7 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                         children: [
                     // Título y badge
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                      padding: EdgeInsets.fromLTRB(UIConstants.spacing20, UIConstants.spacing16, UIConstants.spacing20, UIConstants.spacing12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -602,16 +600,16 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                                   Text(
                                     'Panel de Administración',
                                     style: TextStyle(
-                                      fontSize: 26,
+                                      fontSize: UIConstants.fontSizeXLarge + 2,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,
                                     ),
                                   ),
-                                  SizedBox(height: 4),
+                                  SizedBox(height: UIConstants.spacing4),
                                   Text(
                                     'Gestión de usuarios ECOCE',
                                     style: TextStyle(
-                                      fontSize: 14,
+                                      fontSize: UIConstants.fontSizeMedium,
                                       color: Colors.white70,
                                     ),
                                   ),
@@ -619,27 +617,27 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: UIConstants.spacing12,
+                                vertical: UIConstants.spacing4 + 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(20),
+                                color: Colors.white.withValues(alpha: UIConstants.opacityMediumLow),
+                                borderRadius: BorderRadiusConstants.borderRadiusLarge,
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   const Icon(
                                     Icons.admin_panel_settings,
-                                    size: 16,
+                                    size: UIConstants.fontSizeBody,
                                     color: Colors.white,
                                   ),
-                                  const SizedBox(width: 4),
+                                  SizedBox(width: UIConstants.spacing4),
                                   Text(
                                     'ADMIN',
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: UIConstants.fontSizeSmall + 1,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white.withValues(alpha: 0.9),
                                     ),
@@ -649,7 +647,7 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: UIConstants.spacing16),
                         // Fila de botones de acción
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -664,7 +662,7 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                                 },
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: UIConstants.spacing8),
                             // Botón de utilidades
                             Expanded(
                               child: _buildActionButton(
@@ -680,7 +678,7 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                                 },
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: UIConstants.spacing8),
                             // Botón de cerrar sesión
                             Expanded(
                               child: _buildActionButton(
@@ -693,7 +691,7 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                                   builder: (BuildContext context) {
                                     return AlertDialog(
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
+                                        borderRadius: BorderRadiusConstants.borderRadiusMedium,
                                       ),
                                       title: const Text('Cerrar Sesión'),
                                       content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
@@ -707,7 +705,7 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: BioWayColors.error,
                                             shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius: BorderRadiusConstants.borderRadiusSmall,
                                             ),
                                           ),
                                           child: const Text(
@@ -754,11 +752,11 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                   
                   // Tabs
                   Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    padding: const EdgeInsets.all(4),
+                    margin: EdgeInsets.symmetric(horizontal: UIConstants.spacing16),
+                    padding: EdgeInsets.all(UIConstants.spacing4),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
                     ),
                     child: Row(
                       children: [
@@ -767,27 +765,27 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                             onTap: () => setState(() => _selectedIndex = 0),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              padding: EdgeInsets.symmetric(vertical: UIConstants.spacing12),
                               decoration: BoxDecoration(
                                 color: _selectedIndex == 0
                                     ? Colors.white
                                     : Colors.transparent,
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadiusConstants.borderRadiusSmall,
                               ),
                               child: Column(
                                 children: [
                                   Icon(
                                     Icons.pending_actions,
-                                    size: 20,
+                                    size: UIConstants.iconSizeMedium - 4,
                                     color: _selectedIndex == 0
                                         ? BioWayColors.ecoceGreen
                                         : Colors.white70,
                                   ),
-                                  const SizedBox(height: 4),
+                                  SizedBox(height: UIConstants.spacing4),
                                   Text(
                                     'Pendientes',
                                     style: TextStyle(
-                                      fontSize: 13,
+                                      fontSize: UIConstants.fontSizeSmall + 2,
                                       fontWeight: FontWeight.w600,
                                       color: _selectedIndex == 0
                                           ? BioWayColors.ecoceGreen
@@ -795,22 +793,22 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                                     ),
                                   ),
                                   if (_pendingSolicitudes.isNotEmpty) ...[
-                                    const SizedBox(height: 2),
+                                    SizedBox(height: UIConstants.spacing4 / 2),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 2,
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: UIConstants.spacing8,
+                                        vertical: UIConstants.spacing4 / 2,
                                       ),
                                       decoration: BoxDecoration(
                                         color: _selectedIndex == 0
                                             ? BioWayColors.warning
                                             : Colors.white30,
-                                        borderRadius: BorderRadius.circular(10),
+                                        borderRadius: BorderRadiusConstants.borderRadiusSmall,
                                       ),
                                       child: Text(
                                         '${_pendingSolicitudes.length}',
                                         style: const TextStyle(
-                                          fontSize: 11,
+                                          fontSize: UIConstants.fontSizeSmall,
                                           fontWeight: FontWeight.bold,
                                           color: Colors.white,
                                         ),
@@ -828,27 +826,27 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                             onTap: () => setState(() => _selectedIndex = 1),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              padding: EdgeInsets.symmetric(vertical: UIConstants.spacing12),
                               decoration: BoxDecoration(
                                 color: _selectedIndex == 1
                                     ? Colors.white
                                     : Colors.transparent,
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadiusConstants.borderRadiusSmall,
                               ),
                               child: Column(
                                 children: [
                                   Icon(
                                     Icons.people,
-                                    size: 20,
+                                    size: UIConstants.iconSizeMedium - 4,
                                     color: _selectedIndex == 1
                                         ? BioWayColors.ecoceGreen
                                         : Colors.white70,
                                   ),
-                                  const SizedBox(height: 4),
+                                  SizedBox(height: UIConstants.spacing4),
                                   Text(
                                     'Usuarios',
                                     style: TextStyle(
-                                      fontSize: 13,
+                                      fontSize: UIConstants.fontSizeSmall + 2,
                                       fontWeight: FontWeight.w600,
                                       color: _selectedIndex == 1
                                           ? BioWayColors.ecoceGreen
@@ -857,20 +855,20 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                                   ),
                                   const SizedBox(height: 2),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: UIConstants.spacing8,
+                                      vertical: UIConstants.spacing4 / 2,
                                     ),
                                     decoration: BoxDecoration(
                                       color: _selectedIndex == 1
                                           ? BioWayColors.success
                                           : Colors.white30,
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadiusConstants.borderRadiusSmall,
                                     ),
                                     child: Text(
                                       '${_approvedSolicitudes.length}',
                                       style: const TextStyle(
-                                        fontSize: 11,
+                                        fontSize: UIConstants.fontSizeSmall,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.white,
                                       ),
@@ -888,19 +886,19 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                   
                   // Barra de búsqueda y filtros
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    padding: EdgeInsets.fromLTRB(UIConstants.spacing16, 0, UIConstants.spacing16, UIConstants.spacing24),
                     child: Row(
                       children: [
                         Expanded(
                           child: Container(
-                            height: 44,
+                            height: UIConstants.buttonHeightMedium,
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadiusConstants.borderRadiusMedium,
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withValues(alpha: 0.05),
-                                  blurRadius: 4,
+                                  blurRadius: UIConstants.blurRadiusSmall,
                                   offset: const Offset(0, 2),
                                 ),
                               ],
@@ -912,8 +910,8 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                                 hintText: _selectedIndex == 0
                                     ? 'Buscar solicitudes pendientes...'
                                     : 'Buscar por nombre, RFC o folio...',
-                                hintStyle: const TextStyle(fontSize: 14),
-                                prefixIcon: const Icon(Icons.search, size: 20),
+                                hintStyle: TextStyle(fontSize: UIConstants.fontSizeMedium),
+                                prefixIcon: Icon(Icons.search, size: UIConstants.iconSizeMedium - 4),
                                 border: InputBorder.none,
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 16,
@@ -926,14 +924,14 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                         const SizedBox(width: 8),
                         Material(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadiusConstants.borderRadiusMedium,
                           elevation: 2,
                           child: InkWell(
                             onTap: _mostrarFiltroTipoUsuario,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadiusConstants.borderRadiusMedium,
                             child: Container(
-                              height: 44,
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              height: UIConstants.buttonHeightMedium,
+                              padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12),
                               child: Row(
                                 children: [
                                   Icon(
@@ -941,12 +939,12 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                                     color: _filtrosTipoUsuario.isNotEmpty
                                         ? BioWayColors.ecoceGreen
                                         : Colors.grey,
-                                    size: 20,
+                                    size: UIConstants.iconSizeMedium - 4,
                                   ),
                                   if (_filtrosTipoUsuario.isNotEmpty) ...[
-                                    const SizedBox(width: 4),
+                                    SizedBox(width: UIConstants.spacing4),
                                     Container(
-                                      padding: const EdgeInsets.all(4),
+                                      padding: EdgeInsets.all(UIConstants.spacing4),
                                       decoration: BoxDecoration(
                                         color: BioWayColors.ecoceGreen,
                                         shape: BoxShape.circle,
@@ -955,7 +953,7 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                                         '${_filtrosTipoUsuario.length}',
                                         style: const TextStyle(
                                           color: Colors.white,
-                                          fontSize: 10,
+                                          fontSize: UIConstants.fontSizeSmall - 1,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -987,7 +985,7 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                         child: _buildEmptyState(),
                       )
                     : SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                        padding: EdgeInsets.fromLTRB(UIConstants.spacing16, UIConstants.spacing8, UIConstants.spacing16, UIConstants.spacing80),
                         sliver: SliverList(
                           delegate: SliverChildBuilderDelegate(
                             (context, index) {
@@ -1030,16 +1028,16 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
         children: [
           Icon(
             _selectedIndex == 0 ? Icons.inbox : Icons.people_outline,
-            size: 80,
+            size: UIConstants.iconSizeDialog + UIConstants.spacing20,
             color: BioWayColors.lightGrey,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: UIConstants.spacing16),
           Text(
             _selectedIndex == 0
                 ? 'No hay solicitudes pendientes'
                 : 'No se encontraron usuarios',
             style: const TextStyle(
-              fontSize: 18,
+              fontSize: UIConstants.fontSizeBody + 2,
               fontWeight: FontWeight.w500,
               color: Colors.grey,
             ),
@@ -1050,7 +1048,7 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
             Text(
               'Intenta con otros filtros de búsqueda',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: UIConstants.fontSizeMedium,
                 color: Colors.grey[600],
               ),
             ),
@@ -1082,12 +1080,12 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadiusConstants.borderRadiusSmall,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: EdgeInsets.symmetric(vertical: UIConstants.spacing8 + 2),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadiusConstants.borderRadiusSmall,
             border: Border.all(
               color: Colors.white.withValues(alpha: 0.3),
               width: 1,
@@ -1099,14 +1097,14 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
               Icon(
                 icon,
                 color: Colors.white,
-                size: 24,
+                size: UIConstants.iconSizeMedium,
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: UIConstants.spacing4),
               Text(
                 label,
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 12,
+                  fontSize: UIConstants.fontSizeSmall + 1,
                   fontWeight: FontWeight.w500,
                 ),
               ),

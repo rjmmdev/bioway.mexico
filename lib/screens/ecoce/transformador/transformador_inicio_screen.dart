@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/lote_service.dart';
 import '../../../services/lote_unificado_service.dart';
@@ -189,7 +190,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
     final isCompact = screenWidth < 360;
     
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: UIConstants.spacing12),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -199,21 +200,21 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
               _navigateToLoteDetalle(loteModel);
             }
           },
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadiusConstants.borderRadiusMedium,
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
+                  color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow + 0.01),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
               ],
             ),
             child: Padding(
-              padding: EdgeInsets.all(isCompact ? 12 : 16),
+              padding: EdgeInsets.all(isCompact ? UIConstants.spacing12 : UIConstants.spacing16),
               child: Row(
                 children: [
                   // Icono del material
@@ -225,11 +226,11 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          materialColor.withValues(alpha: 0.2),
-                          materialColor.withValues(alpha: 0.1),
+                          materialColor.withValues(alpha: UIConstants.opacityMedium),
+                          materialColor.withValues(alpha: UIConstants.opacityLow),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
                     ),
                     child: Icon(
                       MaterialUtils.getMaterialIcon(lote['material'] ?? ''),
@@ -248,12 +249,12 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                           children: [
                             Container(
                               padding: EdgeInsets.symmetric(
-                                horizontal: isCompact ? 6 : 8,
-                                vertical: isCompact ? 2 : 3,
+                                horizontal: isCompact ? UIConstants.spacing4 + 2 : UIConstants.spacing8,
+                                vertical: isCompact ? UIConstants.spacing4 / 2 : UIConstants.spacing4 - 1,
                               ),
                               decoration: BoxDecoration(
                                 color: materialColor,
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
                               ),
                               child: Text(
                                 lote['material'] ?? '',
@@ -264,7 +265,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: UIConstants.spacing8),
                             Flexible(
                               child: Text(
                                 'Lote ${lote['id'] ?? lote['firebaseId'] ?? ''}',
@@ -277,15 +278,15 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                               ),
                             ),
                             if (lote['tipoPolimero'] != null) ...[
-                              const SizedBox(width: 8),
+                              SizedBox(width: UIConstants.spacing8),
                               Container(
                                 padding: EdgeInsets.symmetric(
-                                  horizontal: isCompact ? 6 : 8,
-                                  vertical: isCompact ? 2 : 3,
+                                  horizontal: isCompact ? UIConstants.spacing4 + 2 : UIConstants.spacing8,
+                                  vertical: isCompact ? UIConstants.spacing4 / 2 : UIConstants.spacing4 - 1,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.deepPurple.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(6),
+                                  color: Colors.deepPurple.withValues(alpha: UIConstants.opacityLow),
+                                  borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
                                 ),
                                 child: Text(
                                   lote['tipoPolimero'],
@@ -299,7 +300,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                             ],
                           ],
                         ),
-                        const SizedBox(height: 6),
+                        SizedBox(height: UIConstants.spacing4 + 2),
                         // Segunda línea: Origen y Producto
                         Text(
                           lote['origen'] ?? 'Origen desconocido',
@@ -311,7 +312,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: UIConstants.spacing4),
                         // Tercera línea: Chips informativos
                         Wrap(
                           spacing: 8,
@@ -351,7 +352,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.orange,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadiusConstants.borderRadiusSmall,
                     ),
                     child: Material(
                       color: Colors.transparent,
@@ -362,9 +363,9 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                             _actualizarDocumentacion(lote['id'], loteModel);
                           }
                         },
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadiusConstants.borderRadiusSmall,
                         child: Container(
-                          padding: EdgeInsets.all(isCompact ? 8 : 10),
+                          padding: EdgeInsets.all(isCompact ? UIConstants.spacing8 : UIConstants.spacing8 + 2),
                           child: Icon(
                             Icons.description,
                             color: Colors.white,
@@ -386,11 +387,11 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
   Widget _buildCompactChip(IconData icon, String text, Color color, bool isCompact) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isCompact ? 6 : 8, 
-        vertical: isCompact ? 3 : 4
+        horizontal: isCompact ? UIConstants.spacing4 + 2 : UIConstants.spacing8, 
+        vertical: isCompact ? UIConstants.spacing4 - 1 : UIConstants.spacing4
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withValues(alpha: UIConstants.opacityLow),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -401,7 +402,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
             size: isCompact ? 11 : 12,
             color: color,
           ),
-          const SizedBox(width: 4),
+          SizedBox(width: UIConstants.spacing4),
           Flexible(
             child: Text(
               text,
@@ -422,11 +423,11 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
   Widget _buildProductChip(String product, Color color, bool isCompact) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isCompact ? 6 : 8, 
-        vertical: isCompact ? 3 : 4
+        horizontal: isCompact ? UIConstants.spacing4 + 2 : UIConstants.spacing8, 
+        vertical: isCompact ? UIConstants.spacing4 - 1 : UIConstants.spacing4
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withValues(alpha: UIConstants.opacityLow),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -437,7 +438,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
             size: isCompact ? 11 : 12,
             color: color,
           ),
-          const SizedBox(width: 4),
+          SizedBox(width: UIConstants.spacing4),
           Flexible(
             child: Text(
               product,
@@ -462,7 +463,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
         vertical: isCompact ? 3 : 4,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withValues(alpha: UIConstants.opacityLow),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -473,7 +474,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
             size: isCompact ? 11 : 12,
             color: color,
           ),
-          const SizedBox(width: 4),
+          SizedBox(width: UIConstants.spacing4),
           Text(
             status,
             style: TextStyle(
@@ -580,8 +581,8 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async => false,
+    return PopScope(
+      canPop: false,
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F5F5),
         body: SafeArea(
@@ -590,14 +591,14 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
             // Header moderno con gradiente (estilo reciclador)
             SliverToBoxAdapter(
               child: Container(
-                height: 320,
+                height: UIConstants.headerHeightWithStats,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
                       Colors.orange,
-                      Colors.orange.withValues(alpha: 0.8),
+                      Colors.orange.withValues(alpha: UIConstants.opacityVeryHigh),
                     ],
                   ),
                 ),
@@ -612,7 +613,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                         height: 200,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.1),
+                          color: Colors.white.withValues(alpha: UIConstants.opacityLow),
                         ),
                       ),
                     ),
@@ -624,13 +625,13 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                         height: 150,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.05),
+                          color: Colors.white.withValues(alpha: UIConstants.opacityVeryLow),
                         ),
                       ),
                     ),
                     // Contenido
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                      padding: EdgeInsets.fromLTRB(UIConstants.spacing20, UIConstants.spacing12, UIConstants.spacing20, UIConstants.spacing16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -641,31 +642,31 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                               // Logo ECOCE
                               SvgPicture.asset(
                                 'assets/logos/ecoce_logo.svg',
-                                width: 70,
-                                height: 35,
+                                width: UIConstants.logoWidthSmall,
+                                height: UIConstants.logoHeightSmall,
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: UIConstants.spacing12,
+                                  vertical: UIConstants.spacing4 + 2, // 6
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(20),
+                                  color: Colors.white.withValues(alpha: UIConstants.opacityMediumLow),
+                                  borderRadius: BorderRadiusConstants.borderRadiusXLarge,
                                 ),
                                 child: Row(
                                   children: [
                                     Icon(
                                       Icons.calendar_today,
-                                      size: 14,
-                                      color: Colors.white.withValues(alpha: 0.9),
+                                      size: UIConstants.fontSizeMedium,
+                                      color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
                                     ),
-                                    const SizedBox(width: 6),
+                                    SizedBox(width: UIConstants.spacing4 + 2),
                                     Text(
                                       FormatUtils.formatDate(DateTime.now()),
                                       style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.white.withValues(alpha: 0.9),
+                                        fontSize: UIConstants.fontSizeSmall,
+                                        color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
                                       ),
                                     ),
                                   ],
@@ -673,30 +674,30 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: UIConstants.spacing8),
                           // Nombre de la empresa
                           Text(
                             _nombreEmpresa,
                             style: const TextStyle(
-                              fontSize: 24,
+                              fontSize: UIConstants.fontSizeTitle,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                             overflow: TextOverflow.ellipsis,
                             maxLines: 2,
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: UIConstants.spacing4),
                           // Badge con tipo y folio
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: UIConstants.spacing12,
+                                  vertical: UIConstants.spacing4 + 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                  borderRadius: BorderRadius.circular(20),
+                                  color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
+                                  borderRadius: BorderRadiusConstants.borderRadiusLarge,
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -706,11 +707,11 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                                       size: 16,
                                       color: Colors.orange,
                                     ),
-                                    const SizedBox(width: 6),
+                                    SizedBox(width: UIConstants.spacing4 + 2),
                                     Text(
                                       'Transformador',
                                       style: TextStyle(
-                                        fontSize: 13,
+                                        fontSize: UIConstants.fontSizeSmall + 1,
                                         fontWeight: FontWeight.w600,
                                         color: Colors.orange,
                                       ),
@@ -718,15 +719,15 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: UIConstants.spacing8),
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: UIConstants.spacing12,
+                                  vertical: UIConstants.spacing4 + 2,
                                 ),
                                 decoration: BoxDecoration(
                                   color: Colors.orange,
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadiusConstants.borderRadiusLarge,
                                 ),
                                 child: Text(
                                   _folioTransformador,
@@ -739,7 +740,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 10),
+                          SizedBox(height: UIConstants.spacing8 + 2),
                           // Primera fila de estadísticas
                           Row(
                             children: [
@@ -750,10 +751,10 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                                   value: _lotesRecibidos.toString(),
                                   icon: Icons.inbox,
                                   color: BioWayColors.petBlue,
-                                  height: 70,
+                                  height: UIConstants.statCardHeight,
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: UIConstants.spacing12),
                               // Card de Productos Creados
                               Expanded(
                                 child: UnifiedStatCard.horizontal(
@@ -761,12 +762,12 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                                   value: _productosCreados.toString(),
                                   icon: Icons.add_box,
                                   color: BioWayColors.ppPurple,
-                                  height: 70,
+                                  height: UIConstants.statCardHeight,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 10),
+                          SizedBox(height: UIConstants.spacing8 + 2),
                           // Segunda fila con Material Procesado centrado
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -780,7 +781,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                                   unit: 'ton',
                                   icon: Icons.scale,
                                   color: Colors.orange,
-                                  height: 70,
+                                  height: UIConstants.statCardHeight,
                                 ),
                               ),
                             ],
@@ -796,7 +797,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
             // Contenido principal
             SliverToBoxAdapter(
               child: Container(
-                margin: const EdgeInsets.only(top: 10),
+                margin: EdgeInsets.only(top: UIConstants.spacing8 + 2),
                 decoration: const BoxDecoration(
                   color: Color(0xFFF5F5F5),
                   borderRadius: BorderRadius.only(
@@ -805,7 +806,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                   ),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+                  padding: EdgeInsets.fromLTRB(UIConstants.spacing16, UIConstants.spacing20, UIConstants.spacing16, UIConstants.spacing20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -813,40 +814,40 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                       // Acción rápida principal (estilo reciclador)
                       Container(
                         width: double.infinity,
-                        height: 70,
+                        height: UIConstants.buttonHeightLarge,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
                               Colors.orange,
-                              Colors.orange.withValues(alpha: 0.8),
+                              Colors.orange.withValues(alpha: UIConstants.opacityVeryHigh),
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadiusConstants.borderRadiusLarge,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.orange.withValues(alpha: 0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
+                              color: Colors.orange.withValues(alpha: UIConstants.opacityMedium),
+                              blurRadius: UIConstants.elevationXHigh,
+                              offset: Offset(0, UIConstants.spacing4 + 2), // 6
                             ),
                           ],
                         ),
                         child: Material(
                           color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadiusConstants.borderRadiusMedium,
                           child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadiusConstants.borderRadiusMedium,
                             onTap: _navigateToRecibirLotes,
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing16, vertical: UIConstants.spacing12),
                               child: Row(
                                 children: [
                                   Container(
                                     width: 40,
                                     height: 40,
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.2),
+                                      color: Colors.white.withValues(alpha: UIConstants.opacityMedium),
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(
@@ -855,7 +856,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                                       size: 24,
                                     ),
                                   ),
-                                  const SizedBox(width: 16),
+                                  SizedBox(width: UIConstants.spacing16),
                                   Expanded(
                                     child: Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
@@ -864,7 +865,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                                         const Text(
                                           'Recibir Lotes',
                                           style: TextStyle(
-                                            fontSize: 16,
+                                            fontSize: UIConstants.fontSizeBody,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.white,
                                           ),
@@ -872,8 +873,8 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                                         Text(
                                           'Escanear lote entrante',
                                           style: TextStyle(
-                                            fontSize: 13,
-                                            color: Colors.white.withValues(alpha: 0.9),
+                                            fontSize: UIConstants.fontSizeSmall + 1,
+                                            color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -882,7 +883,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                                   ),
                                   Icon(
                                     Icons.arrow_forward_ios,
-                                    color: Colors.white.withValues(alpha: 0.8),
+                                    color: Colors.white.withValues(alpha: UIConstants.opacityVeryHigh),
                                     size: 18,
                                   ),
                                 ],
@@ -892,7 +893,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                         ),
                       ),
                       
-                      const SizedBox(height: 16),
+                      SizedBox(height: UIConstants.spacing16),
                       
                       // Botón secundario de documentación (más sutil)
                       SizedBox(
@@ -907,35 +908,35 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                           label: const Text(
                             'Gestionar Documentación',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: UIConstants.fontSizeMedium,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.orange,
                             side: BorderSide(
-                              color: Colors.orange.withValues(alpha: 0.3),
+                              color: Colors.orange.withValues(alpha: UIConstants.opacityMediumLow),
                               width: 1.5,
                             ),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadiusConstants.borderRadiusMedium,
                             ),
                           ),
                         ),
                       ),
                         
-                        const SizedBox(height: 24),
+                        SizedBox(height: UIConstants.spacing24),
                         
                         // Sección Lotes en Proceso
                         const Text(
                           'Lotes en Proceso',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: UIConstants.fontSizeLarge,
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: UIConstants.spacing16),
                         
                         // Lista de lotes con StreamBuilder
                         StreamBuilder<List<LoteTransformadorModel>>(
@@ -944,7 +945,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                             if (snapshot.connectionState == ConnectionState.waiting) {
                               return Center(
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 40),
+                                  padding: EdgeInsets.symmetric(vertical: UIConstants.spacing40),
                                   child: CircularProgressIndicator(
                                     color: Colors.orange,
                                   ),
@@ -955,7 +956,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                             if (!snapshot.hasData || snapshot.data!.isEmpty) {
                               return Center(
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 40),
+                                  padding: EdgeInsets.symmetric(vertical: UIConstants.spacing40),
                                   child: Column(
                                     children: [
                                       Icon(
@@ -963,19 +964,19 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                                         size: 64,
                                         color: Colors.grey[300],
                                       ),
-                                      const SizedBox(height: 16),
+                                      SizedBox(height: UIConstants.spacing16),
                                       Text(
                                         'No hay lotes en proceso',
                                         style: TextStyle(
-                                          fontSize: 16,
+                                          fontSize: UIConstants.fontSizeBody,
                                           color: Colors.grey[600],
                                         ),
                                       ),
-                                      const SizedBox(height: 8),
+                                      SizedBox(height: UIConstants.spacing8),
                                       Text(
                                         'Escanea un código QR para comenzar',
                                         style: TextStyle(
-                                          fontSize: 14,
+                                          fontSize: UIConstants.fontSizeMedium,
                                           color: Colors.grey[400],
                                         ),
                                       ),
@@ -992,7 +993,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                           },
                         ),
                         
-                        const SizedBox(height: 20), // Espacio al final
+                        SizedBox(height: UIConstants.spacing20), // Espacio al final
                       ],
                     ),
                   ),

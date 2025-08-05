@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:math' as math;
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../utils/colors.dart';
+import '../../utils/ui_constants.dart';
 
 /// Logo animado de BioWay con indicador de switch para cambiar de plataforma
 class AnimatedLogo extends StatefulWidget {
@@ -21,7 +22,7 @@ class AnimatedLogo extends StatefulWidget {
   const AnimatedLogo({
     super.key,
     required this.onTap,
-    this.size = 80,
+    this.size = UIConstants.iconSizeDialog + UIConstants.spacing20,
     this.showSwitchIndicator = true,
     this.showText = true,
   });
@@ -55,7 +56,7 @@ class _AnimatedLogoState extends State<AnimatedLogo>
   void _setupAnimations() {
     // Controlador para el pulso del indicador
     _pulseController = AnimationController(
-      duration: const Duration(seconds: 2),
+      duration: Duration(seconds: 2),
       vsync: this,
     )..repeat();
 
@@ -69,7 +70,7 @@ class _AnimatedLogoState extends State<AnimatedLogo>
 
     // Controlador para la rotación del icono de switch
     _rotationController = AnimationController(
-      duration: const Duration(seconds: 3),
+      duration: Duration(seconds: 3),
       vsync: this,
     )..repeat();
 
@@ -83,7 +84,7 @@ class _AnimatedLogoState extends State<AnimatedLogo>
 
     // Controlador para el efecto bounce al presionar
     _bounceController = AnimationController(
-      duration: const Duration(milliseconds: 150),
+      duration: Duration(milliseconds: UIConstants.animationDurationShort),
       vsync: this,
     );
 

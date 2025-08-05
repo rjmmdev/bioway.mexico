@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../utils/ui_constants.dart';
 
 /// Configuración para el FAB (Floating Action Button)
 class FabConfig {
@@ -82,15 +83,15 @@ class EcoceBottomNavigation extends StatelessWidget {
       decoration: BoxDecoration(
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
+            color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow + 0.03),
+            blurRadius: UIConstants.blurRadiusSmall + 4,
+            offset: Offset(0, -UIConstants.offsetY),
           ),
         ],
       ),
       child: BottomAppBar(
         color: Colors.white,
-        elevation: 0,
+        elevation: UIConstants.elevationNone,
         notchMargin: notchMargin,
         shape: fabConfig != null ? const CircularNotchedRectangle() : null,
         height: baseHeight + bottomPadding,
@@ -118,7 +119,7 @@ class EcoceBottomNavigation extends StatelessWidget {
     for (int i = 0; i < items.length; i++) {
       // Si hay FAB y estamos en el medio de los items, agregar espacio
       if (fabConfig != null && i == items.length ~/ 2) {
-        widgets.add(const SizedBox(width: 56)); // Espacio para el FAB
+        widgets.add(SizedBox(width: UIConstants.buttonHeightLarge)); // Espacio para el FAB
       }
       
       widgets.add(
@@ -201,12 +202,12 @@ class EcoceBottomNavigation extends StatelessWidget {
           HapticFeedback.lightImpact();
           onItemTapped(index);
         },
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadiusConstants.borderRadiusMedium,
         child: Container(
           key: testKey != null ? Key(testKey) : null,
           padding: EdgeInsets.symmetric(
             vertical: containerPadding,
-            horizontal: 4,
+            horizontal: UIConstants.spacing4,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -214,7 +215,7 @@ class EcoceBottomNavigation extends StatelessWidget {
             children: [
               // Icono
               AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: Duration(milliseconds: UIConstants.animationDurationShort),
                 child: Icon(
                   icon,
                   color: isSelected ? primaryColor : Colors.grey[600],
@@ -228,7 +229,7 @@ class EcoceBottomNavigation extends StatelessWidget {
               // Texto con manejo de overflow
               Flexible(
                 child: AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 200),
+                  duration: Duration(milliseconds: UIConstants.animationDurationShort),
                   style: TextStyle(
                     color: isSelected ? primaryColor : Colors.grey[600],
                     fontSize: fontSize,
@@ -281,14 +282,14 @@ class EcoceFloatingActionButton extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             backgroundColor,
-            backgroundColor.withValues(alpha: 0.8),
+            backgroundColor.withValues(alpha: UIConstants.opacityVeryHigh),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: backgroundColor.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: backgroundColor.withValues(alpha: UIConstants.opacityMedium),
+            blurRadius: UIConstants.blurRadiusSmall + 4,
+            offset: Offset(0, UIConstants.spacing4),
           ),
         ],
       ),
@@ -298,12 +299,12 @@ class EcoceFloatingActionButton extends StatelessWidget {
           onPressed();
         },
         backgroundColor: Colors.transparent,
-        elevation: 0,
+        elevation: UIConstants.elevationNone,
         heroTag: heroTag ?? UniqueKey(),
         child: Icon(
           icon,
           color: Colors.white,
-          size: isSmallScreen ? 24 : 28,
+          size: isSmallScreen ? UIConstants.iconSizeMedium : UIConstants.iconSizeLarge,
         ),
         shape: const CircleBorder(),
         tooltip: tooltip,

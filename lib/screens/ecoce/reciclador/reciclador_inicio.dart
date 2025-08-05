@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../utils/format_utils.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/lote_service.dart';
@@ -221,40 +222,40 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
     final hasAvailableWeight = transformacion.pesoDisponible > 0;
     
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: UIConstants.spacing12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadiusConstants.borderRadiusMedium,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow + 0.03),
+            blurRadius: UIConstants.elevationHigh,
+            offset: Offset(0, UIConstants.elevationLow),
           ),
         ],
       ),
       child: InkWell(
         onTap: null, // No hacer nada al tocar
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadiusConstants.borderRadiusMedium,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsetsConstants.paddingAll16,
           child: Row(
             children: [
               // Icono de megalote
               Container(
-                width: 48,
-                height: 48,
+                width: UIConstants.iconContainerMedium,
+                height: UIConstants.iconContainerMedium,
                 decoration: BoxDecoration(
-                  color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityLow),
+                  borderRadius: BorderRadiusConstants.borderRadiusMedium,
                 ),
                 child: Icon(
                   Icons.merge_type,
                   color: BioWayColors.ecoceGreen,
-                  size: 24,
+                  size: UIConstants.iconSizeMedium,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: UIConstants.spacing12),
               // Información del megalote
               Expanded(
                 child: Column(
@@ -263,12 +264,12 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                     Text(
                       'MEGALOTE ${transformacion.id.substring(0, 8).toUpperCase()}',
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: UIConstants.fontSizeMedium,
                         fontWeight: FontWeight.bold,
                         fontFamily: 'monospace',
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: UIConstants.spacing4),
                     Row(
                       children: [
                         Icon(
@@ -280,15 +281,15 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                         Text(
                           '${transformacion.pesoDisponible.toStringAsFixed(2)} kg disponibles',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: UIConstants.fontSizeXSmall + 1,
                             color: Colors.grey[600],
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: UIConstants.spacing12),
                         Text(
                           '${transformacion.lotesEntrada.length} lotes',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: UIConstants.fontSizeXSmall + 1,
                             color: Colors.grey[600],
                           ),
                         ),
@@ -451,14 +452,14 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
             // Header moderno con gradiente
             SliverToBoxAdapter(
               child: Container(
-                height: 320,
+                height: UIConstants.headerHeightWithStats,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
                       BioWayColors.ecoceGreen,
-                      BioWayColors.ecoceGreen.withValues(alpha: 0.8),
+                      BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityVeryHigh),
                     ],
                   ),
                 ),
@@ -469,11 +470,11 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                       right: -50,
                       top: -50,
                       child: Container(
-                        width: 200,
-                        height: 200,
+                        width: UIConstants.qrSizeMedium,
+                        height: UIConstants.qrSizeMedium,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.1),
+                          color: Colors.white.withValues(alpha: UIConstants.opacityLow),
                         ),
                       ),
                     ),
@@ -481,17 +482,17 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                       left: -30,
                       bottom: -30,
                       child: Container(
-                        width: 150,
-                        height: 150,
+                        width: UIConstants.qrSizeSmall,
+                        height: UIConstants.qrSizeSmall,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.05),
+                          color: Colors.white.withValues(alpha: UIConstants.opacityVeryLow),
                         ),
                       ),
                     ),
                     // Contenido
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      padding: EdgeInsets.fromLTRB(UIConstants.spacing16, UIConstants.spacing12, UIConstants.spacing16, UIConstants.spacing16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -502,31 +503,31 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                               // Logo ECOCE
                               SvgPicture.asset(
                                 'assets/logos/ecoce_logo.svg',
-                                width: 70,
-                                height: 35,
+                                width: UIConstants.logoWidthSmall,
+                                height: UIConstants.logoHeightSmall,
                               ),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                                  horizontal: UIConstants.spacing12,
+                                  vertical: UIConstants.spacing4 + 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(20),
+                                  color: Colors.white.withValues(alpha: UIConstants.opacityMediumLow),
+                                  borderRadius: BorderRadiusConstants.borderRadiusXLarge,
                                 ),
                                 child: Row(
                                   children: [
                                     Icon(
                                       Icons.calendar_today,
-                                      size: 14,
-                                      color: Colors.white.withValues(alpha: 0.9),
+                                      size: UIConstants.fontSizeMedium,
+                                      color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
                                       FormatUtils.formatDate(DateTime.now()),
                                       style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.white.withValues(alpha: 0.9),
+                                        fontSize: UIConstants.fontSizeXSmall + 1,
+                                        color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
                                       ),
                                     ),
                                   ],
@@ -534,44 +535,44 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: UIConstants.spacing8),
                           // Nombre del reciclador
                           Text(
                             _nombreReciclador,
                             style: const TextStyle(
-                              fontSize: 24,
+                              fontSize: UIConstants.fontSizeTitle,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                             overflow: TextOverflow.ellipsis,
                             maxLines: 2,
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: UIConstants.spacing4),
                           // Badge con tipo y folio
                           Row(
                             children: [
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                                  horizontal: UIConstants.spacing12,
+                                  vertical: UIConstants.spacing4 + 2,
                                 ),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withValues(alpha: 0.9),
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadiusConstants.borderRadiusXLarge,
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
                                       Icons.recycling,
-                                      size: 16,
+                                      size: UIConstants.iconSizeSmall,
                                       color: BioWayColors.ecoceGreen,
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
                                       'Reciclador',
                                       style: TextStyle(
-                                        fontSize: 13,
+                                        fontSize: UIConstants.fontSizeSmall,
                                         fontWeight: FontWeight.w600,
                                         color: BioWayColors.ecoceGreen,
                                       ),
@@ -582,12 +583,12 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                               const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                                  horizontal: UIConstants.spacing12,
+                                  vertical: UIConstants.spacing4 + 2,
                                 ),
                                 decoration: BoxDecoration(
                                   color: BioWayColors.ecoceGreen,
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadiusConstants.borderRadiusXLarge,
                                 ),
                                 child: Text(
                                   _folioReciclador,
@@ -600,7 +601,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: UIConstants.spacing16),
                           // Estadísticas con UnifiedStatCard y Stream
                           StreamBuilder<Map<String, dynamic>>(
                             stream: _estadisticasStream,
@@ -626,10 +627,10 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                                           value: lotesRecibidos.toString(),
                                           icon: Icons.inbox,
                                           color: BioWayColors.petBlue,
-                                          height: 70,
+                                          height: UIConstants.statCardHeight,
                                         ),
                                       ),
-                                      const SizedBox(width: 12),
+                                      SizedBox(width: UIConstants.spacing12),
                                       // Estadística de Megalotes Creados
                                       Expanded(
                                         child: UnifiedStatCard.horizontal(
@@ -637,7 +638,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                                           value: megalotesCreados.toString(),
                                           icon: Icons.merge_type,
                                           color: BioWayColors.ppPurple,
-                                          height: 70,
+                                          height: UIConstants.statCardHeight,
                                         ),
                                       ),
                                     ],
@@ -656,7 +657,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                                           unit: 'ton',
                                           icon: Icons.scale,
                                           color: BioWayColors.ecoceGreen,
-                                          height: 70,
+                                          height: UIConstants.statCardHeight,
                                         ),
                                       ),
                                     ],
@@ -676,16 +677,16 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
             // Contenido principal
             SliverToBoxAdapter(
               child: Container(
-                margin: const EdgeInsets.only(top: 10),
+                margin: EdgeInsets.only(top: UIConstants.spacing8 + 2),
                 decoration: const BoxDecoration(
                   color: Color(0xFFF5F5F5),
                   borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30),
+                    topLeft: Radius.circular(UIConstants.radiusRound),
+                    topRight: Radius.circular(UIConstants.radiusRound),
                   ),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+                  padding: EdgeInsets.fromLTRB(UIConstants.spacing16, UIConstants.spacing20, UIConstants.spacing16, UIConstants.spacing20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -693,49 +694,49 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                       // Primer botón - Escanear Nuevo Lote
                       Container(
                         width: double.infinity,
-                        height: 70,
+                        height: UIConstants.buttonHeightLarge,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
                               BioWayColors.ecoceGreen,
-                              BioWayColors.ecoceGreen.withValues(alpha:0.8),
+                              BioWayColors.ecoceGreen.withValues(alpha:UIConstants.opacityVeryHigh),
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadiusConstants.borderRadiusLarge,
                           boxShadow: [
                             BoxShadow(
-                              color: BioWayColors.ecoceGreen.withValues(alpha:0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
+                              color: BioWayColors.ecoceGreen.withValues(alpha:UIConstants.opacityMedium),
+                              blurRadius: UIConstants.elevationXHigh,
+                              offset: Offset(0, UIConstants.spacing4 + 2),
                             ),
                           ],
                         ),
                         child: Material(
                           color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadiusConstants.borderRadiusLarge,
                           child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadiusConstants.borderRadiusLarge,
                             onTap: _navigateToNewLot,
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing16, vertical: UIConstants.spacing12),
                               child: Row(
                                 children: [
                                   Container(
-                                    width: 40,
-                                    height: 40,
+                                    width: UIConstants.iconContainerSmall,
+                                    height: UIConstants.iconContainerSmall,
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha:0.2),
+                                      color: Colors.white.withValues(alpha:UIConstants.opacityMediumLow),
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(
                                       Icons.local_shipping,
                                       color: Colors.white,
-                                      size: 24,
+                                      size: UIConstants.iconSizeMedium,
                                     ),
                                   ),
-                                  const SizedBox(width: 16),
+                                  SizedBox(width: UIConstants.spacing16),
                                   Expanded(
                                     child: Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
@@ -744,7 +745,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                                         const Text(
                                           'Recibir Lote',
                                           style: TextStyle(
-                                            fontSize: 16,
+                                            fontSize: UIConstants.fontSizeBody,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.white,
                                           ),
@@ -752,8 +753,8 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                                         Text(
                                           'Recibir material del transportista',
                                           style: TextStyle(
-                                            fontSize: 13,
-                                            color: Colors.white.withValues(alpha:0.9),
+                                            fontSize: UIConstants.fontSizeSmall,
+                                            color: Colors.white.withValues(alpha:UIConstants.opacityAlmostFull),
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -762,8 +763,8 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                                   ),
                                   Icon(
                                     Icons.arrow_forward_ios,
-                                    color: Colors.white.withValues(alpha:0.8),
-                                    size: 18,
+                                    color: Colors.white.withValues(alpha:UIConstants.opacityVeryHigh),
+                                    size: UIConstants.fontSizeLarge,
                                   ),
                                 ],
                               ),
@@ -775,7 +776,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                       // Segundo botón - Control de Lotes
                       Container(
                         width: double.infinity,
-                        height: 70,
+                        height: UIConstants.buttonHeightLarge,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
@@ -785,39 +786,39 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                               BioWayColors.petBlue.withValues(alpha:0.8),
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadiusConstants.borderRadiusLarge,
                           boxShadow: [
                             BoxShadow(
                               color: BioWayColors.petBlue.withValues(alpha:0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
+                              blurRadius: UIConstants.elevationXHigh,
+                              offset: Offset(0, UIConstants.spacing4 + 2),
                             ),
                           ],
                         ),
                         child: Material(
                           color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadiusConstants.borderRadiusLarge,
                           child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadiusConstants.borderRadiusLarge,
                             onTap: _navigateToLotControl,
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing16, vertical: UIConstants.spacing12),
                               child: Row(
                                 children: [
                                   Container(
-                                    width: 40,
-                                    height: 40,
+                                    width: UIConstants.iconContainerSmall,
+                                    height: UIConstants.iconContainerSmall,
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha:0.2),
+                                      color: Colors.white.withValues(alpha:UIConstants.opacityMediumLow),
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(
                                       Icons.inventory_2,
                                       color: Colors.white,
-                                      size: 24,
+                                      size: UIConstants.iconSizeMedium,
                                     ),
                                   ),
-                                  const SizedBox(width: 16),
+                                  SizedBox(width: UIConstants.spacing16),
                                   Expanded(
                                     child: Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
@@ -826,7 +827,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                                         const Text(
                                           'Control de Lotes',
                                           style: TextStyle(
-                                            fontSize: 16,
+                                            fontSize: UIConstants.fontSizeBody,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.white,
                                           ),
@@ -834,8 +835,8 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                                         Text(
                                           'Gestionar inventario y crear lotes',
                                           style: TextStyle(
-                                            fontSize: 13,
-                                            color: Colors.white.withValues(alpha:0.9),
+                                            fontSize: UIConstants.fontSizeSmall,
+                                            color: Colors.white.withValues(alpha:UIConstants.opacityAlmostFull),
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -844,8 +845,8 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                                   ),
                                   Icon(
                                     Icons.arrow_forward_ios,
-                                    color: Colors.white.withValues(alpha:0.8),
-                                    size: 18,
+                                    color: Colors.white.withValues(alpha:UIConstants.opacityVeryHigh),
+                                    size: UIConstants.fontSizeLarge,
                                   ),
                                 ],
                               ),
@@ -854,7 +855,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                         ),
                       ),
                       
-                      const SizedBox(height: 20),
+                      SizedBox(height: UIConstants.spacing20),
                       
                       // Sección de megalotes recientes
                       Row(
@@ -864,14 +865,14 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                             children: [
                               Icon(
                                 Icons.merge_type,
-                                size: 24,
+                                size: UIConstants.iconSizeMedium,
                                 color: BioWayColors.ecoceGreen,
                               ),
                               const SizedBox(width: 8),
                               const Text(
                                 'Megalotes Recientes',
                                 style: TextStyle(
-                                  fontSize: 20,
+                                  fontSize: UIConstants.fontSizeXLarge,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.black87,
                                 ),
@@ -885,12 +886,12 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                                 Text(
                                   'Ver todos',
                                   style: TextStyle(
-                                    fontSize: 14,
+                                    fontSize: UIConstants.fontSizeMedium,
                                     color: BioWayColors.ecoceGreen,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                const SizedBox(width: 4),
+                                SizedBox(width: UIConstants.spacing4),
                                 Icon(
                                   Icons.arrow_forward,
                                   size: 16,
@@ -919,15 +920,15 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                           if (!snapshot.hasData || snapshot.data!.isEmpty) {
                             return Center(
                               child: Padding(
-                                padding: const EdgeInsets.all(40),
+                                padding: EdgeInsetsConstants.paddingAll32 + EdgeInsets.all(UIConstants.spacing8),
                                 child: Column(
                                   children: [
                                     Icon(
                                       Icons.merge_type,
-                                      size: 60,
+                                      size: UIConstants.iconSizeDialog,
                                       color: Colors.grey.shade300,
                                     ),
-                                    const SizedBox(height: 16),
+                                    SizedBox(height: UIConstants.spacing16),
                                     Text(
                                       'No hay megalotes recientes',
                                       style: TextStyle(
@@ -951,7 +952,7 @@ class _RecicladorInicioState extends State<RecicladorInicio> with WidgetsBinding
                         },
                       ),
                       
-                      const SizedBox(height: 20), // Espacio inferior
+                      SizedBox(height: UIConstants.spacing20), // Espacio inferior
                     ],
                   ),
                 ),

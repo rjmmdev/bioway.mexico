@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../utils/format_utils.dart';
 import '../../../utils/document_utils.dart';
 import 'widgets/maestro_info_section.dart';
@@ -28,7 +29,7 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text('Detalles de Solicitud'),
         backgroundColor: BioWayColors.ecoceGreen,
-        elevation: 0,
+        elevation: UIConstants.elevationNone,
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -36,21 +37,21 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
             // Header con información principal
             Container(
               width: double.infinity,
-              padding: EdgeInsets.all(20),
+              padding: EdgeInsetsConstants.paddingAll20,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
                     BioWayColors.ecoceGreen,
-                    BioWayColors.ecoceGreen.withValues(alpha: 0.8),
+                    BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityVeryHigh),
                   ],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
+                    color: Colors.black.withValues(alpha: UIConstants.opacityLow),
+                    blurRadius: UIConstants.blurRadiusSmall + 2,
+                    offset: Offset(0, UIConstants.offsetY),
                   ),
                 ],
               ),
@@ -58,25 +59,25 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
                 children: [
                   Icon(
                     _getSubtipoIcon(datosPerfil['ecoce_subtipo']),
-                    size: 60,
+                    size: UIConstants.iconSizeDialog,
                     color: Colors.white,
                   ),
-                  SizedBox(height: 12),
+                  SizedBox(height: UIConstants.spacing12),
                   Text(
                     datosPerfil['ecoce_nombre'] ?? 'Sin nombre',
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: UIConstants.fontSizeXLarge,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  SizedBox(height: 8),
+                  SizedBox(height: UIConstants.spacing8),
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing16, vertical: UIConstants.spacing8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
+                      color: Colors.white.withValues(alpha: UIConstants.opacityMediumLow),
+                      borderRadius: BorderRadiusConstants.borderRadiusLarge,
                     ),
                     child: Text(
                       _getSubtipoLabel(datosPerfil['ecoce_subtipo']),
@@ -87,12 +88,12 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
                     ),
                   ),
                   if (isApproved && solicitud['folio_asignado'] != null) ...[
-                    SizedBox(height: 8),
+                    SizedBox(height: UIConstants.spacing8),
                     Text(
                       'Folio: ${solicitud['folio_asignado']}',
                       style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: UIConstants.fontSizeBody + 2,
+                        color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -103,22 +104,22 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
             
             // Contenido
             Padding(
-              padding: EdgeInsets.all(16),
+              padding: EdgeInsetsConstants.paddingAll16,
               child: Column(
                 children: [
                   // Estado de la solicitud
                   Container(
                     width: double.infinity,
-                    padding: EdgeInsets.all(16),
+                    padding: EdgeInsetsConstants.paddingAll16,
                     decoration: BoxDecoration(
                       color: isApproved 
-                          ? BioWayColors.success.withValues(alpha: 0.1)
-                          : BioWayColors.warning.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                          ? BioWayColors.success.withValues(alpha: UIConstants.opacityLow)
+                          : BioWayColors.warning.withValues(alpha: UIConstants.opacityLow),
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
                       border: Border.all(
                         color: isApproved 
-                            ? BioWayColors.success.withValues(alpha: 0.3)
-                            : BioWayColors.warning.withValues(alpha: 0.3),
+                            ? BioWayColors.success.withValues(alpha: UIConstants.opacityMediumLow)
+                            : BioWayColors.warning.withValues(alpha: UIConstants.opacityMediumLow),
                       ),
                     ),
                     child: Row(
@@ -127,7 +128,7 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
                           isApproved ? Icons.check_circle : Icons.pending_actions,
                           color: isApproved ? BioWayColors.success : BioWayColors.warning,
                         ),
-                        SizedBox(width: 12),
+                        SizedBox(width: UIConstants.spacing12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,17 +136,17 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
                               Text(
                                 isApproved ? 'Solicitud Aprobada' : 'Solicitud Pendiente',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: UIConstants.fontSizeBody,
                                   fontWeight: FontWeight.bold,
                                   color: isApproved ? BioWayColors.success : BioWayColors.warning,
                                 ),
                               ),
                               if (isApproved && solicitud['fecha_revision'] != null) ...[
-                                SizedBox(height: 4),
+                                SizedBox(height: UIConstants.spacing4),
                                 Text(
                                   'Aprobada el ${_formatDate(_parseFechaRevision(solicitud['fecha_revision']))}',
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: UIConstants.fontSizeSmall + 1,
                                     color: BioWayColors.textGrey,
                                   ),
                                 ),
@@ -157,7 +158,7 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
                     ),
                   ),
                   
-                  SizedBox(height: 20),
+                  SizedBox(height: UIConstants.spacing20),
                   
                   // Información de contacto
                   MaestroInfoSection(
@@ -172,7 +173,7 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
                     ],
                   ),
                   
-                  SizedBox(height: 16),
+                  SizedBox(height: UIConstants.spacing16),
                   
                   // Información de ubicación
                   MaestroInfoSection(
@@ -189,12 +190,12 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
                     ],
                   ),
                   
-                  SizedBox(height: 16),
+                  SizedBox(height: UIConstants.spacing16),
                   
                   // Información Operativa (Paso 3 del registro)
                   _buildInformacionOperativa(context, datosPerfil),
                   
-                  SizedBox(height: 16),
+                  SizedBox(height: UIConstants.spacing16),
                   
                   // Información bancaria
                   if (datosPerfil['ecoce_banco_nombre'] != null) ...[
@@ -209,7 +210,7 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
                         InfoItem(label: 'CLABE', value: datosPerfil['ecoce_banco_clabe'] ?? 'N/A'),
                       ],
                     ),
-                    SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                   ],
                   
                   // Documentos
@@ -218,13 +219,13 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
                   // Actividades Autorizadas
                   if (datosPerfil['ecoce_act_autorizadas'] != null && 
                       (datosPerfil['ecoce_act_autorizadas'] as List).isNotEmpty) ...[
-                    SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     _buildActividadesSection(context, datosPerfil),
                   ],
                   
                   // Botones de acción (solo si está pendiente)
                   if (!isApproved && (onApprove != null || onReject != null)) ...[
-                    SizedBox(height: 24),
+                    SizedBox(height: UIConstants.spacing24),
                     Row(
                       children: [
                         if (onReject != null)
@@ -235,16 +236,16 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
                               label: Text('Rechazar'),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: BioWayColors.error,
-                                side: BorderSide(color: BioWayColors.error, width: 2),
-                                padding: EdgeInsets.symmetric(vertical: 16),
+                                side: BorderSide(color: BioWayColors.error, width: UIConstants.borderWidthThick),
+                                padding: EdgeInsets.symmetric(vertical: UIConstants.spacing16),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadiusConstants.borderRadiusMedium,
                                 ),
                               ),
                             ),
                           ),
                         if (onReject != null && onApprove != null)
-                          SizedBox(width: 16),
+                          SizedBox(width: UIConstants.spacing16),
                         if (onApprove != null)
                           Expanded(
                             child: ElevatedButton.icon(
@@ -254,16 +255,16 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: BioWayColors.success,
                                 foregroundColor: Colors.white,
-                                padding: EdgeInsets.symmetric(vertical: 16),
+                                padding: EdgeInsets.symmetric(vertical: UIConstants.spacing16),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadiusConstants.borderRadiusMedium,
                                 ),
                               ),
                             ),
                           ),
                       ],
                     ),
-                    SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spacing20),
                   ],
                 ],
               ),
@@ -299,12 +300,12 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadiusConstants.borderRadiusMedium,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 4,
-              offset: Offset(0, 2),
+              color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
+              blurRadius: UIConstants.blurRadiusSmall,
+              offset: Offset(0, UIConstants.offsetY),
             ),
           ],
         ),
@@ -312,15 +313,15 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
           children: [
             Icon(
               Icons.folder_off,
-              size: 48,
+              size: UIConstants.iconSizeLarge + UIConstants.spacing20,
               color: Colors.grey[400],
             ),
-            SizedBox(height: 8),
+            SizedBox(height: UIConstants.spacing8),
             Text(
               'No hay documentos disponibles',
               style: TextStyle(
                 color: Colors.grey[600],
-                fontSize: 16,
+                fontSize: UIConstants.fontSizeBody,
               ),
             ),
           ],
@@ -336,9 +337,9 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: Offset(0, 2),
+            color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
+            blurRadius: UIConstants.blurRadiusSmall,
+            offset: Offset(0, UIConstants.offsetY),
           ),
         ],
       ),
@@ -351,18 +352,18 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
                 Icons.folder_open,
                 color: BioWayColors.ecoceGreen,
               ),
-              SizedBox(width: 8),
+              SizedBox(width: UIConstants.spacing8),
               Text(
                 'Documentos Presentados',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: UIConstants.fontSizeBody + 2,
                   fontWeight: FontWeight.bold,
                   color: BioWayColors.darkGreen,
                 ),
               ),
             ],
           ),
-          SizedBox(height: 16),
+          SizedBox(height: UIConstants.spacing16),
           ...validDocuments.map((entry) => _buildDocumentItem(
             context,
             entry.key,
@@ -377,21 +378,21 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
     final isUrl = url.startsWith('http') || url.startsWith('https');
     
     return Container(
-      margin: EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: UIConstants.spacing12),
       decoration: BoxDecoration(
         color: BioWayColors.backgroundGrey,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadiusConstants.borderRadiusSmall,
         border: Border.all(
-          color: Colors.grey.withValues(alpha: 0.2),
+          color: Colors.grey.withValues(alpha: UIConstants.opacityMediumLow),
         ),
       ),
       child: ListTile(
         leading: Container(
-          width: 40,
-          height: 40,
+          width: UIConstants.buttonHeightMedium,
+          height: UIConstants.buttonHeightMedium,
           decoration: BoxDecoration(
-            color: BioWayColors.petBlue.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+            color: BioWayColors.petBlue.withValues(alpha: UIConstants.opacityLow),
+            borderRadius: BorderRadiusConstants.borderRadiusSmall,
           ),
           child: Icon(
             Icons.description,
@@ -408,7 +409,7 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
         subtitle: Text(
           isUrl ? 'Documento disponible' : 'Documento cargado',
           style: TextStyle(
-            fontSize: 12,
+            fontSize: UIConstants.fontSizeSmall,
             color: BioWayColors.textGrey,
           ),
         ),
@@ -478,9 +479,9 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: Offset(0, 2),
+            color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
+            blurRadius: UIConstants.blurRadiusSmall,
+            offset: Offset(0, UIConstants.offsetY),
           ),
         ],
       ),
@@ -493,30 +494,30 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
                 Icons.check_circle_outline,
                 color: BioWayColors.ecoceGreen,
               ),
-              SizedBox(width: 8),
+              SizedBox(width: UIConstants.spacing8),
               Text(
                 'Actividades Autorizadas',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: UIConstants.fontSizeBody + 2,
                   fontWeight: FontWeight.bold,
                   color: BioWayColors.darkGreen,
                 ),
               ),
             ],
           ),
-          SizedBox(height: 16),
+          SizedBox(height: UIConstants.spacing16),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: actividades.map((actividad) {
               final actividadStr = actividad.toString();
               return Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12, vertical: UIConstants.spacing8 - 2),
                 decoration: BoxDecoration(
-                  color: BioWayColors.ecoceGreen.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
+                  color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityLow),
+                  borderRadius: BorderRadiusConstants.borderRadiusLarge,
                   border: Border.all(
-                    color: BioWayColors.ecoceGreen.withValues(alpha: 0.3),
+                    color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityMedium),
                   ),
                 ),
                 child: Row(
@@ -524,14 +525,14 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.done,
-                      size: 16,
+                      size: UIConstants.iconSizeBody,
                       color: BioWayColors.ecoceGreen,
                     ),
-                    SizedBox(width: 4),
+                    SizedBox(width: UIConstants.spacing4),
                     Text(
                       _getActividadLabel(actividadStr),
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: UIConstants.fontSizeSmall + 1,
                         color: BioWayColors.darkGreen,
                         fontWeight: FontWeight.w500,
                       ),
@@ -571,7 +572,7 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
     
     // Si es transportista, no mostrar esta sección ya que no maneja materiales
     if (subtipo == 'V') {
-      return SizedBox.shrink();
+      return const SizedBox.shrink();
     }
     
     // Verificar si hay información operativa para mostrar
@@ -582,7 +583,7 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
                               (linkRedSocial != null && linkRedSocial.isNotEmpty);
     
     if (!hasOperationalInfo) {
-      return SizedBox.shrink();
+      return const SizedBox.shrink();
     }
     
     List<InfoItem> items = [];
@@ -648,7 +649,7 @@ class MaestroSolicitudDetailsScreen extends StatelessWidget {
     
     // Si no hay items para mostrar, no mostrar la sección
     if (items.isEmpty) {
-      return SizedBox.shrink();
+      return const SizedBox.shrink();
     }
     
     return MaestroInfoSection(

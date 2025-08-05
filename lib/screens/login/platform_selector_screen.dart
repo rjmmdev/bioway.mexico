@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../utils/colors.dart';
+import '../../utils/ui_constants.dart';
 import '../../widgets/common/gradient_background.dart';
 import 'ecoce/ecoce_login_screen.dart'; // ACTUALIZADA
 import 'bioway/bioway_login_screen.dart'; // AGREGADO
@@ -41,7 +42,7 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
   void _setupAnimations() {
     // Header animations
     _headerController = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: Duration(milliseconds: UIConstants.animationDurationLong),
       vsync: this,
     );
 
@@ -63,7 +64,7 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
 
     // Cards animation
     _cardsController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: Duration(milliseconds: UIConstants.animationDurationLong + 200),
       vsync: this,
     );
 
@@ -86,7 +87,7 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
     // Individual card animations
     for (int i = 0; i < 3; i++) {
       final controller = AnimationController(
-        duration: Duration(milliseconds: 400 + (i * 100)),
+        duration: Duration(milliseconds: UIConstants.animationDurationMedium + (i * UIConstants.animationDurationFast)),
         vsync: this,
       );
       _cardControllers.add(controller);
@@ -104,7 +105,7 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
 
     // Info animation
     _infoController = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: Duration(milliseconds: UIConstants.animationDurationLong),
       vsync: this,
     );
 
@@ -118,19 +119,19 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
   }
 
   void _startAnimationSequence() async {
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future.delayed(Duration(milliseconds: UIConstants.animationDurationFast));
     _headerController.forward();
 
-    await Future.delayed(const Duration(milliseconds: 200));
+    await Future.delayed(Duration(milliseconds: UIConstants.animationDurationShort));
     _cardsController.forward();
 
     // Animar tarjetas individualmente
     for (int i = 0; i < _cardControllers.length; i++) {
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future.delayed(Duration(milliseconds: UIConstants.animationDurationFast));
       _cardControllers[i].forward();
     }
 
-    await Future.delayed(const Duration(milliseconds: 200));
+    await Future.delayed(Duration(milliseconds: UIConstants.animationDurationShort));
     _infoController.forward();
   }
 
@@ -171,7 +172,7 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
             child: child,
           );
         },
-        transitionDuration: const Duration(milliseconds: 400),
+        transitionDuration: Duration(milliseconds: UIConstants.animationDurationMedium),
       ),
     );
   }
@@ -197,7 +198,7 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
             child: child,
           );
         },
-        transitionDuration: const Duration(milliseconds: 400),
+        transitionDuration: Duration(milliseconds: UIConstants.animationDurationMedium),
       ),
     );
   }
@@ -210,53 +211,53 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
       builder: (BuildContext context) {
         return Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadiusConstants.borderRadiusLarge,
           ),
           child: Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsetsConstants.paddingAll24,
             constraints: const BoxConstraints(maxWidth: 400),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 80,
-                  height: 80,
+                  width: UIConstants.iconSizeDialog + UIConstants.spacing20,
+                  height: UIConstants.iconSizeDialog + UIConstants.spacing20,
                   decoration: BoxDecoration(
-                    color: BioWayColors.info.withValues(alpha: 0.1),
+                    color: BioWayColors.info.withValues(alpha: UIConstants.opacityLow),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.rocket_launch,
-                    size: 40,
+                    size: UIConstants.buttonHeightMedium,
                     color: BioWayColors.info,
                   ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: UIConstants.spacing20),
                 const Text(
                   '¡Próximamente!',
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: UIConstants.fontSizeXLarge,
                     fontWeight: FontWeight.bold,
                     color: BioWayColors.darkGreen,
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: UIConstants.spacing12),
                 Text(
                   'Estamos trabajando para integrar más plataformas de reciclaje y sostenibilidad.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: UIConstants.fontSizeBody,
                     color: BioWayColors.textGrey,
-                    height: 1.5,
+                    height: UIConstants.lineHeightMedium,
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: UIConstants.spacing24),
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: BioWayColors.primaryGreen,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(UIConstants.spacing10),
                     ),
                   ),
                   child: const Text('Entendido'),
@@ -278,28 +279,28 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
             children: [
               // Header con botón de regreso
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: EdgeInsetsConstants.paddingAll16,
                 child: Row(
                   children: [
                     IconButton(
                       onPressed: _navigateBack,
                       icon: Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: EdgeInsetsConstants.paddingAll8,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
+                          borderRadius: BorderRadiusConstants.borderRadiusMedium,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
+                              color: Colors.black.withValues(alpha: UIConstants.opacityLow),
+                              blurRadius: UIConstants.blurRadiusMedium,
+                              offset: Offset(0, UIConstants.offsetY),
                             ),
                           ],
                         ),
                         child: const Icon(
                           Icons.arrow_back_ios_new,
                           color: BioWayColors.darkGreen,
-                          size: 20,
+                          size: UIConstants.iconSizeSmall,
                         ),
                       ),
                     ),
@@ -311,7 +312,7 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
               Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing24),
                   child: Column(
                     children: [
                       // Encabezado animado
@@ -326,8 +327,8 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                                 children: [
                                   // Icono principal
                                   Container(
-                                    width: 80,
-                                    height: 80,
+                                    width: UIConstants.iconSizeDialog + UIConstants.spacing20,
+                                    height: UIConstants.iconSizeDialog + UIConstants.spacing20,
                                     decoration: BoxDecoration(
                                       gradient: LinearGradient(
                                         colors: [
@@ -339,37 +340,37 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                                       boxShadow: [
                                         BoxShadow(
                                           color: BioWayColors.primaryGreen
-                                              .withValues(alpha: 0.3),
-                                          blurRadius: 20,
-                                          offset: const Offset(0, 8),
+                                              .withValues(alpha: UIConstants.opacityMedium),
+                                          blurRadius: UIConstants.blurRadiusLarge,
+                                          offset: Offset(0, UIConstants.spacing8),
                                         ),
                                       ],
                                     ),
                                     child: const Icon(
                                       Icons.apps,
-                                      size: 40,
+                                      size: UIConstants.buttonHeightMedium,
                                       color: Colors.white,
                                     ),
                                   ),
-                                  const SizedBox(height: 24),
+                                  SizedBox(height: UIConstants.spacing24),
 
                                   // Título
                                   const Text(
                                     'Selecciona tu Plataforma',
                                     style: TextStyle(
-                                      fontSize: 28,
+                                      fontSize: UIConstants.fontSizeXXLarge,
                                       fontWeight: FontWeight.bold,
                                       color: BioWayColors.darkGreen,
                                     ),
                                   ),
-                                  const SizedBox(height: 12),
+                                  SizedBox(height: UIConstants.spacing12),
 
                                   // Subtítulo
                                   Text(
                                     'Elige el servicio al que deseas acceder',
                                     style: TextStyle(
-                                      fontSize: 16,
-                                      color: BioWayColors.darkGreen.withValues(alpha: 0.7),
+                                      fontSize: UIConstants.fontSizeBody,
+                                      color: BioWayColors.darkGreen.withValues(alpha: UIConstants.opacityVeryHigh - 0.1),
                                     ),
                                   ),
                                 ],
@@ -379,7 +380,7 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                         },
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: UIConstants.spacing40),
 
                       // Lista de opciones animadas
                       AnimatedBuilder(
@@ -405,8 +406,8 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                                           child: _buildPlatformOption(
                                             iconWidget: SvgPicture.asset(
                                               'assets/logos/bioway_logo.svg',
-                                              width: 35,
-                                              height: 35,
+                                              width: UIConstants.iconSizeLarge + 3,
+                                              height: UIConstants.iconSizeLarge + 3,
                                             ),
                                             iconColor: BioWayColors.primaryGreen,
                                             title: 'BioWay',
@@ -419,7 +420,7 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                                       );
                                     },
                                   ),
-                                  const SizedBox(height: 16),
+                                  SizedBox(height: UIConstants.spacing16),
 
                                   // Opción ECOCE
                                   AnimatedBuilder(
@@ -435,8 +436,8 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                                           child: _buildPlatformOption(
                                             iconWidget: SvgPicture.asset(
                                               'assets/logos/ecoce_logo.svg',
-                                              width: 35,
-                                              height: 35,
+                                              width: UIConstants.iconSizeLarge + 3,
+                                              height: UIConstants.iconSizeLarge + 3,
                                             ),
                                             iconColor: BioWayColors.ecoceGreen,
                                             title: 'ECOCE',
@@ -449,7 +450,7 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                                       );
                                     },
                                   ),
-                                  const SizedBox(height: 16),
+                                  SizedBox(height: UIConstants.spacing16),
 
                                   // Placeholder para futuras plataformas
                                   AnimatedBuilder(
@@ -481,7 +482,7 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                         },
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: UIConstants.spacing40),
 
                       // Información adicional animada
                       AnimatedBuilder(
@@ -490,31 +491,31 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                           return FadeTransition(
                             opacity: _infoFadeAnimation,
                             child: Container(
-                              padding: const EdgeInsets.all(20),
-                              margin: const EdgeInsets.only(bottom: 20),
+                              padding: EdgeInsetsConstants.paddingAll20,
+                              margin: EdgeInsets.only(bottom: UIConstants.spacing20),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.9),
-                                borderRadius: BorderRadius.circular(16),
+                                color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
+                                borderRadius: BorderRadiusConstants.borderRadiusLarge,
                                 border: Border.all(
-                                  color: BioWayColors.primaryGreen.withValues(alpha: 0.2),
+                                  color: BioWayColors.primaryGreen.withValues(alpha: UIConstants.opacityMediumLow),
                                   width: 1,
                                 ),
                               ),
                               child: Row(
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.all(10),
+                                    padding: EdgeInsets.all(UIConstants.spacing8 + 2),
                                     decoration: BoxDecoration(
-                                      color: BioWayColors.info.withValues(alpha: 0.1),
+                                      color: BioWayColors.info.withValues(alpha: UIConstants.opacityLow),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
                                       Icons.info_outline,
                                       color: BioWayColors.info,
-                                      size: 24,
+                                      size: UIConstants.iconSizeMedium,
                                     ),
                                   ),
-                                  const SizedBox(width: 16),
+                                  SizedBox(width: UIConstants.spacing16),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -522,16 +523,16 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                                         const Text(
                                           'Múltiples sistemas, una app',
                                           style: TextStyle(
-                                            fontSize: 14,
+                                            fontSize: UIConstants.fontSizeMedium,
                                             fontWeight: FontWeight.bold,
                                             color: BioWayColors.darkGreen,
                                           ),
                                         ),
-                                        const SizedBox(height: 4),
+                                        SizedBox(height: UIConstants.spacing4),
                                         Text(
                                           'Cada plataforma tiene su propio sistema de autenticación y base de datos independiente.',
                                           style: TextStyle(
-                                            fontSize: 12,
+                                            fontSize: UIConstants.fontSizeXSmall + 1,
                                             color: BioWayColors.textGrey,
                                             height: 1.4,
                                           ),
@@ -572,12 +573,12 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
       color: Colors.transparent,
       child: InkWell(
         onTap: isDisabled ? null : onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadiusConstants.borderRadiusLarge,
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: isDisabled ? Colors.grey.shade100 : Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadiusConstants.borderRadiusLarge,
             border: Border.all(
               color: isDisabled ? Colors.grey.shade300 : Colors.grey.shade200,
               width: 1,
@@ -585,10 +586,10 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
             boxShadow: [
               BoxShadow(
                 color: isDisabled
-                    ? Colors.grey.withValues(alpha: 0.1)
-                    : Colors.black.withValues(alpha: 0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                    ? Colors.grey.withValues(alpha: UIConstants.opacityLow)
+                    : Colors.black.withValues(alpha: UIConstants.opacityLow),
+                blurRadius: UIConstants.elevationCard,
+                offset: Offset(0, UIConstants.spacing4),
               ),
             ],
           ),
@@ -596,21 +597,21 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
             children: [
               // Icono
               Container(
-                width: 60,
-                height: 60,
+                width: UIConstants.iconSizeDialog,
+                height: UIConstants.iconSizeDialog,
                 decoration: BoxDecoration(
                   color: isDisabled
                       ? Colors.grey.shade300
-                      : iconColor.withValues(alpha: 0.1),
+                      : iconColor.withValues(alpha: UIConstants.opacityLow),
                   shape: BoxShape.circle,
                 ),
                 child: iconWidget ?? Icon(
                   icon!,
                   color: isDisabled ? Colors.grey.shade500 : iconColor,
-                  size: 30,
+                  size: UIConstants.iconSizeLarge - 2,
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: UIConstants.spacing16),
 
               // Textos
               Expanded(
@@ -622,7 +623,7 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                         Text(
                           title,
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: UIConstants.fontSizeLarge,
                             fontWeight: FontWeight.bold,
                             color: isDisabled
                                 ? Colors.grey.shade500
@@ -630,20 +631,20 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                           ),
                         ),
                         if (badge != null) ...[
-                          const SizedBox(width: 8),
+                          SizedBox(width: UIConstants.spacing8),
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: UIConstants.spacing8,
+                              vertical: UIConstants.spacing4 / 2,
                             ),
                             decoration: BoxDecoration(
-                              color: (badgeColor ?? iconColor).withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
+                              color: (badgeColor ?? iconColor).withValues(alpha: UIConstants.opacityLow),
+                              borderRadius: BorderRadiusConstants.borderRadiusMedium,
                             ),
                             child: Text(
                               badge,
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: UIConstants.fontSizeXSmall,
                                 fontWeight: FontWeight.w600,
                                 color: badgeColor ?? iconColor,
                               ),
@@ -652,11 +653,11 @@ class _PlatformSelectorScreenState extends State<PlatformSelectorScreen>
                         ],
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: UIConstants.spacing4),
                     Text(
                       description,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: UIConstants.fontSizeSmall,
                         color: isDisabled
                             ? Colors.grey.shade400
                             : BioWayColors.textGrey,

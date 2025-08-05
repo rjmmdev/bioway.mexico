@@ -756,6 +756,27 @@ NEVER hardcode colors. Always use `BioWayColors` constants:
 - Material colors: `pebdPink`, `ppPurple`, `multilaminadoBrown`  
 - Status colors: `success`, `error`, `warning`, `info`
 
+## UI Constants System
+NEVER hardcode UI values. Always use `UIConstants` for:
+- Spacing: `UIConstants.spacing16`, `UIConstants.spacing20`
+- Border radius: `BorderRadiusConstants.borderRadiusMedium`
+- Font sizes: `UIConstants.fontSizeLarge`, `UIConstants.fontSizeBody`
+- Icon sizes: `UIConstants.iconSizeMedium`
+- Opacity: `UIConstants.opacityMedium`
+- Padding: `EdgeInsetsConstants.paddingAll16`
+- Animation durations: `UIConstants.animationDurationMedium`
+
+See `docs/UI_CONSTANTS_GUIDE.md` for complete reference.
+
+## UI Constants
+Use centralized UI constants from `lib/utils/ui_constants.dart` for consistent dimensions:
+- Border radius: `BorderRadiusConstants.borderRadiusLarge` instead of `BorderRadius.circular(16)`
+- Spacing: `UIConstants.spacing16` instead of hardcoded `16.0`
+- Heights: `UIConstants.buttonHeight` instead of hardcoded `56.0`
+- Icon sizes: `UIConstants.iconSizeDialog` for dialogs (60px)
+- Font sizes: `UIConstants.fontSizeBody` for body text (16px)
+See `docs/UI_CONSTANTS_USAGE.md` for complete guide.
+
 ## Image Compression
 - Images auto-compressed to ~50KB for storage
 - PDFs limited to 5MB
@@ -1071,6 +1092,7 @@ For detailed deployment instructions, see `docs/DEPLOY_FUNCTIONS_CLOUD_SHELL.md`
 - `docs/ARQUITECTURA_Y_SISTEMA.md` - System architecture overview
 - `docs/FLUJOS_Y_PROCESOS.md` - Complete process flows
 - `docs/GUIA_IMPLEMENTACION.md` - Implementation guide
+- `docs/UI_CONSTANTS_GUIDE.md` - UI constants system reference
 
 ### Module-Specific Documentation
 - `docs/FLUJO_COMPLETO_TRANSFORMADOR.md` - Complete Transformer flow and fixes
@@ -1082,3 +1104,4 @@ For detailed deployment instructions, see `docs/DEPLOY_FUNCTIONS_CLOUD_SHELL.md`
 - `docs/FIX_LIMITE_TEMPORAL_PDF_5MB.md` - Temporary PDF limit increase to 5MB
 - `docs/FIX_VISIBILIDAD_LOTES_TRANSPORTE_RECICLADOR.md` - Batch visibility fix in Transport-Recycler transfer
 - `docs/FIX_TRANSFORMADOR_LOTES_VISIBILIDAD.md` - Fixed Transformer seeing other users' lots
+- `docs/UI_CONSTANTS_USAGE.md` - Guide for using centralized UI constants

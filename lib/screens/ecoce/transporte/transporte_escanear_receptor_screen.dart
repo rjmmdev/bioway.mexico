@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
 
 class TransporteEscanearReceptorScreen extends StatefulWidget {
@@ -164,7 +165,7 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
         content: Row(
           children: [
             const Icon(Icons.error_outline, color: Colors.white),
-            const SizedBox(width: 12),
+            SizedBox(width: UIConstants.spacing12),
             Expanded(child: Text(mensaje)),
           ],
         ),
@@ -172,9 +173,9 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadiusConstants.borderRadiusMedium,
         ),
-        margin: const EdgeInsets.all(20),
+        margin: EdgeInsetsConstants.paddingAll20,
       ),
     );
     
@@ -203,7 +204,7 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
         backgroundColor: Colors.black,
         appBar: AppBar(
         backgroundColor: Colors.transparent,
-        elevation: 0,
+        elevation: UIConstants.elevationNone,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () {
@@ -215,7 +216,7 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
           'Identificar Receptor',
           style: TextStyle(
             color: Colors.white,
-            fontSize: 20,
+            fontSize: UIConstants.fontSizeXLarge,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -262,7 +263,7 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
                 // Oscurecer áreas fuera del recuadro
                 ColorFiltered(
                   colorFilter: ColorFilter.mode(
-                    Colors.black.withValues(alpha: 0.5),
+                    Colors.black.withValues(alpha: UIConstants.opacityHigh),
                     BlendMode.srcOut,
                   ),
                   child: Stack(
@@ -275,11 +276,11 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
                       ),
                       Center(
                         child: Container(
-                          height: 300,
-                          width: 300,
+                          height: UIConstants.qrSizeMedium + UIConstants.iconSizeDialog + UIConstants.iconSizeMedium,
+                          width: UIConstants.qrSizeMedium + UIConstants.iconSizeDialog + UIConstants.iconSizeMedium,
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadiusConstants.borderRadiusLarge,
                           ),
                         ),
                       ),
@@ -290,14 +291,14 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
                 // Marco del escáner
                 Center(
                   child: Container(
-                    height: 300,
-                    width: 300,
+                    height: UIConstants.qrSizeMedium + UIConstants.iconSizeDialog + UIConstants.iconSizeMedium,
+                    width: UIConstants.qrSizeMedium + UIConstants.iconSizeDialog + UIConstants.iconSizeMedium,
                     decoration: BoxDecoration(
                       border: Border.all(
                         color: Colors.white,
-                        width: 2,
+                        width: UIConstants.strokeWidth,
                       ),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadiusConstants.borderRadiusLarge,
                     ),
                     child: Stack(
                       children: [
@@ -306,15 +307,15 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
                           top: 0,
                           left: 0,
                           child: Container(
-                            height: 50,
-                            width: 50,
+                            height: UIConstants.iconContainerMedium,
+                            width: UIConstants.iconContainerMedium,
                             decoration: const BoxDecoration(
                               border: Border(
-                                top: BorderSide(color: Color(0xFF1490EE), width: 4),
-                                left: BorderSide(color: Color(0xFF1490EE), width: 4),
+                                top: BorderSide(color: Color(0xFF1490EE), width: UIConstants.borderWidthThick),
+                                left: BorderSide(color: Color(0xFF1490EE), width: UIConstants.borderWidthThick),
                               ),
                               borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(20),
+                                topLeft: Radius.circular(UIConstants.radiusLarge),
                               ),
                             ),
                           ),
@@ -323,15 +324,15 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
                           top: 0,
                           right: 0,
                           child: Container(
-                            height: 50,
-                            width: 50,
+                            height: UIConstants.iconContainerMedium,
+                            width: UIConstants.iconContainerMedium,
                             decoration: const BoxDecoration(
                               border: Border(
-                                top: BorderSide(color: Color(0xFF1490EE), width: 4),
-                                right: BorderSide(color: Color(0xFF1490EE), width: 4),
+                                top: BorderSide(color: Color(0xFF1490EE), width: UIConstants.borderWidthThick),
+                                right: BorderSide(color: Color(0xFF1490EE), width: UIConstants.borderWidthThick),
                               ),
                               borderRadius: BorderRadius.only(
-                                topRight: Radius.circular(20),
+                                topRight: Radius.circular(UIConstants.radiusLarge),
                               ),
                             ),
                           ),
@@ -340,15 +341,15 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
                           bottom: 0,
                           left: 0,
                           child: Container(
-                            height: 50,
-                            width: 50,
+                            height: UIConstants.iconContainerMedium,
+                            width: UIConstants.iconContainerMedium,
                             decoration: const BoxDecoration(
                               border: Border(
-                                bottom: BorderSide(color: Color(0xFF1490EE), width: 4),
-                                left: BorderSide(color: Color(0xFF1490EE), width: 4),
+                                bottom: BorderSide(color: Color(0xFF1490EE), width: UIConstants.borderWidthThick),
+                                left: BorderSide(color: Color(0xFF1490EE), width: UIConstants.borderWidthThick),
                               ),
                               borderRadius: BorderRadius.only(
-                                bottomLeft: Radius.circular(20),
+                                bottomLeft: Radius.circular(UIConstants.radiusLarge),
                               ),
                             ),
                           ),
@@ -357,15 +358,15 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
                           bottom: 0,
                           right: 0,
                           child: Container(
-                            height: 50,
-                            width: 50,
+                            height: UIConstants.iconContainerMedium,
+                            width: UIConstants.iconContainerMedium,
                             decoration: const BoxDecoration(
                               border: Border(
-                                bottom: BorderSide(color: Color(0xFF1490EE), width: 4),
-                                right: BorderSide(color: Color(0xFF1490EE), width: 4),
+                                bottom: BorderSide(color: Color(0xFF1490EE), width: UIConstants.borderWidthThick),
+                                right: BorderSide(color: Color(0xFF1490EE), width: UIConstants.borderWidthThick),
                               ),
                               borderRadius: BorderRadius.only(
-                                bottomRight: Radius.circular(20),
+                                bottomRight: Radius.circular(UIConstants.radiusLarge),
                               ),
                             ),
                           ),
@@ -380,18 +381,18 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
           
           // Información de lotes en la parte superior
           Positioned(
-            top: 20,
-            left: 20,
-            right: 20,
+            top: UIConstants.spacing20,
+            left: UIConstants.spacing20,
+            right: UIConstants.spacing20,
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsetsConstants.paddingAll16,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.95),
-                borderRadius: BorderRadius.circular(16),
+                color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
+                borderRadius: BorderRadiusConstants.borderRadiusLarge,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 10,
+                    color: Colors.black.withValues(alpha: UIConstants.opacityLow),
+                    blurRadius: UIConstants.blurRadiusMedium,
                     offset: const Offset(0, 5),
                   ),
                 ],
@@ -404,24 +405,24 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
                       Icon(
                         Icons.inventory_2,
                         color: const Color(0xFF1490EE),
-                        size: 20,
+                        size: UIConstants.iconSizeMedium,
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: UIConstants.spacing8),
                       Text(
                         'Lotes a entregar: ${widget.lotesSeleccionados.length}',
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: UIConstants.fontSizeBody,
                           fontWeight: FontWeight.bold,
                           color: BioWayColors.darkGreen,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: UIConstants.spacing8),
                   Text(
                     'Peso total: ${_calcularPesoTotal()} kg',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: UIConstants.fontSizeMedium,
                       color: Colors.grey[700],
                     ),
                   ),
@@ -432,23 +433,23 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
           
           // Instrucciones en la parte inferior
           Positioned(
-            bottom: 100,
-            left: 20,
-            right: 20,
+            bottom: UIConstants.qrSizeSmall,
+            left: UIConstants.spacing20,
+            right: UIConstants.spacing20,
             child: Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsetsConstants.paddingAll20,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadiusConstants.borderRadiusLarge,
               ),
               child: Column(
                 children: [
                   Icon(
                     Icons.qr_code_scanner,
-                    size: 40,
+                    size: UIConstants.iconSizeLarge,
                     color: Colors.grey[700],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: UIConstants.spacing12),
                   const Text(
                     'Escanea el código QR del receptor',
                     textAlign: TextAlign.center,
@@ -458,12 +459,12 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
                       color: BioWayColors.darkGreen,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: UIConstants.spacing8),
                   Text(
                     'Solicita al ${_getTipoReceptor()} que muestre\nsu código QR de identificación',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: UIConstants.fontSizeMedium,
                       color: Colors.grey[600],
                     ),
                   ),
@@ -475,7 +476,7 @@ class _TransporteEscanearReceptorScreenState extends State<TransporteEscanearRec
           // Indicador de procesamiento
           if (_isProcessing)
             Container(
-              color: Colors.black.withValues(alpha: 0.5),
+              color: Colors.black.withValues(alpha: UIConstants.opacityHigh),
               child: const Center(
                 child: CircularProgressIndicator(
                   color: Colors.white,

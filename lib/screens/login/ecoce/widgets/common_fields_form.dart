@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../utils/colors.dart';
+import '../../../../utils/ui_constants.dart';
 
 /// Modelo optimizado para los datos del formulario común
 class CommonFormData {
@@ -286,7 +287,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildStepTitle('Información Básica', 'Datos principales de tu centro de acopio'),
-        const SizedBox(height: 32),
+        SizedBox(height: UIConstants.spacing32),
 
         // Nombre Comercial
         _buildTextField(
@@ -301,7 +302,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
             return null;
           },
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: UIConstants.spacing20),
 
         // RFC (Opcional)
         _buildTextField(
@@ -318,7 +319,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
             }),
           ],
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: UIConstants.spacing20),
 
         // Nombre del Contacto
         _buildTextField(
@@ -333,7 +334,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
             return null;
           },
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: UIConstants.spacing20),
 
         // Teléfonos en fila
         Row(
@@ -357,7 +358,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
                 },
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: UIConstants.spacing12),
             Expanded(
               child: _buildTextField(
                 controller: _controllers['telEmpresa']!,
@@ -382,11 +383,11 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildStepTitle('Ubicación', 'Dirección de tu centro de acopio'),
-        const SizedBox(height: 32),
+        SizedBox(height: UIConstants.spacing32),
 
         // Código Postal con búsqueda
         _buildCPSection(),
-        const SizedBox(height: 24),
+        SizedBox(height: UIConstants.spacing24),
 
         // Dirección - Calle y Número
         Row(
@@ -406,7 +407,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
                 },
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: UIConstants.spacing12),
             Expanded(
               child: _buildTextField(
                 controller: _controllers['numExt']!,
@@ -426,7 +427,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
             ),
           ],
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: UIConstants.spacing20),
 
         // Colonia
         _buildTextField(
@@ -441,7 +442,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
             return null;
           },
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: UIConstants.spacing20),
 
         // Ciudad y Estado en fila
         Row(
@@ -460,7 +461,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
                 },
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: UIConstants.spacing12),
             Expanded(
               child: _buildTextField(
                 controller: _controllers['estado']!,
@@ -477,7 +478,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
             ),
           ],
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: UIConstants.spacing24),
 
         // Referencias de ubicación
         _buildTextField(
@@ -494,7 +495,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
             return null;
           },
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: UIConstants.spacing24),
 
         // Vista previa del mapa
         _buildMapPreview(),
@@ -507,15 +508,15 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildStepTitle('Información Operativa', 'Materiales y servicios'),
-        const SizedBox(height: 32),
+        SizedBox(height: UIConstants.spacing32),
 
         // Selección de materiales
         _buildMaterialsSection(),
-        const SizedBox(height: 24),
+        SizedBox(height: UIConstants.spacing24),
 
         // Transporte propio
         if (widget.showTransportField) _buildTransportSection(),
-        if (widget.showTransportField) const SizedBox(height: 24),
+        if (widget.showTransportField) SizedBox(height: UIConstants.spacing24),
 
         // Link de red social (opcional)
         _buildTextField(
@@ -534,15 +535,15 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildStepTitle('Credenciales de Acceso', 'Correo, contraseña y términos'),
-        const SizedBox(height: 32),
+        SizedBox(height: UIConstants.spacing32),
 
         // Sección de credenciales
         _buildCredentialsContainer(),
-        const SizedBox(height: 24),
+        SizedBox(height: UIConstants.spacing24),
 
         // Documentos fiscales opcionales
         _buildDocumentsSection(),
-        const SizedBox(height: 24),
+        SizedBox(height: UIConstants.spacing24),
 
         // Términos y condiciones
         _buildTermsSection(),
@@ -557,16 +558,16 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
         Text(
           title,
           style: const TextStyle(
-            fontSize: 24,
+            fontSize: UIConstants.fontSizeTitle,
             fontWeight: FontWeight.bold,
             color: BioWayColors.darkGreen,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: UIConstants.spacing4),
         Text(
           subtitle,
           style: const TextStyle(
-            fontSize: 14,
+            fontSize: UIConstants.fontSizeMedium,
             color: BioWayColors.textGrey,
           ),
         ),
@@ -606,30 +607,30 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
         prefixIcon: Icon(icon, color: BioWayColors.petBlue),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: BioWayColors.lightGrey.withValues(alpha: 0.5),
+        fillColor: BioWayColors.lightGrey.withValues(alpha: UIConstants.opacityMediumHigh),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadiusConstants.borderRadiusMedium,
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadiusConstants.borderRadiusMedium,
           borderSide: const BorderSide(
             color: BioWayColors.lightGrey,
-            width: 1,
+            width: UIConstants.borderWidthThin,
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadiusConstants.borderRadiusMedium,
           borderSide: const BorderSide(
             color: BioWayColors.petBlue,
-            width: 2,
+            width: UIConstants.borderWidthThick - 0.5,
           ),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadiusConstants.borderRadiusMedium,
           borderSide: const BorderSide(
             color: BioWayColors.error,
-            width: 1,
+            width: UIConstants.borderWidthThin,
           ),
         ),
         counterText: maxLength != null ? '' : null,
@@ -637,19 +638,19 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
     );
   }Widget _buildCPSection() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsetsConstants.paddingAll20,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            BioWayColors.petBlue.withValues(alpha: 0.05),
-            BioWayColors.petBlue.withValues(alpha: 0.02),
+            BioWayColors.petBlue.withValues(alpha: UIConstants.opacityVeryLow),
+            BioWayColors.petBlue.withValues(alpha: UIConstants.opacityVeryLow - 0.03),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadiusConstants.borderRadiusLarge,
         border: Border.all(
-          color: BioWayColors.petBlue.withValues(alpha: 0.2),
+          color: BioWayColors.petBlue.withValues(alpha: UIConstants.opacityMediumLow),
         ),
       ),
       child: Column(
@@ -660,28 +661,28 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
               const Icon(
                 Icons.pin_drop,
                 color: BioWayColors.petBlue,
-                size: 24,
+                size: UIConstants.iconSizeMedium,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: UIConstants.spacing8),
               const Text(
                 'Código Postal',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: UIConstants.fontSizeBody,
                   fontWeight: FontWeight.bold,
                   color: BioWayColors.darkGreen,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: UIConstants.spacing8),
           const Text(
             'Ingresa tu código postal para facilitar la búsqueda',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: UIConstants.fontSizeMedium,
               color: BioWayColors.textGrey,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: UIConstants.spacing16),
           Row(
             children: [
               Expanded(
@@ -703,21 +704,21 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
                       borderSide: BorderSide.none,
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
                       borderSide: const BorderSide(
                         color: BioWayColors.lightGrey,
-                        width: 1,
+                        width: UIConstants.borderWidthThin,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
                       borderSide: const BorderSide(
                         color: BioWayColors.petBlue,
-                        width: 2,
+                        width: UIConstants.borderWidthThick - 0.5,
                       ),
                     ),
                   ),
@@ -729,13 +730,13 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
                   },
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: UIConstants.spacing12),
               AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                width: _isSearchingCP ? 40 : 0,
+                duration: Duration(milliseconds: UIConstants.animationDurationMedium),
+                width: _isSearchingCP ? UIConstants.iconContainerSmall : 0,
                 child: _isSearchingCP
                     ? const CircularProgressIndicator(
-                  strokeWidth: 2,
+                  strokeWidth: UIConstants.borderWidthThick - 0.5,
                   valueColor: AlwaysStoppedAnimation<Color>(
                     BioWayColors.petBlue,
                   ),
@@ -751,17 +752,17 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
 
   Widget _buildMapPreview() {
     return Container(
-      height: 200,
+      height: UIConstants.qrSizeMedium,
       decoration: BoxDecoration(
-        color: BioWayColors.lightGrey.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
+        color: BioWayColors.lightGrey.withValues(alpha: UIConstants.opacityMedium),
+        borderRadius: BorderRadiusConstants.borderRadiusLarge,
         border: Border.all(
           color: BioWayColors.lightGrey,
-          width: 1,
+          width: UIConstants.borderWidthThin,
         ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadiusConstants.borderRadiusLarge,
         child: Stack(
           children: [
             // Placeholder del mapa
@@ -782,17 +783,17 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
                   children: [
                     Icon(
                       Icons.map,
-                      size: 48,
+                      size: UIConstants.iconSizeXLarge,
                       color: Colors.grey.shade400,
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: UIConstants.spacing8),
                     Text(
                       widget.formData.cp.length == 5
                           ? 'Mapa de la zona ${widget.formData.cp}'
                           : 'El mapa se mostrará al ingresar el CP',
                       style: TextStyle(
                         color: Colors.grey.shade600,
-                        fontSize: 14,
+                        fontSize: UIConstants.fontSizeMedium,
                       ),
                     ),
                   ],
@@ -818,7 +819,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
                       vertical: 8,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadiusConstants.borderRadiusXLarge,
                     ),
                   ),
                 ),
@@ -831,13 +832,13 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
 
   Widget _buildMaterialsSection() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsetsConstants.paddingAll20,
       decoration: BoxDecoration(
-        color: BioWayColors.lightGrey.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
+        color: BioWayColors.lightGrey.withValues(alpha: UIConstants.opacityMedium),
+        borderRadius: BorderRadiusConstants.borderRadiusLarge,
         border: Border.all(
           color: BioWayColors.lightGrey,
-          width: 1,
+          width: UIConstants.borderWidthThin,
         ),
       ),
       child: Column(
@@ -848,9 +849,9 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
               const Icon(
                 Icons.recycling,
                 color: BioWayColors.petBlue,
-                size: 24,
+                size: UIConstants.iconSizeMedium,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: UIConstants.spacing8),
               const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -858,7 +859,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
                     Text(
                       'Materiales que recibes *',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: UIConstants.fontSizeBody,
                         fontWeight: FontWeight.bold,
                         color: BioWayColors.darkGreen,
                       ),
@@ -866,7 +867,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
                     Text(
                       'Selecciona todos los tipos de materiales',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: UIConstants.fontSizeSmall - 1,
                         color: BioWayColors.textGrey,
                       ),
                     ),
@@ -875,7 +876,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: UIConstants.spacing16),
 
           // Grid optimizado de materiales usando Wrap para mejor responsive
           Wrap(
@@ -910,12 +911,12 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
 
           if (widget.formData.listaMateriales.isEmpty)
             const Padding(
-              padding: EdgeInsets.only(top: 8),
+              padding: EdgeInsets.only(top: UIConstants.spacing8),
               child: Text(
                 'Debes seleccionar al menos un tipo de material',
                 style: TextStyle(
                   color: BioWayColors.error,
-                  fontSize: 12,
+                  fontSize: UIConstants.fontSizeSmall - 1,
                 ),
               ),
             ),
@@ -926,13 +927,13 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
 
   Widget _buildTransportSection() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsetsConstants.paddingAll20,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadiusConstants.borderRadiusLarge,
         border: Border.all(
           color: BioWayColors.lightGrey,
-          width: 1,
+          width: UIConstants.borderWidthThin,
         ),
       ),
       child: Row(
@@ -946,24 +947,24 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
                     const Icon(
                       Icons.local_shipping,
                       color: BioWayColors.petBlue,
-                      size: 24,
+                      size: UIConstants.iconSizeMedium,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: UIConstants.spacing8),
                     const Text(
                       '¿Cuentas con transporte propio?',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: UIConstants.fontSizeBody,
                         fontWeight: FontWeight.bold,
                         color: BioWayColors.darkGreen,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: UIConstants.spacing4),
                 const Text(
                   'Para recolección de materiales',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: UIConstants.fontSizeMedium,
                     color: BioWayColors.textGrey,
                   ),
                 ),
@@ -987,13 +988,13 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
 
   Widget _buildCredentialsContainer() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsetsConstants.paddingAll20,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadiusConstants.borderRadiusLarge,
         border: Border.all(
           color: BioWayColors.lightGrey,
-          width: 1,
+          width: UIConstants.borderWidthThin,
         ),
       ),
       child: Column(
@@ -1004,20 +1005,20 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
               const Icon(
                 Icons.account_circle,
                 color: BioWayColors.petBlue,
-                size: 24,
+                size: UIConstants.iconSizeMedium,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: UIConstants.spacing8),
               const Text(
                 'Datos de Acceso',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: UIConstants.fontSizeBody,
                   fontWeight: FontWeight.bold,
                   color: BioWayColors.darkGreen,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: UIConstants.spacing16),
 
           // Correo electrónico
           _buildTextField(
@@ -1036,7 +1037,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
               return null;
             },
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: UIConstants.spacing16),
 
           // Contraseña
           _buildTextField(
@@ -1066,7 +1067,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
               return null;
             },
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: UIConstants.spacing16),
 
           // Confirmar contraseña
           _buildTextField(
@@ -1103,13 +1104,13 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
 
   Widget _buildDocumentsSection() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsetsConstants.paddingAll20,
       decoration: BoxDecoration(
-        color: BioWayColors.lightGrey.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
+        color: BioWayColors.lightGrey.withValues(alpha: UIConstants.opacityMedium),
+        borderRadius: BorderRadiusConstants.borderRadiusLarge,
         border: Border.all(
           color: BioWayColors.lightGrey,
-          width: 1,
+          width: UIConstants.borderWidthThin,
         ),
       ),
       child: Column(
@@ -1120,16 +1121,16 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
               const Icon(
                 Icons.folder_open,
                 color: BioWayColors.petBlue,
-                size: 24,
+                size: UIConstants.iconSizeMedium,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: UIConstants.spacing8),
               const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Documentos Fiscales',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: UIConstants.fontSizeBody,
                       fontWeight: FontWeight.bold,
                       color: BioWayColors.darkGreen,
                     ),
@@ -1137,7 +1138,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
                   Text(
                     'Opcional - Puedes subirlos después',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: UIConstants.fontSizeSmall - 1,
                       color: BioWayColors.textGrey,
                     ),
                   ),
@@ -1145,7 +1146,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: UIConstants.spacing16),
 
           // Lista de documentos
           _buildDocumentUpload(
@@ -1153,19 +1154,19 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
             'const_sit_fis',
             Icons.description,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: UIConstants.spacing12),
           _buildDocumentUpload(
             'Comprobante de Domicilio',
             'comp_domicilio',
             Icons.home_work,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: UIConstants.spacing12),
           _buildDocumentUpload(
             'Carátula de Estado de Cuenta',
             'banco_caratula',
             Icons.account_balance,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: UIConstants.spacing12),
           _buildDocumentUpload(
             'INE/Identificación Oficial',
             'ine',
@@ -1186,19 +1187,19 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
         });
         widget.onDataChanged(widget.formData);
       },
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadiusConstants.borderRadiusMedium,
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsetsConstants.paddingAll12,
         decoration: BoxDecoration(
           color: hasFile
               ? BioWayColors.success.withValues(alpha: 0.1)
               : Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadiusConstants.borderRadiusMedium,
           border: Border.all(
             color: hasFile
                 ? BioWayColors.success
                 : BioWayColors.lightGrey,
-            width: 1,
+            width: UIConstants.borderWidthThin,
           ),
         ),
         child: Row(
@@ -1208,7 +1209,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
               color: hasFile ? BioWayColors.success : BioWayColors.textGrey,
               size: 24,
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: UIConstants.spacing12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1216,7 +1217,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
                   Text(
                     title,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: UIConstants.fontSizeMedium,
                       fontWeight: hasFile ? FontWeight.bold : FontWeight.normal,
                       color: hasFile ? BioWayColors.success : BioWayColors.darkGreen,
                     ),
@@ -1224,7 +1225,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
                   Text(
                     hasFile ? widget.formData.documentos[key]! : 'Toca para seleccionar archivo PDF',
                     style: const TextStyle(
-                      fontSize: 12,
+                      fontSize: UIConstants.fontSizeSmall - 1,
                       color: BioWayColors.textGrey,
                     ),
                   ),
@@ -1244,17 +1245,17 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
 
   Widget _buildTermsSection() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsetsConstants.paddingAll20,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            BioWayColors.petBlue.withValues(alpha: 0.05),
-            BioWayColors.petBlue.withValues(alpha: 0.02),
+            BioWayColors.petBlue.withValues(alpha: UIConstants.opacityVeryLow),
+            BioWayColors.petBlue.withValues(alpha: UIConstants.opacityVeryLow - 0.03),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadiusConstants.borderRadiusLarge,
         border: Border.all(
           color: BioWayColors.petBlue.withValues(alpha: 0.3),
           width: 2,
@@ -1268,20 +1269,20 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
               const Icon(
                 Icons.gavel,
                 color: BioWayColors.petBlue,
-                size: 24,
+                size: UIConstants.iconSizeMedium,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: UIConstants.spacing8),
               const Text(
                 'Términos y Condiciones',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: UIConstants.fontSizeBody,
                   fontWeight: FontWeight.bold,
                   color: BioWayColors.darkGreen,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: UIConstants.spacing16),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1297,18 +1298,18 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 12),
+                  padding: EdgeInsets.only(top: UIConstants.spacing12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
                         'He leído y acepto los términos y condiciones de uso y el aviso de privacidad de ECOCE.',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: UIConstants.fontSizeMedium,
                           color: BioWayColors.darkGreen,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: UIConstants.spacing8),
                       Wrap(
                         spacing: 16,
                         children: [
@@ -1325,7 +1326,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
                               'Ver términos y condiciones',
                               style: TextStyle(
                                 color: BioWayColors.petBlue,
-                                fontSize: 12,
+                                fontSize: UIConstants.fontSizeSmall - 1,
                                 decoration: TextDecoration.underline,
                               ),
                             ),
@@ -1343,7 +1344,7 @@ class _CommonFieldsFormState extends State<CommonFieldsForm> {
                               'Ver aviso de privacidad',
                               style: TextStyle(
                                 color: BioWayColors.petBlue,
-                                fontSize: 12,
+                                fontSize: UIConstants.fontSizeSmall - 1,
                                 decoration: TextDecoration.underline,
                               ),
                             ),

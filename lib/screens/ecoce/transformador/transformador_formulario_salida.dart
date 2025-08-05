@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../services/lote_service.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../services/transformacion_service.dart';
@@ -31,7 +32,7 @@ class TransformadorSignaturePainter extends CustomPainter {
   TransformadorSignaturePainter({
     required this.points,
     required this.color,
-    this.strokeWidth = 2.0,
+    this.strokeWidth = UIConstants.strokeWidth,
   });
 
   @override
@@ -559,7 +560,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
           backgroundColor: BioWayColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadiusConstants.borderRadiusSmall,
           ),
         ),
       );
@@ -574,7 +575,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
           backgroundColor: BioWayColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadiusConstants.borderRadiusSmall,
           ),
         ),
       );
@@ -589,7 +590,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
           backgroundColor: BioWayColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadiusConstants.borderRadiusSmall,
           ),
         ),
       );
@@ -973,7 +974,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
             backgroundColor: BioWayColors.success,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadiusConstants.borderRadiusSmall,
             ),
           ),
         );
@@ -1025,7 +1026,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 5),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadiusConstants.borderRadiusSmall,
             ),
           ),
         );
@@ -1068,7 +1069,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
             Expanded(
               child: Text(
                 entry.key,
-                style: const TextStyle(fontSize: 14),
+                style: TextStyle(fontSize: UIConstants.fontSizeMedium),
               ),
             ),
           ],
@@ -1129,13 +1130,13 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
     return Scaffold(
       appBar: AppBar(
         backgroundColor: _primaryColor,
-        elevation: 0,
+        elevation: UIConstants.elevationNone,
         title: Text(
           _esProcesamientoMultiple 
             ? 'Procesamiento de ${_loteIds.length} Lotes' 
             : 'Formulario de Salida',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: UIConstants.fontSizeLarge,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -1151,19 +1152,19 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
             key: _formKey,
             child: ListView(
               controller: _scrollController,
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsetsConstants.paddingAll20,
               children: [
             // Sección de información del lote
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsetsConstants.paddingAll20,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadiusConstants.borderRadiusMedium,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
+                    color: Colors.black.withValues(alpha: UIConstants.opacityLow),
+                    blurRadius: UIConstants.blurRadiusMedium,
                     offset: const Offset(0, 4),
                   ),
                 ],
@@ -1176,25 +1177,25 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                       Icon(
                         Icons.inventory_2,
                         color: _primaryColor,
-                        size: 24,
+                        size: UIConstants.iconSizeMedium,
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: UIConstants.spacing12),
                       Text(
                         'Información del Lote',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: UIConstants.fontSizeBody + 2,
                           fontWeight: FontWeight.bold,
                           color: _primaryColor,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: UIConstants.spacing20),
                   Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsetsConstants.paddingAll12,
                   decoration: BoxDecoration(
                     color: _primaryColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadiusConstants.borderRadiusMedium,
                     border: Border.all(
                       color: _primaryColor.withValues(alpha: 0.3),
                     ),
@@ -1207,16 +1208,16 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                           Icon(
                             Icons.qr_code_2,
                             color: _primaryColor,
-                            size: 20,
+                            size: UIConstants.iconSizeMedium - 4,
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: UIConstants.spacing8),
                           Expanded(
                             child: Text(
                               _esProcesamientoMultiple 
                                 ? 'Procesando ${_loteIds.length} lotes/sublotes'
                                 : 'Lote: ${_loteIds.isNotEmpty ? _loteIds.first : ""}',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: UIConstants.fontSizeMedium,
                                 fontWeight: FontWeight.bold,
                                 color: _primaryColor,
                               ),
@@ -1225,12 +1226,12 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: UIConstants.spacing8),
                       if (_esProcesamientoMultiple) ...[
                         Text(
                           'Peso total: ${_pesoTotalOriginal.toStringAsFixed(2)} kg',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: UIConstants.fontSizeSmall + 1,
                             color: Colors.grey[700],
                           ),
                         ),
@@ -1238,7 +1239,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                           Text(
                             'Lotes seleccionados:',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: UIConstants.fontSizeSmall + 1,
                               color: Colors.grey[700],
                               fontWeight: FontWeight.w600,
                             ),
@@ -1246,7 +1247,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                         ..._loteIds.take(3).map((id) => Text(
                           '• ${id.substring(0, id.length > 8 ? 8 : id.length)}...',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: UIConstants.fontSizeSmall,
                             color: Colors.grey[600],
                           ),
                         )).toList(),
@@ -1254,7 +1255,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                           Text(
                             '• y ${_loteIds.length - 3} más...',
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: UIConstants.fontSizeSmall,
                               color: Colors.grey[600],
                               fontStyle: FontStyle.italic,
                             ),
@@ -1264,14 +1265,14 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                           Text(
                             'Producto: ${widget.productoFabricado}',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: UIConstants.fontSizeSmall + 1,
                               color: Colors.grey[700],
                             ),
                           ),
                         Text(
                           'Peso inicial: ${widget.peso ?? _pesoTotalOriginal} kg',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: UIConstants.fontSizeSmall + 1,
                             color: Colors.grey[700],
                           ),
                         ),
@@ -1279,7 +1280,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                           Text(
                             'Polímero: ${widget.tipoPolimero}',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: UIConstants.fontSizeSmall + 1,
                               color: Colors.grey[700],
                             ),
                           ),
@@ -1291,19 +1292,19 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
               ),
             ),
             
-            const SizedBox(height: 20),
+            SizedBox(height: UIConstants.spacing20),
             
             // Sección de peso de salida
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsetsConstants.paddingAll20,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadiusConstants.borderRadiusMedium,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
+                    color: Colors.black.withValues(alpha: UIConstants.opacityLow),
+                    blurRadius: UIConstants.blurRadiusMedium,
                     offset: const Offset(0, 4),
                   ),
                 ],
@@ -1316,25 +1317,25 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                       Icon(
                         Icons.scale,
                         color: _primaryColor,
-                        size: 24,
+                        size: UIConstants.iconSizeMedium,
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: UIConstants.spacing12),
                       Text(
                         'Peso de Salida',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: UIConstants.fontSizeBody + 2,
                           fontWeight: FontWeight.bold,
                           color: _primaryColor,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: UIConstants.spacing20),
                   const FieldLabel(
                     text: 'Peso de salida (kg)',
                     isRequired: true,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: UIConstants.spacing8),
                   WeightInputWidget(
                   controller: _pesoSalidaController,
                   label: '',
@@ -1354,19 +1355,19 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
               ),
             ),
             
-            const SizedBox(height: 20),
+            SizedBox(height: UIConstants.spacing20),
             
             // Sección de procesos aplicados
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsetsConstants.paddingAll20,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadiusConstants.borderRadiusMedium,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
+                    color: Colors.black.withValues(alpha: UIConstants.opacityLow),
+                    blurRadius: UIConstants.blurRadiusMedium,
                     offset: const Offset(0, 4),
                   ),
                 ],
@@ -1379,38 +1380,38 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                       Icon(
                         Icons.science,
                         color: _primaryColor,
-                        size: 24,
+                        size: UIConstants.iconSizeMedium,
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: UIConstants.spacing12),
                       Text(
                         'Procesos Aplicados *',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: UIConstants.fontSizeBody + 2,
                           fontWeight: FontWeight.bold,
                           color: _primaryColor,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: UIConstants.spacing20),
                   _buildProcesosAplicadosGrid(),
                 ],
               ),
             ),
             
-            const SizedBox(height: 20),
+            SizedBox(height: UIConstants.spacing20),
             
             // Sección de producto generado (combinada)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsetsConstants.paddingAll20,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadiusConstants.borderRadiusMedium,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
+                    color: Colors.black.withValues(alpha: UIConstants.opacityLow),
+                    blurRadius: UIConstants.blurRadiusMedium,
                     offset: const Offset(0, 4),
                   ),
                 ],
@@ -1423,27 +1424,27 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                       Icon(
                         Icons.precision_manufacturing,
                         color: _primaryColor,
-                        size: 24,
+                        size: UIConstants.iconSizeMedium,
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: UIConstants.spacing12),
                       Text(
                         'Producto Generado',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: UIConstants.fontSizeBody + 2,
                           fontWeight: FontWeight.bold,
                           color: _primaryColor,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: UIConstants.spacing20),
                   
                   // Campo de producto fabricado
                   const FieldLabel(
                     text: 'Producto fabricado',
                     isRequired: true,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: UIConstants.spacing8),
                   TextFormField(
                     controller: _productoGeneradoController,
                     focusNode: _productoFocus,
@@ -1452,26 +1453,26 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                       hintText: 'Ej: Pellets de PET',
                       counter: Text(
                         '${_productoGeneradoController.text.length}/50',
-                        style: const TextStyle(fontSize: 12),
+                        style: TextStyle(fontSize: UIConstants.fontSizeSmall + 1),
                       ),
                       prefixIcon: Icon(
                         Icons.inventory_2,
                         color: _primaryColor,
                       ),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadiusConstants.borderRadiusMedium,
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadiusConstants.borderRadiusMedium,
                         borderSide: BorderSide(
                           color: Colors.grey[300]!,
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadiusConstants.borderRadiusMedium,
                         borderSide: BorderSide(
                           color: _primaryColor,
-                          width: 2,
+                          width: UIConstants.strokeWidth,
                         ),
                       ),
                     ),
@@ -1486,14 +1487,14 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                     },
                   ),
                   
-                  const SizedBox(height: 16),
+                  SizedBox(height: UIConstants.spacing16),
                   
                   // Campo de cantidad generada
                   const FieldLabel(
                     text: 'Cantidad generada',
                     isRequired: true,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: UIConstants.spacing8),
                   TextFormField(
                     controller: _cantidadGeneradaController,
                     focusNode: _cantidadFocus,
@@ -1505,19 +1506,19 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                         color: _primaryColor,
                       ),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadiusConstants.borderRadiusMedium,
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadiusConstants.borderRadiusMedium,
                         borderSide: BorderSide(
                           color: Colors.grey[300]!,
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadiusConstants.borderRadiusMedium,
                         borderSide: BorderSide(
                           color: _primaryColor,
-                          width: 2,
+                          width: UIConstants.strokeWidth,
                         ),
                       ),
                     ),
@@ -1532,19 +1533,19 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
               ),
             ),
             
-            const SizedBox(height: 20),
+            SizedBox(height: UIConstants.spacing20),
             
             // Sección de datos del responsable
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsetsConstants.paddingAll20,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadiusConstants.borderRadiusMedium,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
+                    color: Colors.black.withValues(alpha: UIConstants.opacityLow),
+                    blurRadius: UIConstants.blurRadiusMedium,
                     offset: const Offset(0, 4),
                   ),
                 ],
@@ -1557,25 +1558,25 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                       Icon(
                         Icons.person,
                         color: _primaryColor,
-                        size: 24,
+                        size: UIConstants.iconSizeMedium,
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: UIConstants.spacing12),
                       Text(
                         'Datos del Responsable',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: UIConstants.fontSizeBody + 2,
                           fontWeight: FontWeight.bold,
                           color: _primaryColor,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: UIConstants.spacing20),
                   const FieldLabel(
                     text: 'Nombre del operador',
                     isRequired: true,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: UIConstants.spacing8),
                 TextFormField(
                   controller: _operadorController,
                   focusNode: _operadorFocus,
@@ -1587,19 +1588,19 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                       color: _primaryColor,
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
                       borderSide: BorderSide(
                         color: Colors.grey[300]!,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
                       borderSide: BorderSide(
                         color: _primaryColor,
-                        width: 2,
+                        width: UIConstants.strokeWidth,
                       ),
                     ),
                   ),
@@ -1610,7 +1611,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                     return null;
                   },
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: UIConstants.spacing20),
                 // Botón para firma
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1619,7 +1620,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                       text: 'Firma del responsable',
                       isRequired: true,
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: UIConstants.spacing8),
                     GestureDetector(
                       onTap: _signaturePoints.isEmpty ? () => _showSignatureDialog() : null,
                       child: AnimatedContainer(
@@ -1628,9 +1629,9 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                         width: double.infinity,
                         decoration: BoxDecoration(
                           color: _signaturePoints.isNotEmpty 
-                              ? _primaryColor.withOpacity(0.05)
+                              ? _primaryColor.withValues(alpha: UIConstants.opacityVeryLow)
                               : Colors.grey[50],
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadiusConstants.borderRadiusMedium,
                           border: Border.all(
                             color: _signaturePoints.isNotEmpty 
                                 ? _primaryColor 
@@ -1645,15 +1646,15 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                                   children: [
                                     Icon(
                                       Icons.draw,
-                                      size: 32,
+                                      size: UIConstants.iconSizeLarge,
                                       color: Colors.grey[400],
                                     ),
-                                    const SizedBox(height: 4),
+                                    SizedBox(height: UIConstants.spacing4),
                                     Text(
                                       'Toque para firmar',
                                       style: TextStyle(
                                         color: Colors.grey[600],
-                                        fontSize: 14,
+                                        fontSize: UIConstants.fontSizeMedium,
                                       ),
                                     ),
                                   ],
@@ -1662,23 +1663,23 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                             : Stack(
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.all(12),
+                                    padding: EdgeInsetsConstants.paddingAll12,
                                     child: Center(
                                       child: AspectRatio(
-                                        aspectRatio: 2.5,
+                                        aspectRatio: UIConstants.signatureAspectRatio,
                                         child: Container(
                                           decoration: BoxDecoration(
                                             color: Colors.white,
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius: BorderRadiusConstants.borderRadiusSmall,
                                             border: Border.all(color: Colors.grey[200]!),
                                           ),
                                           child: ClipRRect(
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius: BorderRadiusConstants.borderRadiusSmall,
                                             child: FittedBox(
                                               fit: BoxFit.contain,
                                               child: SizedBox(
-                                                width: 300,
-                                                height: 300,
+                                                width: UIConstants.signatureSize,
+                                                height: UIConstants.signatureSize,
                                                 child: _signatureUrl != null
                                                 ? Image.network(
                                                     _signatureUrl!,
@@ -1703,13 +1704,13 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                                                             Icon(
                                                               Icons.error_outline,
                                                               color: Colors.red[300],
-                                                              size: 30,
+                                                              size: UIConstants.iconSizeLarge - 2,
                                                             ),
-                                                            const SizedBox(height: 4),
+                                                            SizedBox(height: UIConstants.spacing4),
                                                             Text(
                                                               'Error al cargar',
                                                               style: TextStyle(
-                                                                fontSize: 12,
+                                                                fontSize: UIConstants.fontSizeSmall + 1,
                                                                 color: Colors.red[300],
                                                               ),
                                                             ),
@@ -1719,11 +1720,11 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                                                     },
                                                   )
                                                 : CustomPaint(
-                                                    size: const Size(300, 120),
+                                                    size: Size(UIConstants.signatureSize, UIConstants.signatureSize / UIConstants.signatureAspectRatio),
                                                     painter: TransformadorSignaturePainter(
                                                       points: _signaturePoints,
                                                       color: _primaryColor,
-                                                      strokeWidth: 2.0,
+                                                      strokeWidth: UIConstants.strokeWidth,
                                                     ),
                                                   ),
                                               ),
@@ -1745,30 +1746,30 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                                             shape: BoxShape.circle,
                                             boxShadow: [
                                               BoxShadow(
-                                                color: Colors.black.withOpacity(0.1),
+                                                color: Colors.black.withValues(alpha: UIConstants.opacityLow),
                                                 blurRadius: 4,
                                               ),
                                             ],
                                           ),
                                           child: IconButton(
                                             onPressed: _showSignatureDialog,
-                                            icon: const Icon(Icons.edit, size: 20),
+                                            icon: Icon(Icons.edit, size: UIConstants.iconSizeMedium - 4),
                                             color: _primaryColor,
-                                            padding: const EdgeInsets.all(8),
+                                            padding: EdgeInsets.all(UIConstants.spacing8),
                                             constraints: const BoxConstraints(
-                                              minWidth: 36,
-                                              minHeight: 36,
+                                              minWidth: UIConstants.iconSizeLarge + UIConstants.spacing12,
+                                              minHeight: UIConstants.iconSizeLarge + UIConstants.spacing12,
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
+                                        SizedBox(width: UIConstants.spacing8),
                                         Container(
                                           decoration: BoxDecoration(
                                             color: Colors.white,
                                             shape: BoxShape.circle,
                                             boxShadow: [
                                               BoxShadow(
-                                                color: Colors.black.withOpacity(0.1),
+                                                color: Colors.black.withValues(alpha: UIConstants.opacityLow),
                                                 blurRadius: 4,
                                               ),
                                             ],
@@ -1779,12 +1780,12 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                                                 _signaturePoints.clear();
                                               });
                                             },
-                                            icon: const Icon(Icons.clear, size: 20),
+                                            icon: Icon(Icons.clear, size: UIConstants.iconSizeMedium - 4),
                                             color: Colors.red,
-                                            padding: const EdgeInsets.all(8),
+                                            padding: EdgeInsets.all(UIConstants.spacing8),
                                             constraints: const BoxConstraints(
-                                              minWidth: 36,
-                                              minHeight: 36,
+                                              minWidth: UIConstants.iconSizeLarge + UIConstants.spacing12,
+                                              minHeight: UIConstants.iconSizeLarge + UIConstants.spacing12,
                                             ),
                                           ),
                                         ),
@@ -1801,19 +1802,19 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
               ),
             ),
             
-            const SizedBox(height: 20),
+            SizedBox(height: UIConstants.spacing20),
             
             // Sección de evidencia fotográfica
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsetsConstants.paddingAll20,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadiusConstants.borderRadiusMedium,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
+                    color: Colors.black.withValues(alpha: UIConstants.opacityLow),
+                    blurRadius: UIConstants.blurRadiusMedium,
                     offset: const Offset(0, 4),
                   ),
                 ],
@@ -1826,20 +1827,20 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                       Icon(
                         Icons.camera_alt,
                         color: _primaryColor,
-                        size: 24,
+                        size: UIConstants.iconSizeMedium,
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: UIConstants.spacing12),
                       Text(
                         'Evidencia Fotográfica',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: UIConstants.fontSizeBody + 2,
                           fontWeight: FontWeight.bold,
                           color: _primaryColor,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: UIConstants.spacing20),
                   PhotoEvidenceWidget(
                     title: '', // Empty title since we already have it
                     onPhotosChanged: (photos) {
@@ -1855,19 +1856,19 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
               ),
             ),
             
-            const SizedBox(height: 20),
+            SizedBox(height: UIConstants.spacing20),
             
             // Sección de comentarios
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsetsConstants.paddingAll20,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadiusConstants.borderRadiusMedium,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
+                    color: Colors.black.withValues(alpha: UIConstants.opacityLow),
+                    blurRadius: UIConstants.blurRadiusMedium,
                     offset: const Offset(0, 4),
                   ),
                 ],
@@ -1880,25 +1881,25 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                       Icon(
                         Icons.comment,
                         color: _primaryColor,
-                        size: 24,
+                        size: UIConstants.iconSizeMedium,
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: UIConstants.spacing12),
                       Text(
                         'Comentarios',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: UIConstants.fontSizeBody + 2,
                           fontWeight: FontWeight.bold,
                           color: _primaryColor,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: UIConstants.spacing20),
                   const FieldLabel(
                     text: 'Comentarios adicionales',
                     isRequired: false,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: UIConstants.spacing8),
                   TextFormField(
                   controller: _comentariosController,
                   focusNode: _comentariosFocus,
@@ -1907,19 +1908,19 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                     hintText: 'Ingrese observaciones adicionales',
                     alignLabelWithHint: true,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
                       borderSide: BorderSide(
                         color: Colors.grey[300]!,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
                       borderSide: BorderSide(
                         color: _primaryColor,
-                        width: 2,
+                        width: UIConstants.strokeWidth,
                       ),
                     ),
                   ),
@@ -1929,32 +1930,32 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
               ),
             ),
             
-            const SizedBox(height: 32),
+            SizedBox(height: UIConstants.spacing32),
             
             // Botón de procesar salida
             SizedBox(
-              height: 56,
+              height: UIConstants.buttonHeightLarge,
               child: ElevatedButton(
                 onPressed: _procesarSalida,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _primaryColor,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadiusConstants.borderRadiusMedium,
                   ),
-                  elevation: 2,
+                  elevation: UIConstants.elevationSmall,
                 ),
                 child: const Text(
                   'Procesar Salida',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: UIConstants.fontSizeBody,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
             ),
             
-            const SizedBox(height: 32),
+            SizedBox(height: UIConstants.spacing32),
               ],
             ),
           ),

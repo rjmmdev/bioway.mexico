@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../services/transformacion_service.dart';
 import '../../../models/lotes/lote_unificado_model.dart';
@@ -245,7 +246,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         backgroundColor: _isSelectionMode ? BioWayColors.ecoceGreen : BioWayColors.primaryGreen,
-        elevation: 0,
+        elevation: UIConstants.elevationNone,
         leading: _isSelectionMode
             ? IconButton(
                 icon: const Icon(Icons.close, color: Colors.white),
@@ -257,7 +258,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
               ? '${_selectedLoteIds.length} lotes seleccionados'
               : 'Administración de Lotes',
           style: const TextStyle(
-            fontSize: 20,
+            fontSize: UIConstants.fontSizeXLarge,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -276,7 +277,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
               ]
             : null,
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
+          preferredSize: Size.fromHeight(UIConstants.tabBarHeight),
           child: Container(
             color: Colors.white,
             child: TabBar(
@@ -284,9 +285,9 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
               labelColor: _getTabColor(),
               unselectedLabelColor: Colors.grey,
               indicatorColor: _getTabColor(),
-              indicatorWeight: 3,
+              indicatorWeight: UIConstants.indicatorWeight,
               indicatorSize: TabBarIndicatorSize.tab,
-              labelPadding: const EdgeInsets.symmetric(horizontal: 16),
+              labelPadding: EdgeInsetsConstants.paddingHorizontal16,
               tabs: const [
                 Tab(text: 'Salida'),
                 Tab(text: 'Completados'),
@@ -437,7 +438,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
               // Lista de lotes o mensaje vacío
               if (lotes.isEmpty) ...[
                 Container(
-                  height: 200,
+                  height: UIConstants.qrSizeMedium,
                   alignment: Alignment.center,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -447,11 +448,11 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                         size: 60,
                         color: Colors.grey[300],
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: UIConstants.spacing16),
                       Text(
                         'No hay lotes en esta categoría',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: UIConstants.fontSizeBody,
                           color: Colors.grey[600],
                         ),
                       ),
@@ -460,11 +461,11 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                 ),
               ] else ...[
                 ...lotes.map((lote) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsetsConstants.paddingHorizontal16,
                   child: _buildLoteCard(lote),
                 )),
               ],
-              const SizedBox(height: 80), // Espacio adicional al final
+              SizedBox(height: UIConstants.spacing40 * 2), // Espacio adicional al final
             ],
           );
   }
@@ -562,7 +563,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                 icon: Icons.calendar_today,
                 label: 'Entrada',
                 value: FormatUtils.formatDate(reciclador.fechaEntrada),
-                fontSize: 12,
+                fontSize: UIConstants.fontSizeXSmall,
               ),
             ),
             if (lote.tieneAnalisisLaboratorio)
@@ -571,7 +572,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                   icon: Icons.science,
                   label: 'Muestras Lab',
                   value: '${lote.pesoTotalMuestras.toStringAsFixed(2)} kg',
-                  fontSize: 12,
+                  fontSize: UIConstants.fontSizeXSmall,
                   color: BioWayColors.ppPurple,
                 ),
               )
@@ -581,7 +582,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                   icon: Icons.trending_down,
                   label: 'Merma',
                   value: '${reciclador.mermaProceso ?? 0} kg',
-                  fontSize: 12,
+                  fontSize: UIConstants.fontSizeXSmall,
                   color: Colors.orange,
                 ),
               ),
@@ -625,8 +626,8 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
   }) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: color ?? Colors.grey[600]),
-        const SizedBox(width: 8),
+        Icon(icon, size: UIConstants.iconSizeSmall, color: color ?? Colors.grey[600]),
+        SizedBox(width: UIConstants.spacing8),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -634,7 +635,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: UIConstants.fontSizeXSmall + 1,
                   color: Colors.grey[600],
                 ),
               ),
@@ -998,7 +999,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                       size: 60,
                       color: Colors.grey[300],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     Text(
                       _showOnlyMegalotes 
                         ? 'No hay megalotes'
@@ -1016,7 +1017,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
               if (_showOnlyMegalotes) ...[
                 ...transformaciones.map((transformacion) => 
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: EdgeInsetsConstants.paddingHorizontal16,
                     child: _buildTransformacionCard(transformacion),
                   )
                 ),
@@ -1025,20 +1026,20 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                 // Primero mostrar transformaciones
                 ...transformaciones.map((transformacion) => 
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: EdgeInsetsConstants.paddingHorizontal16,
                     child: _buildTransformacionCard(transformacion),
                   )
                 ),
                 // Luego mostrar SOLO sublotes (no lotes normales)
                 ...lotes.where((lote) => lote.esSublote).map((lote) => 
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: EdgeInsetsConstants.paddingHorizontal16,
                     child: _buildLoteCard(lote),
                   )
                 ),
               ],
             ],
-            const SizedBox(height: 80), // Espacio adicional al final
+            SizedBox(height: UIConstants.spacing40 * 2), // Espacio adicional al final
           ],
         );
       },
@@ -1314,9 +1315,9 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
             } : null,
           ),
           // Indicador de carga en lugar de las tarjetas
-          const SizedBox(height: 100),
+          SizedBox(height: UIConstants.spacing40 * 2.5),
           const Center(child: CircularProgressIndicator()),
-          const SizedBox(height: 100),
+          SizedBox(height: UIConstants.spacing40 * 2.5),
         ],
       );
     }
@@ -1329,7 +1330,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
           children: [
             Icon(
               Icons.error_outline,
-              size: 64,
+              size: UIConstants.iconSizeXLarge,
               color: Colors.grey[400],
             ),
             const SizedBox(height: 16),
@@ -1340,7 +1341,7 @@ class _RecicladorAdministracionLotesState extends State<RecicladorAdministracion
                 color: Colors.grey[600],
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: UIConstants.spacing8),
             TextButton(
               onPressed: _loadLotes,
               child: const Text('Reintentar'),

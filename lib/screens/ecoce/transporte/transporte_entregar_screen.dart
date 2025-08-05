@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/carga_transporte_service.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
@@ -172,8 +173,8 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
     final userName = userData?['nombre'] ?? 'Usuario';
     final userFolio = userData?['folio'] ?? 'V0000001';
     
-    return WillPopScope(
-      onWillPop: () async => false,
+    return PopScope(
+      canPop: false,
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F5F5),
         body: Column(
@@ -190,30 +191,30 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
             ),
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsetsConstants.paddingAll20,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
                       'Entregar Materiales',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: UIConstants.fontSizeTitle,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: UIConstants.spacing8),
                     Text(
                       userName,
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: UIConstants.fontSizeBody,
                         color: Colors.white,
                       ),
                     ),
                     Text(
                       userFolio,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: UIConstants.fontSizeMedium,
                         color: Colors.white70,
                       ),
                     ),
@@ -234,12 +235,12 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
                 const Text(
                   'Materiales en Tránsito',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: UIConstants.fontSizeLarge,
                     fontWeight: FontWeight.bold,
                     color: BioWayColors.darkGreen,
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: UIConstants.spacing16),
                 Row(
                   children: [
                     Expanded(
@@ -249,7 +250,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
                         Icons.inventory_2,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: UIConstants.spacing12),
                     Expanded(
                       child: _buildMetricCard(
                         'Peso Total',
@@ -274,14 +275,14 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
                           children: [
                             Icon(
                               Icons.local_shipping_outlined,
-                              size: 80,
+                              size: UIConstants.iconSizeDialog,
                               color: Colors.grey.shade300,
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: UIConstants.spacing16),
                             Text(
                               'No hay materiales en tránsito',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: UIConstants.fontSizeBody,
                                 color: Colors.grey.shade500,
                               ),
                             ),
@@ -308,12 +309,12 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
       // Banda fija inferior
       bottomSheet: _selectedLotes.isNotEmpty
           ? Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsetsConstants.paddingAll16,
               decoration: BoxDecoration(
                 color: const Color(0xFFE3F2FD),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
+                    color: Colors.black.withValues(alpha: UIConstants.opacityLow),
                     blurRadius: 10,
                     offset: const Offset(0, -5),
                   ),
@@ -326,7 +327,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
                       child: Text(
                         '${_selectedLotes.length} ${_selectedLotes.length == 1 ? 'lote seleccionado' : 'lotes seleccionados'}',
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: UIConstants.fontSizeBody,
                           fontWeight: FontWeight.w500,
                           color: Color(0xFF1565C0),
                         ),
@@ -340,7 +341,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
                         backgroundColor: const Color(0xFF1490EE),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadiusConstants.borderRadiusRound,
                         ),
                       ),
                       key: const Key('btn_generate_qr'),
@@ -388,12 +389,12 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFFF5F5F5),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadiusConstants.borderRadiusMedium,
       ),
       child: Row(
         children: [
-          Icon(icon, color: const Color(0xFF1490EE), size: 24),
-          const SizedBox(width: 12),
+          Icon(icon, color: const Color(0xFF1490EE), size: UIConstants.iconSizeMedium),
+          SizedBox(width: UIConstants.spacing12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -401,15 +402,15 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: UIConstants.fontSizeXSmall,
                     color: Colors.grey.shade600,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: UIConstants.spacing4),
                 Text(
                   value,
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: UIConstants.fontSizeLarge,
                     fontWeight: FontWeight.bold,
                     color: BioWayColors.darkGreen,
                   ),
@@ -431,36 +432,36 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
       children: [
         // Header del grupo con información del origen
         Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          margin: EdgeInsets.symmetric(horizontal: UIConstants.spacing16, vertical: UIConstants.spacing4),
           decoration: BoxDecoration(
-            color: const Color(0xFF1490EE).withValues(alpha: 0.1),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(12),
-              topRight: Radius.circular(12),
+            color: const Color(0xFF1490EE).withValues(alpha: UIConstants.opacityLow),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(UIConstants.radiusMedium),
+              topRight: Radius.circular(UIConstants.radiusMedium),
             ),
             border: Border.all(
-              color: const Color(0xFF1490EE).withValues(alpha: 0.3),
-              width: 1,
+              color: const Color(0xFF1490EE).withValues(alpha: UIConstants.opacityMedium),
+              width: UIConstants.dividerThickness,
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing16, vertical: UIConstants.spacing12),
             child: Row(
               children: [
                 // Ícono de ubicación
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsetsConstants.paddingAll8,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadiusConstants.borderRadiusSmall,
                   ),
                   child: Icon(
                     Icons.location_on,
                     color: const Color(0xFF1490EE),
-                    size: 20,
+                    size: UIConstants.iconSizeMedium,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: UIConstants.spacing12),
                 
                 // Información del origen
                 Expanded(
@@ -470,29 +471,29 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
                       Text(
                         origenKey,
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: UIConstants.fontSizeBody,
                           fontWeight: FontWeight.bold,
                           color: BioWayColors.darkGreen,
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 2,
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: UIConstants.spacing4),
                       Wrap(
-                        spacing: 8,
+                        spacing: UIConstants.spacing8,
                         runSpacing: 4,
                         children: [
                           Text(
                             '${lotes.length} ${lotes.length == 1 ? 'lote' : 'lotes'}',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: UIConstants.fontSizeSmall,
                               color: Colors.grey.shade700,
                             ),
                           ),
                           Container(
-                            width: 4,
-                            height: 4,
-                            margin: const EdgeInsets.only(top: 6),
+                            width: UIConstants.spacing4,
+                            height: UIConstants.spacing4,
+                            margin: EdgeInsets.only(top: UIConstants.spacing4 + 2),
                             decoration: BoxDecoration(
                               color: Colors.grey.shade400,
                               shape: BoxShape.circle,
@@ -501,7 +502,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
                           Text(
                             '${totalPesoGrupo.toStringAsFixed(1)} kg total',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: UIConstants.fontSizeSmall,
                               color: Colors.grey.shade700,
                               fontWeight: FontWeight.w500,
                             ),
@@ -513,11 +514,11 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
                 ),
                 
                 // Botón de selección
-                const SizedBox(width: 8),
+                SizedBox(width: UIConstants.spacing8),
                 TextButton(
                   onPressed: () => _selectAllFromGroup(origenKey),
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing8, vertical: UIConstants.spacing4 + 2),
                     minimumSize: const Size(0, 0),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
@@ -526,7 +527,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
                     style: const TextStyle(
                       color: Color(0xFF1490EE),
                       fontWeight: FontWeight.w600,
-                      fontSize: 12,
+                      fontSize: UIConstants.fontSizeXSmall,
                     ),
                   ),
                 ),
@@ -537,16 +538,16 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
         
         // Container para los lotes con borde
         Container(
-          margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+          margin: EdgeInsets.only(left: UIConstants.spacing16, right: UIConstants.spacing16, bottom: UIConstants.spacing16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(12),
-              bottomRight: Radius.circular(12),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(UIConstants.radiusMedium),
+              bottomRight: Radius.circular(UIConstants.radiusMedium),
             ),
             border: Border.all(
               color: Colors.grey.shade200,
-              width: 1,
+              width: UIConstants.dividerThickness,
             ),
           ),
           child: Column(
@@ -610,7 +611,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
                   : null,
             ),
             
-            const SizedBox(width: 12),
+            SizedBox(width: UIConstants.spacing12),
             
             // Contenido del lote
             Expanded(
@@ -633,7 +634,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
                         child: Text(
                           lote['id'].toString().substring(0, 8),
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: UIConstants.fontSizeXSmall,
                             fontWeight: FontWeight.w600,
                             color: BioWayColors.darkGreen,
                             fontFamily: 'monospace',
@@ -654,7 +655,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
                             child: Text(
                               lote['material'],
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: UIConstants.fontSizeMedium,
                                 color: Colors.grey.shade700,
                               ),
                               overflow: TextOverflow.ellipsis,
@@ -681,7 +682,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
                           Text(
                             '${lote['peso']} kg',
                             style: const TextStyle(
-                              fontSize: 14,
+                              fontSize: UIConstants.fontSizeMedium,
                               fontWeight: FontWeight.w600,
                               color: BioWayColors.darkGreen,
                             ),
@@ -690,7 +691,7 @@ class _TransporteEntregarScreenState extends State<TransporteEntregarScreen> {
                       ),
                       // Indicador de muestras de laboratorio
                       if (lote['tiene_muestras_lab'] == true) ...[
-                        const SizedBox(width: 12),
+                        SizedBox(width: UIConstants.spacing12),
                         Tooltip(
                           message: 'Muestras de laboratorio: ${lote['peso_muestras']} kg',
                           child: Container(

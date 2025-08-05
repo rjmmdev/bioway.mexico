@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../models/lotes/lote_unificado_model.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../shared/utils/dialog_utils.dart';
@@ -51,7 +52,7 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
     super.initState();
     
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: UIConstants.animationVerySlow,
       vsync: this,
     );
 
@@ -139,7 +140,7 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
         backgroundColor: BioWayColors.success,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(UIConstants.radiusSmall + 2),
         ),
       ),
     );
@@ -153,7 +154,7 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
         backgroundColor: BioWayColors.info,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(UIConstants.radiusSmall + 2),
         ),
       ),
     );
@@ -206,14 +207,14 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
           widget.mostrarMensajeExito ? 'Lote Creado' : 'Detalles del Lote',
           style: const TextStyle(
             color: Colors.black87,
-            fontSize: 20,
+            fontSize: UIConstants.fontSizeXLarge,
             fontWeight: FontWeight.w600,
           ),
         ),
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: EdgeInsetsConstants.paddingAll20,
           child: Column(
             children: [
               // Mensaje de éxito (solo si se muestra)
@@ -223,42 +224,42 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
                   child: ScaleTransition(
                     scale: _scaleAnimation,
                     child: Container(
-                      margin: const EdgeInsets.only(bottom: 24),
-                      padding: const EdgeInsets.all(20),
+                      margin: EdgeInsets.only(bottom: UIConstants.spacing24),
+                      padding: EdgeInsetsConstants.paddingAll20,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
                             BioWayColors.success,
-                            BioWayColors.success.withValues(alpha:0.8),
+                            BioWayColors.success.withValues(alpha:UIConstants.opacityVeryHigh),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadiusConstants.borderRadiusXLarge,
                         boxShadow: [
                           BoxShadow(
-                            color: BioWayColors.success.withValues(alpha:0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
+                            color: BioWayColors.success.withValues(alpha:UIConstants.opacityMedium),
+                            blurRadius: UIConstants.fontSizeXLarge,
+                            offset: Offset(0, UIConstants.spacing8 + 2),
                           ),
                         ],
                       ),
                       child: Row(
                         children: [
                           Container(
-                            width: 56,
-                            height: 56,
+                            width: UIConstants.iconContainerLarge,
+                            height: UIConstants.iconContainerLarge,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha:0.2),
+                              color: Colors.white.withValues(alpha:UIConstants.opacityMediumLow),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.check_circle,
                               color: Colors.white,
-                              size: 32,
+                              size: UIConstants.iconSizeLarge,
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          SizedBox(width: UIConstants.spacing16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -267,16 +268,16 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
                                   '¡Lote creado exitosamente!',
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 18,
+                                    fontSize: UIConstants.fontSizeLarge,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                SizedBox(height: UIConstants.spacing4),
                                 Text(
                                   'ID: ${widget.firebaseId}',
                                   style: TextStyle(
-                                    color: Colors.white.withValues(alpha:0.9),
-                                    fontSize: 14,
+                                    color: Colors.white.withValues(alpha:UIConstants.opacityAlmostFull),
+                                    fontSize: UIConstants.fontSizeMedium,
                                   ),
                                 ),
                               ],
@@ -303,7 +304,7 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
                         color: Colors.grey[700],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: UIConstants.spacing12),
                     OrigenLoteUnificadoCard(
                       lote: _loteCompleto ?? LoteUnificadoModel(
                         id: widget.firebaseId,
@@ -352,14 +353,14 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
               // Información sobre transferencia automática
               if (!_isLoadingLote && _loteCompleto != null && 
                   _loteCompleto!.datosGenerales.procesoActual == 'origen') ...[
-                const SizedBox(height: 24),
+                SizedBox(height: UIConstants.spacing24),
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsetsConstants.paddingAll16,
                   decoration: BoxDecoration(
-                    color: BioWayColors.info.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    color: BioWayColors.info.withOpacity(UIConstants.opacityLow),
+                    borderRadius: BorderRadiusConstants.borderRadiusMedium,
                     border: Border.all(
-                      color: BioWayColors.info.withOpacity(0.3),
+                      color: BioWayColors.info.withOpacity(UIConstants.opacityMedium),
                     ),
                   ),
                   child: Row(
@@ -367,7 +368,7 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
                       Icon(
                         Icons.info_outline,
                         color: BioWayColors.info,
-                        size: 24,
+                        size: UIConstants.iconSizeMedium,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -379,14 +380,14 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
                               style: TextStyle(
                                 color: BioWayColors.info,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                                fontSize: UIConstants.fontSizeBody,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'El transportista debe escanear el código QR para recibir este lote',
                               style: TextStyle(
-                                color: BioWayColors.info.withOpacity(0.8),
+                                color: BioWayColors.info.withOpacity(UIConstants.opacityVeryHigh),
                                 fontSize: 14,
                               ),
                             ),
@@ -399,15 +400,15 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
               ],
 
               if (widget.mostrarMensajeExito) ...[
-                const SizedBox(height: 24),
+                SizedBox(height: UIConstants.spacing24),
                 SizedBox(
                   width: double.infinity,
                   child: TextButton(
                     onPressed: _irAInicio,
                     style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: EdgeInsets.symmetric(vertical: UIConstants.spacing16),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadiusConstants.borderRadiusMedium,
                       ),
                     ),
                     child: Text(
@@ -422,7 +423,7 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
                 ),
               ],
 
-              const SizedBox(height: 40),
+              SizedBox(height: UIConstants.spacing40),
             ],
           ),
         ),

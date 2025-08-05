@@ -18,10 +18,11 @@ class PendingApprovalScreen extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
         await _handleLogout(context);
-        return false;
       },
       child: Scaffold(
         backgroundColor: BioWayColors.backgroundGrey,

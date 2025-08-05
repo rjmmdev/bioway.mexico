@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../utils/ui_constants.dart';
 import '../widgets/signature_dialog.dart';
 
 /// Utilidades para mostrar diálogos comunes en ECOCE
@@ -20,21 +21,21 @@ class DialogUtils {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadiusConstants.borderRadiusLarge,
           ),
           title: Column(
             children: [
-              const Icon(
+              Icon(
                 Icons.check_circle,
                 color: Colors.green,
-                size: 60,
+                size: UIConstants.iconSizeDialog,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: UIConstants.spacing16),
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 20,
+                style: TextStyle(
+                  fontSize: UIConstants.fontSizeXLarge,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -43,7 +44,7 @@ class DialogUtils {
           content: Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16),
+            style: TextStyle(fontSize: UIConstants.fontSizeBody),
           ),
           actions: [
             Center(
@@ -54,19 +55,19 @@ class DialogUtils {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 12,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: UIConstants.spacing32,
+                    vertical: UIConstants.spacing12,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadiusConstants.borderRadiusSmall,
                   ),
                 ),
                 child: Text(
                   buttonText,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: UIConstants.fontSizeBody,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -93,21 +94,21 @@ class DialogUtils {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadiusConstants.borderRadiusLarge,
           ),
           title: Column(
             children: [
-              const Icon(
+              Icon(
                 Icons.error_outline,
                 color: Colors.red,
-                size: 60,
+                size: UIConstants.iconSizeDialog,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: UIConstants.spacing16),
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 20,
+                style: TextStyle(
+                  fontSize: UIConstants.fontSizeXLarge,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -116,7 +117,7 @@ class DialogUtils {
           content: Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16),
+            style: TextStyle(fontSize: UIConstants.fontSizeBody),
           ),
           actions: [
             Center(
@@ -124,19 +125,19 @@ class DialogUtils {
                 onPressed: () => Navigator.of(context).pop(),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 12,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: UIConstants.spacing32,
+                    vertical: UIConstants.spacing12,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadiusConstants.borderRadiusSmall,
                   ),
                 ),
                 child: Text(
                   buttonText,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: UIConstants.fontSizeBody,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -165,18 +166,18 @@ class DialogUtils {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadiusConstants.borderRadiusMedium,
           ),
           title: Text(
             title,
             style: const TextStyle(
-              fontSize: 20,
+              fontSize: UIConstants.fontSizeLarge,
               fontWeight: FontWeight.bold,
             ),
           ),
           content: Text(
             message,
-            style: const TextStyle(fontSize: 16),
+            style: const TextStyle(fontSize: UIConstants.fontSizeBody),
           ),
           actions: [
             TextButton(
@@ -191,7 +192,7 @@ class DialogUtils {
               style: ElevatedButton.styleFrom(
                 backgroundColor: confirmColor ?? Theme.of(context).primaryColor,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadiusConstants.borderRadiusSmall,
                 ),
               ),
               child: Text(
@@ -241,16 +242,16 @@ class DialogUtils {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return WillPopScope(
-          onWillPop: () async => false,
+        return PopScope(
+          canPop: false,
           child: Center(
             child: Card(
               margin: const EdgeInsets.symmetric(horizontal: 48),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadiusConstants.borderRadiusMedium,
               ),
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsetsConstants.paddingAll24,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -258,7 +259,7 @@ class DialogUtils {
                     const SizedBox(height: 16),
                     Text(
                       message,
-                      style: const TextStyle(fontSize: 16),
+                      style: const TextStyle(fontSize: UIConstants.fontSizeBody),
                     ),
                   ],
                 ),
@@ -293,7 +294,7 @@ class DialogUtils {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadiusConstants.borderRadiusMedium,
           ),
           title: Column(
             children: [
@@ -307,7 +308,7 @@ class DialogUtils {
                 title,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize: UIConstants.fontSizeLarge,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -316,19 +317,19 @@ class DialogUtils {
           content: Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16),
+            style: const TextStyle(fontSize: UIConstants.fontSizeBody),
           ),
           actions: [
             Center(
               child: ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 12,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: UIConstants.spacing32,
+                    vertical: UIConstants.spacing12,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadiusConstants.borderRadiusSmall,
                   ),
                 ),
                 child: Text(buttonText),
@@ -375,7 +376,7 @@ class DialogUtils {
           builder: (context, setState) {
             return AlertDialog(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadiusConstants.borderRadiusMedium,
               ),
               title: Row(
                 children: [
@@ -400,7 +401,7 @@ class DialogUtils {
                     decoration: InputDecoration(
                       hintText: hint ?? confirmationText,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadiusConstants.borderRadiusSmall,
                       ),
                     ),
                     onChanged: (value) {
@@ -421,7 +422,7 @@ class DialogUtils {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadiusConstants.borderRadiusSmall,
                     ),
                   ),
                   child: const Text(
@@ -475,7 +476,7 @@ class DialogUtils {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadiusConstants.borderRadiusMedium,
           ),
           title: Text(title),
           content: Column(
@@ -493,7 +494,7 @@ class DialogUtils {
                 decoration: InputDecoration(
                   hintText: hintText,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadiusConstants.borderRadiusSmall,
                   ),
                 ),
                 autofocus: true,
@@ -509,7 +510,7 @@ class DialogUtils {
               onPressed: () => Navigator.of(context).pop(controller.text),
               style: ElevatedButton.styleFrom(
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadiusConstants.borderRadiusSmall,
                 ),
               ),
               child: Text(confirmText),
@@ -541,7 +542,7 @@ class DialogUtils {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadiusConstants.borderRadiusMedium,
           ),
           title: Column(
             children: [
@@ -557,7 +558,7 @@ class DialogUtils {
                 title,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize: UIConstants.fontSizeLarge,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -566,7 +567,7 @@ class DialogUtils {
           content: Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16),
+            style: const TextStyle(fontSize: UIConstants.fontSizeBody),
           ),
           actions: [
             Row(
@@ -581,7 +582,7 @@ class DialogUtils {
                         foregroundColor: action.color,
                         side: BorderSide(color: action.color ?? Colors.grey),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadiusConstants.borderRadiusSmall,
                         ),
                       ),
                       child: Text(action.label),
@@ -595,7 +596,7 @@ class DialogUtils {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: action.color,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadiusConstants.borderRadiusSmall,
                         ),
                       ),
                       child: Text(

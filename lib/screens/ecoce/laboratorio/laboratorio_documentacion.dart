@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../services/lote_service.dart';
 import '../../../services/muestra_laboratorio_service.dart'; // NUEVO: Servicio independiente
 import '../../../services/firebase/firebase_storage_service.dart';
@@ -38,21 +39,21 @@ class _LaboratorioDocumentacionState extends State<LaboratorioDocumentacion> {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadiusConstants.borderRadiusMedium,
           ),
           title: Column(
             children: [
               const Icon(
                 Icons.check_circle,
                 color: Color(0xFF9333EA), // Morado de laboratorio
-                size: 60,
+                size: UIConstants.iconSizeDialog,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: UIConstants.spacing16),
               const Text(
                 'Documentación Cargada',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: UIConstants.fontSizeXLarge,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF9333EA), // Morado de laboratorio
                 ),
@@ -62,7 +63,7 @@ class _LaboratorioDocumentacionState extends State<LaboratorioDocumentacion> {
           content: const Text(
             'Los documentos se han guardado correctamente',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16),
+            style: TextStyle(fontSize: UIConstants.fontSizeBody),
           ),
           actions: [
             Center(
@@ -81,19 +82,19 @@ class _LaboratorioDocumentacionState extends State<LaboratorioDocumentacion> {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF9333EA), // Morado de laboratorio
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 12,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: UIConstants.spacing32,
+                    vertical: UIConstants.spacing12,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadiusConstants.borderRadiusSmall,
                   ),
                 ),
                 child: const Text(
                   'Aceptar',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: UIConstants.fontSizeBody,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -188,7 +189,7 @@ class _LaboratorioDocumentacionState extends State<LaboratorioDocumentacion> {
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         backgroundColor: const Color(0xFF9333EA),
-        elevation: 0,
+        elevation: UIConstants.elevationNone,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () {
@@ -199,7 +200,7 @@ class _LaboratorioDocumentacionState extends State<LaboratorioDocumentacion> {
         title: const Text(
           'Documentación de Análisis',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: UIConstants.fontSizeLarge,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),

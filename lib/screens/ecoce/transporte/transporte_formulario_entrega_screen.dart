@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:path_provider/path_provider.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
 import '../../../services/lote_unificado_service.dart';
@@ -568,7 +569,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
         backgroundColor: const Color(0xFFF5F5F5),
         appBar: AppBar(
           backgroundColor: const Color(0xFF1490EE),
-          elevation: 0,
+          elevation: UIConstants.elevationNone,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
             onPressed: () async {
@@ -607,7 +608,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
         title: const Text(
           'Formulario de Entrega',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: UIConstants.fontSizeXLarge,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -618,7 +619,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
         children: [
           SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsetsConstants.paddingAll16,
             child: Form(
               key: _formKey,
               child: Column(
@@ -626,7 +627,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                 children: [
                   // Resumen de lotes
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsetsConstants.paddingAll16,
                     decoration: BoxDecoration(
                       color: const Color(0xFFE3F2FD),
                       borderRadius: BorderRadius.circular(12),
@@ -641,13 +642,13 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                             const Text(
                               'Lotes a entregar:',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: UIConstants.fontSizeMedium,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFF1565C0),
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12, vertical: UIConstants.spacing4),
                               decoration: BoxDecoration(
                                 color: const Color(0xFF1490EE),
                                 borderRadius: BorderRadius.circular(12),
@@ -655,7 +656,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                               child: Text(
                                 'Peso total: ${_pesoTotal.toStringAsFixed(1)} kg',
                                 style: const TextStyle(
-                                  fontSize: 12,
+                                  fontSize: UIConstants.fontSizeSmall,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                 ),
@@ -663,13 +664,13 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: UIConstants.spacing8),
                         Wrap(
-                          spacing: 8,
+                          spacing: UIConstants.spacing8,
                           runSpacing: 8,
                           children: widget.lotes.map((lote) {
                             return Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12, vertical: UIConstants.spacing4 + 2),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFFF9C4),
                                 borderRadius: BorderRadius.circular(20),
@@ -681,16 +682,16 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                   Text(
                                     lote['id'],
                                     style: const TextStyle(
-                                      fontSize: 12,
+                                      fontSize: UIConstants.fontSizeSmall,
                                       fontWeight: FontWeight.w600,
                                       color: Color(0xFF827717),
                                     ),
                                   ),
-                                  const SizedBox(width: 4),
+                                  SizedBox(width: UIConstants.spacing4),
                                   Text(
                                     '(${lote['peso']} kg)',
                                     style: const TextStyle(
-                                      fontSize: 11,
+                                      fontSize: UIConstants.fontSizeXSmall,
                                       color: Color(0xFF827717),
                                     ),
                                   ),
@@ -703,12 +704,12 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                     ),
                   ),
                   
-                  const SizedBox(height: 24),
+                  SizedBox(height: UIConstants.spacing24),
                   
                   // Identificar Destinatario
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(20),
+                    padding: EdgeInsetsConstants.paddingAll20,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
@@ -727,20 +728,20 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                           children: [
                             const Text(
                               '🔍',
-                              style: TextStyle(fontSize: 24),
+                              style: TextStyle(fontSize: UIConstants.fontSizeTitle),
                             ),
-                            const SizedBox(width: 10),
+                            SizedBox(width: UIConstants.spacing8 + 2),
                             RequiredFieldLabel(
                               label: 'Identificar Destinatario',
                               labelStyle: TextStyle(
-                                fontSize: 18,
+                                fontSize: UIConstants.fontSizeLarge,
                                 fontWeight: FontWeight.bold,
                                 color: BioWayColors.darkGreen,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
+                        SizedBox(height: UIConstants.spacing20),
                         // Si ya tenemos datos del receptor, mostrar campo de solo lectura
                         if (widget.datosReceptor != null) ...
                           [
@@ -752,9 +753,9 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                               required: true,
                               readOnly: true, // Campo de solo lectura
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(height: UIConstants.spacing8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12, vertical: UIConstants.spacing8),
                               decoration: BoxDecoration(
                                 color: BioWayColors.info.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
@@ -764,15 +765,15 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                 children: [
                                   Icon(
                                     Icons.info_outline,
-                                    size: 16,
+                                    size: UIConstants.fontSizeBody,
                                     color: BioWayColors.info,
                                   ),
-                                  const SizedBox(width: 8),
+                                  SizedBox(width: UIConstants.spacing8),
                                   Expanded(
                                     child: Text(
                                       'Destinatario identificado mediante código QR',
                                       style: TextStyle(
-                                        fontSize: 12,
+                                        fontSize: UIConstants.fontSizeSmall,
                                         color: BioWayColors.info,
                                       ),
                                     ),
@@ -804,7 +805,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                     ],
                                   ),
                                 ),
-                                const SizedBox(width: 12),
+                                SizedBox(width: UIConstants.spacing12),
                                 Container(
                                   decoration: BoxDecoration(
                                     color: const Color(0xFF1490EE),
@@ -822,15 +823,15 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                     onPressed: _isSearchingUser ? null : _buscarUsuario,
                                     icon: _isSearchingUser 
                                         ? const SizedBox(
-                                            width: 20,
-                                            height: 20,
+                                            width: UIConstants.iconSizeMedium,
+                                            height: UIConstants.iconSizeMedium,
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2,
                                               color: Colors.white,
                                             ),
                                           )
                                         : const Icon(Icons.search, color: Colors.white),
-                                    padding: const EdgeInsets.all(12),
+                                    padding: EdgeInsets.all(UIConstants.spacing12),
                                     constraints: const BoxConstraints(
                                       minWidth: 48,
                                       minHeight: 48,
@@ -843,7 +844,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                         
                         // Mostrar sugerencias de usuarios
                         if (_showSuggestions && _suggestedUsers.isNotEmpty) ...[
-                          const SizedBox(height: 8),
+                          SizedBox(height: UIConstants.spacing8),
                           Container(
                             constraints: const BoxConstraints(maxHeight: 200),
                             decoration: BoxDecoration(
@@ -862,19 +863,19 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                               shrinkWrap: true,
                               padding: EdgeInsets.zero,
                               itemCount: _suggestedUsers.length,
-                              separatorBuilder: (context, index) => const Divider(height: 1),
+                              separatorBuilder: (context, index) => Divider(height: UIConstants.dividerThickness),
                               itemBuilder: (context, index) {
                                 final user = _suggestedUsers[index];
                                 return InkWell(
                                   onTap: () => _selectUser(user),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing16, vertical: UIConstants.spacing12),
                                     child: Row(
                                       children: [
                                         // Icono del tipo de usuario
                                         Container(
-                                          width: 40,
-                                          height: 40,
+                                          width: UIConstants.iconSizeLarge,
+                                          height: UIConstants.iconSizeLarge,
                                           decoration: BoxDecoration(
                                             color: _getColorForUserType(user['tipo']).withValues(alpha: 0.1),
                                             shape: BoxShape.circle,
@@ -883,14 +884,14 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                             child: Text(
                                               user['tipo'],
                                               style: TextStyle(
-                                                fontSize: 16,
+                                                fontSize: UIConstants.fontSizeBody,
                                                 fontWeight: FontWeight.bold,
                                                 color: _getColorForUserType(user['tipo']),
                                               ),
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(width: 12),
+                                        SizedBox(width: UIConstants.spacing12),
                                         // Información del usuario
                                         Expanded(
                                           child: Column(
@@ -901,14 +902,14 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                                   Text(
                                                     user['folio'],
                                                     style: const TextStyle(
-                                                      fontSize: 14,
+                                                      fontSize: UIConstants.fontSizeMedium,
                                                       fontWeight: FontWeight.bold,
                                                       color: BioWayColors.darkGreen,
                                                     ),
                                                   ),
-                                                  const SizedBox(width: 8),
+                                                  SizedBox(width: UIConstants.spacing8),
                                                   Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                    padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing8, vertical: UIConstants.spacing4 / 2),
                                                     decoration: BoxDecoration(
                                                       color: _getColorForUserType(user['tipo']).withValues(alpha: 0.1),
                                                       borderRadius: BorderRadius.circular(12),
@@ -916,7 +917,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                                     child: Text(
                                                       user['tipo_label'],
                                                       style: TextStyle(
-                                                        fontSize: 11,
+                                                        fontSize: UIConstants.fontSizeXSmall,
                                                         color: _getColorForUserType(user['tipo']),
                                                         fontWeight: FontWeight.w600,
                                                       ),
@@ -924,11 +925,11 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                                   ),
                                                 ],
                                               ),
-                                              const SizedBox(height: 2),
+                                              SizedBox(height: UIConstants.spacing4 / 2),
                                               Text(
                                                 user['nombre'],
                                                 style: const TextStyle(
-                                                  fontSize: 13,
+                                                  fontSize: UIConstants.fontSizeSmall + 1,
                                                   color: BioWayColors.darkGreen,
                                                 ),
                                               ),
@@ -937,7 +938,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                         ),
                                         const Icon(
                                           Icons.arrow_forward_ios,
-                                          size: 16,
+                                          size: UIConstants.fontSizeBody,
                                           color: Colors.grey,
                                         ),
                                       ],
@@ -950,20 +951,20 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                         ],
                         
                         if (_destinatarioInfo != null) ...[
-                          const SizedBox(height: 16),
+                          SizedBox(height: UIConstants.spacing16),
                           const ValidationMessage(
                             message: 'Usuario encontrado exitosamente',
                             type: MessageType.success,
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: UIConstants.spacing12),
                           Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: EdgeInsetsConstants.paddingAll16,
                             decoration: BoxDecoration(
                               color: BioWayColors.backgroundGrey,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: const Color(0xFF1490EE).withValues(alpha: 0.3),
-                                width: 1,
+                                width: UIConstants.dividerThickness,
                               ),
                             ),
                             child: Column(
@@ -980,7 +981,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                     ),
                   ),
                   
-                  const SizedBox(height: 24),
+                  SizedBox(height: UIConstants.spacing24),
                   
                   // Evidencia Fotográfica
                   PhotoEvidenceFormField(
@@ -997,12 +998,12 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                     primaryColor: const Color(0xFF1490EE),
                   ),
                   
-                  const SizedBox(height: 24),
+                  SizedBox(height: UIConstants.spacing24),
                   
                   // Sección: Datos del Responsable
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(20),
+                    padding: EdgeInsetsConstants.paddingAll20,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
@@ -1021,34 +1022,34 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                           children: [
                             const Text(
                               '👤',
-                              style: TextStyle(fontSize: 24),
+                              style: TextStyle(fontSize: UIConstants.fontSizeTitle),
                             ),
-                            const SizedBox(width: 10),
+                            SizedBox(width: UIConstants.spacing8 + 2),
                             Expanded(
                               child: Text(
                                 'Datos del Responsable que Recibe el Material',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: UIConstants.fontSizeLarge,
                                   fontWeight: FontWeight.bold,
                                   color: BioWayColors.darkGreen,
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 4),
+                            SizedBox(width: UIConstants.spacing4),
                             const Text(
                               '*',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: UIConstants.fontSizeLarge,
                                 fontWeight: FontWeight.bold,
                                 color: BioWayColors.error,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
+                        SizedBox(height: UIConstants.spacing20),
                       // Nombre del Operador
                       const field_label.FieldLabel(text: 'Nombre', isRequired: true),
-                      const SizedBox(height: 8),
+                      SizedBox(height: UIConstants.spacing8),
                       TextFormField(
                         controller: _operadorController,
                         maxLength: 50,
@@ -1071,16 +1072,16 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                         },
                       ),
                       
-                      const SizedBox(height: 20),
+                      SizedBox(height: UIConstants.spacing20),
                       
                       // Firma del Operador
                       const field_label.FieldLabel(text: 'Firma', isRequired: true),
-                      const SizedBox(height: 8),
+                      SizedBox(height: UIConstants.spacing8),
                         GestureDetector(
                           onTap: _firmaRecibe.isEmpty ? _showSignatureDialog : null,
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
-                            height: _firmaRecibe.isNotEmpty ? 150 : 100,
+                            height: _firmaRecibe.isNotEmpty ? UIConstants.qrSizeSmall + UIConstants.iconContainerMedium : UIConstants.qrSizeSmall,
                             width: double.infinity,
                             decoration: BoxDecoration(
                               color: _firmaRecibe.isNotEmpty 
@@ -1091,7 +1092,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                 color: _firmaRecibe.isNotEmpty 
                                     ? const Color(0xFF1490EE) 
                                     : Colors.grey[300]!,
-                                width: _firmaRecibe.isNotEmpty ? 2 : 1,
+                                width: _firmaRecibe.isNotEmpty ? UIConstants.strokeWidth : UIConstants.dividerThickness,
                               ),
                             ),
                             child: _firmaRecibe.isEmpty
@@ -1101,14 +1102,14 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                       children: [
                                         Icon(
                                           Icons.draw,
-                                          size: 32,
+                                          size: UIConstants.iconSizeMedium + UIConstants.spacing8,
                                           color: Colors.grey[400],
                                         ),
-                                        const SizedBox(height: 8),
+                                        SizedBox(height: UIConstants.spacing8),
                                         Text(
                                           'Toca para firmar',
                                           style: TextStyle(
-                                            fontSize: 14,
+                                            fontSize: UIConstants.fontSizeMedium,
                                             color: Colors.grey[600],
                                           ),
                                         ),
@@ -1118,7 +1119,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                 : Stack(
                                     children: [
                                       Container(
-                                        padding: const EdgeInsets.all(12),
+                                        padding: EdgeInsets.all(UIConstants.spacing12),
                                         child: Center(
                                           child: AspectRatio(
                                             aspectRatio: 2.0,
@@ -1128,7 +1129,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                                 borderRadius: BorderRadius.circular(8),
                                                 border: Border.all(
                                                   color: Colors.grey[200]!,
-                                                  width: 1,
+                                                  width: UIConstants.dividerThickness,
                                                 ),
                                               ),
                                               child: ClipRRect(
@@ -1136,8 +1137,8 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                                 child: FittedBox(
                                                   fit: BoxFit.contain,
                                                   child: SizedBox(
-                                                    width: 300,
-                                                    height: 300,
+                                                    width: UIConstants.qrSizeMedium + UIConstants.iconSizeDialog + UIConstants.iconSizeMedium,
+                                                    height: UIConstants.qrSizeMedium + UIConstants.iconSizeDialog + UIConstants.iconSizeMedium,
                                                     child: CustomPaint(
                                                       painter: SignaturePainter(_firmaRecibe),
                                                     ),
@@ -1170,7 +1171,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                                 icon: const Icon(
                                                   Icons.edit,
                                                   color: Color(0xFF1490EE),
-                                                  size: 20,
+                                                  size: UIConstants.iconSizeMedium,
                                                 ),
                                                 constraints: const BoxConstraints(
                                                   minWidth: 32,
@@ -1179,7 +1180,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                                 padding: EdgeInsets.zero,
                                               ),
                                             ),
-                                            const SizedBox(width: 8),
+                                            SizedBox(width: UIConstants.spacing8),
                                             Container(
                                               decoration: BoxDecoration(
                                                 color: Colors.white,
@@ -1200,7 +1201,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                                                 icon: const Icon(
                                                   Icons.clear,
                                                   color: Colors.red,
-                                                  size: 20,
+                                                  size: UIConstants.iconSizeMedium,
                                                 ),
                                                 constraints: const BoxConstraints(
                                                   minWidth: 32,
@@ -1220,12 +1221,12 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                     ),
                   ),
                   
-                  const SizedBox(height: 24),
+                  SizedBox(height: UIConstants.spacing24),
                   
                   // Comentarios
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(20),
+                    padding: EdgeInsetsConstants.paddingAll20,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
@@ -1244,20 +1245,20 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                           children: [
                             const Text(
                               '💬',
-                              style: TextStyle(fontSize: 24),
+                              style: TextStyle(fontSize: UIConstants.fontSizeTitle),
                             ),
-                            const SizedBox(width: 10),
+                            SizedBox(width: UIConstants.spacing8 + 2),
                             Text(
                               'Comentarios',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: UIConstants.fontSizeLarge,
                                 fontWeight: FontWeight.bold,
                                 color: BioWayColors.darkGreen,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
+                        SizedBox(height: UIConstants.spacing20),
                         StandardTextField(
                           controller: _comentariosController,
                           label: 'Comentarios adicionales',
@@ -1270,14 +1271,14 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                     ),
                   ),
                   
-                  const SizedBox(height: 32),
+                  SizedBox(height: UIConstants.spacing32),
                   
                   // Botón completar entrega
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing20),
                     child: SizedBox(
                       width: double.infinity,
-                      height: 56,
+                      height: UIConstants.buttonHeightLarge,
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _submitForm,
                         style: ElevatedButton.styleFrom(
@@ -1286,7 +1287,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(24),
                           ),
-                          elevation: 2,
+                          elevation: UIConstants.elevationSmall,
                         ),
                         child: const Text(
                           'Completar Entrega',
@@ -1300,7 +1301,7 @@ class _TransporteFormularioEntregaScreenState extends State<TransporteFormulario
                     ),
                   ),
                   
-                  const SizedBox(height: 100),
+                  SizedBox(height: UIConstants.qrSizeSmall),
                 ],
               ),
             ),

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../services/user_session_service.dart';
 import '../../../models/ecoce/ecoce_profile_model.dart';
 import '../../../models/lotes/lote_origen_model.dart';
@@ -251,7 +252,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                   end: Alignment.bottomRight,
                   colors: [
                     _primaryColor,
-                    _primaryColor.withValues(alpha:0.8),
+                    _primaryColor.withValues(alpha: UIConstants.opacityVeryHigh),
                   ],
                 ),
               ),
@@ -262,11 +263,11 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                       right: -50,
                       top: -50,
                       child: Container(
-                        width: 200,
-                        height: 200,
+                        width: UIConstants.qrSizeMedium,
+                        height: UIConstants.qrSizeMedium,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha:0.1),
+                          color: Colors.white.withValues(alpha: UIConstants.opacityLow),
                         ),
                       ),
                     ),
@@ -274,17 +275,22 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                       left: -30,
                       bottom: -30,
                       child: Container(
-                        width: 150,
-                        height: 150,
+                        width: UIConstants.qrSizeSmall,
+                        height: UIConstants.qrSizeSmall,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha:0.05),
+                          color: Colors.white.withValues(alpha: UIConstants.opacityVeryLow),
                         ),
                       ),
                     ),
                     // Contenido
                     Padding(
-                      padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 20, 20, 24),
+                      padding: EdgeInsets.fromLTRB(
+                        UIConstants.spacing20, 
+                        MediaQuery.of(context).padding.top + UIConstants.spacing20, 
+                        UIConstants.spacing20, 
+                        UIConstants.spacing24
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -295,31 +301,31 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               // Logo ECOCE
                               SvgPicture.asset(
                                 'assets/logos/ecoce_logo.svg',
-                                width: 70,
-                                height: 35,
+                                width: UIConstants.logoWidthSmall,
+                                height: UIConstants.logoHeightSmall,
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: UIConstants.spacing12,
+                                  vertical: UIConstants.spacing4 + 2, // 6
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha:0.2),
-                                  borderRadius: BorderRadius.circular(20),
+                                  color: Colors.white.withValues(alpha: UIConstants.opacityMediumLow),
+                                  borderRadius: BorderRadiusConstants.borderRadiusXLarge,
                                 ),
                                 child: Row(
                                   children: [
                                     Icon(
                                       Icons.calendar_today,
-                                      size: 14,
-                                      color: Colors.white.withValues(alpha:0.9),
+                                      size: UIConstants.fontSizeMedium,
+                                      color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
                                     ),
-                                    const SizedBox(width: 6),
+                                    SizedBox(width: UIConstants.spacing4 + 2), // 6
                                     Text(
                                       FormatUtils.formatDate(DateTime.now()),
                                       style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.white.withValues(alpha:0.9),
+                                        fontSize: UIConstants.fontSizeXSmall + 1, // 12
+                                        color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
                                       ),
                                     ),
                                   ],
@@ -327,46 +333,46 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: UIConstants.spacing12),
                           // Nombre del centro
                           Text(
                             _nombreCentro,
-                            style: const TextStyle(
-                              fontSize: 26,
+                            style: TextStyle(
+                              fontSize: UIConstants.fontSizeTitle + 2, // 26
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.visible,
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: UIConstants.spacing8),
                           // Badge con tipo y folio
                           Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
+                            spacing: UIConstants.spacing8,
+                            runSpacing: UIConstants.spacing8,
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: UIConstants.spacing12,
+                                  vertical: UIConstants.spacing4 + 2, // 6
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha:0.9),
-                                  borderRadius: BorderRadius.circular(20),
+                                  color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
+                                  borderRadius: BorderRadiusConstants.borderRadiusXLarge,
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
                                       Icons.store,
-                                      size: 16,
+                                      size: UIConstants.iconSizeSmall,
                                       color: _primaryColor,
                                     ),
-                                    const SizedBox(width: 6),
+                                    SizedBox(width: UIConstants.spacing4 + 2), // 6
                                     Text(
                                       _tipoCentro,
                                       style: TextStyle(
-                                        fontSize: 13,
+                                        fontSize: UIConstants.fontSizeSmall,
                                         fontWeight: FontWeight.w600,
                                         color: _primaryColor,
                                       ),
@@ -375,13 +381,13 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                 ),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: UIConstants.spacing12,
+                                  vertical: UIConstants.spacing4 + 2, // 6
                                 ),
                                 decoration: BoxDecoration(
                                   color: Colors.amber,
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadiusConstants.borderRadiusXLarge,
                                 ),
                                 child: Text(
                                   _folioCentro,
@@ -394,7 +400,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: UIConstants.spacing16),
                           // Estadísticas con UnifiedStatCard
                           Row(
                             children: [
@@ -405,10 +411,10 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                   value: _totalLotesCreados.toString(),
                                   icon: Icons.inventory_2,
                                   color: Colors.blue,
-                                  height: 70,
+                                  height: UIConstants.statCardHeight,
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: UIConstants.spacing12),
                               // Estadística de Material
                               Expanded(
                                 child: UnifiedStatCard.horizontal(
@@ -417,7 +423,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                   unit: 'ton',
                                   icon: Icons.scale,
                                   color: Colors.green,
-                                  height: 70,
+                                  height: UIConstants.statCardHeight,
                                 ),
                               ),
                             ],
@@ -449,58 +455,58 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                         // Acción rápida única centrada más compacta
                         Container(
                           width: double.infinity,
-                          height: 70,
+                          height: UIConstants.buttonHeightLarge,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [
                                 _primaryColor,
-                                _primaryColor.withValues(alpha:0.8),
+                                _primaryColor.withValues(alpha: UIConstants.opacityVeryHigh),
                               ],
                             ),
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadiusConstants.borderRadiusLarge,
                             boxShadow: [
                               BoxShadow(
-                                color: _primaryColor.withValues(alpha:0.3),
-                                blurRadius: 12,
-                                offset: const Offset(0, 6),
+                                color: _primaryColor.withValues(alpha: UIConstants.opacityMedium),
+                                blurRadius: UIConstants.elevationXHigh,
+                                offset: Offset(0, UIConstants.spacing4 + 2), // 6
                               ),
                             ],
                           ),
                           child: Material(
                             color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadiusConstants.borderRadiusLarge,
                             child: InkWell(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadiusConstants.borderRadiusLarge,
                               onTap: _navigateToNewLot,
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing16, vertical: UIConstants.spacing12),
                                 child: Row(
                                   children: [
                                     Container(
-                                      width: 40,
-                                      height: 40,
+                                      width: UIConstants.iconContainerSmall,
+                                      height: UIConstants.iconContainerSmall,
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha:0.2),
+                                        color: Colors.white.withValues(alpha: UIConstants.opacityMediumLow),
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Icon(
+                                      child: Icon(
                                         Icons.add_circle_outline,
                                         color: Colors.white,
-                                        size: 24,
+                                        size: UIConstants.iconSizeMedium,
                                       ),
                                     ),
-                                    const SizedBox(width: 16),
+                                    SizedBox(width: UIConstants.spacing16),
                                     Expanded(
                                       child: Column(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          const Text(
+                                          Text(
                                             'Registrar Nuevo Lote',
                                             style: TextStyle(
-                                              fontSize: 16,
+                                              fontSize: UIConstants.fontSizeBody,
                                               fontWeight: FontWeight.bold,
                                               color: Colors.white,
                                             ),
@@ -508,8 +514,8 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                           Text(
                                             'Genera código QR para tu material',
                                             style: TextStyle(
-                                              fontSize: 13,
-                                              color: Colors.white.withValues(alpha:0.9),
+                                              fontSize: UIConstants.fontSizeSmall,
+                                              color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
                                             ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -518,8 +524,8 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                     ),
                                     Icon(
                                       Icons.arrow_forward_ios,
-                                      color: Colors.white.withValues(alpha:0.8),
-                                      size: 18,
+                                      color: Colors.white.withValues(alpha: UIConstants.opacityVeryHigh),
+                                      size: UIConstants.fontSizeLarge,
                                     ),
                                   ],
                                 ),
@@ -528,16 +534,16 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                           ),
                         ),
                         
-                        const SizedBox(height: 20),
+                        SizedBox(height: UIConstants.spacing20),
                         
                         // Sección de lotes recientes
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
+                            Text(
                               'Lotes Recientes',
                               style: TextStyle(
-                                fontSize: 20,
+                                fontSize: UIConstants.fontSizeXLarge,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black87,
                               ),
@@ -549,15 +555,15 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                                   Text(
                                     'Ver todos',
                                     style: TextStyle(
-                                      fontSize: 14,
+                                      fontSize: UIConstants.fontSizeMedium,
                                       color: _primaryColor,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  const SizedBox(width: 4),
+                                  SizedBox(width: UIConstants.spacing4),
                                   Icon(
                                     Icons.arrow_forward,
-                                    size: 16,
+                                    size: UIConstants.iconSizeSmall,
                                     color: _primaryColor,
                                   ),
                                 ],
@@ -570,29 +576,29 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                         // Lista de lotes con nuevo diseño
                         if (_lotesRecientes.isEmpty)
                           Container(
-                            padding: const EdgeInsets.all(32),
+                            padding: EdgeInsetsConstants.paddingAll32,
                             child: Center(
                               child: Column(
                                 children: [
                                   Icon(
                                     Icons.inventory_2_outlined,
-                                    size: 64,
+                                    size: UIConstants.iconSizeEmpty,
                                     color: Colors.grey[400],
                                   ),
-                                  const SizedBox(height: 16),
+                                  SizedBox(height: UIConstants.spacing16),
                                   Text(
                                     'Aún no hay lotes creados',
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: UIConstants.fontSizeBody,
                                       color: Colors.grey[600],
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
+                                  SizedBox(height: UIConstants.spacing8),
                                   Text(
                                     'Presiona el botón + para crear tu primer lote',
                                     style: TextStyle(
-                                      fontSize: 14,
+                                      fontSize: UIConstants.fontSizeMedium,
                                       color: Colors.grey[500],
                                     ),
                                   ),
@@ -623,7 +629,7 @@ class _OrigenInicioScreenState extends State<OrigenInicioScreen> {
                             showActions: true,
                           )),
                         
-                        const SizedBox(height: 100), // Espacio para el FAB
+                        SizedBox(height: UIConstants.spacing40 + UIConstants.spacing40 + UIConstants.spacing20), // 100 - Espacio para el FAB
                       ],
                     ),
                   ),

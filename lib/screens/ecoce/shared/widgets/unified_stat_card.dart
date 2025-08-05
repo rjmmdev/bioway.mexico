@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../utils/ui_constants.dart';
 
 /// Unified stat card widget that supports multiple layout variants
 /// Combines functionality from stat_card.dart and statistic_card.dart
@@ -99,7 +100,7 @@ class UnifiedStatCard extends StatelessWidget {
           }
           onTap!();
         },
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadiusConstants.borderRadiusLarge,
         child: card,
       );
     }
@@ -111,15 +112,15 @@ class UnifiedStatCard extends StatelessWidget {
     return Container(
       width: width,
       height: height,
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsetsConstants.paddingAll20,
       decoration: BoxDecoration(
         color: backgroundColor ?? Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadiusConstants.borderRadiusLarge,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow + 0.03),
+            blurRadius: UIConstants.blurRadiusLarge,
+            offset: Offset(0, UIConstants.spacing10),
           ),
         ],
       ),
@@ -128,29 +129,29 @@ class UnifiedStatCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 45,
-            height: 45,
+            width: UIConstants.buttonHeightMedium + UIConstants.spacing4 + 1,
+            height: UIConstants.buttonHeightMedium + UIConstants.spacing4 + 1,
             decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: iconColor.withValues(alpha: UIConstants.opacityLow),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
             ),
             child: Icon(
               icon,
               color: iconColor,
-              size: 24,
+              size: UIConstants.iconSizeMedium,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: UIConstants.spacing12),
           _buildValueWithUnit(
-            fontSize: 32,
-            unitFontSize: 18,
+            fontSize: UIConstants.fontSizeXXLarge,
+            unitFontSize: UIConstants.fontSizeBody + 2,
             fontWeight: FontWeight.bold,
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: UIConstants.spacing4),
           Text(
             label,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: UIConstants.fontSizeSmall + 1,
               color: Colors.grey,
             ),
             overflow: TextOverflow.ellipsis,
@@ -161,7 +162,7 @@ class UnifiedStatCard extends StatelessWidget {
   }
 
   Widget _buildHorizontalLayout(BuildContext context) {
-    final effectiveHeight = height ?? 70;
+    final effectiveHeight = height ?? UIConstants.buttonHeightLarge + UIConstants.spacing16;
     final isCompact = effectiveHeight < 100;
     
     return Container(
@@ -169,12 +170,12 @@ class UnifiedStatCard extends StatelessWidget {
       height: effectiveHeight,
       decoration: BoxDecoration(
         color: backgroundColor ?? Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadiusConstants.borderRadiusLarge,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
+            blurRadius: UIConstants.blurRadiusMedium,
+            offset: Offset(0, UIConstants.spacing4),
           ),
         ],
       ),
@@ -183,19 +184,19 @@ class UnifiedStatCard extends StatelessWidget {
           // Background decorative icon
           if (showBackgroundIcon)
             Positioned(
-              right: -10,
-              bottom: -10,
+              right: -UIConstants.spacing10,
+              bottom: -UIConstants.spacing10,
               child: Icon(
                 _getOutlinedIcon(),
-                size: 60,
-                color: iconColor.withValues(alpha: 0.05),
+                size: UIConstants.iconSizeDialog,
+                color: iconColor.withValues(alpha: UIConstants.opacityVeryLow),
               ),
             ),
           // Content
           Padding(
             padding: EdgeInsets.symmetric(
-              horizontal: isCompact ? 10.0 : 12.0,
-              vertical: isCompact ? 8.0 : 10.0,
+              horizontal: isCompact ? UIConstants.spacing10 : UIConstants.spacing12,
+              vertical: isCompact ? UIConstants.spacing8 : UIConstants.spacing10,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,19 +205,19 @@ class UnifiedStatCard extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      width: isCompact ? 28 : 32,
-                      height: isCompact ? 28 : 32,
+                      width: isCompact ? UIConstants.iconSizeLarge : UIConstants.buttonHeightSmall,
+                      height: isCompact ? UIConstants.iconSizeLarge : UIConstants.buttonHeightSmall,
                       decoration: BoxDecoration(
-                        color: iconColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
+                        color: iconColor.withValues(alpha: UIConstants.opacityLow),
+                        borderRadius: BorderRadius.circular(UIConstants.spacing10),
                       ),
                       child: Icon(
                         icon,
                         color: iconColor,
-                        size: isCompact ? 16 : 18,
+                        size: isCompact ? UIConstants.iconSizeBody : UIConstants.iconSizeBody + 2,
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: UIConstants.spacing10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,16 +227,16 @@ class UnifiedStatCard extends StatelessWidget {
                             fit: BoxFit.scaleDown,
                             alignment: Alignment.centerLeft,
                             child: _buildValueWithUnit(
-                              fontSize: isCompact ? 18 : 20,
-                              unitFontSize: isCompact ? 12 : 14,
+                              fontSize: isCompact ? UIConstants.fontSizeBody + 2 : UIConstants.fontSizeLarge,
+                              unitFontSize: isCompact ? UIConstants.fontSizeSmall : UIConstants.fontSizeMedium,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(height: 2),
+                          SizedBox(height: UIConstants.spacing4 / 2),
                           Text(
                             label,
                             style: TextStyle(
-                              fontSize: isCompact ? 11 : 11,
+                              fontSize: UIConstants.fontSizeSmall - 1,
                               color: Colors.grey[600],
                               height: 1.1,
                             ),
@@ -274,7 +275,7 @@ class UnifiedStatCard extends StatelessWidget {
               height: 1,
             ),
           ),
-          const SizedBox(width: 4),
+          SizedBox(width: UIConstants.spacing4),
           Text(
             unit!,
             style: TextStyle(

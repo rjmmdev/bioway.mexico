@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../services/user_session_service.dart';
 import '../../../models/ecoce/ecoce_profile_model.dart';
 import '../../../services/carga_transporte_service.dart';
@@ -176,14 +177,14 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
             // Header moderno con gradiente
             SliverToBoxAdapter(
               child: Container(
-                height: 250,
+                height: UIConstants.qrSizeLarge,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
                       BioWayColors.deepBlue,
-                      BioWayColors.deepBlue.withValues(alpha: 0.8),
+                      BioWayColors.deepBlue.withValues(alpha: UIConstants.opacityVeryHigh),
                     ],
                   ),
                 ),
@@ -194,11 +195,11 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                       right: -50,
                       top: -50,
                       child: Container(
-                        width: 200,
-                        height: 200,
+                        width: UIConstants.qrSizeMedium,
+                        height: UIConstants.qrSizeMedium,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.1),
+                          color: Colors.white.withValues(alpha: UIConstants.opacityLow),
                         ),
                       ),
                     ),
@@ -206,17 +207,17 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                       left: -30,
                       bottom: -30,
                       child: Container(
-                        width: 150,
-                        height: 150,
+                        width: UIConstants.qrSizeSmall,
+                        height: UIConstants.qrSizeSmall,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.05),
+                          color: Colors.white.withValues(alpha: UIConstants.opacityVeryLow),
                         ),
                       ),
                     ),
                     // Contenido
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      padding: EdgeInsets.fromLTRB(UIConstants.spacing16, UIConstants.spacing12, UIConstants.spacing16, UIConstants.spacing16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -227,31 +228,31 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                               // Logo ECOCE
                               SvgPicture.asset(
                                 'assets/logos/ecoce_logo.svg',
-                                width: 70,
-                                height: 35,
+                                width: UIConstants.logoWidthSmall,
+                                height: UIConstants.logoHeightSmall,
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: UIConstants.spacing12,
+                                  vertical: UIConstants.spacing4 + 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(20),
+                                  color: Colors.white.withValues(alpha: UIConstants.opacityMediumLow),
+                                  borderRadius: BorderRadiusConstants.borderRadiusLarge,
                                 ),
                                 child: Row(
                                   children: [
                                     Icon(
                                       Icons.calendar_today,
-                                      size: 14,
-                                      color: Colors.white.withValues(alpha: 0.9),
+                                      size: UIConstants.fontSizeMedium,
+                                      color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
                                     ),
-                                    const SizedBox(width: 6),
+                                    SizedBox(width: UIConstants.spacing4 + 2),
                                     Text(
                                       FormatUtils.formatDate(DateTime.now()),
                                       style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.white.withValues(alpha: 0.9),
+                                        fontSize: UIConstants.fontSizeXSmall,
+                                        color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
                                       ),
                                     ),
                                   ],
@@ -259,44 +260,44 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: UIConstants.spacing8),
                           // Nombre del transportista
                           Text(
                             _nombreTransportista,
                             style: const TextStyle(
-                              fontSize: 24,
+                              fontSize: UIConstants.fontSizeTitle,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                             overflow: TextOverflow.ellipsis,
                             maxLines: 2,
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: UIConstants.spacing4),
                           // Badge con tipo y folio
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: UIConstants.spacing12,
+                                  vertical: UIConstants.spacing4 + 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                  borderRadius: BorderRadius.circular(20),
+                                  color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
+                                  borderRadius: BorderRadiusConstants.borderRadiusLarge,
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
                                       Icons.local_shipping,
-                                      size: 16,
+                                      size: UIConstants.iconSizeSmall,
                                       color: BioWayColors.deepBlue,
                                     ),
-                                    const SizedBox(width: 6),
+                                    SizedBox(width: UIConstants.spacing4 + 2),
                                     Text(
                                       'Transportista',
                                       style: TextStyle(
-                                        fontSize: 13,
+                                        fontSize: UIConstants.fontSizeSmall,
                                         fontWeight: FontWeight.w600,
                                         color: BioWayColors.deepBlue,
                                       ),
@@ -304,15 +305,15 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: UIConstants.spacing8),
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: UIConstants.spacing12,
+                                  vertical: UIConstants.spacing4 + 2,
                                 ),
                                 decoration: BoxDecoration(
                                   color: BioWayColors.deepBlue,
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadiusConstants.borderRadiusLarge,
                                 ),
                                 child: Text(
                                   _folioTransportista,
@@ -325,7 +326,7 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: UIConstants.spacing16),
                           // Estadísticas con UnifiedStatCard en una sola fila
                           Row(
                             children: [
@@ -336,10 +337,10 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                                   value: _lotesEnTransitoCount.toString(),
                                   icon: Icons.inventory_2,
                                   color: BioWayColors.warning,
-                                  height: 70,
+                                  height: UIConstants.statCardHeight,
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: UIConstants.spacing12),
                               // Estadística de Entregas Realizadas
                               Expanded(
                                 child: UnifiedStatCard.horizontal(
@@ -347,7 +348,7 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                                   value: _entregasRealizadas.toString(),
                                   icon: Icons.check_circle,
                                   color: BioWayColors.primaryGreen,
-                                  height: 70,
+                                  height: UIConstants.statCardHeight,
                                 ),
                               ),
                             ],
@@ -363,16 +364,16 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
             // Contenido principal
             SliverToBoxAdapter(
               child: Container(
-                margin: const EdgeInsets.only(top: 10),
+                margin: EdgeInsets.only(top: UIConstants.spacing8 + 2),
                 decoration: const BoxDecoration(
                   color: Color(0xFFF5F5F5),
                   borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30),
+                    topLeft: Radius.circular(UIConstants.radiusXLarge - 2),
+                    topRight: Radius.circular(UIConstants.radiusXLarge - 2),
                   ),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+                  padding: EdgeInsets.fromLTRB(UIConstants.spacing16, UIConstants.spacing20, UIConstants.spacing16, UIConstants.spacing20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -381,20 +382,20 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                       // Primer botón - Recoger Materiales
                       Container(
                         width: double.infinity,
-                        height: 70,
+                        height: UIConstants.buttonHeightLarge,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
                               BioWayColors.primaryGreen,
-                              BioWayColors.primaryGreen.withValues(alpha: 0.8),
+                              BioWayColors.primaryGreen.withValues(alpha: UIConstants.opacityVeryHigh),
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadiusConstants.borderRadiusLarge,
                           boxShadow: [
                             BoxShadow(
-                              color: BioWayColors.primaryGreen.withValues(alpha: 0.3),
+                              color: BioWayColors.primaryGreen.withValues(alpha: UIConstants.opacityMedium),
                               blurRadius: 12,
                               offset: const Offset(0, 6),
                             ),
@@ -402,28 +403,28 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                         ),
                         child: Material(
                           color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadiusConstants.borderRadiusLarge,
                           child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadiusConstants.borderRadiusLarge,
                             onTap: _navigateToRecoger,
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing16, vertical: UIConstants.spacing12),
                               child: Row(
                                 children: [
                                   Container(
-                                    width: 40,
-                                    height: 40,
+                                    width: UIConstants.iconContainerMedium,
+                                    height: UIConstants.iconContainerMedium,
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.2),
+                                      color: Colors.white.withValues(alpha: UIConstants.opacityMediumLow),
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(
                                       Icons.qr_code_scanner,
                                       color: Colors.white,
-                                      size: 24,
+                                      size: UIConstants.iconSizeMedium,
                                     ),
                                   ),
-                                  const SizedBox(width: 16),
+                                  SizedBox(width: UIConstants.spacing16),
                                   Expanded(
                                     child: Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
@@ -432,7 +433,7 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                                         const Text(
                                           'Recoger Materiales',
                                           style: TextStyle(
-                                            fontSize: 16,
+                                            fontSize: UIConstants.fontSizeBody,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.white,
                                           ),
@@ -440,8 +441,8 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                                         Text(
                                           'Escanear lotes para transporte',
                                           style: TextStyle(
-                                            fontSize: 13,
-                                            color: Colors.white.withValues(alpha: 0.9),
+                                            fontSize: UIConstants.fontSizeSmall,
+                                            color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -450,8 +451,8 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                                   ),
                                   Icon(
                                     Icons.arrow_forward_ios,
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                    size: 18,
+                                    color: Colors.white.withValues(alpha: UIConstants.opacityVeryHigh),
+                                    size: UIConstants.fontSizeLarge,
                                   ),
                                 ],
                               ),
@@ -459,24 +460,24 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: UIConstants.spacing12),
                       // Segundo botón - Entregar Materiales
                       Container(
                         width: double.infinity,
-                        height: 70,
+                        height: UIConstants.buttonHeightLarge,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
                               BioWayColors.deepBlue,
-                              BioWayColors.deepBlue.withValues(alpha: 0.8),
+                              BioWayColors.deepBlue.withValues(alpha: UIConstants.opacityVeryHigh),
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadiusConstants.borderRadiusLarge,
                           boxShadow: [
                             BoxShadow(
-                              color: BioWayColors.deepBlue.withValues(alpha: 0.3),
+                              color: BioWayColors.deepBlue.withValues(alpha: UIConstants.opacityMedium),
                               blurRadius: 12,
                               offset: const Offset(0, 6),
                             ),
@@ -484,28 +485,28 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                         ),
                         child: Material(
                           color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadiusConstants.borderRadiusLarge,
                           child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadiusConstants.borderRadiusLarge,
                             onTap: _navigateToEntregar,
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing16, vertical: UIConstants.spacing12),
                               child: Row(
                                 children: [
                                   Container(
-                                    width: 40,
-                                    height: 40,
+                                    width: UIConstants.iconContainerMedium,
+                                    height: UIConstants.iconContainerMedium,
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.2),
+                                      color: Colors.white.withValues(alpha: UIConstants.opacityMediumLow),
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(
                                       Icons.local_shipping,
                                       color: Colors.white,
-                                      size: 24,
+                                      size: UIConstants.iconSizeMedium,
                                     ),
                                   ),
-                                  const SizedBox(width: 16),
+                                  SizedBox(width: UIConstants.spacing16),
                                   Expanded(
                                     child: Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
@@ -514,7 +515,7 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                                         const Text(
                                           'Entregar Materiales',
                                           style: TextStyle(
-                                            fontSize: 16,
+                                            fontSize: UIConstants.fontSizeBody,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.white,
                                           ),
@@ -522,8 +523,8 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                                         Text(
                                           'Gestionar entregas de lotes',
                                           style: TextStyle(
-                                            fontSize: 13,
-                                            color: Colors.white.withValues(alpha: 0.9),
+                                            fontSize: UIConstants.fontSizeSmall,
+                                            color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -532,8 +533,8 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                                   ),
                                   Icon(
                                     Icons.arrow_forward_ios,
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                    size: 18,
+                                    color: Colors.white.withValues(alpha: UIConstants.opacityVeryHigh),
+                                    size: UIConstants.fontSizeLarge,
                                   ),
                                 ],
                               ),
@@ -541,7 +542,7 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: UIConstants.spacing24),
 
                       // Lotes en tránsito
                       Row(
@@ -552,20 +553,20 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: BioWayColors.warning.withValues(alpha: 0.1),
+                                  color: BioWayColors.warning.withValues(alpha: UIConstants.opacityLow),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Icon(
                                   Icons.local_shipping,
                                   color: BioWayColors.warning,
-                                  size: 20,
+                                  size: UIConstants.iconSizeMedium,
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: UIConstants.spacing12),
                               const Text(
                                 'Lotes en Tránsito',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: UIConstants.fontSizeLarge,
                                   fontWeight: FontWeight.bold,
                                   color: BioWayColors.darkGreen,
                                 ),
@@ -575,13 +576,13 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: BioWayColors.warning.withValues(alpha: 0.2),
+                              color: BioWayColors.warning.withValues(alpha: UIConstants.opacityMediumLow),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
                               '${_lotesEnTransito.length}',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: UIConstants.fontSizeMedium,
                                 fontWeight: FontWeight.bold,
                                 color: BioWayColors.warning,
                               ),
@@ -589,16 +590,16 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: UIConstants.spacing16),
                       
                       if (_isLoadingLotes)
                         Container(
                           padding: const EdgeInsets.all(32),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadiusConstants.borderRadiusLarge,
                             border: Border.all(
-                              color: Colors.grey.withValues(alpha: 0.2),
+                              color: Colors.grey.withValues(alpha: UIConstants.opacityMediumLow),
                             ),
                           ),
                           child: const Center(
@@ -612,9 +613,9 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                           padding: const EdgeInsets.all(32),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadiusConstants.borderRadiusLarge,
                             border: Border.all(
-                              color: Colors.grey.withValues(alpha: 0.2),
+                              color: Colors.grey.withValues(alpha: UIConstants.opacityMediumLow),
                             ),
                           ),
                           child: Center(
@@ -622,10 +623,10 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                               children: [
                                 Icon(
                                   Icons.local_shipping_outlined,
-                                  size: 48,
+                                  size: UIConstants.iconSizeXLarge - UIConstants.spacing16,
                                   color: Colors.grey[400],
                                 ),
-                                const SizedBox(height: 16),
+                                SizedBox(height: UIConstants.spacing16),
                                 Text(
                                   'No hay lotes en tránsito',
                                   style: TextStyle(
@@ -634,11 +635,11 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                                     color: Colors.grey[600],
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                SizedBox(height: UIConstants.spacing8),
                                 Text(
                                   'Escanea nuevos lotes para comenzar',
                                   style: TextStyle(
-                                    fontSize: 14,
+                                    fontSize: UIConstants.fontSizeMedium,
                                     color: Colors.grey[500],
                                   ),
                                 ),
@@ -651,7 +652,7 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                           child: _buildLoteEnTransitoCard(lote),
                         )),
                       
-                      const SizedBox(height: 60), // Espacio para el bottom nav
+                      SizedBox(height: UIConstants.spacing40 + UIConstants.spacing20), // Espacio para el bottom nav
                     ],
                   ),
                 ),
@@ -772,7 +773,7 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: UIConstants.spacing8),
                             Flexible(
                               child: Text(
                                 'Lote ${lote['id'] ?? lote['firebaseId'] ?? ''}',
@@ -786,7 +787,7 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 6),
+                        SizedBox(height: UIConstants.spacing4 + 2),
                         // Segunda línea: Origen
                         Text(
                           lote['origen'] ?? 'Origen desconocido',
@@ -798,7 +799,7 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: UIConstants.spacing4),
                         // Tercera línea: Peso, Presentación y Fecha
                         Wrap(
                           spacing: 8,
@@ -881,7 +882,7 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
             size: isCompact ? 11 : 12,
             color: color,
           ),
-          const SizedBox(width: 4),
+          SizedBox(width: UIConstants.spacing4),
           Flexible(
             child: Text(
               text,
@@ -918,7 +919,7 @@ class _TransporteInicioScreenState extends State<TransporteInicioScreen> {
             size: isCompact ? 11 : 12,
             color: color,
           ),
-          const SizedBox(width: 4),
+          SizedBox(width: UIConstants.spacing4),
           Text(
             status,
             style: TextStyle(

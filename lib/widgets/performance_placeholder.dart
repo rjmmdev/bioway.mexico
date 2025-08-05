@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/ui_constants.dart';
 
 /// A performance-optimized placeholder widget that provides smooth loading states
 class PerformancePlaceholder extends StatefulWidget {
@@ -11,7 +12,7 @@ class PerformancePlaceholder extends StatefulWidget {
     super.key,
     required this.child,
     this.isLoading = false,
-    this.fadeInDuration = const Duration(milliseconds: 300),
+    this.fadeInDuration = const Duration(milliseconds: UIConstants.animationDurationMedium),
     this.backgroundColor = const Color(0xFFF8F9FA),
   });
 
@@ -111,7 +112,7 @@ class _ShimmerPlaceholderState extends State<ShimmerPlaceholder>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: UIConstants.animationDurationLong * 3),
       vsync: this,
     )..repeat();
 
@@ -139,7 +140,7 @@ class _ShimmerPlaceholderState extends State<ShimmerPlaceholder>
           width: widget.width,
           height: widget.height,
           decoration: BoxDecoration(
-            borderRadius: widget.borderRadius ?? BorderRadius.circular(8),
+            borderRadius: widget.borderRadius ?? BorderRadiusConstants.borderRadiusSmall,
             gradient: LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
@@ -148,10 +149,10 @@ class _ShimmerPlaceholderState extends State<ShimmerPlaceholder>
                 _shimmerAnimation.value,
                 _shimmerAnimation.value + 0.3,
               ].map((e) => e.clamp(0.0, 1.0)).toList(),
-              colors: const [
-                Color(0xFFE0E0E0),
-                Color(0xFFF5F5F5),
-                Color(0xFFE0E0E0),
+              colors: [
+                Colors.grey[300]!,
+                Colors.grey[100]!,
+                Colors.grey[300]!,
               ],
             ),
           ),

@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import '../../../utils/format_utils.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
@@ -324,14 +325,14 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
             // Header moderno con gradiente
             SliverToBoxAdapter(
               child: Container(
-                height: 300,
+                height: UIConstants.qrSizeMedium + UIConstants.iconSizeDialog + UIConstants.iconSizeMedium,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
                       const Color(0xFF9333EA), // Purple para laboratorio
-                      const Color(0xFF9333EA).withValues(alpha: 0.8),
+                      const Color(0xFF9333EA).withValues(alpha: UIConstants.opacityVeryHigh),
                     ],
                   ),
                 ),
@@ -342,11 +343,11 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                       right: -50,
                       top: -50,
                       child: Container(
-                        width: 200,
-                        height: 200,
+                        width: UIConstants.qrSizeMedium,
+                        height: UIConstants.qrSizeMedium,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.1),
+                          color: Colors.white.withValues(alpha: UIConstants.opacityLow),
                         ),
                       ),
                     ),
@@ -354,17 +355,17 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                       left: -30,
                       bottom: -30,
                       child: Container(
-                        width: 150,
-                        height: 150,
+                        width: UIConstants.qrSizeSmall + UIConstants.iconContainerMedium,
+                        height: UIConstants.qrSizeSmall + UIConstants.iconContainerMedium,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.05),
+                          color: Colors.white.withValues(alpha: UIConstants.opacityVeryLow),
                         ),
                       ),
                     ),
                     // Contenido
                     Padding(
-                      padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 16, 20, 24),
+                      padding: EdgeInsets.fromLTRB(UIConstants.spacing20, MediaQuery.of(context).padding.top + UIConstants.spacing16, UIConstants.spacing20, UIConstants.spacing24),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -375,31 +376,31 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                               // Logo ECOCE
                               SvgPicture.asset(
                                 'assets/logos/ecoce_logo.svg',
-                                width: 70,
-                                height: 35,
+                                width: UIConstants.statCardHeight,
+                                height: UIConstants.iconSizeMedium + UIConstants.spacing8 + 3,
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: UIConstants.spacing12,
+                                  vertical: UIConstants.spacing4 + 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(20),
+                                  color: Colors.white.withValues(alpha: UIConstants.opacityMediumLow),
+                                  borderRadius: BorderRadiusConstants.borderRadiusLarge,
                                 ),
                                 child: Row(
                                   children: [
                                     Icon(
                                       Icons.calendar_today,
-                                      size: 14,
-                                      color: Colors.white.withValues(alpha: 0.9),
+                                      size: UIConstants.fontSizeMedium,
+                                      color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
                                     ),
-                                    const SizedBox(width: 6),
+                                    SizedBox(width: UIConstants.spacing4 + 2),
                                     Text(
                                       FormatUtils.formatDate(DateTime.now()),
                                       style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.white.withValues(alpha: 0.9),
+                                        fontSize: UIConstants.fontSizeSmall,
+                                        color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
                                       ),
                                     ),
                                   ],
@@ -407,46 +408,46 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: UIConstants.spacing12),
                           // Nombre del laboratorio
                           Text(
                             _nombreLaboratorio,
                             style: const TextStyle(
-                              fontSize: 26,
+                              fontSize: UIConstants.fontSizeTitle + 2,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.visible,
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: UIConstants.spacing8),
                           // Badge con tipo y folio
                           Wrap(
-                            spacing: 8,
+                            spacing: UIConstants.spacing8,
                             runSpacing: 8,
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: UIConstants.spacing12,
+                                  vertical: UIConstants.spacing4 + 2,
                                 ),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withValues(alpha: 0.9),
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadiusConstants.borderRadiusLarge,
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
                                       Icons.science,
-                                      size: 16,
+                                      size: UIConstants.fontSizeBody,
                                       color: const Color(0xFF9333EA), // Purple para laboratorio
                                     ),
-                                    const SizedBox(width: 6),
+                                    SizedBox(width: UIConstants.spacing4 + 2),
                                     Text(
                                       'Laboratorio',
                                       style: TextStyle(
-                                        fontSize: 13,
+                                        fontSize: UIConstants.fontSizeSmall + 1,
                                         fontWeight: FontWeight.w600,
                                         color: const Color(0xFF9333EA), // Purple para laboratorio
                                       ),
@@ -454,15 +455,15 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: UIConstants.spacing8),
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: UIConstants.spacing12,
+                                  vertical: UIConstants.spacing4 + 2,
                                 ),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF9333EA), // Purple para laboratorio
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadiusConstants.borderRadiusLarge,
                                 ),
                                 child: Text(
                                   _folioLaboratorio,
@@ -475,10 +476,10 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: UIConstants.spacing16),
                           // Estadísticas con UnifiedStatCard
                           SizedBox(
-                            height: 70,
+                            height: UIConstants.statCardHeight,
                             child: Row(
                               children: [
                                 // Estadística de Muestras Recibidas
@@ -488,10 +489,10 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                     value: _muestrasRecibidas.toString(),
                                     icon: Icons.science,
                                     color: Colors.blue,
-                                    height: 70,
+                                    height: UIConstants.statCardHeight,
                                   ),
                                 ),
-                                const SizedBox(width: 12),
+                                SizedBox(width: UIConstants.spacing12),
                                 // Estadística de Material Analizado
                                 Expanded(
                                   child: UnifiedStatCard.horizontal(
@@ -500,7 +501,7 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                     unit: 'kg',
                                     icon: Icons.analytics,
                                     color: Colors.purple,
-                                    height: 70,
+                                    height: UIConstants.statCardHeight,
                                   ),
                                 ),
                               ],
@@ -517,7 +518,7 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
             // Contenido principal
             SliverToBoxAdapter(
               child: Container(
-                margin: const EdgeInsets.only(top: 10),
+                margin: EdgeInsets.only(top: UIConstants.spacing8 + 2),
                 decoration: const BoxDecoration(
                   color: Color(0xFFF5F5F5),
                   borderRadius: BorderRadius.only(
@@ -526,27 +527,27 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                   ),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+                  padding: EdgeInsets.fromLTRB(UIConstants.spacing16, UIConstants.spacing20, UIConstants.spacing16, UIConstants.spacing20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Acción rápida con diseño unificado
                       Container(
                         width: double.infinity,
-                        height: 70,
+                        height: UIConstants.statCardHeight,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
                               const Color(0xFF9333EA), // Purple para laboratorio
-                              const Color(0xFF9333EA).withValues(alpha: 0.8),
+                              const Color(0xFF9333EA).withValues(alpha: UIConstants.opacityVeryHigh),
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadiusConstants.borderRadiusLarge,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF9333EA).withValues(alpha: 0.3),
+                              color: const Color(0xFF9333EA).withValues(alpha: UIConstants.opacityMedium),
                               blurRadius: 12,
                               offset: const Offset(0, 6),
                             ),
@@ -554,28 +555,28 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                         ),
                         child: Material(
                           color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadiusConstants.borderRadiusLarge,
                           child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadiusConstants.borderRadiusLarge,
                             onTap: _navigateToNewMuestra,
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing16, vertical: UIConstants.spacing12),
                               child: Row(
                                 children: [
                                   Container(
-                                    width: 40,
-                                    height: 40,
+                                    width: UIConstants.iconSizeLarge,
+                                    height: UIConstants.iconSizeLarge,
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.2),
+                                      color: Colors.white.withValues(alpha: UIConstants.opacityMediumLow),
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(
                                       Icons.add_circle_outline,
                                       color: Colors.white,
-                                      size: 24,
+                                      size: UIConstants.iconSizeMedium,
                                     ),
                                   ),
-                                  const SizedBox(width: 16),
+                                  SizedBox(width: UIConstants.spacing16),
                                   Expanded(
                                     child: Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
@@ -584,7 +585,7 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                         const Text(
                                           'Registrar Nueva Muestra',
                                           style: TextStyle(
-                                            fontSize: 16,
+                                            fontSize: UIConstants.fontSizeBody,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.white,
                                           ),
@@ -592,8 +593,8 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                         Text(
                                           'Escanea código QR del lote',
                                           style: TextStyle(
-                                            fontSize: 13,
-                                            color: Colors.white.withValues(alpha: 0.9),
+                                            fontSize: UIConstants.fontSizeSmall + 1,
+                                            color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -602,8 +603,8 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                   ),
                                   Icon(
                                     Icons.arrow_forward_ios,
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                    size: 18,
+                                    color: Colors.white.withValues(alpha: UIConstants.opacityVeryHigh),
+                                    size: UIConstants.fontSizeLarge,
                                   ),
                                 ],
                               ),
@@ -612,7 +613,7 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                         ),
                       ),
                       
-                      const SizedBox(height: 20),
+                      SizedBox(height: UIConstants.spacing20),
                       
                       // Sección de muestras recientes
                       Row(
@@ -621,7 +622,7 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                           const Text(
                             'Muestras Recientes',
                             style: TextStyle(
-                              fontSize: 20,
+                              fontSize: UIConstants.fontSizeXLarge,
                               fontWeight: FontWeight.bold,
                               color: Colors.black87,
                             ),
@@ -633,12 +634,12 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                 Text(
                                   'Ver todos',
                                   style: TextStyle(
-                                    fontSize: 14,
+                                    fontSize: UIConstants.fontSizeMedium,
                                     color: const Color(0xFF9333EA), // Purple para laboratorio
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                const SizedBox(width: 4),
+                                SizedBox(width: UIConstants.spacing4),
                                 Icon(
                                   Icons.arrow_forward,
                                   size: 16,
@@ -649,13 +650,13 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: UIConstants.spacing16),
                       
                       // Lista de muestras recientes o mensaje informativo
                       if (_isLoadingMuestras)
                         const Center(
                           child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 40),
+                            padding: EdgeInsets.symmetric(vertical: UIConstants.spacing40),
                             child: CircularProgressIndicator(
                               color: Color(0xFF9333EA),
                             ),
@@ -664,15 +665,15 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                       else if (_muestrasRecientes.isEmpty)
                         Center(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 40),
+                            padding: EdgeInsets.symmetric(vertical: UIConstants.spacing40),
                             child: Column(
                               children: [
                                 Icon(
                                   Icons.qr_code_scanner,
-                                  size: 64,
+                                  size: UIConstants.iconSizeXLarge - UIConstants.spacing16,
                                   color: Colors.grey[300],
                                 ),
-                                const SizedBox(height: 16),
+                                SizedBox(height: UIConstants.spacing16),
                                 Text(
                                   'Toma de muestras por código QR',
                                   style: TextStyle(
@@ -681,16 +682,16 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                SizedBox(height: UIConstants.spacing8),
                                 Text(
                                   'Escanea el código QR de muestra\ngenerado por el Reciclador',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    fontSize: 14,
+                                    fontSize: UIConstants.fontSizeMedium,
                                     color: Colors.grey[400],
                                   ),
                                 ),
-                                const SizedBox(height: 24),
+                                SizedBox(height: UIConstants.spacing24),
                                 ElevatedButton.icon(
                                   onPressed: _navigateToNewMuestra,
                                   icon: const Icon(Icons.qr_code_scanner),
@@ -703,7 +704,7 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                       vertical: 12,
                                     ),
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(24),
+                                      borderRadius: BorderRadiusConstants.borderRadiusRound,
                                     ),
                                   ),
                                 ),
@@ -718,7 +719,7 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                           ).toList(),
                         ),
                       
-                      const SizedBox(height: 100), // Espacio para el FAB
+                      SizedBox(height: UIConstants.qrSizeSmall), // Espacio para el FAB
                     ],
                   ),
                 ),
@@ -809,23 +810,23 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
     }
     
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: UIConstants.spacing12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadiusConstants.borderRadiusMedium,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow + 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadiusConstants.borderRadiusMedium,
         onTap: () => _navigateToMuestraDetail(muestra),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsetsConstants.paddingAll16,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -834,19 +835,19 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                 children: [
                   // Icono de estado
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: UIConstants.iconSizeButton,
+                    height: UIConstants.iconSizeButton,
                     decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      color: statusColor.withValues(alpha: UIConstants.opacityLow),
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
                     ),
                     child: Icon(
                       muestra.tipo == 'megalote' ? Icons.science : Icons.biotech,
                       color: statusColor,
-                      size: 24,
+                      size: UIConstants.iconSizeMedium,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: UIConstants.spacing12),
                   
                   // Información principal
                   Expanded(
@@ -866,12 +867,12 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: UIConstants.spacing8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing4 + 2, vertical: UIConstants.spacing4 / 2),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF9333EA).withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(4),
+                                color: const Color(0xFF9333EA).withValues(alpha: UIConstants.opacityLow),
+                                borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
                                 border: Border.all(color: const Color(0xFF9333EA).withValues(alpha: 0.3)),
                               ),
                               child: Row(
@@ -879,14 +880,14 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                 children: [
                                   Icon(
                                     muestra.tipo == 'megalote' ? Icons.layers : Icons.inventory_2,
-                                    size: 12,
+                                    size: UIConstants.fontSizeSmall,
                                     color: const Color(0xFF9333EA),
                                   ),
-                                  const SizedBox(width: 2),
+                                  SizedBox(width: UIConstants.spacing4 / 2),
                                   Text(
                                     tipoDisplay,
                                     style: const TextStyle(
-                                      fontSize: 10,
+                                      fontSize: UIConstants.fontSizeXSmall - 1,
                                       color: Color(0xFF9333EA),
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -924,7 +925,7 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                 ],
               ),
               
-              const SizedBox(height: 12),
+              SizedBox(height: UIConstants.spacing12),
               
               // Información adicional
               Row(
@@ -934,13 +935,13 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                     label: 'Origen',
                     value: origenDisplay,
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: UIConstants.spacing16),
                   _buildInfoItem(
                     icon: Icons.scale,
                     label: 'Peso',
                     value: '${peso.toStringAsFixed(2)} kg',
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: UIConstants.spacing16),
                   _buildInfoItem(
                     icon: Icons.calendar_today,
                     label: 'Fecha',
@@ -962,8 +963,8 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
   }) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: Colors.grey[600]),
-        const SizedBox(width: 4),
+        Icon(icon, size: UIConstants.fontSizeMedium, color: Colors.grey[600]),
+        SizedBox(width: UIConstants.spacing4),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

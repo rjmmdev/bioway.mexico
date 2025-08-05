@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:path_provider/path_provider.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../services/transformacion_service.dart';
 import '../../../services/muestra_laboratorio_service.dart'; // NUEVO: Servicio independiente
 import '../../../services/user_session_service.dart';
@@ -23,7 +24,7 @@ class SignaturePainter extends CustomPainter {
 
   SignaturePainter({
     required this.points,
-    this.strokeWidth = 2.0,
+    this.strokeWidth = UIConstants.strokeWidth,
   });
 
   @override
@@ -202,10 +203,10 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
       final canvas = Canvas(recorder);
       final painter = SignaturePainter(
         points: _signaturePoints,
-        strokeWidth: 2.0,
+        strokeWidth: UIConstants.strokeWidth,
       );
       
-      final size = const Size(300, 120);
+      final size = Size(UIConstants.qrSizeMedium + UIConstants.iconSizeDialog + UIConstants.iconSizeMedium, UIConstants.statCardHeight);
       
       // Fondo blanco
       canvas.drawRect(
@@ -360,12 +361,12 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                 size: 64,
                 color: Colors.grey[400],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: UIConstants.spacing16),
               const Text(
                 'No se pudo cargar la información del megalote',
-                style: TextStyle(fontSize: 16),
+                style: TextStyle(fontSize: UIConstants.fontSizeBody),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: UIConstants.spacing24),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
@@ -389,7 +390,7 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
         title: const Text(
           'Toma de Muestra - Megalote',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: UIConstants.fontSizeXLarge,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -435,21 +436,21 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsetsConstants.paddingAll16,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Información del megalote
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsetsConstants.paddingAll16,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadiusConstants.borderRadiusMedium,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                      color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
+                      blurRadius: UIConstants.blurRadiusMedium,
+                      offset: Offset(0, UIConstants.spacing4),
                     ),
                   ],
                 ),
@@ -463,41 +464,41 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                           color: const Color(0xFF9333EA),
                           size: 24,
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: UIConstants.spacing12),
                         const Text(
                           'Información del Megalote',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: UIConstants.fontSizeLarge,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     _buildInfoRow('ID:', _transformacion!.id),
-                    const SizedBox(height: 8),
+                    SizedBox(height: UIConstants.spacing8),
                     _buildInfoRow('Peso Total:', '${_transformacion!.pesoTotalEntrada.toStringAsFixed(2)} kg'),
-                    const SizedBox(height: 8),
+                    SizedBox(height: UIConstants.spacing8),
                     _buildInfoRow('Peso Disponible:', '${_transformacion!.pesoDisponible.toStringAsFixed(2)} kg'),
-                    const SizedBox(height: 8),
+                    SizedBox(height: UIConstants.spacing8),
                     _buildInfoRow('Fecha:', _formatDate(DateTime.now())),
                   ],
                 ),
               ),
               
-              const SizedBox(height: 16),
+              SizedBox(height: UIConstants.spacing16),
               
               // Peso de la muestra
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsetsConstants.paddingAll16,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadiusConstants.borderRadiusMedium,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                      color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
+                      blurRadius: UIConstants.blurRadiusMedium,
+                      offset: Offset(0, UIConstants.spacing4),
                     ),
                   ],
                 ),
@@ -511,26 +512,26 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                           color: const Color(0xFF9333EA),
                           size: 24,
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: UIConstants.spacing12),
                         const Text(
                           'Peso de la Muestra',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: UIConstants.fontSizeLarge,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(width: 4),
+                        SizedBox(width: UIConstants.spacing4),
                         const Text(
                           '*',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: UIConstants.fontSizeLarge,
                             fontWeight: FontWeight.bold,
                             color: Colors.red,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     WeightInputWidget(
                       controller: _pesoMuestraController,
                       label: 'Peso de la muestra en kg',
@@ -550,11 +551,11 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                         return null;
                       },
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: UIConstants.spacing8),
                     Text(
                       'Peso máximo disponible: ${_transformacion!.pesoDisponible.toStringAsFixed(2)} kg',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: UIConstants.fontSizeSmall,
                         color: Colors.grey[600],
                         fontStyle: FontStyle.italic,
                       ),
@@ -563,20 +564,20 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                 ),
               ),
               
-              const SizedBox(height: 16),
+              SizedBox(height: UIConstants.spacing16),
               
               // Datos del responsable
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsetsConstants.paddingAll20,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadiusConstants.borderRadiusMedium,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
+                      color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
+                      blurRadius: UIConstants.blurRadiusMedium,
+                      offset: Offset(0, UIConstants.spacing4 + 1),
                     ),
                   ],
                 ),
@@ -590,31 +591,31 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                           color: const Color(0xFF9333EA),
                           size: 24,
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: UIConstants.spacing12),
                         Text(
                           'Datos del Responsable',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: UIConstants.fontSizeLarge,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF9333EA),
                           ),
                         ),
-                        const SizedBox(width: 4),
+                        SizedBox(width: UIConstants.spacing4),
                         const Text(
                           '*',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: UIConstants.fontSizeLarge,
                             fontWeight: FontWeight.bold,
                             color: Colors.red,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spacing20),
                     
                     // Nombre del Operador
                     const field_label.FieldLabel(text: 'Nombre', isRequired: true),
-                    const SizedBox(height: 8),
+                    SizedBox(height: UIConstants.spacing8),
                     TextFormField(
                       controller: _operadorController,
                       maxLength: 50,
@@ -627,21 +628,21 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                         filled: true,
                         fillColor: const Color(0xFFF5F5F5),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadiusConstants.borderRadiusMedium,
                           borderSide: BorderSide.none,
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadiusConstants.borderRadiusMedium,
                           borderSide: BorderSide(
                             color: const Color(0xFF9333EA).withValues(alpha: 0.3),
-                            width: 1,
+                            width: UIConstants.borderWidthThin,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadiusConstants.borderRadiusMedium,
                           borderSide: const BorderSide(
                             color: Color(0xFF9333EA),
-                            width: 2,
+                            width: UIConstants.strokeWidth,
                           ),
                         ),
                         counterText: '',
@@ -657,11 +658,11 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                       },
                     ),
                     
-                    const SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spacing20),
                     
                     // Firma del Operador
                     const field_label.FieldLabel(text: 'Firma', isRequired: true),
-                    const SizedBox(height: 8),
+                    SizedBox(height: UIConstants.spacing8),
                     GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       onTap: () {
@@ -682,7 +683,7 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                           color: _signaturePoints.isNotEmpty 
                               ? const Color(0xFF9333EA).withValues(alpha: 0.05)
                               : Colors.grey[50],
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadiusConstants.borderRadiusMedium,
                           border: Border.all(
                             color: _signaturePoints.isNotEmpty 
                                 ? const Color(0xFF9333EA) 
@@ -700,11 +701,11 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                                       size: 32,
                                       color: Colors.grey[400],
                                     ),
-                                    const SizedBox(height: 8),
+                                    SizedBox(height: UIConstants.spacing8),
                                     Text(
                                       'Toque para firmar',
                                       style: TextStyle(
-                                        fontSize: 14,
+                                        fontSize: UIConstants.fontSizeMedium,
                                         color: Colors.grey[600],
                                       ),
                                     ),
@@ -714,30 +715,30 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                             : Stack(
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.all(12),
+                                    padding: EdgeInsetsConstants.paddingAll12,
                                     child: Center(
                                       child: AspectRatio(
                                         aspectRatio: 2.0, // Mismo aspect ratio que Reciclador
                                         child: Container(
                                           decoration: BoxDecoration(
                                             color: Colors.white,
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius: BorderRadiusConstants.borderRadiusSmall,
                                             border: Border.all(
                                               color: Colors.grey[200]!,
-                                              width: 1,
+                                              width: UIConstants.borderWidthThin,
                                             ),
                                           ),
                                           child: ClipRRect(
-                                            borderRadius: BorderRadius.circular(7),
+                                            borderRadius: BorderRadius.circular(UIConstants.radiusSmall + 1),
                                             child: FittedBox(
                                               fit: BoxFit.contain,
                                               child: SizedBox(
-                                                width: 300,
-                                                height: 300, // Mismo tamaño que Reciclador para consistencia
+                                                width: UIConstants.qrSizeMedium + UIConstants.iconSizeDialog + UIConstants.iconSizeMedium,
+                                                height: UIConstants.qrSizeMedium + UIConstants.iconSizeDialog + UIConstants.iconSizeMedium, // Mismo tamaño que Reciclador para consistencia
                                                 child: CustomPaint(
                                                   painter: SignaturePainter(
                                                     points: _signaturePoints,
-                                                    strokeWidth: 2.0,
+                                                    strokeWidth: UIConstants.strokeWidth,
                                                   ),
                                                 ),
                                               ),
@@ -760,7 +761,7 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                                             boxShadow: [
                                               BoxShadow(
                                                 color: Colors.black.withValues(alpha: 0.1),
-                                                blurRadius: 4,
+                                                blurRadius: UIConstants.blurRadiusSmall,
                                               ),
                                             ],
                                           ),
@@ -775,10 +776,10 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                                               minWidth: 32,
                                               minHeight: 32,
                                             ),
-                                            padding: EdgeInsets.zero,
+                                            padding: EdgeInsetsConstants.paddingNone,
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
+                                        SizedBox(width: UIConstants.spacing8),
                                         Container(
                                           decoration: BoxDecoration(
                                             color: Colors.white,
@@ -786,7 +787,7 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                                             boxShadow: [
                                               BoxShadow(
                                                 color: Colors.black.withValues(alpha: 0.1),
-                                                blurRadius: 4,
+                                                blurRadius: UIConstants.blurRadiusSmall,
                                               ),
                                             ],
                                           ),
@@ -805,7 +806,7 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                                               minWidth: 32,
                                               minHeight: 32,
                                             ),
-                                            padding: EdgeInsets.zero,
+                                            padding: EdgeInsetsConstants.paddingNone,
                                           ),
                                         ),
                                       ],
@@ -819,20 +820,20 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                 ),
               ),
               
-              const SizedBox(height: 16),
+              SizedBox(height: UIConstants.spacing16),
               
               // Evidencia fotográfica
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsetsConstants.paddingAll20,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadiusConstants.borderRadiusMedium,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
+                      color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
+                      blurRadius: UIConstants.blurRadiusMedium,
+                      offset: Offset(0, UIConstants.spacing4 + 1),
                     ),
                   ],
                 ),
@@ -846,38 +847,38 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                 ),
               ),
               
-              const SizedBox(height: 24),
+              SizedBox(height: UIConstants.spacing24),
               
               // Botón de enviar
               SizedBox(
-                height: 56,
+                height: UIConstants.buttonHeight,
                 child: ElevatedButton(
                   onPressed: _isSubmitting ? null : _submitForm,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF9333EA),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
                     ),
-                    elevation: 2,
+                    elevation: UIConstants.elevationSmall,
                   ),
                   child: _isSubmitting
                       ? const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             SizedBox(
-                              width: 20,
-                              height: 20,
+                              width: UIConstants.iconSizeSmall,
+                              height: UIConstants.iconSizeSmall,
                               child: CircularProgressIndicator(
                                 color: Colors.white,
-                                strokeWidth: 2,
+                                strokeWidth: UIConstants.strokeWidth,
                               ),
                             ),
-                            SizedBox(width: 12),
+                            SizedBox(width: UIConstants.spacing12),
                             Text(
                               'Procesando...',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 16,
+                                fontSize: UIConstants.fontSizeBody,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -894,7 +895,7 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
                 ),
               ),
               
-              const SizedBox(height: 32),
+              SizedBox(height: UIConstants.spacing32),
             ],
           ),
         ),
@@ -907,7 +908,7 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 120,
+          width: UIConstants.statCardHeight,
           child: Text(
             label,
             style: TextStyle(

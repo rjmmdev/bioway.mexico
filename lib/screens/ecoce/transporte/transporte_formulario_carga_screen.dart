@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:path_provider/path_provider.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/carga_transporte_service.dart';
 import '../../../services/firebase/firebase_storage_service.dart';
@@ -282,7 +283,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
         backgroundColor: const Color(0xFFF5F5F5),
         appBar: AppBar(
         backgroundColor: BioWayColors.primaryGreen,
-        elevation: 0,
+        elevation: UIConstants.elevationNone,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () {
@@ -293,7 +294,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
         title: const Text(
           'Formulario de Carga',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: UIConstants.fontSizeXLarge,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -304,7 +305,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
         children: [
           SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsetsConstants.paddingAll16,
             child: Form(
               key: _formKey,
               child: Column(
@@ -313,16 +314,16 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                   // Información del origen
                   _buildOrigenInfo(),
                   
-                  const SizedBox(height: 16),
+                  SizedBox(height: UIConstants.spacing16),
                   
                   // Acordeón de lotes
                   _buildLotesAccordion(),
                   
-                  const SizedBox(height: 16),
+                  SizedBox(height: UIConstants.spacing16),
                   
                   // Cuadro informativo
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsetsConstants.paddingAll16,
                     decoration: BoxDecoration(
                       color: const Color(0xFFE3F2FD),
                       borderRadius: BorderRadius.circular(8),
@@ -331,12 +332,12 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                     child: Row(
                       children: [
                         Icon(Icons.info_outline, color: BioWayColors.info),
-                        const SizedBox(width: 12),
+                        SizedBox(width: UIConstants.spacing12),
                         const Expanded(
                           child: Text(
                             'La información se aplicará a todos los lotes seleccionados',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: UIConstants.fontSizeMedium,
                               color: Color(0xFF1565C0),
                             ),
                           ),
@@ -345,12 +346,12 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                     ),
                   ),
                   
-                  const SizedBox(height: 24),
+                  SizedBox(height: UIConstants.spacing24),
                   
                   // Información del Transporte
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(20),
+                    padding: EdgeInsetsConstants.paddingAll20,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
@@ -369,20 +370,20 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                           children: [
                             const Text(
                               '🚚',
-                              style: TextStyle(fontSize: 24),
+                              style: TextStyle(fontSize: UIConstants.fontSizeTitle),
                             ),
-                            const SizedBox(width: 10),
+                            SizedBox(width: UIConstants.spacing8 + 2),
                             Text(
                               'Información del Transporte',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: UIConstants.fontSizeLarge,
                                 fontWeight: FontWeight.bold,
                                 color: BioWayColors.darkGreen,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
+                        SizedBox(height: UIConstants.spacing20),
                         _buildTextField(
                           controller: _nombreController,
                           label: 'Nombre del Transportista',
@@ -395,7 +396,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                             return null;
                           },
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: UIConstants.spacing16),
                         _buildTextField(
                           controller: _placasController,
                           label: 'Placas del Vehículo',
@@ -409,16 +410,16 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                             return null;
                           },
                         ),
-                        const SizedBox(height: 20),
+                        SizedBox(height: UIConstants.spacing20),
                         // Peso total no editable
                         Container(
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsetsConstants.paddingAll16,
                           decoration: BoxDecoration(
                             color: BioWayColors.backgroundGrey,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: BioWayColors.primaryGreen.withValues(alpha: 0.3),
-                              width: 1,
+                              width: UIConstants.dividerThickness,
                             ),
                           ),
                           child: Row(
@@ -426,9 +427,9 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                               Icon(
                                 Icons.scale,
                                 color: BioWayColors.primaryGreen,
-                                size: 24,
+                                size: UIConstants.iconSizeMedium,
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: UIConstants.spacing12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,16 +437,16 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                                     Text(
                                       'Peso Total a Transportar',
                                       style: TextStyle(
-                                        fontSize: 14,
+                                        fontSize: UIConstants.fontSizeMedium,
                                         fontWeight: FontWeight.w600,
                                         color: BioWayColors.textGrey,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
+                                    SizedBox(height: UIConstants.spacing4),
                                     Text(
                                       '${_pesoController.text} kg',
                                       style: TextStyle(
-                                        fontSize: 18,
+                                        fontSize: UIConstants.fontSizeLarge,
                                         fontWeight: FontWeight.bold,
                                         color: BioWayColors.darkGreen,
                                       ),
@@ -460,7 +461,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                     ),
                   ),
                   
-                  const SizedBox(height: 24),
+                  SizedBox(height: UIConstants.spacing24),
                   
                   // Evidencia Fotográfica usando el widget compartido
                   PhotoEvidenceFormField(
@@ -476,12 +477,12 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                     primaryColor: BioWayColors.primaryGreen,
                   ),
                   
-                  const SizedBox(height: 24),
+                  SizedBox(height: UIConstants.spacing24),
                   
                   // Sección: Datos del Responsable
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(20),
+                    padding: EdgeInsetsConstants.paddingAll20,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
@@ -500,14 +501,14 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                           children: [
                             const Text(
                               '👤',
-                              style: TextStyle(fontSize: 24),
+                              style: TextStyle(fontSize: UIConstants.fontSizeTitle),
                             ),
-                            const SizedBox(width: 10),
+                            SizedBox(width: UIConstants.spacing8 + 2),
                             Expanded(
                               child: Text(
                                 'Datos del Responsable que Entrega el Material',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: UIConstants.fontSizeLarge,
                                   fontWeight: FontWeight.bold,
                                   color: BioWayColors.darkGreen,
                                 ),
@@ -517,14 +518,14 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                             const Text(
                               '*',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: UIConstants.fontSizeLarge,
                                 fontWeight: FontWeight.bold,
                                 color: BioWayColors.error,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
+                        SizedBox(height: UIConstants.spacing20),
                       // Nombre del Operador
                       const field_label.FieldLabel(text: 'Nombre', isRequired: true),
                       const SizedBox(height: 8),
@@ -550,7 +551,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                         },
                       ),
                       
-                      const SizedBox(height: 20),
+                      SizedBox(height: UIConstants.spacing20),
                       
                       // Firma del Operador
                       const field_label.FieldLabel(text: 'Firma', isRequired: true),
@@ -587,7 +588,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                                         Text(
                                           'Toca para firmar',
                                           style: TextStyle(
-                                            fontSize: 14,
+                                            fontSize: UIConstants.fontSizeMedium,
                                             color: Colors.grey[600],
                                           ),
                                         ),
@@ -597,7 +598,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                                 : Stack(
                                     children: [
                                       Container(
-                                        padding: const EdgeInsets.all(12),
+                                        padding: EdgeInsets.all(UIConstants.spacing12),
                                         child: Center(
                                           child: AspectRatio(
                                             aspectRatio: 2.0,
@@ -607,7 +608,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                                                 borderRadius: BorderRadius.circular(8),
                                                 border: Border.all(
                                                   color: Colors.grey[200]!,
-                                                  width: 1,
+                                                  width: UIConstants.dividerThickness,
                                                 ),
                                               ),
                                               child: ClipRRect(
@@ -649,7 +650,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                                                 icon: Icon(
                                                   Icons.edit,
                                                   color: BioWayColors.primaryGreen,
-                                                  size: 20,
+                                                  size: UIConstants.iconSizeMedium,
                                                 ),
                                                 constraints: const BoxConstraints(
                                                   minWidth: 32,
@@ -679,7 +680,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                                                 icon: const Icon(
                                                   Icons.clear,
                                                   color: Colors.red,
-                                                  size: 20,
+                                                  size: UIConstants.iconSizeMedium,
                                                 ),
                                                 constraints: const BoxConstraints(
                                                   minWidth: 32,
@@ -699,12 +700,12 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                     ),
                   ),
                   
-                  const SizedBox(height: 24),
+                  SizedBox(height: UIConstants.spacing24),
                   
                   // Comentarios
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(20),
+                    padding: EdgeInsetsConstants.paddingAll20,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
@@ -723,20 +724,20 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                           children: [
                             const Text(
                               '💬',
-                              style: TextStyle(fontSize: 24),
+                              style: TextStyle(fontSize: UIConstants.fontSizeTitle),
                             ),
-                            const SizedBox(width: 10),
+                            SizedBox(width: UIConstants.spacing8 + 2),
                             Text(
                               'Comentarios',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: UIConstants.fontSizeLarge,
                                 fontWeight: FontWeight.bold,
                                 color: BioWayColors.darkGreen,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
+                        SizedBox(height: UIConstants.spacing20),
                         TextFormField(
                           controller: _comentariosController,
                           key: const Key('input_comentarios'),
@@ -754,7 +755,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(
                                 color: BioWayColors.primaryGreen.withValues(alpha: 0.3),
-                                width: 1,
+                                width: UIConstants.dividerThickness,
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
@@ -770,7 +771,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                     ),
                   ),
                   
-                  const SizedBox(height: 100), // Espacio para el botón fijo
+                  SizedBox(height: UIConstants.qrSizeSmall), // Espacio para el botón fijo
                 ],
               ),
             ),
@@ -789,7 +790,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
       
       // Botón confirmar fijo
       bottomSheet: Container(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsetsConstants.paddingAll20,
         decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [
@@ -803,7 +804,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
         child: SafeArea(
           child: SizedBox(
             width: double.infinity,
-            height: 48,
+            height: UIConstants.buttonHeightMedium,
             child: ElevatedButton(
               key: const Key('btn_confirmar_carga'),
               onPressed: _isLoading ? null : _submitForm,
@@ -813,12 +814,12 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),
                 ),
-                elevation: 2,
+                elevation: UIConstants.elevationSmall,
               ),
               child: _isLoading 
                 ? const SizedBox(
-                    width: 20,
-                    height: 20,
+                    width: UIConstants.iconSizeMedium,
+                    height: UIConstants.iconSizeMedium,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       color: Colors.white,
@@ -827,7 +828,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                 : const Text(
                     'Confirmar Carga',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: UIConstants.fontSizeBody,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -891,7 +892,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
             },
             borderRadius: BorderRadius.circular(8),
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsetsConstants.paddingAll16,
               key: const Key('panel_lotes_transportar'),
               child: Row(
                 children: [
@@ -902,7 +903,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                         Text(
                           'Lotes a transportar (${widget.lotes.length})',
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: UIConstants.fontSizeBody,
                             fontWeight: FontWeight.bold,
                             color: BioWayColors.darkGreen,
                           ),
@@ -913,7 +914,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                             Text(
                               '${lote['id']} - ${lote['material']} - ${lote['peso']} kg',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: UIConstants.fontSizeMedium,
                                 color: Colors.grey[600],
                               ),
                             ),
@@ -922,7 +923,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
                           Text(
                             'y ${widget.lotes.length - 1} más...',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: UIConstants.fontSizeMedium,
                               color: Colors.grey[500],
                               fontStyle: FontStyle.italic,
                             ),
@@ -1003,7 +1004,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
               color: BioWayColors.darkGreen,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: UIConstants.spacing4),
           Text(
             'Folio: ${widget.datosOrigen['folio']}',
             style: TextStyle(
@@ -1011,7 +1012,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
               color: BioWayColors.textGrey,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: UIConstants.spacing4),
           Text(
             widget.datosOrigen['direccion'],
             style: TextStyle(
@@ -1105,7 +1106,7 @@ class _TransporteFormularioCargaScreenState extends State<TransporteFormularioCa
             ),
             errorStyle: const TextStyle(
               color: Color(0xFFE74C3C),
-              fontSize: 12,
+              fontSize: UIConstants.fontSizeSmall,
             ),
             counterText: '',
           ),

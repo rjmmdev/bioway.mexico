@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:gal/gal.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/format_utils.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/carga_transporte_service.dart';
 import 'transporte_formulario_entrega_screen.dart';
@@ -224,7 +225,7 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
         backgroundColor: const Color(0xFFF5F5F5),
         appBar: AppBar(
         backgroundColor: BioWayColors.deepBlue,
-        elevation: 0,
+        elevation: UIConstants.elevationNone,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () {
@@ -235,7 +236,7 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
         title: const Text(
           'Código QR de Entrega',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: UIConstants.fontSizeXLarge,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -249,9 +250,9 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
             // Header con información del transportista
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsetsConstants.paddingAll20,
               decoration: BoxDecoration(
-                color: BioWayColors.deepBlue.withValues(alpha: 0.05),
+                color: BioWayColors.deepBlue.withValues(alpha: UIConstants.opacityVeryLow),
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(30),
                   bottomRight: Radius.circular(30),
@@ -261,23 +262,23 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                 children: [
                   Icon(
                     Icons.local_shipping,
-                    size: 48,
+                    size: UIConstants.iconSizeXLarge - UIConstants.spacing16,
                     color: BioWayColors.deepBlue,
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: UIConstants.spacing12),
                   const Text(
                     'Código QR de Entrega',
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: UIConstants.fontSizeTitle,
                       fontWeight: FontWeight.bold,
                       color: BioWayColors.darkGreen,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: UIConstants.spacing8),
                   Text(
                     'Transportista: ${_userSession.getUserData()?['folio'] ?? 'V0000001'}',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: UIConstants.fontSizeMedium,
                       color: Colors.grey[600],
                     ),
                   ),
@@ -285,22 +286,22 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
               ),
             ),
             
-            const SizedBox(height: 20),
+            SizedBox(height: UIConstants.spacing20),
             
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsetsConstants.paddingAll20,
               child: Column(
                 children: [
             
                   // QR Code Container similar to shared widget
                   Container(
-                    padding: const EdgeInsets.all(32),
+                    padding: EdgeInsets.all(UIConstants.spacing32),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadiusConstants.borderRadiusLarge,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
+                          color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow + 0.03),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -315,36 +316,36 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                             Icon(
                               Icons.qr_code_2,
                               color: BioWayColors.deepBlue,
-                              size: 24,
+                              size: UIConstants.iconSizeMedium,
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: UIConstants.spacing8),
                             Text(
                               'QR Code',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: UIConstants.fontSizeBody,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.grey[800],
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: UIConstants.spacing24),
                         
                         // QR Code
                         Screenshot(
                           controller: _screenshotController,
                           child: Container(
-                            width: 200,
-                            height: 200,
-                            padding: const EdgeInsets.all(8),
+                            width: UIConstants.qrSizeMedium,
+                            height: UIConstants.qrSizeMedium,
+                            padding: EdgeInsetsConstants.paddingAll8,
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadiusConstants.borderRadiusLarge,
                               border: Border.all(
                                 color: _isExpired 
-                                    ? Colors.grey.withValues(alpha: 0.3)
-                                    : BioWayColors.deepBlue.withValues(alpha: 0.3),
-                                width: 2,
+                                    ? Colors.grey.withValues(alpha: UIConstants.opacityMedium)
+                                    : BioWayColors.deepBlue.withValues(alpha: UIConstants.opacityMedium),
+                                width: UIConstants.strokeWidth,
                               ),
                             ),
                             child: _isCreatingEntrega
@@ -355,7 +356,7 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                                   )
                                 : _qrData == null || _qrData!.isEmpty
                                     ? Container(
-                                        width: 184,
+                                        width: UIConstants.qrSizeMedium - UIConstants.spacing16,
                                         height: 184,
                                         alignment: Alignment.center,
                                         child: Column(
@@ -366,12 +367,12 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                                               size: 80,
                                               color: Colors.grey[400],
                                             ),
-                                            const SizedBox(height: 8),
+                                            SizedBox(height: UIConstants.spacing8),
                                             Text(
                                               'Generando QR...',
                                               style: TextStyle(
                                                 color: Colors.grey[600],
-                                                fontSize: 14,
+                                                fontSize: UIConstants.fontSizeMedium,
                                               ),
                                             ),
                                           ],
@@ -401,20 +402,20 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             decoration: BoxDecoration(
                               color: BioWayColors.error.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadiusConstants.borderRadiusLarge,
                             ),
                             child: const Text(
                               'CÓDIGO EXPIRADO',
                               style: TextStyle(
                                 color: BioWayColors.error,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                                fontSize: UIConstants.fontSizeMedium,
                               ),
                             ),
                           ),
                         ],
                         
-                        const SizedBox(height: 24),
+                        SizedBox(height: UIConstants.spacing24),
                         
                         // ID del envío
                         Container(
@@ -434,13 +435,13 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                                 color: BioWayColors.deepBlue,
                                 size: 20,
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: UIConstants.spacing8),
                               Text(
                                 _isCreatingEntrega 
                                     ? 'Generando...' 
                                     : _entregaId ?? 'Sin ID',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: UIConstants.fontSizeBody,
                                   fontWeight: FontWeight.bold,
                                   color: BioWayColors.deepBlue.withValues(alpha: 0.9),
                                   letterSpacing: 0.5,
@@ -453,11 +454,11 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                     ),
                   ),
             
-                  const SizedBox(height: 20),
+                  SizedBox(height: UIConstants.spacing20),
                   
                   // Información del envío
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: EdgeInsetsConstants.paddingAll20,
                     decoration: BoxDecoration(
                       color: const Color(0xFFF8F9FA),
                       borderRadius: BorderRadius.circular(16),
@@ -521,7 +522,7 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                   ),
             
             
-                  const SizedBox(height: 20),
+                  SizedBox(height: UIConstants.spacing20),
                   
                   // Instrucciones
                   Container(
@@ -551,7 +552,7 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                                   color: Color(0xFFE65100),
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              SizedBox(height: UIConstants.spacing8),
                               const Text(
                                 '1. Escanee este código QR\n'
                                 '2. Verifique los datos de la carga\n'
@@ -568,7 +569,7 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                     ),
                   ),
                   
-                  const SizedBox(height: 20),
+                  SizedBox(height: UIConstants.spacing20),
                   
                   // Timer de validez con estilo mejorado
                   Container(
@@ -623,7 +624,7 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            elevation: 0,
+                            elevation: UIConstants.elevationNone,
                           ),
                         ),
                       ),
@@ -648,7 +649,7 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                     ],
                   ),
                   
-                  const SizedBox(height: 12),
+                  SizedBox(height: UIConstants.spacing12),
                   
                   // Botón compartir
                   SizedBox(
@@ -703,20 +704,20 @@ class _TransporteQREntregaScreenState extends State<TransporteQREntregaScreen> {
                   ),
                   
                   if (_isExpired) ...[
-                    const SizedBox(height: 12),
+                    SizedBox(height: UIConstants.spacing12),
                     TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: const Text(
                         'Volver a seleccionar lotes',
                         style: TextStyle(
                           color: BioWayColors.deepBlue,
-                          fontSize: 14,
+                          fontSize: UIConstants.fontSizeMedium,
                         ),
                       ),
                     ),
                   ],
                   
-                  const SizedBox(height: 20),
+                  SizedBox(height: UIConstants.spacing20),
                 ],
               ),
             ),
@@ -904,7 +905,7 @@ Transportista: ${_userSession.getUserData()?['folio'] ?? 'V0000001'}
                   pw.Text(
                     'Código QR de Entrega',
                     style: pw.TextStyle(
-                      fontSize: 24,
+                      fontSize: UIConstants.fontSizeTitle,
                       fontWeight: pw.FontWeight.bold,
                     ),
                   ),

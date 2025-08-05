@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../utils/qr_utils.dart';
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/firebase/firebase_manager.dart'; // NUEVO: Para obtener la instancia correcta
@@ -336,7 +337,7 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                 });
               },
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: UIConstants.spacing16),
             // Filtro por tiempo
             DropdownButtonFormField<String>(
               value: _selectedTiempo,
@@ -593,11 +594,11 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
         backgroundColor: const Color(0xFFF5F5F5),
         appBar: AppBar(
           backgroundColor: const Color(0xFF9333EA), // Morado laboratorio
-          elevation: 0,
+          elevation: UIConstants.elevationNone,
           title: const Text(
             'Gestión de Muestras',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: UIConstants.fontSizeLarge,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -720,12 +721,12 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
     
     return ListView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.only(bottom: 100), // Espacio para el FAB
+      padding: EdgeInsets.only(bottom: UIConstants.qrSizeSmall), // Espacio para el FAB
       children: [
         // Filtros
         Container(
           color: Colors.white,
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsetsConstants.paddingAll16,
           child: Column(
             children: [
               // Filtro de materiales
@@ -735,11 +736,11 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                   children: ['Todos', 'PEBD', 'PP', 'Multilaminado'].map((material) {
                     final isSelected = _selectedMaterial == material;
                     return Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                      padding: EdgeInsets.only(right: UIConstants.spacing8),
                       child: ChoiceChip(
                         label: Text(material),
                         selected: isSelected,
-                        selectedColor: tabColor.withValues(alpha: 0.2),
+                        selectedColor: tabColor.withValues(alpha: UIConstants.opacityMedium),
                         labelStyle: TextStyle(
                           color: isSelected ? tabColor : Colors.grey[700],
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -754,7 +755,7 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                   }).toList(),
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: UIConstants.spacing12),
               // Filtros de tiempo y presentación
               Row(
                 children: [
@@ -778,19 +779,19 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
         
         // Tarjeta de estadísticas con diseño moderno
         Container(
-          margin: const EdgeInsets.all(16),
+          margin: EdgeInsetsConstants.paddingAll16,
           child: Row(
             children: [
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12, vertical: UIConstants.fontSizeMedium),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadiusConstants.borderRadiusMedium,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 8,
+                        color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
+                        blurRadius: UIConstants.blurRadiusSmall,
                         offset: const Offset(0, 2),
                       ),
                     ],
@@ -798,15 +799,15 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                   child: Row(
                     children: [
                       Container(
-                        width: 40,
-                        height: 40,
+                        width: UIConstants.iconSizeLarge,
+                        height: UIConstants.iconSizeLarge,
                         decoration: BoxDecoration(
-                          color: tabColor.withValues(alpha: 0.1),
+                          color: tabColor.withValues(alpha: UIConstants.opacityLow),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.science, color: tabColor, size: 22),
+                        child: Icon(Icons.science, color: tabColor, size: UIConstants.iconSizeMedium - 2),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: UIConstants.spacing12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -814,7 +815,7 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                             Text(
                               _muestrasFiltradas.length.toString(),
                               style: const TextStyle(
-                                fontSize: 18,
+                                fontSize: UIConstants.fontSizeLarge,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black87,
                               ),
@@ -822,7 +823,7 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                             Text(
                               'Muestras',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: UIConstants.fontSizeSmall,
                                 color: Colors.grey[600],
                               ),
                             ),
@@ -833,17 +834,17 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: UIConstants.spacing12),
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12, vertical: UIConstants.fontSizeMedium),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadiusConstants.borderRadiusMedium,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 8,
+                        color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
+                        blurRadius: UIConstants.blurRadiusSmall,
                         offset: const Offset(0, 2),
                       ),
                     ],
@@ -851,15 +852,15 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                   child: Row(
                     children: [
                       Container(
-                        width: 40,
-                        height: 40,
+                        width: UIConstants.iconSizeLarge,
+                        height: UIConstants.iconSizeLarge,
                         decoration: BoxDecoration(
-                          color: Colors.orange.withValues(alpha: 0.1),
+                          color: Colors.orange.withValues(alpha: UIConstants.opacityLow),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.scale, color: Colors.orange, size: 22),
+                        child: Icon(Icons.scale, color: Colors.orange, size: UIConstants.iconSizeMedium - 2),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: UIConstants.spacing12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -867,7 +868,7 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                             Text(
                               '${_calcularPesoTotal().toStringAsFixed(1)} kg',
                               style: const TextStyle(
-                                fontSize: 18,
+                                fontSize: UIConstants.fontSizeLarge,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black87,
                               ),
@@ -875,7 +876,7 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                             Text(
                               'Peso Total',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: UIConstants.fontSizeSmall,
                                 color: Colors.grey[600],
                               ),
                             ),
@@ -900,29 +901,29 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                 Icon(
                   _tabController.index == 0 ? Icons.analytics : 
                   _tabController.index == 1 ? Icons.upload_file : Icons.check_circle,
-                  size: 80,
+                  size: UIConstants.iconSizeDialog,
                   color: Colors.grey[300],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: UIConstants.spacing16),
                 Text(
                   _tabController.index == 0 ? 'No hay muestras pendientes de análisis' :
                   _tabController.index == 1 ? 'No hay muestras pendientes de documentación' :
                   'No hay muestras finalizadas',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: UIConstants.fontSizeBody,
                     color: Colors.grey[600],
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: UIConstants.spacing8),
                 Text(
                   'Desliza hacia abajo para actualizar',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: UIConstants.fontSizeMedium,
                     color: Colors.grey[400],
                     fontStyle: FontStyle.italic,
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: UIConstants.spacing24),
                 if (_tabController.index == 0)
                   ElevatedButton.icon(
                     onPressed: _navigateToNewMuestra,
@@ -931,12 +932,12 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF9333EA),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: UIConstants.spacing24,
+                        vertical: UIConstants.spacing12,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadiusConstants.borderRadiusRound,
                       ),
                     ),
                   ),
@@ -949,7 +950,7 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
         ],
         
         // Espacio adicional al final
-        const SizedBox(height: 20),
+        SizedBox(height: UIConstants.spacing20),
       ],
     );
   }
@@ -961,10 +962,10 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
     required ValueChanged<String?> onChanged,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12, vertical: UIConstants.spacing4),
       decoration: BoxDecoration(
         color: BioWayColors.backgroundGrey,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadiusConstants.borderRadiusSmall,
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: DropdownButtonHideUnderline(
@@ -979,7 +980,7 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
               child: Text(
                 item,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: UIConstants.fontSizeMedium,
                   color: BioWayColors.darkGreen,
                 ),
               ),
@@ -1027,14 +1028,14 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
     }
     
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: EdgeInsets.symmetric(horizontal: UIConstants.spacing16, vertical: UIConstants.spacing4 + 2),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 8,
+            color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow + 0.03),
+            blurRadius: UIConstants.blurRadiusSmall,
             offset: const Offset(0, 2),
           ),
         ],
@@ -1043,7 +1044,7 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
         borderRadius: BorderRadius.circular(12),
         onTap: _tabController.index == 2 ? null : () => _navigateToMuestraDetail(muestra),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsetsConstants.paddingAll16,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1052,19 +1053,19 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                 children: [
                   // Icono de estado
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: UIConstants.iconSizeButton,
+                    height: UIConstants.iconSizeButton,
                     decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      color: statusColor.withValues(alpha: UIConstants.opacityLow),
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
                     ),
                     child: Icon(
                       muestra.tipo == 'megalote' ? Icons.science : Icons.biotech,
                       color: statusColor,
-                      size: 24,
+                      size: UIConstants.iconSizeMedium,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: UIConstants.spacing12),
                   
                   // Información principal
                   Expanded(
@@ -1077,34 +1078,34 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                               child: Text(
                                 'MUESTRA: ${_formatMuestraId(muestraId)}',
                                 style: const TextStyle(
-                                  fontSize: 14,
+                                  fontSize: UIConstants.fontSizeMedium,
                                   fontWeight: FontWeight.bold,
                                   fontFamily: 'monospace',
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: UIConstants.spacing8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing4 + 2, vertical: UIConstants.spacing4 / 2),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF9333EA).withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: const Color(0xFF9333EA).withValues(alpha: 0.3)),
+                                color: const Color(0xFF9333EA).withValues(alpha: UIConstants.opacityLow),
+                                borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
+                                border: Border.all(color: const Color(0xFF9333EA).withValues(alpha: UIConstants.opacityMediumLow)),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
                                     muestra.tipo == 'megalote' ? Icons.layers : Icons.inventory_2,
-                                    size: 12,
+                                    size: UIConstants.fontSizeSmall,
                                     color: const Color(0xFF9333EA),
                                   ),
-                                  const SizedBox(width: 2),
+                                  SizedBox(width: UIConstants.spacing4 / 2),
                                   Text(
                                     tipoDisplay,
                                     style: const TextStyle(
-                                      fontSize: 10,
+                                      fontSize: UIConstants.fontSizeXSmall - 1,
                                       color: Color(0xFF9333EA),
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -1117,7 +1118,7 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                         Text(
                           statusText,
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: UIConstants.fontSizeSmall,
                             color: statusColor,
                             fontWeight: FontWeight.w600,
                           ),
@@ -1139,7 +1140,7 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                 ],
               ),
               
-              const SizedBox(height: 16),
+              SizedBox(height: UIConstants.spacing16),
               
               // Información principal
               Row(
@@ -1170,21 +1171,21 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
               
               // Información adicional
               if (muestra.laboratorioFolio.isNotEmpty) ...[
-                const SizedBox(height: 12),
+                SizedBox(height: UIConstants.spacing12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12, vertical: UIConstants.spacing8),
                   decoration: BoxDecoration(
                     color: Colors.grey[50],
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadiusConstants.borderRadiusSmall,
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.person, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 8),
+                      Icon(Icons.person, size: UIConstants.fontSizeBody, color: Colors.grey[600]),
+                      SizedBox(width: UIConstants.spacing8),
                       Text(
                         'Folio Lab: ${muestra.laboratorioFolio}',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: UIConstants.fontSizeSmall,
                           color: Colors.grey[700],
                         ),
                       ),
@@ -1206,8 +1207,8 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
   }) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: Colors.grey[600]),
-        const SizedBox(width: 8),
+        Icon(icon, size: UIConstants.fontSizeBody, color: Colors.grey[600]),
+        SizedBox(width: UIConstants.spacing8),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1215,14 +1216,14 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: UIConstants.fontSizeXSmall,
                   color: Colors.grey[600],
                 ),
               ),
               Text(
                 value,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: UIConstants.fontSizeSmall + 1,
                   fontWeight: FontWeight.w600,
                   color: Colors.grey[800],
                 ),

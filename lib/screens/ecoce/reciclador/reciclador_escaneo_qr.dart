@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../utils/qr_utils.dart';
 import '../shared/widgets/qr_scanner_widget.dart';
 import 'reciclador_lotes_registro.dart';

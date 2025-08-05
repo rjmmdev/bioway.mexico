@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import '../../utils/ui_constants.dart';
 
 class BioCelebrationWidget extends StatefulWidget {
   final String title;
@@ -29,12 +30,12 @@ class _BioCelebrationWidgetState extends State<BioCelebrationWidget>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: Duration(milliseconds: UIConstants.animationDurationLong * 3),
       vsync: this,
     );
 
     _confettiController = AnimationController(
-      duration: const Duration(seconds: 3),
+      duration: Duration(seconds: 3),
       vsync: this,
     );
 
@@ -58,7 +59,7 @@ class _BioCelebrationWidgetState extends State<BioCelebrationWidget>
     _controller.forward();
     _confettiController.repeat();
 
-    Future.delayed(const Duration(seconds: 3), () {
+    Future.delayed(Duration(seconds: 3), () {
       if (mounted) {
         widget.onComplete();
       }
@@ -89,7 +90,7 @@ class _BioCelebrationWidgetState extends State<BioCelebrationWidget>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black.withValues(alpha:0.8),
+      backgroundColor: Colors.black.withValues(alpha: UIConstants.opacityVeryHigh),
       body: Stack(
         children: [
           AnimatedBuilder(
@@ -113,15 +114,15 @@ class _BioCelebrationWidgetState extends State<BioCelebrationWidget>
                   child: Transform.rotate(
                     angle: _rotationAnimation.value,
                     child: Container(
-                      padding: const EdgeInsets.all(32),
+                      padding: EdgeInsetsConstants.paddingAll32,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadiusConstants.borderRadiusXLarge,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha:0.3),
-                            blurRadius: 20,
-                            spreadRadius: 5,
+                            color: Colors.black.withValues(alpha: UIConstants.opacityMedium),
+                            blurRadius: UIConstants.blurRadiusXLarge - 5,
+                            spreadRadius: UIConstants.spacing4 + 1,
                           ),
                         ],
                       ),
@@ -130,24 +131,24 @@ class _BioCelebrationWidgetState extends State<BioCelebrationWidget>
                         children: [
                           const Icon(
                             Icons.emoji_events,
-                            size: 80,
+                            size: UIConstants.iconSizeDialog + UIConstants.spacing20,
                             color: Colors.amber,
                           ),
-                          const SizedBox(height: 20),
+                          SizedBox(height: UIConstants.spacing20),
                           Text(
                             widget.title,
                             style: const TextStyle(
-                              fontSize: 28,
+                              fontSize: UIConstants.fontSizeXXLarge,
                               fontWeight: FontWeight.bold,
                               color: Colors.black87,
                             ),
                           ),
-                          const SizedBox(height: 10),
+                          SizedBox(height: UIConstants.spacing10),
                           Text(
                             widget.message,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
-                              fontSize: 18,
+                              fontSize: UIConstants.fontSizeLarge,
                               color: Colors.black54,
                             ),
                           ),

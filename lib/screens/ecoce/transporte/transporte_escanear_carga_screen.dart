@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../utils/qr_utils.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../services/carga_transporte_service.dart';
@@ -279,7 +280,7 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
         backgroundColor: const Color(0xFFF5F5F5),
         appBar: AppBar(
           backgroundColor: Colors.white,
-          elevation: 0,
+          elevation: UIConstants.elevationNone,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.black87),
             onPressed: () => Navigator.pushReplacementNamed(context, '/transporte_inicio'),
@@ -288,7 +289,7 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
           'Crear Carga',
           style: TextStyle(
             color: Colors.black87,
-            fontSize: 20,
+            fontSize: UIConstants.fontSizeXLarge,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -331,16 +332,16 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
                   Container(
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.3),
-                        width: 2,
+                        color: Colors.white.withValues(alpha: UIConstants.opacityMedium),
+                        width: UIConstants.strokeWidth,
                       ),
                     ),
                     child: Center(
                       child: Container(
-                        padding: const EdgeInsets.all(20),
+                        padding: EdgeInsetsConstants.paddingAll20,
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.7),
-                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.black.withValues(alpha: UIConstants.opacityHigh),
+                          borderRadius: BorderRadiusConstants.borderRadiusMedium,
                         ),
                         child: const Column(
                           mainAxisSize: MainAxisSize.min,
@@ -348,24 +349,24 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
                             Icon(
                               Icons.qr_code_scanner,
                               color: Colors.white,
-                              size: 48,
+                              size: UIConstants.iconSizeXLarge - UIConstants.spacing16,
                             ),
-                            SizedBox(height: 16),
+                            SizedBox(height: UIConstants.spacing16),
                             Text(
                               'Escanea el código QR del lote',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 18,
+                                fontSize: UIConstants.fontSizeLarge,
                                 fontWeight: FontWeight.bold,
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            SizedBox(height: 8),
+                            SizedBox(height: UIConstants.spacing8),
                             Text(
                               'Puedes escanear múltiples lotes\npara crear una carga',
                               style: TextStyle(
                                 color: Colors.white70,
-                                fontSize: 14,
+                                fontSize: UIConstants.fontSizeMedium,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -381,7 +382,7 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
           // Información del origen
           if (_datosOrigen != null)
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsetsConstants.paddingAll16,
               color: Colors.white,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -391,19 +392,19 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
                       Icon(
                         Icons.location_on,
                         color: BioWayColors.primaryGreen,
-                        size: 24,
+                        size: UIConstants.iconSizeMedium,
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: UIConstants.spacing8),
                       const Text(
                         'Recogiendo de:',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: UIConstants.fontSizeBody,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: UIConstants.spacing8),
                   Text(
                     _datosOrigen!['nombre'],
                     style: const TextStyle(
@@ -411,7 +412,7 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: UIConstants.spacing4),
                   Text(
                     'Folio: ${_datosOrigen!['folio']}',
                     style: TextStyle(
@@ -439,14 +440,14 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsetsConstants.paddingAll16,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             'Lotes en la carga (${_lotesEscaneados.length})',
                             style: const TextStyle(
-                              fontSize: 16,
+                              fontSize: UIConstants.fontSizeBody,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -467,15 +468,15 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
                     ),
                     Expanded(
                       child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing16),
                         itemCount: _lotesEscaneados.length,
                         itemBuilder: (context, index) {
                           final lote = _lotesEscaneados[index];
                           return Card(
-                            margin: const EdgeInsets.only(bottom: 8),
+                            margin: EdgeInsets.only(bottom: UIConstants.spacing8),
                             child: ListTile(
                               leading: CircleAvatar(
-                                backgroundColor: BioWayColors.primaryGreen.withOpacity(0.1),
+                                backgroundColor: BioWayColors.primaryGreen.withValues(alpha: UIConstants.opacityLow),
                                 child: Text(
                                   '${index + 1}',
                                   style: TextStyle(
@@ -495,7 +496,7 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
                                   Text(
                                     'ID: ${lote['id'].substring(0, 8)}...',
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: UIConstants.fontSizeXSmall,
                                       color: Colors.grey[600],
                                     ),
                                   ),
@@ -518,12 +519,12 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
           // Botón continuar
           if (_lotesEscaneados.isNotEmpty)
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsetsConstants.paddingAll16,
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: UIConstants.opacityLow),
                     blurRadius: 10,
                     offset: const Offset(0, -5),
                   ),
@@ -536,9 +537,9 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
                   style: ElevatedButton.styleFrom(
                     backgroundColor: BioWayColors.primaryGreen,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: EdgeInsets.symmetric(vertical: UIConstants.spacing16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
                     ),
                   ),
                   child: Text(

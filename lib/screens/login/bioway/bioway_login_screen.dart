@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart'; // ACTUALIZADA
+import '../../../utils/ui_constants.dart';
 import '../../../widgets/common/gradient_background.dart'; // ACTUALIZADA
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
@@ -67,7 +68,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
 
   void _setupAnimations() {
     _formAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
+      duration: Duration(milliseconds: UIConstants.animationDurationLong * 2),
       vsync: this,
     );
 
@@ -89,7 +90,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
   }
 
   void _startAnimations() {
-    Future.delayed(const Duration(milliseconds: 500), () {
+    Future.delayed(Duration(milliseconds: UIConstants.animationDurationLong), () {
       if (mounted) {
         _formAnimationController.forward();
       }
@@ -127,7 +128,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
             child: child,
           );
         },
-        transitionDuration: const Duration(milliseconds: 400),
+        transitionDuration: Duration(milliseconds: UIConstants.animationDurationMedium + 100),
       ),
     );
   }
@@ -164,22 +165,22 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
               content: Row(
                 children: [
                   const Icon(Icons.check_circle, color: Colors.white),
-                  const SizedBox(width: 12),
+                  SizedBox(width: UIConstants.spacing12),
                   Text('¡Bienvenido ${bioWayUser.nombre}!'),
                 ],
               ),
               backgroundColor: BioWayColors.success,
               behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.all(20),
+              margin: EdgeInsetsConstants.paddingAll20,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(UIConstants.spacing10),
               ),
-              duration: const Duration(seconds: 2),
+              duration: Duration(seconds: 2),
             ),
           );
 
           // Navegar según el tipo de usuario
-          await Future.delayed(const Duration(milliseconds: 500));
+          await Future.delayed(Duration(milliseconds: UIConstants.animationDurationLong));
           if (mounted) {
             if (bioWayUser.isBrindador) {
               Navigator.pushReplacement(
@@ -220,7 +221,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
               content: Row(
                 children: [
                   const Icon(Icons.error, color: Colors.white),
-                  const SizedBox(width: 12),
+                  SizedBox(width: UIConstants.spacing12),
                   Expanded(
                     child: Text(errorMessage),
                   ),
@@ -228,9 +229,9 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
               ),
               backgroundColor: BioWayColors.error,
               behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.all(20),
+              margin: EdgeInsetsConstants.paddingAll20,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(UIConstants.spacing10),
               ),
             ),
           );
@@ -247,7 +248,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
         backgroundColor: BioWayColors.info,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(UIConstants.spacing10),
         ),
       ),
     );
@@ -273,7 +274,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
             child: child,
           );
         },
-        transitionDuration: const Duration(milliseconds: 400),
+        transitionDuration: Duration(milliseconds: UIConstants.animationDurationMedium + 100),
       ),
     );
   }
@@ -286,22 +287,22 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
           child: Center(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing24),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 20),
+                  SizedBox(height: UIConstants.spacing20),
 
                   // Logo animado con funcionalidad de switch
                   Hero(
                     tag: 'bioway_logo',
                     child: AnimatedLogo(
                       onTap: _navigateToPlatformSelector,
-                      size: 142,
+                      size: UIConstants.logoSize + 2,
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  SizedBox(height: UIConstants.spacing20),
 
                   // Formulario animado
                   AnimatedBuilder(
@@ -316,7 +317,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
                       );
                     },
                     child: Container(
-                      constraints: const BoxConstraints(maxWidth: 400),
+                      constraints: BoxConstraints(maxWidth: UIConstants.maxWidthDialog),
                       child: Form(
                         key: _formKey,
                         child: Column(
@@ -324,29 +325,29 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
                           children: [
                             // Campo de correo
                             _buildEmailField(),
-                            const SizedBox(height: 20),
+                            SizedBox(height: UIConstants.spacing20),
 
                             // Campo de contraseña
                             _buildPasswordField(),
-                            const SizedBox(height: 12),
+                            SizedBox(height: UIConstants.spacing12),
 
                             // Remember me y Olvidé contraseña
                             _buildRememberAndForgot(),
-                            const SizedBox(height: 32),
+                            SizedBox(height: UIConstants.spacing32),
 
                             // Botón iniciar sesión
                             _buildLoginButton(),
-                            const SizedBox(height: 24),
+                            SizedBox(height: UIConstants.spacing24),
 
                             // Divisor
                             _buildDivider(),
-                            const SizedBox(height: 24),
+                            SizedBox(height: UIConstants.spacing24),
 
                             // Botón registrarse
                             _buildRegisterButton(),
-                            const SizedBox(height: 24),
+                            SizedBox(height: UIConstants.spacing24),
 
-                            const SizedBox(height: 20),
+                            SizedBox(height: UIConstants.spacing20),
                           ],
                         ),
                       ),
@@ -369,7 +370,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
           'Correo electrónico',
           style: Theme.of(context).textTheme.labelLarge,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: UIConstants.spacing8),
         TextFormField(
           controller: _emailController,
           focusNode: _emailFocusNode,
@@ -382,38 +383,38 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
             hintText: 'correo@ejemplo.com',
             hintStyle: TextStyle(
               color: Colors.grey.shade400,
-              fontSize: 14,
+              fontSize: UIConstants.fontSizeMedium,
             ),
             prefixIcon: const Icon(
               Icons.email_outlined,
               color: BioWayColors.darkGreen,
-              size: 22,
+              size: UIConstants.iconSizeSmall + 6,
             ),
             filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.9),
+            fillColor: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide(
                 color: Colors.grey.shade200,
-                width: 1,
+                width: UIConstants.borderWidthThin,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: const BorderSide(
                 color: BioWayColors.primaryGreen,
-                width: 2,
+                width: UIConstants.borderWidthThick - 0.5,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: const BorderSide(
                 color: BioWayColors.error,
-                width: 2,
+                width: UIConstants.borderWidthThick - 0.5,
               ),
             ),
           ),
@@ -439,7 +440,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
           'Contraseña',
           style: Theme.of(context).textTheme.labelLarge,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: UIConstants.spacing8),
         TextFormField(
           controller: _passwordController,
           focusNode: _passwordFocusNode,
@@ -450,12 +451,12 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
             hintText: '••••••••',
             hintStyle: TextStyle(
               color: Colors.grey.shade400,
-              fontSize: 14,
+              fontSize: UIConstants.fontSizeMedium,
             ),
             prefixIcon: const Icon(
               Icons.lock_outline,
               color: BioWayColors.darkGreen,
-              size: 22,
+              size: UIConstants.iconSizeSmall + 6,
             ),
             suffixIcon: IconButton(
               icon: Icon(
@@ -463,7 +464,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
                     ? Icons.visibility_off_outlined
                     : Icons.visibility_outlined,
                 color: BioWayColors.darkGreen,
-                size: 22,
+                size: UIConstants.iconSizeSmall + 6,
               ),
               onPressed: () {
                 setState(() {
@@ -472,30 +473,30 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
               },
             ),
             filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.9),
+            fillColor: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide(
                 color: Colors.grey.shade200,
-                width: 1,
+                width: UIConstants.borderWidthThin,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: const BorderSide(
                 color: BioWayColors.primaryGreen,
-                width: 2,
+                width: UIConstants.borderWidthThick - 0.5,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: const BorderSide(
                 color: BioWayColors.error,
-                width: 2,
+                width: UIConstants.borderWidthThick - 0.5,
               ),
             ),
           ),
@@ -521,8 +522,8 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
         Row(
           children: [
             SizedBox(
-              height: 24,
-              width: 24,
+              height: UIConstants.iconSizeMedium,
+              width: UIConstants.iconSizeMedium,
               child: Checkbox(
                 value: _rememberMe,
                 onChanged: (value) {
@@ -532,16 +533,16 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
                 },
                 activeColor: BioWayColors.primaryGreen,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(UIConstants.spacing4),
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: UIConstants.spacing8),
             Text(
               'Recordarme',
               style: TextStyle(
                 color: BioWayColors.darkGreen,
-                fontSize: 14,
+                fontSize: UIConstants.fontSizeMedium,
               ),
             ),
           ],
@@ -557,7 +558,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
           child: const Text(
             '¿Olvidaste tu contraseña?',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: UIConstants.fontSizeMedium,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -569,33 +570,33 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
   Widget _buildLoginButton() {
     return SizedBox(
       width: double.infinity,
-      height: 52,
+      height: UIConstants.buttonHeightCompact,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _handleLogin,
         style: ElevatedButton.styleFrom(
           backgroundColor: BioWayColors.primaryGreen,
           foregroundColor: Colors.white,
-          elevation: _isLoading ? 0 : 3,
-          shadowColor: BioWayColors.primaryGreen.withValues(alpha: 0.4),
+          elevation: _isLoading ? 0 : UIConstants.elevationLow + 1,
+          shadowColor: BioWayColors.primaryGreen.withValues(alpha: UIConstants.opacityMedium + 0.1),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadiusConstants.borderRadiusMedium,
           ),
         ),
         child: _isLoading
             ? const SizedBox(
-          width: 24,
-          height: 24,
+          width: UIConstants.iconSizeMedium,
+          height: UIConstants.iconSizeMedium,
           child: CircularProgressIndicator(
             color: Colors.white,
-            strokeWidth: 2.5,
+            strokeWidth: UIConstants.borderWidthThick,
           ),
         )
             : const Text(
           'Iniciar Sesión',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: UIConstants.fontSizeBody,
             fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
+            letterSpacing: UIConstants.letterSpacingMedium,
           ),
         ),
       ),
@@ -607,7 +608,7 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
       children: [
         Expanded(
           child: Container(
-            height: 1,
+            height: UIConstants.borderWidthThin,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -619,19 +620,19 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing16),
           child: Text(
             'o',
             style: TextStyle(
               color: Colors.grey.shade500,
-              fontSize: 14,
+              fontSize: UIConstants.fontSizeMedium,
               fontWeight: FontWeight.w500,
             ),
           ),
         ),
         Expanded(
           child: Container(
-            height: 1,
+            height: UIConstants.borderWidthThin,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -649,25 +650,25 @@ class _BioWayLoginScreenState extends State<BioWayLoginScreen>
   Widget _buildRegisterButton() {
     return SizedBox(
       width: double.infinity,
-      height: 52,
+      height: UIConstants.buttonHeightCompact,
       child: OutlinedButton(
         onPressed: _handleRegister,
         style: OutlinedButton.styleFrom(
           foregroundColor: BioWayColors.primaryGreen,
           side: const BorderSide(
             color: BioWayColors.primaryGreen,
-            width: 2,
+            width: UIConstants.borderWidthThick - 0.5,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadiusConstants.borderRadiusMedium,
           ),
         ),
         child: const Text(
           'Registrarse',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: UIConstants.fontSizeBody,
             fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
+            letterSpacing: UIConstants.letterSpacingMedium,
           ),
         ),
       ),

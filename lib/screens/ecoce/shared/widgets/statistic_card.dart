@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../utils/ui_constants.dart';
 
 class StatisticCard extends StatelessWidget {
   final String title;
@@ -37,12 +38,12 @@ class StatisticCard extends StatelessWidget {
     } else if (color == Colors.orange) {
       backgroundGradientColor = Colors.orange.shade50;
     } else {
-      backgroundGradientColor = color.withValues(alpha: 0.05);
+      backgroundGradientColor = color.withValues(alpha: UIConstants.opacityVeryLow);
     }
     
     return Container(
       width: width,
-      height: height ?? 70,
+      height: height ?? UIConstants.buttonHeightLarge + UIConstants.spacing16,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -52,12 +53,12 @@ class StatisticCard extends StatelessWidget {
             backgroundGradientColor,
           ],
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadiusConstants.borderRadiusLarge,
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: color.withValues(alpha: UIConstants.opacityLow),
+            blurRadius: UIConstants.blurRadiusLarge,
+            offset: Offset(0, UIConstants.spacing10),
           ),
         ],
       ),
@@ -65,20 +66,20 @@ class StatisticCard extends StatelessWidget {
         children: [
           // Icono de fondo decorativo
           Positioned(
-            right: -10,
-            bottom: -10,
+            right: -UIConstants.spacing10,
+            bottom: -UIConstants.spacing10,
             child: Icon(
               icon == Icons.inbox ? Icons.inbox_outlined : 
               icon == Icons.add_box ? Icons.add_box_outlined :
               icon == Icons.scale ? Icons.scale_outlined : 
               icon == Icons.inventory_2 ? Icons.inventory_2_outlined : icon,
-              size: 60,
-              color: color.withValues(alpha: 0.05),
+              size: UIConstants.iconSizeDialog,
+              color: color.withValues(alpha: UIConstants.opacityVeryLow),
             ),
           ),
           // Contenido
           Padding(
-            padding: EdgeInsets.all(isCompact ? 12.0 : 12.0),
+            padding: EdgeInsetsConstants.paddingAll12,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
@@ -86,19 +87,19 @@ class StatisticCard extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      width: isCompact ? 32 : 32,
-                      height: isCompact ? 32 : 32,
+                      width: UIConstants.buttonHeightSmall,
+                      height: UIConstants.buttonHeightSmall,
                       decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
+                        color: color.withValues(alpha: UIConstants.opacityLow),
+                        borderRadius: BorderRadius.circular(UIConstants.spacing10),
                       ),
                       child: Icon(
                         icon,
                         color: color,
-                        size: isCompact ? 18 : 18,
+                        size: UIConstants.iconSizeBody + 2,
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: UIConstants.spacing10),
                     Flexible(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,17 +111,17 @@ class StatisticCard extends StatelessWidget {
                                 Text(
                                   value,
                                   style: TextStyle(
-                                    fontSize: isCompact ? 20 : 20,
+                                    fontSize: UIConstants.fontSizeLarge,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black87,
                                     height: 1,
                                   ),
                                 ),
-                                const SizedBox(width: 4),
+                                SizedBox(width: UIConstants.spacing4),
                                 Text(
                                   unit!,
                                   style: TextStyle(
-                                    fontSize: isCompact ? 14 : 14,
+                                    fontSize: UIConstants.fontSizeMedium,
                                     fontWeight: FontWeight.w600,
                                     color: color,
                                     height: 1,
@@ -141,7 +142,7 @@ class StatisticCard extends StatelessWidget {
                           Text(
                             title,
                             style: TextStyle(
-                              fontSize: isCompact ? 11 : 11,
+                              fontSize: UIConstants.fontSizeSmall - 1,
                               color: Colors.grey[600],
                               height: 1.1,
                             ),

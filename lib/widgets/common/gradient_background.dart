@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../utils/colors.dart';
+import '../../utils/ui_constants.dart';
 
 /// Widget reutilizable para crear fondos con gradiente
 /// Usado en múltiples pantallas de la aplicación
@@ -57,28 +58,28 @@ class GradientBackground extends StatelessWidget {
         if (showPattern) ...[
           // Círculo decorativo superior derecho
           Positioned(
-            top: -100,
-            right: -100,
+            top: -UIConstants.iconContainerXLarge + UIConstants.spacing20,
+            right: -UIConstants.iconContainerXLarge + UIConstants.spacing20,
             child: Container(
-              width: 300,
-              height: 300,
+              width: UIConstants.signatureWidth,
+              height: UIConstants.signatureWidth,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: BioWayColors.primaryGreen.withValues(alpha: 0.05),
+                color: BioWayColors.primaryGreen.withValues(alpha: UIConstants.opacityVeryLow),
               ),
             ),
           ),
 
           // Círculo decorativo inferior izquierdo
           Positioned(
-            bottom: -150,
-            left: -150,
+            bottom: -UIConstants.qrSizeSmall,
+            left: -UIConstants.qrSizeSmall,
             child: Container(
-              width: 400,
-              height: 400,
+              width: UIConstants.maxWidthDialog,
+              height: UIConstants.maxWidthDialog,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: BioWayColors.mediumGreen.withValues(alpha: 0.05),
+                color: BioWayColors.mediumGreen.withValues(alpha: UIConstants.opacityVeryLow),
               ),
             ),
           ),
@@ -86,14 +87,14 @@ class GradientBackground extends StatelessWidget {
           // Líneas decorativas
           ...List.generate(3, (index) {
             return Positioned(
-              top: 100 + (index * 200).toDouble(),
-              left: -50,
+              top: UIConstants.iconContainerXLarge - UIConstants.spacing20 + (index * UIConstants.qrSizeMedium).toDouble(),
+              left: -UIConstants.buttonHeightMedium - UIConstants.spacing4 / 2,
               child: Transform.rotate(
                 angle: 0.3,
                 child: Container(
-                  width: 200,
-                  height: 1,
-                  color: Colors.white.withValues(alpha: 0.1),
+                  width: UIConstants.qrSizeMedium,
+                  height: UIConstants.borderWidthThin,
+                  color: Colors.white.withValues(alpha: UIConstants.opacityLow),
                 ),
               ),
             );

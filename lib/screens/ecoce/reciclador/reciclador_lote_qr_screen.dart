@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import 'reciclador_inicio.dart';
 import 'widgets/reciclador_lote_card.dart';
 import '../shared/widgets/qr_code_display_widget.dart';
@@ -50,7 +51,7 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
     super.initState();
     
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: UIConstants.animationVerySlow,
       vsync: this,
     );
 
@@ -168,7 +169,7 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0,
+        elevation: UIConstants.elevationNone,
         leading: widget.mostrarMensajeExito 
           ? IconButton(
               icon: const Icon(Icons.close, color: Colors.black),
@@ -182,14 +183,14 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
           widget.mostrarMensajeExito ? 'Proceso Completado' : 'Certificado de Reciclaje',
           style: const TextStyle(
             color: Colors.black87,
-            fontSize: 20,
+            fontSize: UIConstants.fontSizeXLarge,
             fontWeight: FontWeight.w600,
           ),
         ),
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: EdgeInsetsConstants.paddingAll20,
           child: Column(
             children: [
               // Mensaje de éxito (solo si se muestra)
@@ -199,21 +200,21 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
                   child: ScaleTransition(
                     scale: _scaleAnimation,
                     child: Container(
-                      margin: const EdgeInsets.only(bottom: 24),
-                      padding: const EdgeInsets.all(20),
+                      margin: EdgeInsets.only(bottom: UIConstants.spacing24),
+                      padding: EdgeInsetsConstants.paddingAll20,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
                             BioWayColors.success,
-                            BioWayColors.success.withValues(alpha: 0.8),
+                            BioWayColors.success.withValues(alpha: UIConstants.opacityVeryHigh),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadiusConstants.borderRadiusLarge,
                         boxShadow: [
                           BoxShadow(
-                            color: BioWayColors.success.withValues(alpha: 0.3),
+                            color: BioWayColors.success.withValues(alpha: UIConstants.opacityMedium),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -222,19 +223,19 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
                       child: Row(
                         children: [
                           Container(
-                            width: 56,
-                            height: 56,
+                            width: UIConstants.buttonHeight,
+                            height: UIConstants.buttonHeight,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
+                              color: Colors.white.withValues(alpha: UIConstants.opacityMediumLow),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.check_circle,
                               color: Colors.white,
-                              size: 32,
+                              size: UIConstants.iconSizeLarge,
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          SizedBox(width: UIConstants.spacing16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,16 +244,16 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
                                   '¡Proceso de reciclaje completado!',
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 18,
+                                    fontSize: UIConstants.fontSizeLarge,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                SizedBox(height: UIConstants.spacing4),
                                 Text(
                                   'Lote: ${widget.loteId}',
                                   style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.9),
-                                    fontSize: 14,
+                                    color: Colors.white.withValues(alpha: UIConstants.opacityAlmostFull),
+                                    fontSize: UIConstants.fontSizeMedium,
                                   ),
                                 ),
                               ],
@@ -267,7 +268,7 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
 
               // Vista previa del lote
               Container(
-                margin: const EdgeInsets.only(bottom: 24),
+                margin: EdgeInsets.only(bottom: UIConstants.spacing24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -279,7 +280,7 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
                         color: Colors.grey[700],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: UIConstants.spacing12),
                     RecicladorLoteCard(
                       lote: {
                         'id': widget.loteId,
@@ -300,17 +301,17 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
               // Mostrar nota sobre muestras de laboratorio si existen
               if (widget.pesoMuestrasLaboratorio != null && widget.pesoMuestrasLaboratorio! > 0) ...[
                 Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(16),
+                  margin: EdgeInsets.only(bottom: UIConstants.spacing16),
+                  padding: EdgeInsetsConstants.paddingAll16,
                   decoration: BoxDecoration(
                     color: Colors.blue[50],
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadiusConstants.borderRadiusMedium,
                     border: Border.all(color: Colors.blue[200]!),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.science, color: Colors.blue[700], size: 24),
-                      const SizedBox(width: 12),
+                      Icon(Icons.science, color: Colors.blue[700], size: UIConstants.iconSizeMedium),
+                      SizedBox(width: UIConstants.spacing12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -323,14 +324,14 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
                                 color: Colors.blue[700],
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: UIConstants.spacing4),
                             Text(
                               'Se han tomado ${widget.pesoMuestrasLaboratorio!.toStringAsFixed(2)} kg en muestras. '
                               'El peso mostrado ya refleja esta reducción.',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: UIConstants.fontSizeXSmall,
                                 color: Colors.blue[600],
-                                height: 1.4,
+                                height: UIConstants.lineHeightDefault,
                               ),
                             ),
                           ],
@@ -370,21 +371,21 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
               ),
 
               if (widget.mostrarMensajeExito) ...[
-                const SizedBox(height: 24),
+                SizedBox(height: UIConstants.spacing24),
                 SizedBox(
                   width: double.infinity,
                   child: TextButton(
                     onPressed: _irAInicio,
                     style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: EdgeInsets.symmetric(vertical: UIConstants.spacing16),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadiusConstants.borderRadiusMedium,
                       ),
                     ),
                     child: Text(
                       'Ir al inicio',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: UIConstants.fontSizeBody,
                         fontWeight: FontWeight.w600,
                         color: BioWayColors.ecoceGreen,
                       ),
@@ -393,7 +394,7 @@ class _RecicladorLoteQRScreenState extends State<RecicladorLoteQRScreen>
                 ),
               ],
 
-              const SizedBox(height: 40),
+              SizedBox(height: UIConstants.spacing40),
             ],
           ),
         ),

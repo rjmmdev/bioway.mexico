@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../../models/ecoce/ecoce_profile_model.dart';
 import '../../../services/user_session_service.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/screens/receptor_recepcion_pasos_screen.dart';
 import '../shared/utils/user_type_helper.dart';

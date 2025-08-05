@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../services/lote_service.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../services/user_session_service.dart';
@@ -30,7 +31,7 @@ class SignaturePainter extends CustomPainter {
 
   SignaturePainter({
     required this.points,
-    this.strokeWidth = 2.0,
+    this.strokeWidth = UIConstants.strokeWidth,
     this.color = Colors.orange,
   });
 
@@ -256,7 +257,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
       // Crear imagen de la firma
       final recorder = ui.PictureRecorder();
       final canvas = Canvas(recorder);
-      final size = const Size(300, 150);
+      final size = Size(UIConstants.signatureSize, UIConstants.signatureSize / 2);
       
       // Fondo blanco
       canvas.drawRect(
@@ -268,7 +269,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
       final paint = Paint()
         ..color = Colors.orange
         ..strokeCap = StrokeCap.round
-        ..strokeWidth = 2.0;
+        ..strokeWidth = UIConstants.strokeWidth;
       
       for (int i = 0; i < _signaturePoints.length - 1; i++) {
         if (_signaturePoints[i] != null && _signaturePoints[i + 1] != null) {
@@ -307,29 +308,29 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
 
   Widget _buildLoteInfo(Map<String, dynamic> lote) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: UIConstants.spacing8),
+      padding: EdgeInsetsConstants.paddingAll12,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadiusConstants.borderRadiusMedium,
         border: Border.all(color: Colors.grey[300]!),
       ),
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: UIConstants.iconSizeLarge + UIConstants.spacing16,
+            height: UIConstants.iconSizeLarge + UIConstants.spacing16,
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: Colors.orange.withValues(alpha: UIConstants.opacityLow),
+              borderRadius: BorderRadiusConstants.borderRadiusSmall,
             ),
             child: Icon(
               Icons.precision_manufacturing,
               color: Colors.orange,
-              size: 24,
+              size: UIConstants.iconSizeMedium,
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: UIConstants.spacing12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -338,13 +339,13 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                   lote['material'] ?? 'Material sin especificar',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontSize: UIConstants.fontSizeMedium,
                   ),
                 ),
                 Text(
                   '${lote['peso']} kg - ${lote['origen_nombre'] ?? 'Sin origen'}',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: UIConstants.fontSizeSmall,
                     color: Colors.grey[600],
                   ),
                 ),
@@ -373,7 +374,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         backgroundColor: Colors.orange,
-        elevation: 0,
+        elevation: UIConstants.elevationNone,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () {
@@ -384,7 +385,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
         title: const Text(
           'Recepción de Materiales',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: UIConstants.fontSizeLarge,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -394,19 +395,19 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsetsConstants.paddingAll16,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Información del transportista
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsetsConstants.paddingAll16,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -420,19 +421,19 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                         Icon(
                           Icons.local_shipping,
                           color: Colors.orange,
-                          size: 24,
+                          size: UIConstants.iconSizeMedium,
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: UIConstants.spacing12),
                         const Text(
                           'Información de Entrega',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: UIConstants.fontSizeBody + 2,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     TextFormField(
                       controller: _transportistaController,
                       enabled: false,
@@ -440,7 +441,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                         labelText: 'Transportista',
                         prefixIcon: Icon(Icons.person),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadiusConstants.borderRadiusMedium,
                         ),
                       ),
                     ),
@@ -448,17 +449,17 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                 ),
               ),
               
-              const SizedBox(height: 16),
+              SizedBox(height: UIConstants.spacing16),
               
               // Lista de lotes
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsetsConstants.paddingAll16,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -472,35 +473,35 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                         Icon(
                           Icons.precision_manufacturing,
                           color: Colors.orange,
-                          size: 24,
+                          size: UIConstants.iconSizeMedium,
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: UIConstants.spacing12),
                         Text(
                           'Materiales Recibidos (${_lotes.length})',
                           style: const TextStyle(
-                            fontSize: 18,
+                            fontSize: UIConstants.fontSizeBody + 2,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     ..._lotes.map((lote) => _buildLoteInfo(lote)),
                   ],
                 ),
               ),
               
-              const SizedBox(height: 16),
+              SizedBox(height: UIConstants.spacing16),
               
               // Información del procesamiento
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsetsConstants.paddingAll16,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -514,32 +515,32 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                         Icon(
                           Icons.settings,
                           color: Colors.orange,
-                          size: 24,
+                          size: UIConstants.iconSizeMedium,
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: UIConstants.spacing12),
                         const Text(
                           'Datos de Procesamiento',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: UIConstants.fontSizeBody + 2,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     
                     // Tipo de procesamiento
                     const Text(
                       'Tipo de Procesamiento',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: UIConstants.fontSizeMedium,
                         fontWeight: FontWeight.w600,
                         color: BioWayColors.textGrey,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: UIConstants.spacing8),
                     Wrap(
-                      spacing: 8,
+                      spacing: UIConstants.spacing8,
                       children: [
                         ChoiceChip(
                           label: const Text('Pellets'),
@@ -551,7 +552,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                               });
                             }
                           },
-                          selectedColor: Colors.orange.withOpacity(0.2),
+                          selectedColor: Colors.orange.withValues(alpha: UIConstants.opacityMediumLow),
                           backgroundColor: Colors.grey[100],
                           labelStyle: TextStyle(
                             color: _tipoProcesamiento == 'pellets'
@@ -573,7 +574,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                               });
                             }
                           },
-                          selectedColor: Colors.orange.withOpacity(0.2),
+                          selectedColor: Colors.orange.withValues(alpha: UIConstants.opacityMediumLow),
                           backgroundColor: Colors.grey[100],
                           labelStyle: TextStyle(
                             color: _tipoProcesamiento == 'hojuelas'
@@ -595,7 +596,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                               });
                             }
                           },
-                          selectedColor: Colors.orange.withOpacity(0.2),
+                          selectedColor: Colors.orange.withValues(alpha: UIConstants.opacityMediumLow),
                           backgroundColor: Colors.grey[100],
                           labelStyle: TextStyle(
                             color: _tipoProcesamiento == 'otros'
@@ -610,7 +611,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                       ],
                     ),
                     
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     
                     // Peso y calidad
                     TextFormField(
@@ -621,23 +622,23 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                         labelText: 'Peso Total Entregado (kg)',
                         prefixIcon: Icon(Icons.scale),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadiusConstants.borderRadiusMedium,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     
                     // Calidad del Material con marco gris
                     const field_label.FieldLabel(
                       text: 'Calidad del Material',
                       isRequired: true,
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: UIConstants.spacing8),
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: EdgeInsetsConstants.paddingAll12,
                       decoration: BoxDecoration(
                         color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadiusConstants.borderRadiusMedium,
                         border: Border.all(color: Colors.grey[300]!),
                       ),
                       child: TextFormField(
@@ -645,7 +646,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                         maxLines: 2,
                         decoration: InputDecoration(
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          contentPadding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12, vertical: UIConstants.spacing8),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -659,17 +660,17 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                 ),
               ),
               
-              const SizedBox(height: 16),
+              SizedBox(height: UIConstants.spacing16),
               
               // Observaciones
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsetsConstants.paddingAll16,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -683,31 +684,31 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                         Icon(
                           Icons.comment,
                           color: Colors.orange,
-                          size: 24,
+                          size: UIConstants.iconSizeMedium,
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: UIConstants.spacing12),
                         const Text(
                           'Observaciones',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: UIConstants.fontSizeBody + 2,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     
                     // Observaciones con marco gris
                     const field_label.FieldLabel(
                       text: 'Observaciones adicionales',
                       isRequired: false,
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: UIConstants.spacing8),
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: EdgeInsetsConstants.paddingAll12,
                       decoration: BoxDecoration(
                         color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadiusConstants.borderRadiusMedium,
                         border: Border.all(color: Colors.grey[300]!),
                       ),
                       child: TextFormField(
@@ -715,7 +716,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                         maxLines: 3,
                         decoration: InputDecoration(
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          contentPadding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12, vertical: UIConstants.spacing8),
                         ),
                       ),
                     ),
@@ -723,17 +724,17 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                 ),
               ),
               
-              const SizedBox(height: 16),
+              SizedBox(height: UIConstants.spacing16),
               
               // Datos del Responsable
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsetsConstants.paddingAll16,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -747,14 +748,14 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                         Icon(
                           Icons.person,
                           color: Colors.orange,
-                          size: 24,
+                          size: UIConstants.iconSizeMedium,
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: UIConstants.spacing12),
                         const Expanded(
                           child: Text(
                             'Datos del Responsable que Recibe el Material',
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: UIConstants.fontSizeBody + 2,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -763,20 +764,20 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                           '*',
                           style: TextStyle(
                             color: Colors.red,
-                            fontSize: 18,
+                            fontSize: UIConstants.fontSizeBody + 2,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spacing16),
                     
                     // Nombre del Operador
                     const field_label.FieldLabel(
                       text: 'Nombre del Operador',
                       isRequired: true,
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: UIConstants.spacing8),
                     TextFormField(
                       controller: _operadorController,
                       decoration: SharedInputDecorations.ecoceStyle(
@@ -794,14 +795,14 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                       },
                     ),
                     
-                    const SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spacing20),
                     
                     // Firma del Operador
                     const field_label.FieldLabel(
                       text: 'Firma',
                       isRequired: true,
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: UIConstants.spacing8),
                     GestureDetector(
                       onTap: _signaturePoints.isEmpty ? _captureSignature : null,
                       child: AnimatedContainer(
@@ -812,7 +813,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                           color: _signaturePoints.isNotEmpty 
                               ? Colors.orange.withValues(alpha: 0.05)
                               : Colors.grey[50],
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadiusConstants.borderRadiusMedium,
                           border: Border.all(
                             color: _signaturePoints.isNotEmpty 
                                 ? Colors.orange 
@@ -827,15 +828,15 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                                   children: [
                                     Icon(
                                       Icons.draw,
-                                      size: 32,
+                                      size: UIConstants.iconSizeLarge,
                                       color: Colors.grey[400],
                                     ),
-                                    const SizedBox(height: 4),
+                                    SizedBox(height: UIConstants.spacing4),
                                     Text(
                                       'Toque para firmar',
                                       style: TextStyle(
                                         color: Colors.grey[600],
-                                        fontSize: 14,
+                                        fontSize: UIConstants.fontSizeMedium,
                                       ),
                                     ),
                                   ],
@@ -849,19 +850,19 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                                       child: Container(
                                         decoration: BoxDecoration(
                                           color: Colors.white,
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadiusConstants.borderRadiusSmall,
                                         ),
                                         child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadiusConstants.borderRadiusSmall,
                                           child: FittedBox(
                                             fit: BoxFit.contain,
                                             child: SizedBox(
-                                              width: 300,
-                                              height: 300,
+                                              width: UIConstants.signatureSize,
+                                              height: UIConstants.signatureSize,
                                               child: CustomPaint(
                                                 painter: SignaturePainter(
                                                   points: _signaturePoints,
-                                                  strokeWidth: 2.0,
+                                                  strokeWidth: UIConstants.strokeWidth,
                                                 ),
                                               ),
                                             ),
@@ -889,16 +890,16 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                                           ),
                                           child: IconButton(
                                             onPressed: _captureSignature,
-                                            icon: const Icon(Icons.edit, size: 20),
+                                            icon: Icon(Icons.edit, size: UIConstants.iconSizeMedium - 4),
                                             color: Colors.orange,
-                                            padding: const EdgeInsets.all(8),
+                                            padding: EdgeInsets.all(UIConstants.spacing8),
                                             constraints: const BoxConstraints(
-                                              minWidth: 36,
-                                              minHeight: 36,
+                                              minWidth: UIConstants.iconSizeLarge + UIConstants.spacing12,
+                                              minHeight: UIConstants.iconSizeLarge + UIConstants.spacing12,
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
+                                        SizedBox(width: UIConstants.spacing8),
                                         Container(
                                           decoration: BoxDecoration(
                                             color: Colors.white,
@@ -916,12 +917,12 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                                                 _signaturePoints.clear();
                                               });
                                             },
-                                            icon: const Icon(Icons.clear, size: 20),
+                                            icon: Icon(Icons.clear, size: UIConstants.iconSizeMedium - 4),
                                             color: Colors.red,
-                                            padding: const EdgeInsets.all(8),
+                                            padding: EdgeInsets.all(UIConstants.spacing8),
                                             constraints: const BoxConstraints(
-                                              minWidth: 36,
-                                              minHeight: 36,
+                                              minWidth: UIConstants.iconSizeLarge + UIConstants.spacing12,
+                                              minHeight: UIConstants.iconSizeLarge + UIConstants.spacing12,
                                             ),
                                           ),
                                         ),
@@ -936,38 +937,38 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                 ),
               ),
               
-              const SizedBox(height: 24),
+              SizedBox(height: UIConstants.spacing24),
               
               // Botón de enviar
               SizedBox(
-                height: 56,
+                height: UIConstants.buttonHeightLarge,
                 child: ElevatedButton(
                   onPressed: _isSubmitting ? null : _submitForm,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
                     ),
-                    elevation: 2,
+                    elevation: UIConstants.elevationSmall,
                   ),
                   child: _isSubmitting
                       ? const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             SizedBox(
-                              width: 20,
-                              height: 20,
+                              width: UIConstants.iconSizeMedium - 4,
+                              height: UIConstants.iconSizeMedium - 4,
                               child: CircularProgressIndicator(
                                 color: Colors.white,
-                                strokeWidth: 2,
+                                strokeWidth: UIConstants.strokeWidth,
                               ),
                             ),
-                            SizedBox(width: 12),
+                            SizedBox(width: UIConstants.spacing12),
                             Text(
                               'Procesando...',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 16,
+                                fontSize: UIConstants.fontSizeBody,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -984,7 +985,7 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
                 ),
               ),
               
-              const SizedBox(height: 32),
+              SizedBox(height: UIConstants.spacing32),
             ],
           ),
         ),

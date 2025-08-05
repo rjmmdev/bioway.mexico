@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../utils/ui_constants.dart';
 
 /// Utilidades para mostrar diálogos comunes en ECOCE
 class DialogUtils {
@@ -18,21 +19,21 @@ class DialogUtils {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadiusConstants.borderRadiusMedium,
           ),
           title: Column(
             children: [
               const Icon(
                 Icons.check_circle,
                 color: Colors.green,
-                size: 60,
+                size: UIConstants.iconSizeDialog,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: UIConstants.spacing16),
               Text(
                 title,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize: UIConstants.fontSizeLarge,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -41,7 +42,7 @@ class DialogUtils {
           content: Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16),
+            style: TextStyle(fontSize: UIConstants.fontSizeBody),
           ),
           actions: [
             Center(
@@ -52,19 +53,19 @@ class DialogUtils {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 12,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: UIConstants.spacing32,
+                    vertical: UIConstants.spacing12,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadiusConstants.borderRadiusSmall,
                   ),
                 ),
                 child: const Text(
                   'Aceptar',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: UIConstants.fontSizeBody,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -90,21 +91,21 @@ class DialogUtils {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadiusConstants.borderRadiusMedium,
           ),
           title: Column(
             children: [
               const Icon(
                 Icons.error,
                 color: Colors.red,
-                size: 60,
+                size: UIConstants.iconSizeDialog,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: UIConstants.spacing16),
               Text(
                 title,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize: UIConstants.fontSizeLarge,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -113,7 +114,7 @@ class DialogUtils {
           content: Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16),
+            style: TextStyle(fontSize: UIConstants.fontSizeBody),
           ),
           actions: [
             Center(
@@ -123,19 +124,19 @@ class DialogUtils {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 12,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: UIConstants.spacing32,
+                    vertical: UIConstants.spacing12,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadiusConstants.borderRadiusSmall,
                   ),
                 ),
                 child: const Text(
                   'Aceptar',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: UIConstants.fontSizeBody,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -161,21 +162,21 @@ class DialogUtils {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadiusConstants.borderRadiusMedium,
           ),
           title: Column(
             children: [
               const Icon(
                 Icons.info,
                 color: Colors.blue,
-                size: 60,
+                size: UIConstants.iconSizeDialog,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: UIConstants.spacing16),
               Text(
                 title,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize: UIConstants.fontSizeLarge,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -184,7 +185,7 @@ class DialogUtils {
           content: Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16),
+            style: TextStyle(fontSize: UIConstants.fontSizeBody),
           ),
           actions: [
             Center(
@@ -194,19 +195,19 @@ class DialogUtils {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 12,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: UIConstants.spacing32,
+                    vertical: UIConstants.spacing12,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadiusConstants.borderRadiusSmall,
                   ),
                 ),
                 child: const Text(
                   'Aceptar',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: UIConstants.fontSizeBody,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

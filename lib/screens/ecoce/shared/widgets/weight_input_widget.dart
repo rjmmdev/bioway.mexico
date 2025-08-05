@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import '../../../../utils/colors.dart';
+import '../../../../utils/ui_constants.dart';
 
 class WeightInputWidget extends StatefulWidget {
   final TextEditingController controller;
@@ -115,17 +116,17 @@ class _WeightInputWidgetState extends State<WeightInputWidget> {
             Text(
               widget.label,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: UIConstants.fontSizeMedium,
                 fontWeight: FontWeight.w600,
                 color: BioWayColors.textGrey,
               ),
             ),
             if (widget.isRequired) ...[
-              const SizedBox(width: 4),
+              SizedBox(width: UIConstants.spacing4),
               Text(
                 '*',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: UIConstants.fontSizeMedium,
                   fontWeight: FontWeight.w600,
                   color: BioWayColors.error,
                 ),
@@ -141,8 +142,8 @@ class _WeightInputWidgetState extends State<WeightInputWidget> {
             color: BioWayColors.backgroundGrey,
             borderRadius: BorderRadius.circular(screenWidth * 0.03),
             border: Border.all(
-              color: widget.primaryColor.withValues(alpha: 0.3),
-              width: 1,
+              color: widget.primaryColor.withValues(alpha: UIConstants.opacityMedium),
+              width: UIConstants.borderWidthThin,
             ),
           ),
           child: Row(
@@ -276,15 +277,15 @@ class _WeightInputWidgetState extends State<WeightInputWidget> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(screenWidth * 0.05),
                       border: Border.all(
-                        color: widget.primaryColor.withValues(alpha: 0.3),
-                        width: 1,
+                        color: widget.primaryColor.withValues(alpha: UIConstants.opacityMedium),
+                        width: UIConstants.borderWidthThin,
                       ),
                     ),
                     child: Text(
                       displayText,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: UIConstants.fontSizeSmall + 1,
                         fontWeight: FontWeight.w600,
                         color: widget.primaryColor,
                       ),

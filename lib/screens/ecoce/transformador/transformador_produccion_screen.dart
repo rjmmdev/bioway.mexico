@@ -7,6 +7,7 @@ import '../../../models/lotes/transformacion_model.dart';
 import '../../../services/lote_unificado_service.dart';
 import '../../../services/transformacion_service.dart';
 import '../../../utils/colors.dart';
+import '../../../utils/ui_constants.dart';
 import '../../../utils/format_utils.dart';
 import '../shared/utils/material_utils.dart';
 // Widgets compartidos del Reciclador
@@ -39,16 +40,10 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
   late Stream<List<LoteUnificadoModel>> _lotesStream;
   late Stream<List<TransformacionModel>> _transformacionesStream;
   
-  // Datos en caché para mostrar inmediatamente
-  List<LoteUnificadoModel> _lotesCache = [];
-  List<TransformacionModel> _transformacionesCache = [];
-  StreamSubscription<List<LoteUnificadoModel>>? _lotesSubscription;
-  StreamSubscription<List<TransformacionModel>>? _transformacionesSubscription;
-  
   // Estados
   bool _isSelectionMode = false;
   bool _autoSelectionMode = false; // Para el tab de Salida
-  Set<String> _selectedLotes = {};
+  final Set<String> _selectedLotes = {};
   
   // Filtros
   String _filtroMaterial = 'Todos';
@@ -84,31 +79,8 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
       });
     });
     // Inicializar streams inmediatamente para evitar delays
-    print('[INIT] Inicializando streams en initState');
-    _lotesStream = _loteUnificadoService.obtenerMisLotesPorProcesoActual('transformador');
-    _transformacionesStream = _transformacionService.obtenerTransformacionesUsuario();
-    
-    // Escuchar el stream de lotes y actualizar el caché
-    _lotesSubscription = _lotesStream.listen((lotes) {
-      print('[CACHE UPDATE] Actualizando caché con ${lotes.length} lotes');
-      if (mounted) {
-        setState(() {
-          _lotesCache = lotes;
-        });
-      }
-    });
-    
-    // Escuchar el stream de transformaciones y actualizar el caché
-    _transformacionesSubscription = _transformacionesStream.listen((transformaciones) {
-      print('[CACHE UPDATE] Actualizando caché con ${transformaciones.length} transformaciones');
-      if (mounted) {
-        setState(() {
-          _transformacionesCache = transformaciones;
-        });
-      }
-    });
-    
-    print('[INIT] Streams inicializados');
+    _loadLotes();
+    _loadTransformaciones();
   }
   
   @override
@@ -305,8 +277,8 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
+            topLeft: Radius.circular(UIConstants.radiusLarge),
+            topRight: Radius.circular(UIConstants.radiusLarge),
           ),
         ),
         child: Column(
@@ -314,21 +286,21 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
             Container(
               width: 40,
               height: 4,
-              margin: const EdgeInsets.only(top: 12, bottom: 20),
+              margin: EdgeInsets.only(top: UIConstants.spacing12, bottom: UIConstants.spacing20),
               decoration: BoxDecoration(
                 color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(UIConstants.radiusSmall / 2),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing20),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
                     'Detalles del Megalote',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: UIConstants.fontSizeXLarge,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -342,7 +314,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
             const Divider(),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsetsConstants.paddingAll20,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -359,21 +331,21 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                       _buildDetailSection('Producto', transformacion.datos['producto_fabricado']),
                     if (transformacion.datos['cantidad_producto'] != null && transformacion.datos['cantidad_producto'] > 0)
                       _buildDetailSection('Cantidad', '${transformacion.datos['cantidad_producto']} unidades'),
-                    const SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spacing20),
                     const Text(
                       'Lotes Procesados',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: UIConstants.fontSizeBody,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: UIConstants.spacing8 + 2),
                     ...transformacion.lotesEntrada.map((lote) => Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(12),
+                      margin: EdgeInsets.only(bottom: UIConstants.spacing8),
+                      padding: EdgeInsetsConstants.paddingAll12,
                       decoration: BoxDecoration(
                         color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadiusConstants.borderRadiusSmall,
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -401,7 +373,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
 
   Widget _buildDetailSection(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: UIConstants.spacing16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -461,8 +433,6 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
   @override
   void dispose() {
     _tabController.dispose();
-    _lotesSubscription?.cancel();
-    _transformacionesSubscription?.cancel();
     super.dispose();
   }
 
@@ -478,12 +448,12 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
         backgroundColor: const Color(0xFFF5F5F5),
         appBar: AppBar(
           backgroundColor: Colors.orange,
-          elevation: 0,
+          elevation: UIConstants.elevationNone,
           automaticallyImplyLeading: false,
           title: const Text(
             'Gestión de Producción',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: UIConstants.fontSizeXLarge,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -506,7 +476,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                 indicatorColor: _getTabColor(),
                 indicatorWeight: 3,
                 indicatorSize: TabBarIndicatorSize.tab,
-                labelPadding: const EdgeInsets.symmetric(horizontal: 16),
+                labelPadding: EdgeInsets.symmetric(horizontal: UIConstants.spacing16),
                 tabs: const [
                   Tab(text: 'Salida'),
                   Tab(text: 'Documentación'),
@@ -516,37 +486,54 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
             ),
           ),
         ),
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            _buildTabWithRefresh(
-              child: _buildSalidaTabContent(),
-            ),
-            _buildTabWithRefresh(
-              child: _buildDocumentacionTabContent(),
-            ),
-            _buildTabWithRefresh(
-              child: _buildCompletadosTabContent(),
-            ),
-          ],
+        body: StreamBuilder<List<LoteUnificadoModel>>(
+          stream: _lotesStream,
+          builder: (context, lotesSnapshot) {
+            return StreamBuilder<List<TransformacionModel>>(
+              stream: _transformacionesStream,
+              builder: (context, transformacionesSnapshot) {
+                return TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildTabWithRefresh(
+                      child: _buildSalidaTabContent(lotesSnapshot),
+                    ),
+                    _buildTabWithRefresh(
+                      child: _buildDocumentacionTabContent(transformacionesSnapshot),
+                    ),
+                    _buildTabWithRefresh(
+                      child: _buildCompletadosTabContent(transformacionesSnapshot),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildCompletadosTabContent() {
-    print('[COMPLETADOS TAB BUILD] Building completados tab with cache: ${_transformacionesCache.length} items');
+  Widget _buildCompletadosTabContent(AsyncSnapshot<List<TransformacionModel>> snapshot) {
+    // Manejo de estados
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return _buildLoadingWithFilters(BioWayColors.success);
+    }
     
-    // Filtrar transformaciones completadas del caché
-    final transformacionesCompletadas = _transformacionesCache.where((t) {
+    if (snapshot.hasError) {
+      return _buildErrorState(snapshot.error);
+    }
+    
+    final allTransformaciones = snapshot.data ?? [];
+    
+    // Filtrar transformaciones completadas
+    final transformacionesCompletadas = allTransformaciones.where((t) {
       return t.tipo == 'agrupacion_transformador' &&
              t.estado == 'completado' && 
              (_filtroMaterial == 'Todos' || _megaloteContieneMaterial(t, _filtroMaterial));
     }).toList();
     
-    print('[COMPLETADOS FILTERED] Completadas count: ${transformacionesCompletadas.length}');
-    
-    // Siempre mostrar la UI completa inmediatamente
+    // Siempre mostrar la UI completa
     return ListView(
       physics: const BouncingScrollPhysics(),
       children: [
@@ -580,35 +567,36 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
           customLotesLabel: 'Megalotes Completados',
         ),
         
-        // Contenido
-        if (_transformacionesCache.isEmpty && transformacionesCompletadas.isEmpty)
-          Container(
-            height: 200,
-            alignment: Alignment.center,
-            child: CircularProgressIndicator(
-              color: BioWayColors.success,
-            ),
-          )
-        else if (transformacionesCompletadas.isEmpty)
+        // Lista de transformaciones o estado vacío
+        if (transformacionesCompletadas.isEmpty)
           _buildEmptyStateMegalotes()
         else
           ...transformacionesCompletadas.map(
             (transformacion) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing16),
               child: _buildTransformacionCard(transformacion),
             ),
           ),
         
-        const SizedBox(height: 100),
+        SizedBox(height: UIConstants.qrSizeSmall),
       ],
     );
   }
 
-  Widget _buildDocumentacionTabContent() {
-    print('[DOCUMENTACION TAB BUILD] Building documentacion tab with cache: ${_transformacionesCache.length} items');
+  Widget _buildDocumentacionTabContent(AsyncSnapshot<List<TransformacionModel>> snapshot) {
+    // Manejo de estados
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return _buildLoadingWithFilters(Colors.orange);
+    }
     
-    // Filtrar transformaciones del transformador del caché
-    final transformacionesTransformador = _transformacionesCache.where((t) {
+    if (snapshot.hasError) {
+      return _buildErrorState(snapshot.error);
+    }
+    
+    final allTransformaciones = snapshot.data ?? [];
+    
+    // Filtrar transformaciones del transformador
+    final transformacionesTransformador = allTransformaciones.where((t) {
       return t.tipo == 'agrupacion_transformador';
     }).toList();
     
@@ -618,9 +606,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
              (_filtroMaterial == 'Todos' || _megaloteContieneMaterial(t, _filtroMaterial));
     }).toList();
     
-    print('[DOCUMENTACION FILTERED] Documentacion count: ${transformacionesDocumentacion.length}');
-    
-    // Siempre mostrar la UI completa inmediatamente
+    // Siempre mostrar la UI completa
     return ListView(
       physics: const BouncingScrollPhysics(),
       children: [
@@ -653,36 +639,37 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
           customLotesLabel: 'Megalotes en Documentación',
         ),
         
-        // Contenido basado en el estado
-        if (_transformacionesCache.isEmpty && transformacionesDocumentacion.isEmpty)
-          Container(
-            height: 200,
-            alignment: Alignment.center,
-            child: CircularProgressIndicator(
-              color: Colors.orange,
-            ),
-          )
-        else if (transformacionesDocumentacion.isEmpty)
+        // Lista de transformaciones o estado vacío
+        if (transformacionesDocumentacion.isEmpty)
           _buildEmptyStateMegalotes()
         else
           ...transformacionesDocumentacion.map(
             (transformacion) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing16),
               child: _buildTransformacionCard(transformacion),
             ),
           ),
         
-        const SizedBox(height: 100),
+        SizedBox(height: UIConstants.qrSizeSmall),
       ],
     );
   }
 
-  Widget _buildSalidaTabContent() {
-    print('[SALIDA TAB BUILD] Building salida tab with cache: ${_lotesCache.length} items');
+  Widget _buildSalidaTabContent(AsyncSnapshot<List<LoteUnificadoModel>> snapshot) {
+    // Manejo de estados
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return _buildLoadingWithFilters(_getTabColor());
+    }
     
-    // Filtrar lotes consumidos del caché
-    final lotesNoConsumidos = _lotesCache.where((lote) {
-      final estaConsumido = lote.datosGenerales.consumidoEnTransformacion ?? false;
+    if (snapshot.hasError) {
+      return _buildErrorState(snapshot.error);
+    }
+    
+    final allLotes = snapshot.data ?? [];
+    
+    // Filtrar lotes consumidos
+    final lotesNoConsumidos = allLotes.where((lote) {
+      final estaConsumido = lote.datosGenerales.consumidoEnTransformacion == true;
       return !estaConsumido;
     }).toList();
     
@@ -692,8 +679,6 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
       final estado = _getEstadoLote(lote);
       return estado == 'pendiente';
     }).toList();
-    
-    print('[SALIDA FILTERED] Pendientes count: ${lotesPendientes.length}');
         
     return Column(
       children: [
@@ -748,21 +733,13 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                 showInTons: true,
               ),
               
-              // Contenido basado en el estado
-              if (_lotesCache.isEmpty && lotesPendientes.isEmpty)
-                Container(
-                  height: 200,
-                  alignment: Alignment.center,
-                  child: CircularProgressIndicator(
-                    color: _getTabColor(),
-                  ),
-                )
-              else if (lotesPendientes.isEmpty)
+              // Lista de lotes o estado vacío
+              if (lotesPendientes.isEmpty)
                 _buildEmptyState()
               else
                 ...lotesPendientes.map((lote) => _buildLoteCard(lote)),
               
-              const SizedBox(height: 100), // Space for FAB
+              SizedBox(height: UIConstants.qrSizeSmall), // Space for FAB
             ],
           ),
         ),
@@ -784,12 +761,12 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
     final bool showCheckbox = _autoSelectionMode && canSelect;
     
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: EdgeInsets.symmetric(horizontal: UIConstants.spacing16, vertical: UIConstants.spacing4),
       child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        elevation: isSelected ? 3 : 1,
-        shadowColor: isSelected ? Colors.orange.withValues(alpha: 0.25) : Colors.black12,
+        borderRadius: BorderRadiusConstants.borderRadiusMedium,
+        elevation: isSelected ? UIConstants.elevationMedium : UIConstants.elevationSmall,
+        shadowColor: isSelected ? Colors.orange.withValues(alpha: UIConstants.opacityMediumLow) : Colors.black12,
         child: InkWell(
           onTap: () {
             if ((showCheckbox || _isSelectionMode) && canSelect) {
@@ -806,20 +783,20 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                   }
                 }
               : null,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadiusConstants.borderRadiusMedium,
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
               border: Border.all(
                 color: isSelected 
                     ? Colors.orange 
                     : (esSublote 
-                        ? Colors.purple.withValues(alpha: 0.3)
+                        ? Colors.purple.withValues(alpha: UIConstants.opacityMediumLow)
                         : Colors.transparent),
                 width: isSelected ? 2 : (esSublote ? 1.5 : 0),
               ),
             ),
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsetsConstants.paddingAll12,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -832,25 +809,25 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                         onChanged: (_) => _toggleLoteSelection(lote.id),
                         activeColor: Colors.orange,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: UIConstants.spacing12),
                     ],
                     Expanded(
                       child: Row(
                         children: [
                           if (esSublote) ...[
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: UIConstants.spacing4 + 2,
+                                vertical: UIConstants.spacing4 / 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.purple.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(6),
+                                color: Colors.purple.withValues(alpha: UIConstants.opacityLow),
+                                borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
                                 border: Border.all(
-                                  color: Colors.purple.withValues(alpha: 0.3),
+                                  color: Colors.purple.withValues(alpha: UIConstants.opacityMediumLow),
                                   width: 0.5,
                                 ),
                               ),
@@ -862,11 +839,11 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                                     size: 10,
                                     color: Colors.purple,
                                   ),
-                                  const SizedBox(width: 2),
+                                  SizedBox(width: UIConstants.spacing4 / 2),
                                   Text(
                                     'SUBLOTE',
                                     style: TextStyle(
-                                      fontSize: 8,
+                                      fontSize: UIConstants.fontSizeXSmall - 2,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.purple,
                                     ),
@@ -874,13 +851,13 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 6),
+                            SizedBox(width: UIConstants.spacing4 + 2),
                           ],
                           Expanded(
                             child: Text(
                               'Lote ${lote.id}',
                               style: const TextStyle(
-                                fontSize: 14,
+                                fontSize: UIConstants.fontSizeMedium,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black87,
                               ),
@@ -893,26 +870,26 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                     _buildEstadoChip(estado),
                   ],
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: UIConstants.spacing8),
                 
                 // Material and weight info
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: UIConstants.spacing8 + 2,
+                        vertical: UIConstants.spacing4,
                       ),
                       decoration: BoxDecoration(
                         color: MaterialUtils.getMaterialColor(
                           lote.datosGenerales.tipoMaterial
-                        ).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(16),
+                        ).withValues(alpha: UIConstants.opacityLow),
+                        borderRadius: BorderRadiusConstants.borderRadiusMedium,
                       ),
                       child: Text(
                         lote.datosGenerales.tipoMaterial,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: UIConstants.fontSizeSmall,
                           fontWeight: FontWeight.w600,
                           color: MaterialUtils.getMaterialColor(
                             lote.datosGenerales.tipoMaterial
@@ -920,9 +897,9 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: UIConstants.spacing8),
                     Icon(Icons.scale, size: 14, color: Colors.grey[600]),
-                    const SizedBox(width: 3),
+                    SizedBox(width: UIConstants.spacing4 - 1),
                     Text(
                       '${lote.pesoActual.toStringAsFixed(2)} kg',
                       style: TextStyle(
@@ -932,11 +909,11 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                     ),
                     const Spacer(),
                     Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
-                    const SizedBox(width: 3),
+                    SizedBox(width: UIConstants.spacing4 - 1),
                     Text(
                       FormatUtils.formatDate(lote.datosGenerales.fechaCreacion),
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: UIConstants.fontSizeXSmall,
                         color: Colors.grey[600],
                       ),
                     ),
@@ -945,7 +922,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                 
                 // Action buttons for specific states (hide when checkboxes are shown)
                 if (!showCheckbox && !_isSelectionMode && _tabController.index == 0) ...[
-                  const SizedBox(height: 8),
+                  SizedBox(height: UIConstants.spacing8),
                   Row(
                     children: [
                       Expanded(
@@ -954,11 +931,11 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                           child: OutlinedButton.icon(
                             onPressed: () => _procesarLote(lote),
                             icon: const Icon(Icons.play_arrow, size: 16),
-                            label: const Text('Procesar', style: TextStyle(fontSize: 12)),
+                            label: Text('Procesar', style: TextStyle(fontSize: UIConstants.fontSizeSmall)),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: _getTabColor(),
                               side: BorderSide(color: _getTabColor()),
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12),
                             ),
                           ),
                         ),
@@ -968,7 +945,7 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                 ],
                 
                 if (!_isSelectionMode && _tabController.index == 1) ...[
-                  const SizedBox(height: 8),
+                  SizedBox(height: UIConstants.spacing8),
                   Row(
                     children: [
                       Expanded(
@@ -977,11 +954,11 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
                           child: OutlinedButton.icon(
                             onPressed: () => _cargarDocumentacion(lote),
                             icon: const Icon(Icons.upload_file, size: 16),
-                            label: const Text('Cargar Documentos', style: TextStyle(fontSize: 12)),
+                            label: Text('Cargar Documentos', style: TextStyle(fontSize: UIConstants.fontSizeSmall)),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: BioWayColors.warning,
                               side: BorderSide(color: BioWayColors.warning),
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12),
                             ),
                           ),
                         ),
@@ -1025,21 +1002,21 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
     }
     
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing8, vertical: UIConstants.spacing4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
+        color: color.withValues(alpha: UIConstants.opacityLow),
+        borderRadius: BorderRadiusConstants.borderRadiusMedium,
         border: Border.all(color: color, width: 0.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 12, color: color),
-          const SizedBox(width: 3),
+          SizedBox(width: UIConstants.spacing4 - 1),
           Text(
             texto,
             style: TextStyle(
-              fontSize: 10,
+              fontSize: UIConstants.fontSizeXSmall - 1,
               fontWeight: FontWeight.bold,
               color: color,
             ),
@@ -1082,11 +1059,11 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
             size: 80,
             color: Colors.grey[300],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: UIConstants.spacing16),
           Text(
             message,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: UIConstants.fontSizeBody,
               color: Colors.grey[600],
             ),
           ),
@@ -1107,19 +1084,19 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
             size: 80,
             color: Colors.grey[300],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: UIConstants.spacing16),
           Text(
             'No hay megalotes disponibles',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: UIConstants.fontSizeBody,
               color: Colors.grey[600],
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: UIConstants.spacing8),
           Text(
             'Los megalotes procesados aparecerán aquí',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: UIConstants.fontSizeMedium,
               color: Colors.grey[400],
             ),
           ),
@@ -1179,32 +1156,76 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
   }
 
 
-  List<TransformacionModel> _filterTransformacionesByState([
-    List<TransformacionModel>? transformaciones,
-    String? estado,
-  ]) {
-    final list = transformaciones ?? [];
-    
-    return list.where((t) {
-      // Primero filtrar por estado
-      bool passesStateFilter = false;
-      if (estado != null) {
-        passesStateFilter = t.estado == estado;
-      } else if (_tabController.index == 1) {
-        passesStateFilter = t.estado == 'documentacion' || t.estado == 'en_proceso';
-      } else {
-        passesStateFilter = t.estado == 'completado';
-      }
-      
-      if (!passesStateFilter) return false;
-      
-      // Luego filtrar por material si no es "Todos"
-      if (_filtroMaterial != 'Todos') {
-        return _megaloteContieneMaterial(t, _filtroMaterial);
-      }
-      
-      return true;
-    }).toList();
+  // Método para construir estado de carga con filtros visibles
+  Widget _buildLoadingWithFilters(Color tabColor) {
+    return ListView(
+      physics: const BouncingScrollPhysics(),
+      children: [
+        // Mantener filtros visibles
+        LoteFilterSection(
+          selectedMaterial: _filtroMaterial,
+          selectedTime: _filtroTiempo,
+          selectedPresentacion: _tabController.index == 0 ? _filtroPresentacion : null,
+          onMaterialChanged: (value) {
+            setState(() {
+              _filtroMaterial = value;
+            });
+          },
+          onTimeChanged: (value) {
+            setState(() {
+              _filtroTiempo = value;
+            });
+          },
+          onPresentacionChanged: _tabController.index == 0 ? (value) {
+            setState(() {
+              _filtroPresentacion = value;
+            });
+          } : null,
+          tabColor: tabColor,
+        ),
+        
+        // Indicador de carga centrado
+        SizedBox(height: UIConstants.qrSizeSmall),
+        Center(
+          child: CircularProgressIndicator(
+            color: tabColor,
+          ),
+        ),
+        SizedBox(height: UIConstants.qrSizeSmall),
+      ],
+    );
+  }
+  
+  // Método para construir estado de error
+  Widget _buildErrorState(dynamic error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 64,
+            color: Colors.grey[400],
+          ),
+          SizedBox(height: UIConstants.spacing16),
+          Text(
+            'Error al cargar datos',
+            style: TextStyle(
+              fontSize: UIConstants.fontSizeBody,
+              color: Colors.grey[600],
+            ),
+          ),
+          SizedBox(height: UIConstants.spacing8),
+          TextButton(
+            onPressed: () {
+              _loadLotes();
+              _loadTransformaciones();
+            },
+            child: const Text('Reintentar'),
+          ),
+        ],
+      ),
+    );
   }
   
   // Método helper para verificar si un megalote contiene >50% del material seleccionado
