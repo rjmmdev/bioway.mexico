@@ -6,6 +6,7 @@ import '../../../utils/colors.dart';
 import '../../../utils/ui_constants.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
+import '../../../services/user_session_service.dart';
 import '../shared/widgets/loading_indicator.dart';
 import '../shared/utils/dialog_utils.dart';
 import 'widgets/maestro_solicitud_card.dart';
@@ -25,6 +26,7 @@ class MaestroUnifiedScreen extends StatefulWidget {
 class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen> 
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final EcoceProfileService _profileService = EcoceProfileService();
+  final UserSessionService _sessionService = UserSessionService();
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
   
@@ -720,6 +722,9 @@ class _MaestroUnifiedScreenState extends State<MaestroUnifiedScreen>
                                 
                                 if (shouldLogout == true) {
                                   try {
+                                    // Limpiar sesión del UserSessionService
+                                    _sessionService.clearSession();
+                                    
                                     // Cerrar sesión en Firebase
                                     final firebaseManager = FirebaseManager();
                                     final app = firebaseManager.currentApp;

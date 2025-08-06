@@ -8,6 +8,7 @@ import '../../../utils/ui_constants.dart';
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/firebase/firebase_manager.dart';
 import '../../../services/firebase/ecoce_profile_service.dart';
+import '../../../services/user_session_service.dart';
 import '../../ecoce/shared/utils/dialog_utils.dart';
 import 'ecoce_tipo_proveedor_selector.dart';
 import '../../ecoce/shared/pending_approval_screen.dart';
@@ -43,6 +44,7 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
   // Instancia del servicio de autenticación
   final AuthService _authService = AuthService();
   final EcoceProfileService _profileService = EcoceProfileService();
+  final UserSessionService _sessionService = UserSessionService();
 
   @override
   void initState() {
@@ -284,6 +286,9 @@ class _ECOCELoginScreenState extends State<ECOCELoginScreen>
                 duration: Duration(seconds: 2),
               ),
             );
+            
+            // Cargar el perfil en UserSessionService para mantener la sesión
+            await _sessionService.getCurrentUserProfile(forceRefresh: true);
 
             // Navegar según el tipo de usuario o al repositorio
             if (goToRepository) {

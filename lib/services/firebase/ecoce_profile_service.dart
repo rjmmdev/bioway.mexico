@@ -1209,6 +1209,7 @@ class EcoceProfileService {
       );
       
       // Marcar para eliminación en Auth - LA CLOUD FUNCTION SE ACTIVARÁ AUTOMÁTICAMENTE
+      debugPrint('📝 Marcando usuario $userId para eliminación de Auth por Cloud Function');
       deletionTasks.add(
         _firestore.collection('users_pending_deletion').doc(userId).set({
           'userId': userId,
@@ -1218,6 +1219,12 @@ class EcoceProfileService {
           'status': 'pending',
           'userFolio': profileData['ecoce_folio'] ?? 'SIN FOLIO',
           'userName': profileData['ecoce_nombre'] ?? 'Sin nombre',
+          'reason': 'Usuario eliminado por administrador maestro',
+        }).then((_) {
+          debugPrint('✅ Usuario marcado para eliminación de Auth. La Cloud Function lo procesará.');
+        }).catchError((e) {
+          debugPrint('⚠️ Error al marcar usuario para eliminación de Auth: $e');
+          // No es crítico, el usuario ya no puede acceder sin perfil
         })
       );
       
@@ -1227,26 +1234,9 @@ class EcoceProfileService {
       // 4. Limpiar el usuario del caché
       _userPathCache.remove(userId);
       
-      // 5. Marcar el usuario para eliminación de Auth por Cloud Function
       // IMPORTANTE: NO usar _auth.currentUser?.delete() porque eso eliminaría al Maestro actual
-      // En su lugar, crear un documento en la colección de usuarios pendientes de eliminación
-      try {
-        debugPrint('📝 Marcando usuario $userId para eliminación de Auth por Cloud Function');
-        await _firestore.collection('users_pending_deletion').doc(userId).set({
-          'userId': userId,
-          'status': 'pending',
-          'created_at': FieldValue.serverTimestamp(),
-          'deleted_by': deletedBy,
-          'reason': 'Usuario eliminado por administrador maestro',
-        });
-        debugPrint('✅ Usuario marcado para eliminación de Auth. La Cloud Function lo procesará.');
-      } catch (e) {
-        debugPrint('⚠️ Error al marcar usuario para eliminación de Auth: $e');
-        // No es crítico, el usuario ya no puede acceder sin perfil
-      }
-      
-      // El usuario será eliminado de Auth por la Cloud Function
-      // Mientras tanto, no podrá acceder porque no tiene perfil
+      // La eliminación de Auth se maneja mediante Cloud Function que se activa con el documento
+      // creado en users_pending_deletion (ver deletionTasks arriba)
       
     } catch (e) {
       rethrow;

@@ -3,6 +3,7 @@ import '../../../services/firebase/ecoce_profile_service.dart';
 import '../../../utils/colors.dart';
 import '../../../utils/ui_constants.dart';
 import '../shared/widgets/common_widgets.dart';
+import 'maestro_orphan_lots_screen.dart';
 
 class MaestroUtilitiesScreen extends StatefulWidget {
   const MaestroUtilitiesScreen({super.key});
@@ -67,6 +68,36 @@ class _MaestroUtilitiesScreenState extends State<MaestroUtilitiesScreen> {
     }
   }
 
+  Future<void> _detectAndCleanOrphanLots() async {
+    setState(() {
+      _isLoading = true;
+      _lastResult = '';
+    });
+
+    try {
+      // Navegar a la pantalla de revisión de lotes huérfanos
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const MaestroOrphanLotsScreen(),
+        ),
+      );
+      
+      // Actualizar resultado al regresar
+      setState(() {
+        _lastResult = 'Revisión de lotes huérfanos completada.';
+      });
+    } catch (e) {
+      setState(() {
+        _lastResult = 'Error al detectar lotes huérfanos: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
   // Método de limpieza removido - ya no es necesario sin índices
 
   @override
@@ -83,6 +114,62 @@ class _MaestroUtilitiesScreenState extends State<MaestroUtilitiesScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Sección de Limpieza de Lotes Huérfanos
+            Card(
+              elevation: UIConstants.elevationMedium,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadiusConstants.borderRadiusMedium,
+              ),
+              child: Padding(
+                padding: EdgeInsetsConstants.paddingAll20,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.delete_sweep, color: BioWayColors.warning),
+                        SizedBox(width: UIConstants.spacing12),
+                        const Expanded(
+                          child: Text(
+                            'Limpiar Lotes Huérfanos',
+                            style: TextStyle(
+                              fontSize: UIConstants.fontSizeBody + 2,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: UIConstants.spacing16),
+                    const Text(
+                      'Detecta y elimina lotes cuyos usuarios creadores ya no existen en el sistema. '
+                      'Esto incluye lotes de usuarios eliminados o cuentas rechazadas.',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    SizedBox(height: UIConstants.spacing20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _isLoading ? null : _detectAndCleanOrphanLots,
+                        icon: const Icon(Icons.search),
+                        label: const Text('Detectar Lotes Huérfanos'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: BioWayColors.warning,
+                          padding: EdgeInsets.symmetric(vertical: UIConstants.spacing16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadiusConstants.borderRadiusMedium,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            SizedBox(height: UIConstants.spacing20),
             
             // Sección de Limpieza de Usuarios Pendientes
             Card(

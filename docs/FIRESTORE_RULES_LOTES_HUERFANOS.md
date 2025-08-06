@@ -1,3 +1,39 @@
+# Reglas de Firestore Actualizadas - Limpieza de Lotes Huérfanos
+
+## Fecha: 2025-02-06
+## Funcionalidad: Permitir al Maestro detectar y eliminar lotes huérfanos
+
+## Cambios Necesarios
+
+Las reglas actuales no permiten al Maestro eliminar lotes. Se necesitan los siguientes cambios:
+
+### 1. Permitir al Maestro eliminar lotes huérfanos
+
+En la sección de lotes, cambiar la regla de eliminación para permitir al Maestro eliminar:
+
+```javascript
+// ANTES:
+allow delete: if false;
+
+// DESPUÉS:
+allow delete: if isMaestro();
+```
+
+### 2. Permitir al Maestro eliminar transformaciones huérfanas
+
+Agregar permiso de eliminación para transformaciones cuando es Maestro:
+
+```javascript
+// En la sección de transformaciones, cambiar:
+allow delete: if isAuthenticated() && isTransformacionOwner();
+
+// Por:
+allow delete: if isAuthenticated() && (isTransformacionOwner() || isMaestro());
+```
+
+## Reglas Completas Actualizadas
+
+```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -87,7 +123,7 @@ service cloud.firestore {
       // Actualizar: usuarios autenticados
       allow update: if isAuthenticated();
       
-      // Eliminar: solo maestros
+      // Eliminar: solo maestros (para limpieza de lotes huérfanos)
       allow delete: if isMaestro();
       
       // Subcolecciones dentro de lotes
@@ -95,6 +131,7 @@ service cloud.firestore {
         allow read: if isAuthenticated();
         allow create: if isAuthenticated();
         allow update: if isAuthenticated();
+        // Permitir al maestro eliminar subcollecciones
         allow delete: if isMaestro();
       }
     }
@@ -113,31 +150,37 @@ service cloud.firestore {
     match /{path=**}/reciclador/{docId} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated();
+      allow delete: if isMaestro();
     }
     
     match /{path=**}/origen/{docId} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated();
+      allow delete: if isMaestro();
     }
     
     match /{path=**}/transporte/{docId} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated();
+      allow delete: if isMaestro();
     }
     
     match /{path=**}/transformador/{docId} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated();
+      allow delete: if isMaestro();
     }
     
     match /{path=**}/laboratorio/{docId} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated();
+      allow delete: if isMaestro();
     }
     
     match /{path=**}/analisis_laboratorio/{docId} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated();
+      allow delete: if isMaestro();
     }
     
     // ============ TRANSPORTE Y ENTREGAS ============
@@ -147,7 +190,7 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update: if isAuthenticated();
-      allow delete: if isMaestro();
+      allow delete: if false;
     }
     
     // Entregas de transporte
@@ -155,7 +198,7 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update: if isAuthenticated();
-      allow delete: if isMaestro();
+      allow delete: if isAuthenticated();
     }
     
     // ============ SISTEMA INDEPENDIENTE DE MUESTRAS DE LABORATORIO (NUEVO) ============
@@ -248,8 +291,8 @@ service cloud.firestore {
         ]))
       );
       
-      // ELIMINAR: Solo el dueño
-      allow delete: if isAuthenticated() && isTransformacionOwner();
+      // ELIMINAR: Solo el dueño o el maestro (para limpieza de huérfanos)
+      allow delete: if isAuthenticated() && (isTransformacionOwner() || isMaestro());
       
       // Subcollección datos_generales de transformaciones
       match /datos_generales/{doc} {
@@ -269,7 +312,15 @@ service cloud.firestore {
            ]))
         );
         
-        allow delete: if false;
+        // Permitir al maestro eliminar para limpieza
+        allow delete: if isMaestro();
+      }
+      
+      // Subcollecciones de transformaciones para limpieza
+      match /{subcollection=**}/{doc} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated();
+        allow delete: if isMaestro();
       }
     }
     
@@ -278,7 +329,7 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update: if isAuthenticated();
-      allow delete: if isMaestro();
+      allow delete: if false;
     }
     
     // ============ COLECCIONES LEGACY ============
@@ -317,7 +368,7 @@ service cloud.firestore {
     // Logs de auditoría
     match /audit_logs/{logId} {
       allow read: if isMaestro();
-      allow create: if isMaestro(); // Permitir que maestros creen logs
+      allow create: if isAuthenticated(); // Cualquier usuario autenticado puede crear logs
       allow update: if false; // No se pueden actualizar logs
       allow delete: if false; // No se pueden eliminar logs
     }
@@ -329,5 +380,50 @@ service cloud.firestore {
     // match /transformaciones/{document=**} {
     //   allow read, write: if isAuthenticated();
     // }
+    
+    
+    match /configuracion/{document=**} {
+        allow read: if request.auth != null;
+        allow write: if isMaestro(); // Solo maestros pueden modificar
+      }
+
   }
 }
+```
+
+## Resumen de Cambios
+
+### 1. **Permisos de eliminación para lotes**
+- `allow delete: if isMaestro();` en la colección principal de lotes
+- `allow delete: if isMaestro();` en todas las subcollecciones de lotes
+
+### 2. **Permisos de eliminación para transformaciones**
+- `allow delete: if isAuthenticated() && (isTransformacionOwner() || isMaestro());`
+- Permisos en subcollecciones de transformaciones
+
+### 3. **Permisos para audit_logs**
+- Cambiado de `allow create: if isMaestro();` a `allow create: if isAuthenticated();`
+- Esto permite que la función de limpieza registre las acciones en audit_logs
+
+## Instrucciones de Implementación
+
+1. **Respaldar las reglas actuales** antes de hacer cambios
+
+2. **Copiar las reglas completas** de este documento
+
+3. **En Firebase Console**:
+   - Ir a Firestore Database
+   - Click en "Rules" 
+   - Reemplazar todo el contenido con las nuevas reglas
+   - Click en "Publish"
+
+4. **Esperar 1-2 minutos** para que las reglas se propaguen
+
+5. **Probar la funcionalidad** de limpieza de lotes huérfanos
+
+## Notas Importantes
+
+- Las reglas permiten al Maestro eliminar CUALQUIER lote o transformación
+- La aplicación se encarga de verificar que sean huérfanos antes de eliminar
+- Se mantiene la trazabilidad en audit_logs
+- No se pueden eliminar sublotes para mantener integridad del sistema

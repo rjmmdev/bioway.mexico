@@ -2267,4 +2267,38 @@ class LoteUnificadoService {
       return lotes;
     });
   }
+  
+  /// Obtener TODOS los lotes para el maestro (sin filtrar por usuario)
+  Stream<List<LoteUnificadoModel>> obtenerTodosLotesParaMaestro() {
+    try {
+      return _firestore
+          .collectionGroup('datos_generales')
+          .where('__name__', isEqualTo: 'info')
+          .snapshots()
+          .map((snapshot) async {
+        final List<LoteUnificadoModel> lotes = [];
+        
+        for (var doc in snapshot.docs) {
+          try {
+            // Extraer el ID del lote del path
+            final pathSegments = doc.reference.path.split('/');
+            if (pathSegments.length >= 2 && pathSegments[0] == 'lotes') {
+              final loteId = pathSegments[1];
+              final lote = await obtenerLotePorId(loteId);
+              if (lote != null) {
+                lotes.add(lote);
+              }
+            }
+          } catch (e) {
+            debugPrint('Error procesando lote: $e');
+          }
+        }
+        
+        return lotes;
+      }).asyncMap((future) => future);
+    } catch (e) {
+      debugPrint('Error obteniendo todos los lotes: $e');
+      return Stream.value([]);
+    }
+  }
 }

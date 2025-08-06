@@ -19,8 +19,7 @@ exports.deleteAuthUser = onDocumentCreated(
   'users_pending_deletion/{userId}',
   async (event) => {
     const snap = event.data;
-    const context = event.params;
-    const userId = context.params.userId;
+    const userId = event.params.userId;
     const data = snap.data();
     
     console.log(`🗑️ Procesando eliminación de usuario: ${userId}`);
