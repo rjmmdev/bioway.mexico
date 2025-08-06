@@ -49,8 +49,36 @@ class _OrigenConfirmarLoteScreenState extends State<OrigenConfirmarLoteScreen> {
   final UserSessionService _userSession = UserSessionService();
   
   bool _isLoading = false;
-  Color get _primaryColor => OrigenUserConfig.current.color;
+  String? _userSubtipo;
+  
+  Color get _primaryColor {
+    if (_userSubtipo == 'A') {
+      return BioWayColors.darkGreen;  // Centro de Acopio
+    } else if (_userSubtipo == 'P') {
+      return BioWayColors.ppPurple;   // Planta de Separación
+    }
+    return BioWayColors.ecoceGreen;   // Default
+  }
 
+  @override
+  void initState() {
+    super.initState();
+    _loadUserSubtipo();
+  }
+  
+  Future<void> _loadUserSubtipo() async {
+    try {
+      final profile = await _userSession.getCurrentUserProfile();
+      if (mounted) {
+        setState(() {
+          _userSubtipo = profile?.ecoceSubtipo;
+        });
+      }
+    } catch (e) {
+      print('Error cargando subtipo de usuario: $e');
+    }
+  }
+  
   String get _tipoOrigen {
     if (widget.isPostConsumo && widget.isPreConsumo) {
       return 'Post-consumo y Pre-consumo';

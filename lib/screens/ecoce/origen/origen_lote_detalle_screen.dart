@@ -4,6 +4,7 @@ import '../../../utils/colors.dart';
 import '../../../utils/ui_constants.dart';
 import '../../../models/lotes/lote_unificado_model.dart';
 import '../../../services/lote_unificado_service.dart';
+import '../../../services/user_session_service.dart';
 import '../shared/utils/dialog_utils.dart';
 import '../shared/widgets/loading_indicator.dart';
 import 'origen_config.dart';
@@ -42,14 +43,24 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
   late Animation<double> _fadeAnimation;
   
   final LoteUnificadoService _loteService = LoteUnificadoService();
+  final UserSessionService _sessionService = UserSessionService();
   LoteUnificadoModel? _loteCompleto;
   bool _isLoadingLote = true;
+  String? _userSubtipo;
 
-  Color get _primaryColor => OrigenUserConfig.current.color;
+  Color get _primaryColor {
+    if (_userSubtipo == 'A') {
+      return BioWayColors.darkGreen;  // Centro de Acopio
+    } else if (_userSubtipo == 'P') {
+      return BioWayColors.ppPurple;   // Planta de Separación
+    }
+    return BioWayColors.ecoceGreen;   // Default
+  }
 
   @override
   void initState() {
     super.initState();
+    _loadUserSubtipo();
     
     _animationController = AnimationController(
       duration: UIConstants.animationVerySlow,
@@ -78,6 +89,19 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
     
     // Cargar el lote completo
     _cargarLoteCompleto();
+  }
+  
+  Future<void> _loadUserSubtipo() async {
+    try {
+      final profile = await _sessionService.getCurrentUserProfile();
+      if (mounted) {
+        setState(() {
+          _userSubtipo = profile?.ecoceSubtipo;
+        });
+      }
+    } catch (e) {
+      print('Error cargando subtipo de usuario: $e');
+    }
   }
   
   Future<void> _cargarLoteCompleto() async {
@@ -137,7 +161,7 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Código QR descargado exitosamente'),
-        backgroundColor: BioWayColors.success,
+        backgroundColor: _primaryColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(UIConstants.radiusSmall + 2),
@@ -231,14 +255,14 @@ class _OrigenLoteDetalleScreenState extends State<OrigenLoteDetalleScreen>
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            BioWayColors.success,
-                            BioWayColors.success.withValues(alpha:UIConstants.opacityVeryHigh),
+                            _primaryColor,
+                            _primaryColor.withValues(alpha:UIConstants.opacityVeryHigh),
                           ],
                         ),
                         borderRadius: BorderRadiusConstants.borderRadiusXLarge,
                         boxShadow: [
                           BoxShadow(
-                            color: BioWayColors.success.withValues(alpha:UIConstants.opacityMedium),
+                            color: _primaryColor.withValues(alpha:UIConstants.opacityMedium),
                             blurRadius: UIConstants.fontSizeXLarge,
                             offset: Offset(0, UIConstants.spacing8 + 2),
                           ),

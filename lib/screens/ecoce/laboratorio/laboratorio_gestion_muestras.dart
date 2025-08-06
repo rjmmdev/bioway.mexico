@@ -310,75 +310,6 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
   }
   
   
-  void _showFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Filtros'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Filtro por material
-            DropdownButtonFormField<String>(
-              value: _selectedMaterial,
-              decoration: const InputDecoration(
-                labelText: 'Tipo de Material',
-                border: OutlineInputBorder(),
-              ),
-              items: ['Todos', 'PEBD', 'PP', 'Multilaminado']
-                  .map((material) => DropdownMenuItem(
-                        value: material,
-                        child: Text(material),
-                      ))
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedMaterial = value!;
-                });
-              },
-            ),
-            SizedBox(height: UIConstants.spacing16),
-            // Filtro por tiempo
-            DropdownButtonFormField<String>(
-              value: _selectedTiempo,
-              decoration: const InputDecoration(
-                labelText: 'Periodo',
-                border: OutlineInputBorder(),
-              ),
-              items: ['Esta Semana', 'Este Mes', 'Últimos tres meses', 'Este Año']
-                  .map((time) => DropdownMenuItem(
-                        value: time,
-                        child: Text(time),
-                      ))
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedTiempo = value!;
-                });
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              setState(() {});
-            },
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              setState(() {});
-            },
-            child: const Text('Aplicar'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -595,6 +526,8 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
         appBar: AppBar(
           backgroundColor: const Color(0xFF9333EA), // Morado laboratorio
           elevation: UIConstants.elevationNone,
+          automaticallyImplyLeading: false, // Elimina el botón de retroceso
+          centerTitle: true, // Centra el título
           title: const Text(
             'Gestión de Muestras',
             style: TextStyle(
@@ -603,12 +536,6 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
               color: Colors.white,
             ),
           ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.filter_list, color: Colors.white),
-              onPressed: _showFilterDialog,
-            ),
-          ],
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(48),
             child: Container(

@@ -64,8 +64,19 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
   ];
 
   final _formKey = GlobalKey<FormState>();
+  
+  // Variable para almacenar el subtipo del usuario
+  String? _userSubtipo;
+  final UserSessionService _sessionService = UserSessionService();
 
-  Color get _primaryColor => OrigenUserConfig.current.color;
+  Color get _primaryColor {
+    if (_userSubtipo == 'A') {
+      return BioWayColors.darkGreen;  // Centro de Acopio
+    } else if (_userSubtipo == 'P') {
+      return BioWayColors.ppPurple;   // Planta de Separación
+    }
+    return BioWayColors.ecoceGreen;   // Default
+  }
   
   // Controladores para los campos de texto
   final TextEditingController _pesoController = TextEditingController();
@@ -99,6 +110,7 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
   @override
   void initState() {
     super.initState();
+    _loadUserSubtipo();
     
     // Listener para el campo de comentarios
     _comentariosFocus.addListener(() {
@@ -113,6 +125,19 @@ class _OrigenCrearLoteScreenState extends State<OrigenCrearLoteScreen> {
         });
       }
     });
+  }
+  
+  Future<void> _loadUserSubtipo() async {
+    try {
+      final profile = await _sessionService.getCurrentUserProfile();
+      if (mounted) {
+        setState(() {
+          _userSubtipo = profile?.ecoceSubtipo;
+        });
+      }
+    } catch (e) {
+      print('Error cargando subtipo de usuario: $e');
+    }
   }
 
   @override

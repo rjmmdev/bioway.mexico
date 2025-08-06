@@ -17,7 +17,6 @@ import '../shared/widgets/signature_dialog.dart';
 import '../shared/widgets/dialog_utils.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/required_field_label.dart';
-import '../shared/widgets/unified_container.dart';
 import '../shared/widgets/field_label.dart' as field_label;
 import '../shared/utils/shared_input_decorations.dart';
 
@@ -79,10 +78,16 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
   // Controladores
   final TextEditingController _transportistaController = TextEditingController();
   final TextEditingController _pesoTotalOriginalController = TextEditingController();
-  final TextEditingController _pesoRecibidoController = TextEditingController();
-  final TextEditingController _mermaController = TextEditingController();
   final TextEditingController _operadorController = TextEditingController();
   final TextEditingController _comentariosController = TextEditingController();
+  
+  // Controladores para peso individual por lote
+  final Map<String, TextEditingController> _pesosRecibidosControllers = {};
+  final Map<String, double> _mermasCalculadas = {};
+  
+  // Totales calculados
+  double _pesoNetoTotal = 0.0;
+  double _mermaTotalCalculada = 0.0;
   
   // Firma
   List<Offset?> _signaturePoints = [];
@@ -98,17 +103,40 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
     _lotes = widget.lotes;
     _initializeForm();
     _loadPreloadedData();
+    _initializeWeightControllers();
   }
 
   void _initializeForm() async {
     final userData = _userSession.getUserData();
     // Pre-cargar nombre del operador actual
     _operadorController.text = userData?['nombre'] ?? '';
-    // Inicializar merma en 0
-    _mermaController.text = '0.0';
     setState(() {
       _isLoading = false;
     });
+  }
+  
+  void _initializeWeightControllers() {
+    // Crear un controlador de peso para cada lote
+    for (final lote in _lotes) {
+      final loteId = lote['id'] as String;
+      _pesosRecibidosControllers[loteId] = TextEditingController();
+      _mermasCalculadas[loteId] = 0.0;
+    }
+  }
+  
+  @override
+  void dispose() {
+    _transportistaController.dispose();
+    _pesoTotalOriginalController.dispose();
+    _operadorController.dispose();
+    _comentariosController.dispose();
+    
+    // Limpiar controladores de peso individual
+    for (final controller in _pesosRecibidosControllers.values) {
+      controller.dispose();
+    }
+    
+    super.dispose();
   }
 
   void _loadPreloadedData() {
@@ -131,20 +159,40 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
     }
   }
 
-  void _calcularMerma() {
-    final pesoOriginal = double.tryParse(_pesoTotalOriginalController.text) ?? 0;
-    final pesoRecibido = double.tryParse(_pesoRecibidoController.text) ?? 0;
+  void _calcularMermaIndividual(String loteId) {
+    // Buscar el lote específico
+    final lote = _lotes.firstWhere((l) => l['id'] == loteId);
+    final pesoOriginal = (lote['peso'] ?? 0.0).toDouble();
+    final pesoRecibido = double.tryParse(_pesosRecibidosControllers[loteId]?.text ?? '0') ?? 0;
     
     setState(() {
       // Validar que el peso recibido no sea mayor al peso bruto
       if (pesoRecibido > pesoOriginal) {
-        _pesoRecibidoController.text = pesoOriginal.toString();
-        _mermaController.text = '0.0';
-        return;
+        _pesosRecibidosControllers[loteId]?.text = pesoOriginal.toString();
+        _mermasCalculadas[loteId] = 0.0;
+      } else {
+        _mermasCalculadas[loteId] = pesoOriginal - pesoRecibido;
       }
       
-      final merma = pesoOriginal - pesoRecibido;
-      _mermaController.text = merma.toStringAsFixed(1);
+      // Recalcular totales
+      _calcularTotales();
+    });
+  }
+  
+  void _calcularTotales() {
+    double pesoNetoTotal = 0.0;
+    double mermaTotal = 0.0;
+    
+    for (final lote in _lotes) {
+      final loteId = lote['id'] as String;
+      final pesoRecibido = double.tryParse(_pesosRecibidosControllers[loteId]?.text ?? '0') ?? 0;
+      pesoNetoTotal += pesoRecibido;
+      mermaTotal += _mermasCalculadas[loteId] ?? 0.0;
+    }
+    
+    setState(() {
+      _pesoNetoTotal = pesoNetoTotal;
+      _mermaTotalCalculada = mermaTotal;
     });
   }
 
@@ -176,13 +224,80 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
     if (!_formKey.currentState!.validate()) {
       return;
     }
+    
+    // Validar que todos los lotes tengan peso ingresado
+    bool todosLosPesosIngresados = true;
+    
+    for (final lote in _lotes) {
+      final loteId = lote['id'] as String;
+      final pesoText = _pesosRecibidosControllers[loteId]?.text ?? '';
+      final peso = double.tryParse(pesoText) ?? 0;
+      
+      if (peso <= 0) {
+        todosLosPesosIngresados = false;
+        break;
+      }
+    }
+    
+    if (!todosLosPesosIngresados) {
+      if (mounted) {
+        DialogUtils.showErrorDialog(
+          context,
+          title: 'Pesos Incompletos',
+          message: 'Por favor ingrese el peso recibido para todos los lotes antes de continuar.',
+        );
+      }
+      return;
+    }
+    
+    // Validar merma excesiva (opcional - mostrar advertencia)
+    final pesoTotalOriginal = double.tryParse(_pesoTotalOriginalController.text) ?? 0;
+    if (_mermaTotalCalculada > 0 && pesoTotalOriginal > 0) {
+      final porcentajeMerma = (_mermaTotalCalculada / pesoTotalOriginal) * 100;
+      if (porcentajeMerma > 10) {
+        final confirmar = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.warning, color: BioWayColors.warning),
+                SizedBox(width: UIConstants.spacing8),
+                const Text('Merma Alta Detectada'),
+              ],
+            ),
+            content: Text(
+              'La merma total es del ${porcentajeMerma.toStringAsFixed(1)}%, lo cual supera el 10% esperado.\n\n¿Desea continuar con estos valores?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Revisar'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: BioWayColors.warning,
+                ),
+                child: const Text('Continuar'),
+              ),
+            ],
+          ),
+        );
+        
+        if (confirmar != true) {
+          return;
+        }
+      }
+    }
 
     if (_signaturePoints.isEmpty) {
-      DialogUtils.showErrorDialog(
-        context,
-        title: 'Firma Requerida',
-        message: 'Por favor capture la firma del operador antes de continuar.',
-      );
+      if (mounted) {
+        DialogUtils.showErrorDialog(
+          context,
+          title: 'Firma Requerida',
+          message: 'Por favor capture la firma del operador antes de continuar.',
+        );
+      }
       return;
     }
 
@@ -233,7 +348,11 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
         debugPrint('User Folio: ${currentUserData?['folio']}');
         debugPrint('User Nombre: ${currentUserData?['nombre']}');
         
-        // Crear o actualizar el proceso reciclador con la información de recepción
+        // Obtener los valores individuales de peso y merma para este lote
+        final pesoRecibidoIndividual = double.tryParse(_pesosRecibidosControllers[loteId]?.text ?? '0') ?? 0;
+        final mermaIndividual = _mermasCalculadas[loteId] ?? 0;
+        
+        // Crear o actualizar el proceso reciclador con la información de recepción individual
         await _loteUnificadoService.crearOActualizarProceso(
           loteId: loteId,
           proceso: 'reciclador',
@@ -242,13 +361,14 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
             'reciclador_id': currentUserId, // Agregar explícitamente el reciclador_id
             'usuario_folio': currentUserData?['folio'] ?? '',
             'fecha_recepcion': FieldValue.serverTimestamp(),
-            'peso_entrada': lote['peso'],
-            'peso_recibido': double.tryParse(_pesoRecibidoController.text) ?? lote['peso'],
-            'peso_neto': double.tryParse(_pesoRecibidoController.text) ?? lote['peso'], // Agregar peso_neto
-            'merma_recepcion': double.tryParse(_mermaController.text) ?? 0,
+            'peso_entrada': lote['peso'],  // Peso original del lote
+            'peso_recibido': pesoRecibidoIndividual,  // Peso neto individual
+            'peso_neto': pesoRecibidoIndividual,  // Peso neto individual
+            'peso_procesado': pesoRecibidoIndividual,  // NUEVO: Peso procesado = peso neto recibido para que pesoActual lo use
+            'merma_recepcion': mermaIndividual,  // Merma individual calculada
             'firma_operador': _signatureUrl,
-            'operador_nombre': _operadorController.text.trim(), // Usar nombre ingresado en el formulario
-            'comentarios_recepcion': _comentariosController.text.trim(), // Agregar comentarios
+            'operador_nombre': _operadorController.text.trim(),
+            'comentarios_recepcion': _comentariosController.text.trim(),
             'recepcion_completada': true, // Marcar que el reciclador completó su parte
           },
         );
@@ -423,6 +543,202 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                   style: TextStyle(
                     fontSize: UIConstants.fontSizeXSmall,
                     color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildControlPesoIndividual(Map<String, dynamic> lote) {
+    final loteId = lote['id'] as String;
+    final pesoOriginal = (lote['peso'] ?? 0.0).toDouble();
+    final merma = _mermasCalculadas[loteId] ?? 0.0;
+    final porcentajeMerma = pesoOriginal > 0 ? (merma / pesoOriginal * 100) : 0.0;
+    
+    return Container(
+      margin: EdgeInsets.only(bottom: UIConstants.spacing16),
+      padding: EdgeInsetsConstants.paddingAll16,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadiusConstants.borderRadiusMedium,
+        border: Border.all(
+          color: porcentajeMerma > 10 
+            ? BioWayColors.warning.withValues(alpha: 0.5)
+            : Colors.grey[300]!,
+          width: porcentajeMerma > 10 ? 2 : 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header con información del lote
+          Row(
+            children: [
+              Icon(
+                Icons.inventory_2,
+                color: BioWayColors.primaryGreen,
+                size: UIConstants.iconSizeMedium,
+              ),
+              SizedBox(width: UIConstants.spacing8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      lote['material'] ?? 'Material',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: UIConstants.fontSizeMedium,
+                      ),
+                    ),
+                    Text(
+                      'ID: ${loteId.substring(0, 8)}...',
+                      style: TextStyle(
+                        fontSize: UIConstants.fontSizeXSmall,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (porcentajeMerma > 10)
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: UIConstants.spacing8,
+                    vertical: UIConstants.spacing4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: BioWayColors.warning.withValues(alpha: 0.1),
+                    borderRadius: BorderRadiusConstants.borderRadiusSmall,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        size: 14,
+                        color: BioWayColors.warning,
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'Merma alta',
+                        style: TextStyle(
+                          fontSize: UIConstants.fontSizeXSmall,
+                          color: BioWayColors.warning,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          
+          SizedBox(height: UIConstants.spacing16),
+          
+          // Peso bruto
+          Container(
+            padding: EdgeInsetsConstants.paddingAll12,
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadiusConstants.borderRadiusSmall,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Peso Bruto:',
+                  style: TextStyle(
+                    fontSize: UIConstants.fontSizeMedium,
+                    color: BioWayColors.textGrey,
+                  ),
+                ),
+                Text(
+                  '${pesoOriginal.toStringAsFixed(1)} kg',
+                  style: const TextStyle(
+                    fontSize: UIConstants.fontSizeMedium,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          SizedBox(height: UIConstants.spacing12),
+          
+          // Input peso neto
+          const field_label.FieldLabel(
+            text: 'Peso Neto Aprovechable',
+            isRequired: true,
+          ),
+          SizedBox(height: UIConstants.spacing8),
+          WeightInputWidget(
+            controller: _pesosRecibidosControllers[loteId]!,
+            label: 'Ingrese el peso real recibido',
+            primaryColor: BioWayColors.primaryGreen,
+            onChanged: (value) => _calcularMermaIndividual(loteId),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Por favor ingrese el peso recibido';
+              }
+              final peso = double.tryParse(value);
+              if (peso == null || peso <= 0) {
+                return 'Ingrese un peso válido';
+              }
+              if (peso > pesoOriginal) {
+                return 'No puede exceder ${pesoOriginal.toStringAsFixed(1)} kg';
+              }
+              return null;
+            },
+          ),
+          
+          SizedBox(height: UIConstants.spacing12),
+          
+          // Merma calculada
+          Container(
+            padding: EdgeInsetsConstants.paddingAll12,
+            decoration: BoxDecoration(
+              color: porcentajeMerma > 10
+                ? BioWayColors.warning.withValues(alpha: 0.05)
+                : Colors.orange[50],
+              borderRadius: BorderRadiusConstants.borderRadiusSmall,
+              border: Border.all(
+                color: porcentajeMerma > 10
+                  ? BioWayColors.warning.withValues(alpha: 0.3)
+                  : Colors.orange[200]!,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.trending_down,
+                  color: porcentajeMerma > 10 ? BioWayColors.warning : Colors.orange,
+                  size: UIConstants.iconSizeSmall,
+                ),
+                SizedBox(width: UIConstants.spacing8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Merma:',
+                        style: TextStyle(
+                          fontSize: UIConstants.fontSizeSmall,
+                          color: BioWayColors.textGrey,
+                        ),
+                      ),
+                      Text(
+                        '${merma.toStringAsFixed(1)} kg (${porcentajeMerma.toStringAsFixed(1)}%)',
+                        style: TextStyle(
+                          fontSize: UIConstants.fontSizeMedium,
+                          fontWeight: FontWeight.bold,
+                          color: porcentajeMerma > 10 ? BioWayColors.warning : Colors.orange[700],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -721,7 +1037,7 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
               
               SizedBox(height: UIConstants.spacing16),
               
-              // Sección de Control de Peso con tarjetas destacadas
+              // Sección de Control de Peso Individual por Lote
               Container(
                 padding: EdgeInsetsConstants.paddingAll16,
                 decoration: BoxDecoration(
@@ -746,13 +1062,44 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                         ),
                         SizedBox(width: UIConstants.spacing8 + 2),
                         const RequiredFieldLabel(
-                          label: 'Control de Peso',
+                          label: 'Control de Peso Individual',
                         ),
                       ],
                     ),
+                    SizedBox(height: UIConstants.spacing8),
+                    
+                    // Mensaje informativo
+                    Container(
+                      padding: EdgeInsetsConstants.paddingAll12,
+                      decoration: BoxDecoration(
+                        color: Colors.amber[50],
+                        borderRadius: BorderRadiusConstants.borderRadiusSmall,
+                        border: Border.all(color: Colors.amber[200]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: Colors.amber[700],
+                            size: UIConstants.iconSizeMedium,
+                          ),
+                          SizedBox(width: UIConstants.spacing8),
+                          Expanded(
+                            child: Text(
+                              'Registre el peso neto de cada lote para mantener la trazabilidad individual',
+                              style: TextStyle(
+                                color: Colors.amber[700],
+                                fontSize: UIConstants.fontSizeSmall,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
                     SizedBox(height: UIConstants.spacing16),
                     
-                    // Peso Bruto Recibido (antes Peso Total Declarado)
+                    // Resumen de peso total
                     Container(
                       padding: EdgeInsetsConstants.paddingAll16,
                       decoration: BoxDecoration(
@@ -763,127 +1110,112 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
                           width: 1,
                         ),
                       ),
-                      child: Row(
+                      child: Column(
                         children: [
-                          Icon(
-                            Icons.scale,
-                            color: BioWayColors.primaryGreen,
-                            size: UIConstants.iconSizeMedium,
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.summarize,
+                                color: BioWayColors.primaryGreen,
+                                size: UIConstants.iconSizeMedium,
+                              ),
+                              SizedBox(width: UIConstants.spacing12),
+                              Text(
+                                'Resumen Total',
+                                style: TextStyle(
+                                  fontSize: UIConstants.fontSizeMedium,
+                                  fontWeight: FontWeight.bold,
+                                  color: BioWayColors.darkGreen,
+                                ),
+                              ),
+                            ],
                           ),
-                          SizedBox(width: UIConstants.spacing12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Peso Bruto Recibido',
-                                  style: TextStyle(
-                                    fontSize: UIConstants.fontSizeMedium,
-                                    fontWeight: FontWeight.w600,
-                                    color: BioWayColors.textGrey,
-                                  ),
+                          SizedBox(height: UIConstants.spacing12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Peso Bruto Total:',
+                                style: TextStyle(
+                                  fontSize: UIConstants.fontSizeMedium,
+                                  color: BioWayColors.textGrey,
                                 ),
-                                SizedBox(height: UIConstants.spacing4),
-                                Text(
-                                  '${_pesoTotalOriginalController.text} kg',
-                                  style: TextStyle(
-                                    fontSize: UIConstants.fontSizeLarge,
-                                    fontWeight: FontWeight.bold,
-                                    color: BioWayColors.darkGreen,
-                                  ),
+                              ),
+                              Text(
+                                '${_pesoTotalOriginalController.text} kg',
+                                style: TextStyle(
+                                  fontSize: UIConstants.fontSizeMedium,
+                                  fontWeight: FontWeight.bold,
+                                  color: BioWayColors.darkGreen,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: UIConstants.spacing8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Peso Neto Total:',
+                                style: TextStyle(
+                                  fontSize: UIConstants.fontSizeMedium,
+                                  color: BioWayColors.textGrey,
+                                ),
+                              ),
+                              Text(
+                                '${_pesoNetoTotal.toStringAsFixed(1)} kg',
+                                style: TextStyle(
+                                  fontSize: UIConstants.fontSizeMedium,
+                                  fontWeight: FontWeight.bold,
+                                  color: BioWayColors.primaryGreen,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: UIConstants.spacing8),
+                          Divider(color: Colors.grey[300]),
+                          SizedBox(height: UIConstants.spacing8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Merma Total:',
+                                style: TextStyle(
+                                  fontSize: UIConstants.fontSizeMedium,
+                                  color: BioWayColors.textGrey,
+                                ),
+                              ),
+                              Text(
+                                '${_mermaTotalCalculada.toStringAsFixed(1)} kg (${(_mermaTotalCalculada > 0 && double.tryParse(_pesoTotalOriginalController.text) != null ? (_mermaTotalCalculada / double.parse(_pesoTotalOriginalController.text) * 100) : 0).toStringAsFixed(1)}%)',
+                                style: TextStyle(
+                                  fontSize: UIConstants.fontSizeMedium,
+                                  fontWeight: FontWeight.bold,
+                                  color: _mermaTotalCalculada > 0 && double.tryParse(_pesoTotalOriginalController.text) != null && (_mermaTotalCalculada / double.parse(_pesoTotalOriginalController.text) * 100) > 10 
+                                    ? BioWayColors.warning 
+                                    : Colors.orange[700],
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
                     
-                    SizedBox(height: UIConstants.spacing16),
+                    SizedBox(height: UIConstants.spacing20),
                     
-                    // Peso Neto Aprovechable con WeightInputWidget
-                    const field_label.FieldLabel(
-                      text: 'Peso Neto Aprovechable',
-                      isRequired: true,
-                    ),
-                    SizedBox(height: UIConstants.spacing8),
-                    WeightInputWidget(
-                      controller: _pesoRecibidoController,
-                      label: 'Ingrese el peso real recibido',
-                      primaryColor: BioWayColors.primaryGreen,
-                      onChanged: (value) => _calcularMerma(),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor ingrese el peso recibido';
-                        }
-                        final peso = double.tryParse(value);
-                        if (peso == null || peso <= 0) {
-                          return 'Ingrese un peso válido';
-                        }
-                        final pesoOriginal = double.tryParse(_pesoTotalOriginalController.text) ?? 0;
-                        if (peso > pesoOriginal) {
-                          return 'El peso no puede ser mayor al peso bruto recibido';
-                        }
-                        return null;
-                      },
-                    ),
-                    
-                    SizedBox(height: UIConstants.spacing16),
-                    
-                    // Merma Calculada con tarjeta destacada
-                    Container(
-                      padding: EdgeInsetsConstants.paddingAll16,
-                      decoration: BoxDecoration(
-                        color: BioWayColors.warning.withValues(alpha: UIConstants.opacityVeryLow),
-                        borderRadius: BorderRadiusConstants.borderRadiusMedium,
-                        border: Border.all(
-                          color: BioWayColors.warning.withValues(alpha: UIConstants.opacityMediumLow),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.trending_down,
-                            color: BioWayColors.warning,
-                            size: UIConstants.iconSizeMedium,
-                          ),
-                          SizedBox(width: UIConstants.spacing12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Merma Calculada',
-                                  style: TextStyle(
-                                    fontSize: UIConstants.fontSizeMedium,
-                                    fontWeight: FontWeight.w600,
-                                    color: BioWayColors.textGrey,
-                                  ),
-                                ),
-                                SizedBox(height: UIConstants.spacing4),
-                                Text(
-                                  '${_mermaController.text.isEmpty ? "0.0" : _mermaController.text} kg',
-                                  style: TextStyle(
-                                    fontSize: UIConstants.fontSizeLarge,
-                                    fontWeight: FontWeight.bold,
-                                    color: BioWayColors.warning,
-                                  ),
-                                ),
-                                SizedBox(height: UIConstants.spacing4 / 2),
-                                Text(
-                                  'Diferencia entre peso bruto y neto',
-                                  style: TextStyle(
-                                    fontSize: UIConstants.fontSizeXSmall,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                    // Control individual por cada lote
+                    Text(
+                      'Control por Lote',
+                      style: TextStyle(
+                        fontSize: UIConstants.fontSizeMedium,
+                        fontWeight: FontWeight.bold,
+                        color: BioWayColors.textGrey,
                       ),
                     ),
+                    SizedBox(height: UIConstants.spacing12),
+                    
+                    // Lista de controles de peso individual
+                    ..._lotes.map((lote) => _buildControlPesoIndividual(lote)),
                   ],
                 ),
               ),
@@ -1291,14 +1623,4 @@ class _RecicladorFormularioRecepcionState extends State<RecicladorFormularioRece
     );
   }
 
-  @override
-  void dispose() {
-    _transportistaController.dispose();
-    _pesoTotalOriginalController.dispose();
-    _pesoRecibidoController.dispose();
-    _mermaController.dispose();
-    _operadorController.dispose();
-    _comentariosController.dispose();
-    super.dispose();
-  }
 }

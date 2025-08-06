@@ -44,6 +44,7 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
     _scannerController = MobileScannerController(
       facing: CameraFacing.back,
       detectionSpeed: DetectionSpeed.normal,
+      torchEnabled: false,  // Inicializar estado del torch explícitamente
     );
   }
 
@@ -297,14 +298,27 @@ class _TransporteEscanearCargaScreenState extends State<TransporteEscanearCargaS
           if (_scannerController != null)
             IconButton(
               icon: Icon(
-                _flashEnabled ? Icons.flash_on : Icons.flash_off,
-                color: Colors.black87,
+                _flashEnabled 
+                  ? Icons.flash_on 
+                  : Icons.flash_off,
+                color: _flashEnabled 
+                  ? Colors.yellow  // Amarillo cuando está activo para mejor visibilidad
+                  : Colors.black87,
               ),
-              onPressed: () {
-                setState(() {
-                  _flashEnabled = !_flashEnabled;
-                });
-                _scannerController!.toggleTorch();
+              onPressed: () async {
+                try {
+                  await _scannerController?.toggleTorch();
+                  setState(() {
+                    _flashEnabled = !_flashEnabled;  // Simplemente invertir el estado
+                  });
+                } catch (e) {
+                  print('Error al activar flash: $e');
+                  // Si hay error, revertir el estado
+                  setState(() {
+                    _flashEnabled = false;
+                  });
+                  _mostrarError('No se pudo activar la linterna');
+                }
               },
             ),
         ],

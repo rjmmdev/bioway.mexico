@@ -25,7 +25,7 @@ class OrigenUserConfig {
     nombre: 'Planta de Separación La Esperanza',
     folio: 'P0000001',
     tipoUsuario: 'Planta de Separación',
-    color: BioWayColors.hdpeGreen,
+    color: BioWayColors.ppPurple,
   );
 
   static OrigenUserConfig current = acopiador;

@@ -444,7 +444,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
             ),
             suffixText: suffix,
             suffixStyle: const TextStyle(
-              color: BioWayColors.darkGreen,
+              color: const Color(0xFF9333EA), // Morado laboratorio
               fontWeight: FontWeight.w600,
             ),
             filled: true,
@@ -456,14 +456,14 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide(
-                color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityMediumLow),
+                color: const Color(0xFF9333EA).withValues(alpha: UIConstants.opacityMediumLow),
                 width: 1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: const BorderSide(
-                color: BioWayColors.ecoceGreen,
+                color: const Color(0xFF9333EA),
                 width: 2,
               ),
             ),
@@ -563,7 +563,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide(
-                color: BioWayColors.ecoceGreen,
+                color: const Color(0xFF9333EA),
                 width: 2,
               ),
             ),
@@ -645,14 +645,14 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: BorderSide(
-                color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityMediumLow),
+                color: const Color(0xFF9333EA).withValues(alpha: UIConstants.opacityMediumLow),
                 width: 1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadiusConstants.borderRadiusMedium,
               borderSide: const BorderSide(
-                color: BioWayColors.ecoceGreen,
+                color: const Color(0xFF9333EA),
                 width: 2,
               ),
             ),
@@ -691,7 +691,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
           style: TextStyle(
             fontSize: UIConstants.fontSizeBody,
             fontWeight: FontWeight.w600,
-            color: BioWayColors.darkGreen,
+            color: const Color(0xFF9333EA),
           ),
         ),
         SizedBox(height: UIConstants.spacing12),
@@ -711,7 +711,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                     _temperaturaRangoMaxController.clear();
                   });
                 },
-                activeColor: BioWayColors.ecoceGreen,
+                activeColor: const Color(0xFF9333EA),
                 contentPadding: EdgeInsetsConstants.paddingNone,
                 dense: true,
               ),
@@ -727,7 +727,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                     _temperaturaUnicaController.clear();
                   });
                 },
-                activeColor: BioWayColors.ecoceGreen,
+                activeColor: const Color(0xFF9333EA),
                 contentPadding: EdgeInsetsConstants.paddingNone,
                 dense: true,
               ),
@@ -819,7 +819,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
         backgroundColor: Colors.white,
         elevation: UIConstants.elevationNone,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: BioWayColors.darkGreen),
+          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF9333EA)),
           onPressed: () {
             HapticFeedback.lightImpact();
             Navigator.pop(context);
@@ -830,7 +830,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
           style: TextStyle(
             fontSize: UIConstants.fontSizeXLarge,
             fontWeight: FontWeight.bold,
-            color: BioWayColors.darkGreen,
+            color: const Color(0xFF9333EA),
           ),
         ),
         centerTitle: true,
@@ -875,7 +875,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                               style: const TextStyle(
                                 fontSize: UIConstants.fontSizeLarge,
                                 fontWeight: FontWeight.bold,
-                                color: BioWayColors.darkGreen,
+                                color: const Color(0xFF9333EA), // Morado laboratorio
                               ),
                             ),
                           ],
@@ -929,12 +929,12 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                         Container(
                           padding: EdgeInsetsConstants.paddingAll8,
                           decoration: BoxDecoration(
-                            color: BioWayColors.ecoceGreen.withValues(alpha: UIConstants.opacityLow),
+                            color: const Color(0xFF9333EA).withValues(alpha: UIConstants.opacityLow),
                             borderRadius: BorderRadiusConstants.borderRadiusSmall,
                           ),
                           child: Icon(
                             Icons.science,
-                            color: BioWayColors.ecoceGreen,
+                            color: const Color(0xFF9333EA),
                             size: 20,
                           ),
                         ),
@@ -944,7 +944,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: BioWayColors.darkGreen,
+                            color: const Color(0xFF9333EA), // Morado laboratorio
                           ),
                         ),
                       ],
@@ -1063,7 +1063,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: BioWayColors.darkGreen,
+                            color: const Color(0xFF9333EA), // Morado laboratorio
                           ),
                         ),
                       ],
@@ -1105,7 +1105,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w500,
-                              color: BioWayColors.darkGreen,
+                              color: const Color(0xFF9333EA), // Morado laboratorio
                             ),
                           ),
                           SizedBox(height: UIConstants.spacing16),
@@ -1539,7 +1539,7 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
                 child: ElevatedButton(
                   onPressed: _handleFormSubmit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: BioWayColors.ecoceGreen,
+                    backgroundColor: const Color(0xFF9333EA),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadiusConstants.borderRadiusRound,

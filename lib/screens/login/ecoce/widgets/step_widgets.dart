@@ -2726,34 +2726,61 @@ class DecimalTextInputFormatter extends TextInputFormatter {
       return newValue.copyWith(text: '');
     }
     
-    // Remover puntos existentes para reformatear
-    String numbersOnly = newText.replaceAll('.', '');
+    // Contar puntos decimales
+    int dotCount = '.'.allMatches(newText).length;
     
-    // Limitar a 4 dígitos máximo
-    if (numbersOnly.length > 4) {
-      numbersOnly = numbersOnly.substring(0, 4);
+    // Si hay más de un punto, mantener solo el primero
+    if (dotCount > 1) {
+      int firstDotIndex = newText.indexOf('.');
+      String beforeDot = newText.substring(0, firstDotIndex);
+      String afterDot = newText.substring(firstDotIndex + 1).replaceAll('.', '');
+      newText = beforeDot + '.' + afterDot;
     }
     
-    // Si hay más de 2 dígitos, insertar el punto después del segundo dígito
-    if (numbersOnly.length > 2) {
-      newText = numbersOnly.substring(0, 2) + '.' + numbersOnly.substring(2);
+    // Verificar el formato XX.XX
+    if (newText.contains('.')) {
+      List<String> parts = newText.split('.');
+      String integerPart = parts[0];
+      String decimalPart = parts.length > 1 ? parts[1] : '';
+      
+      // Limitar parte entera a 2 dígitos
+      if (integerPart.length > 2) {
+        integerPart = integerPart.substring(0, 2);
+      }
+      
+      // Limitar parte decimal a 2 dígitos
+      if (decimalPart.length > 2) {
+        decimalPart = decimalPart.substring(0, 2);
+      }
+      
+      // Reconstruir el texto
+      newText = integerPart + (decimalPart.isNotEmpty || newValue.text.endsWith('.') ? '.' + decimalPart : '');
     } else {
-      newText = numbersOnly;
+      // Sin punto decimal, limitar a 2 dígitos
+      if (newText.length > 2) {
+        newText = newText.substring(0, 2);
+      }
     }
     
-    // Calcular la nueva posición del cursor
-    int selectionIndex = newText.length;
+    // Calcular la posición del cursor
+    int cursorPosition = newValue.selection.baseOffset;
+    int textDifference = newText.length - newValue.text.length;
     
-    // Si estamos borrando y el cursor estaba después del punto, ajustar
-    if (oldValue.text.length > newValue.text.length && 
-        oldValue.selection.baseOffset == 3 && 
-        newText.length == 2) {
-      selectionIndex = 2;
+    // Ajustar la posición del cursor si el texto fue modificado
+    if (textDifference < 0) {
+      // Si se eliminaron caracteres, ajustar el cursor
+      cursorPosition = cursorPosition + textDifference;
+    } else if (newText.length <= newValue.selection.baseOffset) {
+      // Si el cursor está más allá del nuevo texto, colocarlo al final
+      cursorPosition = newText.length;
     }
+    
+    // Asegurar que el cursor no sea negativo
+    cursorPosition = cursorPosition.clamp(0, newText.length);
     
     return TextEditingValue(
       text: newText,
-      selection: TextSelection.collapsed(offset: selectionIndex),
+      selection: TextSelection.collapsed(offset: cursorPosition),
     );
   }
 }

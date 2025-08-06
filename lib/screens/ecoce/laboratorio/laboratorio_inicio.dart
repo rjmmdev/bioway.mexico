@@ -669,13 +669,13 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                             child: Column(
                               children: [
                                 Icon(
-                                  Icons.qr_code_scanner,
+                                  Icons.science_outlined,
                                   size: UIConstants.iconSizeXLarge - UIConstants.spacing16,
                                   color: Colors.grey[300],
                                 ),
                                 SizedBox(height: UIConstants.spacing16),
                                 Text(
-                                  'Toma de muestras por código QR',
+                                  'No hay muestras recientes',
                                   style: TextStyle(
                                     fontSize: 16,
                                     color: Colors.grey[600],
@@ -684,28 +684,12 @@ class _LaboratorioInicioScreenState extends State<LaboratorioInicioScreen> {
                                 ),
                                 SizedBox(height: UIConstants.spacing8),
                                 Text(
-                                  'Escanea el código QR de muestra\ngenerado por el Reciclador',
+                                  'Las muestras tomadas aparecerán aquí.\nUsa el botón + para escanear un código QR.',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: UIConstants.fontSizeMedium,
                                     color: Colors.grey[400],
-                                  ),
-                                ),
-                                SizedBox(height: UIConstants.spacing24),
-                                ElevatedButton.icon(
-                                  onPressed: _navigateToNewMuestra,
-                                  icon: const Icon(Icons.qr_code_scanner),
-                                  label: const Text('Escanear Código QR'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF9333EA),
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 24,
-                                      vertical: 12,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadiusConstants.borderRadiusRound,
-                                    ),
+                                    height: 1.4,
                                   ),
                                 ),
                               ],
