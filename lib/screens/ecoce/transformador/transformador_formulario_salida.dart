@@ -109,6 +109,10 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
   final Map<String, double> _mermasCalculadas = {};
   final Map<String, double> _pesosBrutos = {}; // Para almacenar el peso original de cada lote
   
+  // Totales calculados - Consistente con Reciclador
+  double _pesoNetoTotal = 0.0;
+  double _mermaTotalCalculada = 0.0;
+  
   // Controladores
   final TextEditingController _pesoSalidaController = TextEditingController(); // Se mantendrá para compatibilidad
   final TextEditingController _operadorController = TextEditingController();
@@ -603,6 +607,35 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
       } else {
         _mermasCalculadas[loteId] = 0;
       }
+      // Actualizar totales automáticamente - Consistente con Reciclador
+      _actualizarTotales();
+    });
+  }
+  
+  void _actualizarTotales() {
+    double pesoNetoTotal = 0;
+    double mermaTotal = 0;
+    
+    if (_esProcesamientoMultiple) {
+      _pesosRecibidosControllers.forEach((loteId, controller) {
+        final pesoNeto = double.tryParse(controller.text) ?? 0;
+        if (pesoNeto > 0) {
+          pesoNetoTotal += pesoNeto;
+        }
+      });
+      
+      _mermasCalculadas.forEach((_, merma) {
+        mermaTotal += merma;
+      });
+    } else {
+      // Para lote individual
+      pesoNetoTotal = double.tryParse(_pesoSalidaController.text) ?? _pesoTotalOriginal;
+      mermaTotal = _pesoTotalOriginal - pesoNetoTotal;
+    }
+    
+    setState(() {
+      _pesoNetoTotal = pesoNetoTotal;
+      _mermaTotalCalculada = mermaTotal;
     });
   }
 
@@ -659,9 +692,9 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                 Container(
                   padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withValues(alpha: 0.1 * 255),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                    border: Border.all(color: Colors.orange.withValues(alpha: 0.3 * 255)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1304,7 +1337,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
             vertical: UIConstants.spacing12,
           ),
           decoration: BoxDecoration(
-            color: _primaryColor.withOpacity(0.1),
+            color: _primaryColor.withValues(alpha: UIConstants.opacityLow),
             borderRadius: BorderRadiusConstants.borderRadiusMedium,
           ),
           child: Row(
@@ -1344,13 +1377,21 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
         SizedBox(height: UIConstants.spacing16),
         
         // Lista de lotes con campos de peso individual
-        ..._loteIds.map((loteId) {
-          final pesoBruto = _pesosBrutos[loteId] ?? 0;
-          final controller = _pesosRecibidosControllers[loteId];
-          final merma = _mermasCalculadas[loteId] ?? 0;
-          final porcentajeMerma = pesoBruto > 0 ? (merma / pesoBruto) * 100 : 0;
-          
-          return Container(
+        ..._loteIds.map((loteId) => _buildControlPesoIndividual(loteId)),
+        
+        // Resumen de totales
+        _buildResumenTotales(),
+      ],
+    );
+  }
+  
+  Widget _buildControlPesoIndividual(String loteId) {
+    final pesoBruto = _pesosBrutos[loteId] ?? 0;
+    final controller = _pesosRecibidosControllers[loteId];
+    final merma = _mermasCalculadas[loteId] ?? 0;
+    final porcentajeMerma = pesoBruto > 0 ? (merma / pesoBruto) * 100 : 0;
+    
+    return Container(
             margin: EdgeInsets.only(bottom: UIConstants.spacing16),
             padding: EdgeInsets.all(UIConstants.spacing16),
             decoration: BoxDecoration(
@@ -1358,13 +1399,13 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
               borderRadius: BorderRadiusConstants.borderRadiusMedium,
               border: Border.all(
                 color: porcentajeMerma > 10 
-                  ? Colors.orange.withOpacity(0.5)
-                  : Colors.grey.withOpacity(0.2),
+                  ? _primaryColor.withValues(alpha: UIConstants.opacityMedium)
+                  : Colors.grey.withValues(alpha: UIConstants.opacityLow),
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -1472,13 +1513,13 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                     ),
                     decoration: BoxDecoration(
                       color: porcentajeMerma > 10 
-                        ? Colors.orange.withOpacity(0.1)
-                        : Colors.green.withOpacity(0.1),
+                        ? _primaryColor.withValues(alpha: UIConstants.opacityVeryLow)
+                        : Colors.green.withValues(alpha: UIConstants.opacityVeryLow),
                       borderRadius: BorderRadiusConstants.borderRadiusSmall,
                       border: Border.all(
                         color: porcentajeMerma > 10 
-                          ? Colors.orange.withOpacity(0.3)
-                          : Colors.green.withOpacity(0.3),
+                          ? _primaryColor.withValues(alpha: UIConstants.opacityLow)
+                          : Colors.green.withValues(alpha: UIConstants.opacityLow),
                       ),
                     ),
                     child: Row(
@@ -1506,18 +1547,13 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
               ],
             ),
           );
-        }).toList(),
-        
-        // Resumen de totales
-        _buildResumenTotales(),
-      ],
-    );
   }
   
   Widget _buildResumenTotales() {
-    final pesoNetoTotal = _calcularPesoNetoTotal();
-    final mermaTotal = _calcularMermaTotal();
-    final porcentajeMerma = _calcularPorcentajeMerma();
+    // Usar variables de estado en lugar de calcular dinámicamente
+    final pesoNetoTotal = _esProcesamientoMultiple ? _pesoNetoTotal : double.tryParse(_pesoSalidaController.text) ?? 0;
+    final mermaTotal = _esProcesamientoMultiple ? _mermaTotalCalculada : (_pesoTotalOriginal - pesoNetoTotal);
+    final porcentajeMerma = _pesoTotalOriginal > 0 ? (mermaTotal / _pesoTotalOriginal) * 100 : 0;
     
     return Container(
       margin: EdgeInsets.only(top: UIConstants.spacing8),
@@ -1525,15 +1561,15 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            _primaryColor.withOpacity(0.05),
-            _primaryColor.withOpacity(0.02),
+            _primaryColor.withValues(alpha: UIConstants.opacityVeryLow),
+            _primaryColor.withValues(alpha: UIConstants.opacityVeryLow / 2),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadiusConstants.borderRadiusMedium,
         border: Border.all(
-          color: _primaryColor.withOpacity(0.3),
+          color: _primaryColor.withValues(alpha: UIConstants.opacityLow),
           width: 2,
         ),
       ),
@@ -1599,8 +1635,8 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
             ),
             decoration: BoxDecoration(
               color: porcentajeMerma > 10 
-                ? Colors.orange.withOpacity(0.1)
-                : Colors.blue.withOpacity(0.1),
+                ? _primaryColor.withValues(alpha: UIConstants.opacityVeryLow)
+                : Colors.blue.withValues(alpha: UIConstants.opacityVeryLow),
               borderRadius: BorderRadiusConstants.borderRadiusSmall,
             ),
             child: Row(
@@ -1868,6 +1904,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                       },
                     ),
                   ],
+                ],
               ),
             ),
             

@@ -112,7 +112,10 @@ class LoteUnificadoModel {
   /// Obtener el peso actual del lote según el último proceso
   double get pesoActual {
     // Retornar el peso del proceso más reciente
-    if (transformador != null) return transformador!.pesoSalida ?? transformador!.pesoEntrada;
+    if (transformador != null) {
+      // Ahora pesoSalida ya tiene el fallback correcto desde el modelo
+      return transformador!.pesoSalida ?? transformador!.pesoEntrada;
+    }
     
     // Verificar fase_2 de transporte (reciclador -> transformador)
     if (transporteFases.containsKey('fase_2')) {
@@ -553,6 +556,30 @@ class ProcesoTransformadorData {
   });
   
   factory ProcesoTransformadorData.fromMap(Map<String, dynamic> map) {
+    // Calcular pesoSalida con fallback a peso_recibido, peso_neto o peso_procesado
+    double? pesoSalida;
+    if (map['peso_salida'] != null) {
+      pesoSalida = (map['peso_salida'] as num).toDouble();
+    } else if (map['peso_recibido'] != null) {
+      // Fallback a peso_recibido (usado en formulario de recepción)
+      pesoSalida = (map['peso_recibido'] as num).toDouble();
+    } else if (map['peso_neto'] != null) {
+      // Fallback a peso_neto si existe
+      pesoSalida = (map['peso_neto'] as num).toDouble();
+    } else if (map['peso_procesado'] != null) {
+      // Fallback a peso_procesado si existe
+      pesoSalida = (map['peso_procesado'] as num).toDouble();
+    }
+    
+    // Calcular merma con fallback a merma_recepcion
+    double? mermaTransformacion;
+    if (map['merma_transformacion'] != null) {
+      mermaTransformacion = (map['merma_transformacion'] as num).toDouble();
+    } else if (map['merma_recepcion'] != null) {
+      // Fallback a merma_recepcion (usado en formulario de recepción)
+      mermaTransformacion = (map['merma_recepcion'] as num).toDouble();
+    }
+    
     return ProcesoTransformadorData(
       usuarioId: map['usuario_id'] ?? '',
       usuarioFolio: map['usuario_folio'] ?? '',
@@ -561,12 +588,8 @@ class ProcesoTransformadorData {
           ? (map['fecha_salida'] as Timestamp).toDate() 
           : null,
       pesoEntrada: (map['peso_entrada'] ?? 0.0).toDouble(),
-      pesoSalida: map['peso_salida'] != null 
-          ? (map['peso_salida'] as num).toDouble() 
-          : null,
-      mermaTransformacion: map['merma_transformacion'] != null 
-          ? (map['merma_transformacion'] as num).toDouble() 
-          : null,
+      pesoSalida: pesoSalida,
+      mermaTransformacion: mermaTransformacion,
       tipoProducto: map['tipo_producto'],
       especificaciones: _convertirAMapStringDynamic(map['especificaciones'], 'especificaciones'),
       evidenciasFoto: List<String>.from(map['evidencias_foto'] ?? []),

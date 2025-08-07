@@ -13,6 +13,7 @@ import '../shared/utils/material_utils.dart';
 // Widgets compartidos del Reciclador
 import '../shared/widgets/lote_filter_section.dart';
 import '../shared/widgets/lote_stats_section.dart';
+import '../shared/widgets/lote_card_general.dart';
 // Pantallas propias del Transformador
 import 'transformador_formulario_salida.dart';
 import 'transformador_documentacion_screen.dart';
@@ -201,6 +202,14 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
       if (!_isSelectionMode) {
         _selectedLotes.clear();
       }
+    });
+  }
+  
+  void _startSelectionMode(String loteId) {
+    setState(() {
+      _isSelectionMode = true;
+      _selectedLotes.clear();
+      _selectedLotes.add(loteId);
     });
   }
 
@@ -755,222 +764,232 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
   Widget _buildLoteCard(LoteUnificadoModel lote) {
     final bool isSelected = _selectedLotes.contains(lote.id);
     final estado = _getEstadoLote(lote);
-    final canSelect = _tabController.index == 0 && estado == 'pendiente';
+    final canSelect = _tabController.index == 0 && estado == 'pendiente' && !lote.estaConsumido;
     final bool esSublote = lote.esSublote;
-    // Mostrar checkboxes por defecto en el tab de Salida
-    final bool showCheckbox = _autoSelectionMode && canSelect;
+    final bool showCheckbox = (_autoSelectionMode || _isSelectionMode) && canSelect;
     
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: UIConstants.spacing16, vertical: UIConstants.spacing4),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadiusConstants.borderRadiusMedium,
-        elevation: isSelected ? UIConstants.elevationMedium : UIConstants.elevationSmall,
-        shadowColor: isSelected ? Colors.orange.withValues(alpha: UIConstants.opacityMediumLow) : Colors.black12,
-        child: InkWell(
-          onTap: () {
-            if ((showCheckbox || _isSelectionMode) && canSelect) {
-              _toggleLoteSelection(lote.id);
-            } else if (!_isSelectionMode && !showCheckbox) {
-              _navigateToLoteDetail(lote);
-            }
-          },
-          onLongPress: canSelect && !_autoSelectionMode
-              ? () {
-                  if (!_isSelectionMode) {
-                    _toggleSelectionMode();
-                    _toggleLoteSelection(lote.id);
-                  }
-                }
-              : null,
-          borderRadius: BorderRadiusConstants.borderRadiusMedium,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadiusConstants.borderRadiusMedium,
-              border: Border.all(
-                color: isSelected 
-                    ? Colors.orange 
-                    : (esSublote 
-                        ? Colors.purple.withValues(alpha: UIConstants.opacityMediumLow)
-                        : Colors.transparent),
-                width: isSelected ? 2 : (esSublote ? 1.5 : 0),
-              ),
-            ),
-            padding: EdgeInsetsConstants.paddingAll12,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header row
-                Row(
-                  children: [
-                    if ((showCheckbox || _isSelectionMode) && canSelect) ...[
-                      Checkbox(
-                        value: isSelected,
-                        onChanged: (_) => _toggleLoteSelection(lote.id),
-                        activeColor: Colors.orange,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
-                        ),
-                      ),
-                      SizedBox(width: UIConstants.spacing12),
-                    ],
-                    Expanded(
-                      child: Row(
-                        children: [
-                          if (esSublote) ...[
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: UIConstants.spacing4 + 2,
-                                vertical: UIConstants.spacing4 / 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.purple.withValues(alpha: UIConstants.opacityLow),
-                                borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
-                                border: Border.all(
-                                  color: Colors.purple.withValues(alpha: UIConstants.opacityMediumLow),
-                                  width: 0.5,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.cut,
-                                    size: 10,
-                                    color: Colors.purple,
-                                  ),
-                                  SizedBox(width: UIConstants.spacing4 / 2),
-                                  Text(
-                                    'SUBLOTE',
-                                    style: TextStyle(
-                                      fontSize: UIConstants.fontSizeXSmall - 2,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.purple,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            SizedBox(width: UIConstants.spacing4 + 2),
-                          ],
-                          Expanded(
-                            child: Text(
-                              'Lote ${lote.id}',
-                              style: const TextStyle(
-                                fontSize: UIConstants.fontSizeMedium,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    _buildEstadoChip(estado),
-                  ],
-                ),
-                SizedBox(height: UIConstants.spacing8),
-                
-                // Material and weight info
-                Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: UIConstants.spacing8 + 2,
-                        vertical: UIConstants.spacing4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: MaterialUtils.getMaterialColor(
-                          lote.datosGenerales.tipoMaterial
-                        ).withValues(alpha: UIConstants.opacityLow),
-                        borderRadius: BorderRadiusConstants.borderRadiusMedium,
-                      ),
-                      child: Text(
-                        lote.datosGenerales.tipoMaterial,
-                        style: TextStyle(
-                          fontSize: UIConstants.fontSizeSmall,
-                          fontWeight: FontWeight.w600,
-                          color: MaterialUtils.getMaterialColor(
-                            lote.datosGenerales.tipoMaterial
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: UIConstants.spacing8),
-                    Icon(Icons.scale, size: 14, color: Colors.grey[600]),
-                    SizedBox(width: UIConstants.spacing4 - 1),
-                    Text(
-                      '${lote.pesoActual.toStringAsFixed(2)} kg',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                    const Spacer(),
-                    Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
-                    SizedBox(width: UIConstants.spacing4 - 1),
-                    Text(
-                      FormatUtils.formatDate(lote.datosGenerales.fechaCreacion),
-                      style: TextStyle(
-                        fontSize: UIConstants.fontSizeXSmall,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-                
-                // Action buttons for specific states (hide when checkboxes are shown)
-                if (!showCheckbox && !_isSelectionMode && _tabController.index == 0) ...[
-                  SizedBox(height: UIConstants.spacing8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 32,
-                          child: OutlinedButton.icon(
-                            onPressed: () => _procesarLote(lote),
-                            icon: const Icon(Icons.play_arrow, size: 16),
-                            label: Text('Procesar', style: TextStyle(fontSize: UIConstants.fontSizeSmall)),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: _getTabColor(),
-                              side: BorderSide(color: _getTabColor()),
-                              padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-                
-                if (!_isSelectionMode && _tabController.index == 1) ...[
-                  SizedBox(height: UIConstants.spacing8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 32,
-                          child: OutlinedButton.icon(
-                            onPressed: () => _cargarDocumentacion(lote),
-                            icon: const Icon(Icons.upload_file, size: 16),
-                            label: Text('Cargar Documentos', style: TextStyle(fontSize: UIConstants.fontSizeSmall)),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: BioWayColors.warning,
-                              side: BorderSide(color: BioWayColors.warning),
-                              padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
+    // Determinar color y texto del estado
+    Color statusColor;
+    String statusText;
+    IconData statusIcon;
+    
+    switch (estado) {
+      case 'pendiente':
+        statusColor = Colors.orange;
+        statusText = 'Pendiente de procesar';
+        statusIcon = Icons.pending;
+        break;
+      case 'documentacion':
+        statusColor = BioWayColors.warning;
+        statusText = 'Esperando documentación';
+        statusIcon = Icons.description;
+        break;
+      case 'completado':
+        statusColor = BioWayColors.success;
+        statusText = 'Completado';
+        statusIcon = Icons.check_circle;
+        break;
+      default:
+        statusColor = Colors.blue;
+        statusText = 'En proceso';
+        statusIcon = Icons.autorenew;
+    }
+    
+    // Información adicional - mostrar composición de materiales y peso neto
+    Widget? additionalInfo;
+    
+    // Primero, verificar si hay composición de materiales (viene de megalote)
+    final composicionMateriales = lote.transformador?.especificaciones?['composicion_materiales'] as List?;
+    
+    if (composicionMateriales != null && composicionMateriales.isNotEmpty) {
+      // Mostrar composición de materiales con porcentajes
+      additionalInfo = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Composición del material:',
+            style: TextStyle(
+              fontSize: UIConstants.fontSizeXSmall,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
             ),
           ),
-        ),
+          SizedBox(height: UIConstants.spacing4),
+          ...composicionMateriales.map((material) {
+            final tipo = material['tipo_material'] ?? 'Desconocido';
+            final porcentaje = (material['porcentaje'] ?? 0.0).toDouble();
+            return Padding(
+              padding: EdgeInsets.only(bottom: UIConstants.spacing4 - 2),
+              child: Row(
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: _getColorForMaterial(tipo),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  SizedBox(width: UIConstants.spacing4),
+                  Expanded(
+                    child: Text(
+                      '$tipo: ${porcentaje.toStringAsFixed(1)}%',
+                      style: TextStyle(
+                        fontSize: UIConstants.fontSizeXSmall - 1,
+                        color: Colors.grey[700],
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          
+          // Agregar peso neto y merma si están disponibles
+          if (lote.transformador != null) ...[
+            SizedBox(height: UIConstants.spacing8),
+            Row(
+              children: [
+                // Usar pesoSalida que ahora tiene el valor correcto
+                if (lote.transformador!.pesoSalida != null)
+                  Expanded(
+                    child: _buildInfoItem(
+                      icon: Icons.scale,
+                      label: 'Peso Neto',
+                      value: '${lote.transformador!.pesoSalida!.toStringAsFixed(2)} kg',
+                      fontSize: UIConstants.fontSizeXSmall,
+                      color: Colors.orange,
+                    ),
+                  ),
+                // Mostrar merma si existe
+                if (lote.transformador!.mermaTransformacion != null && 
+                    lote.transformador!.mermaTransformacion! > 0)
+                  Expanded(
+                    child: _buildInfoItem(
+                      icon: Icons.trending_down,
+                      label: 'Merma',
+                      value: '${lote.transformador!.mermaTransformacion!.toStringAsFixed(2)} kg',
+                      fontSize: UIConstants.fontSizeXSmall,
+                      color: BioWayColors.warning,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      );
+    } else if (lote.transformador != null) {
+      // Si no hay composición, mostrar solo peso neto y merma
+      final pesoSalida = lote.transformador!.pesoSalida;
+      final mermaTransformacion = lote.transformador!.mermaTransformacion;
+      
+      if (pesoSalida != null || mermaTransformacion != null) {
+        additionalInfo = Row(
+          children: [
+            if (pesoSalida != null)
+              Expanded(
+                child: _buildInfoItem(
+                  icon: Icons.scale,
+                  label: 'Peso Neto',
+                  value: '${pesoSalida.toStringAsFixed(2)} kg',
+                  fontSize: UIConstants.fontSizeXSmall,
+                  color: Colors.orange,
+                ),
+              ),
+            if (mermaTransformacion != null && mermaTransformacion > 0)
+              Expanded(
+                child: _buildInfoItem(
+                  icon: Icons.trending_down,
+                  label: 'Merma',
+                  value: '${mermaTransformacion.toStringAsFixed(2)} kg',
+                  fontSize: UIConstants.fontSizeXSmall,
+                  color: BioWayColors.warning,
+                ),
+              ),
+          ],
+        );
+      }
+    }
+    
+    // Trailing widgets para acciones
+    Widget? trailing;
+    if (_tabController.index == 0 && !showCheckbox && !_isSelectionMode) {
+      trailing = IconButton(
+        icon: Icon(Icons.play_arrow, color: Colors.orange),
+        onPressed: () => _procesarLote(lote),
+        tooltip: 'Procesar lote',
+      );
+    } else if (_tabController.index == 1) {
+      trailing = IconButton(
+        icon: Icon(Icons.upload_file, color: BioWayColors.warning),
+        onPressed: () => _cargarDocumentacion(lote),
+        tooltip: 'Cargar documentación',
+      );
+    }
+    
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing16),
+      child: LoteCardGeneral(
+        lote: lote,
+        isSelected: isSelected,
+        canBeSelected: canSelect,
+        onTap: () {
+          if ((_isSelectionMode || _autoSelectionMode) && canSelect) {
+            _toggleLoteSelection(lote.id);
+          } else if (!_isSelectionMode && _tabController.index == 0 && canSelect) {
+            _procesarLote(lote);
+          } else {
+            _navigateToLoteDetail(lote);
+          }
+        },
+        onLongPress: canSelect ? () => _startSelectionMode(lote.id) : null,
+        trailing: trailing,
+        additionalInfo: additionalInfo,
+        showCheckbox: showCheckbox || _isSelectionMode,
+        hasDocumentation: false, // TODO: Implementar verificación de documentación
+        statusColor: statusColor,
+        statusText: statusText,
+        statusIcon: statusIcon,
       ),
+    );
+  }
+  
+  Widget _buildInfoItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    double fontSize = 14,
+    Color? color,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: UIConstants.iconSizeSmall, color: color ?? Colors.grey[600]),
+        SizedBox(width: UIConstants.spacing8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: UIConstants.fontSizeXSmall + 1,
+                  color: Colors.grey[600],
+                ),
+              ),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w600,
+                  color: color ?? Colors.grey[800],
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -1226,6 +1245,30 @@ class _TransformadorProduccionScreenState extends State<TransformadorProduccionS
         ],
       ),
     );
+  }
+  
+  // Método helper para obtener color según el material
+  Color _getColorForMaterial(String material) {
+    final materialUpper = material.toUpperCase();
+    
+    // Remover prefijo EPF- si existe
+    final materialSinPrefijo = materialUpper.startsWith('EPF-') 
+        ? materialUpper.substring(4) 
+        : materialUpper;
+    
+    switch (materialSinPrefijo) {
+      case 'POLI':
+      case 'POLIETILENO':
+        return BioWayColors.pebdPink;
+      case 'PP':
+      case 'POLIPROPILENO':
+        return BioWayColors.ppPurple;
+      case 'MULTI':
+      case 'MULTILAMINADO':
+        return BioWayColors.multilaminadoBrown;
+      default:
+        return Colors.grey;
+    }
   }
   
   // Método helper para verificar si un megalote contiene >50% del material seleccionado
