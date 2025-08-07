@@ -104,8 +104,13 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
   bool _esProcesamientoMultiple = false;
   double _pesoTotalOriginal = 0.0;
   
+  // Controladores para peso individual por lote (NUEVO)
+  final Map<String, TextEditingController> _pesosRecibidosControllers = {};
+  final Map<String, double> _mermasCalculadas = {};
+  final Map<String, double> _pesosBrutos = {}; // Para almacenar el peso original de cada lote
+  
   // Controladores
-  final TextEditingController _pesoSalidaController = TextEditingController();
+  final TextEditingController _pesoSalidaController = TextEditingController(); // Se mantendrá para compatibilidad
   final TextEditingController _operadorController = TextEditingController();
   final TextEditingController _comentariosController = TextEditingController();
   final TextEditingController _productoGeneradoController = TextEditingController();
@@ -190,12 +195,18 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
 
   @override
   void dispose() {
+    // Limpiar controladores dinámicos
+    _pesosRecibidosControllers.forEach((_, controller) {
+      controller.dispose();
+    });
     _pesoSalidaController.dispose();
     _operadorController.dispose();
     _comentariosController.dispose();
     _productoGeneradoController.dispose();
     _cantidadGeneradaController.dispose();
     _mermaController.dispose();
+    _productoFabricadoController.dispose();
+    _compuestoController.dispose();
     _scrollController.dispose();
     _operadorFocus.dispose();
     _comentariosFocus.dispose();
@@ -218,12 +229,22 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
       double pesoTotal = 0.0;
       Set<String> tiposPolimero = {};
       
-      // Cargar información de los lotes
+      // Cargar información de los lotes y crear controladores dinámicos
       for (String loteId in _loteIds) {
         final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
         if (lote != null) {
-          pesoTotal += lote.pesoActual;
+          final pesoLote = lote.pesoActual;
+          pesoTotal += pesoLote;
           tiposPolimero.add(lote.datosGenerales.tipoMaterial);
+          
+          // Almacenar peso bruto original
+          _pesosBrutos[loteId] = pesoLote;
+          
+          // Crear controlador para este lote si es procesamiento múltiple
+          if (_esProcesamientoMultiple) {
+            _pesosRecibidosControllers[loteId] = TextEditingController();
+            _mermasCalculadas[loteId] = 0.0;
+          }
         }
       }
       
@@ -540,10 +561,144 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
            _photos.isNotEmpty;
   }
 
+  // Métodos auxiliares para cálculo de pesos y mermas
+  double _calcularPesoNetoTotal() {
+    if (!_esProcesamientoMultiple) {
+      return double.tryParse(_pesoSalidaController.text) ?? _pesoTotalOriginal;
+    }
+    
+    double total = 0.0;
+    _pesosRecibidosControllers.forEach((loteId, controller) {
+      final peso = double.tryParse(controller.text);
+      if (peso != null && peso > 0) {
+        total += peso;
+      }
+    });
+    return total;
+  }
+  
+  double _calcularMermaTotal() {
+    final pesoNeto = _calcularPesoNetoTotal();
+    return _pesoTotalOriginal - pesoNeto;
+  }
+  
+  double _calcularPorcentajeMerma() {
+    if (_pesoTotalOriginal == 0) return 0;
+    final merma = _calcularMermaTotal();
+    return (merma / _pesoTotalOriginal) * 100;
+  }
+  
+  void _calcularMermaIndividual(String loteId) {
+    if (!_esProcesamientoMultiple) return;
+    
+    final pesoBruto = _pesosBrutos[loteId] ?? 0;
+    final controllerNeto = _pesosRecibidosControllers[loteId];
+    if (controllerNeto == null) return;
+    
+    final pesoNeto = double.tryParse(controllerNeto.text) ?? 0;
+    
+    setState(() {
+      if (pesoNeto > 0 && pesoNeto <= pesoBruto) {
+        _mermasCalculadas[loteId] = pesoBruto - pesoNeto;
+      } else {
+        _mermasCalculadas[loteId] = 0;
+      }
+    });
+  }
+
   void _procesarSalida() async {
     // Validar formulario
     if (!_formKey.currentState!.validate()) {
       return;
+    }
+    
+    // Validación específica para procesamiento múltiple
+    if (_esProcesamientoMultiple) {
+      // Verificar que todos los lotes tengan peso ingresado
+      for (String loteId in _loteIds) {
+        final controller = _pesosRecibidosControllers[loteId];
+        if (controller == null || controller.text.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Por favor ingrese el peso para todos los lotes'),
+              backgroundColor: BioWayColors.error,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadiusConstants.borderRadiusSmall,
+              ),
+            ),
+          );
+          return;
+        }
+      }
+      
+      // Confirmación si la merma total es mayor al 10%
+      final porcentajeMerma = _calcularPorcentajeMerma();
+      if (porcentajeMerma > 10) {
+        final confirmar = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.warning, color: Colors.orange, size: 28),
+                SizedBox(width: 12),
+                Text('Merma Elevada'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'La merma total es del ${porcentajeMerma.toStringAsFixed(1)}%, '
+                  'lo cual supera el 10% esperado.',
+                  style: TextStyle(fontSize: 16),
+                ),
+                SizedBox(height: 16),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Peso bruto total: ${_pesoTotalOriginal.toStringAsFixed(2)} kg'),
+                      Text('Peso neto total: ${_calcularPesoNetoTotal().toStringAsFixed(2)} kg'),
+                      Text('Merma total: ${_calcularMermaTotal().toStringAsFixed(2)} kg'),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  '¿Está seguro de continuar con estos valores?',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text('Revisar valores'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                ),
+                child: Text('Continuar de todos modos'),
+              ),
+            ],
+          ),
+        );
+        
+        if (confirmar != true) {
+          return;
+        }
+      }
     }
     
     
@@ -689,26 +844,38 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
           throw Exception('No se pudieron obtener los lotes');
         }
         
-        // Preparar datos de los lotes con porcentajes (IMPORTANTE para el modelo)
+        // Preparar datos de los lotes con pesos individuales procesados
         List<Map<String, dynamic>> lotesEntrada = [];
-        double pesoTotal = 0;
+        double pesoTotalProcesado = 0;
         
-        // Primero calcular peso total
+        // Usar pesos procesados individuales si están disponibles
         for (var lote in lotes) {
-          pesoTotal += lote.pesoActual;
-        }
-        
-        // Luego crear lotes con porcentajes
-        for (var lote in lotes) {
-          final peso = lote.pesoActual;
-          final porcentaje = (peso / pesoTotal) * 100;
+          double pesoProcesado;
+          
+          if (_esProcesamientoMultiple && _pesosRecibidosControllers.containsKey(lote.id)) {
+            // Usar el peso neto individual ingresado
+            pesoProcesado = double.tryParse(_pesosRecibidosControllers[lote.id]!.text) ?? lote.pesoActual;
+          } else {
+            // Para lote único, usar el peso del campo general
+            pesoProcesado = double.tryParse(_pesoSalidaController.text) ?? lote.pesoActual;
+          }
+          
+          pesoTotalProcesado += pesoProcesado;
           
           lotesEntrada.add({
             'lote_id': lote.id,
-            'peso': peso,
-            'porcentaje': porcentaje, // REQUERIDO por el modelo
+            'peso': lote.pesoActual, // Peso original
+            'peso_procesado': pesoProcesado, // NUEVO: Peso neto real aprovechable
             'tipo_material': lote.datosGenerales.tipoMaterial,
           });
+        }
+        
+        // Calcular porcentajes basados en el peso procesado
+        for (var loteData in lotesEntrada) {
+          final pesoProcesado = loteData['peso_procesado'] as double;
+          loteData['porcentaje'] = pesoTotalProcesado > 0 
+            ? (pesoProcesado / pesoTotalProcesado) * 100 
+            : 0;
         }
         
         // Crear o actualizar la transformación
@@ -721,10 +888,10 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
         print('tipo: agrupacion_transformador');
         print('Verificando que UID coincide con Auth: ${authUid == _authService.currentUser?.uid}');
         
-        // Calcular merma (diferencia entre peso original y peso de salida)
-        final pesoSalida = double.tryParse(_pesoSalidaController.text) ?? _pesoTotalOriginal;
+        // Calcular merma usando el método auxiliar que considera múltiples lotes
+        final pesoSalida = _calcularPesoNetoTotal();
         final cantidadGenerada = double.tryParse(_cantidadGeneradaController.text) ?? 0;
-        final mermaProceso = _pesoTotalOriginal - pesoSalida;
+        final mermaProceso = _calcularMermaTotal();
         
         final transformacionData = {
           'tipo': 'agrupacion_transformador',
@@ -950,6 +1117,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
           loteId: _loteIds.first,
           datosTransformador: {
             'peso_salida': pesoSalida,
+            'peso_procesado': pesoSalida, // NUEVO: Guardar también como peso_procesado para consistencia
             'producto_generado': _productoGeneradoController.text.trim(),
             'cantidad_generada': cantidadGenerada.toString(),
             'procesos_aplicados': procesosSeleccionados,
@@ -1123,6 +1291,349 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
       debugPrint('Error al capturar firma: $e');
       return null;
     }
+  }
+
+  Widget _buildSeccionPesoMultiple() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Título de la sección
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: UIConstants.spacing16,
+            vertical: UIConstants.spacing12,
+          ),
+          decoration: BoxDecoration(
+            color: _primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadiusConstants.borderRadiusMedium,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.scale,
+                color: _primaryColor,
+                size: UIConstants.iconSizeMedium,
+              ),
+              SizedBox(width: UIConstants.spacing12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Control de Peso Individual por Lote',
+                      style: TextStyle(
+                        fontSize: UIConstants.fontSizeBody,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: UIConstants.spacing4),
+                    Text(
+                      'Ingrese el peso neto aprovechable de cada lote',
+                      style: TextStyle(
+                        fontSize: UIConstants.fontSizeMedium,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        SizedBox(height: UIConstants.spacing16),
+        
+        // Lista de lotes con campos de peso individual
+        ..._loteIds.map((loteId) {
+          final pesoBruto = _pesosBrutos[loteId] ?? 0;
+          final controller = _pesosRecibidosControllers[loteId];
+          final merma = _mermasCalculadas[loteId] ?? 0;
+          final porcentajeMerma = pesoBruto > 0 ? (merma / pesoBruto) * 100 : 0;
+          
+          return Container(
+            margin: EdgeInsets.only(bottom: UIConstants.spacing16),
+            padding: EdgeInsets.all(UIConstants.spacing16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
+              border: Border.all(
+                color: porcentajeMerma > 10 
+                  ? Colors.orange.withOpacity(0.5)
+                  : Colors.grey.withOpacity(0.2),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ID del lote
+                Row(
+                  children: [
+                    Icon(
+                      Icons.inventory_2,
+                      size: UIConstants.iconSizeSmall,
+                      color: _primaryColor,
+                    ),
+                    SizedBox(width: UIConstants.spacing8),
+                    Text(
+                      'Lote: ${loteId.substring(0, 8).toUpperCase()}',
+                      style: const TextStyle(
+                        fontSize: UIConstants.fontSizeMedium,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ],
+                ),
+                
+                SizedBox(height: UIConstants.spacing12),
+                
+                // Peso bruto
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Peso bruto:',
+                      style: TextStyle(
+                        fontSize: UIConstants.fontSizeMedium,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    Text(
+                      '${pesoBruto.toStringAsFixed(2)} kg',
+                      style: const TextStyle(
+                        fontSize: UIConstants.fontSizeMedium,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                
+                SizedBox(height: UIConstants.spacing12),
+                
+                // Campo de peso neto
+                const FieldLabel(
+                  text: 'Peso neto aprovechable (kg)',
+                  isRequired: true,
+                ),
+                SizedBox(height: UIConstants.spacing8),
+                TextFormField(
+                  controller: controller,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    hintText: 'Ingrese el peso real aprovechable',
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
+                      borderSide: BorderSide(color: _primaryColor, width: 2),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
+                      borderSide: const BorderSide(color: BioWayColors.error, width: 2),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    _calcularMermaIndividual(loteId);
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor ingrese el peso neto';
+                    }
+                    final peso = double.tryParse(value);
+                    if (peso == null || peso <= 0) {
+                      return 'Por favor ingrese un peso válido';
+                    }
+                    if (peso > pesoBruto) {
+                      return 'El peso neto no puede ser mayor al peso bruto';
+                    }
+                    return null;
+                  },
+                ),
+                
+                // Indicador de merma si existe
+                if (merma > 0) ...[
+                  SizedBox(height: UIConstants.spacing12),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: UIConstants.spacing12,
+                      vertical: UIConstants.spacing8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: porcentajeMerma > 10 
+                        ? Colors.orange.withOpacity(0.1)
+                        : Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadiusConstants.borderRadiusSmall,
+                      border: Border.all(
+                        color: porcentajeMerma > 10 
+                          ? Colors.orange.withOpacity(0.3)
+                          : Colors.green.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          porcentajeMerma > 10 ? Icons.warning : Icons.check_circle,
+                          size: UIConstants.iconSizeSmall,
+                          color: porcentajeMerma > 10 ? Colors.orange : Colors.green,
+                        ),
+                        SizedBox(width: UIConstants.spacing8),
+                        Expanded(
+                          child: Text(
+                            'Merma: ${merma.toStringAsFixed(2)} kg (${porcentajeMerma.toStringAsFixed(1)}%)',
+                            style: TextStyle(
+                              fontSize: UIConstants.fontSizeSmall,
+                              fontWeight: FontWeight.w600,
+                              color: porcentajeMerma > 10 ? Colors.orange[700] : Colors.green[700],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        }).toList(),
+        
+        // Resumen de totales
+        _buildResumenTotales(),
+      ],
+    );
+  }
+  
+  Widget _buildResumenTotales() {
+    final pesoNetoTotal = _calcularPesoNetoTotal();
+    final mermaTotal = _calcularMermaTotal();
+    final porcentajeMerma = _calcularPorcentajeMerma();
+    
+    return Container(
+      margin: EdgeInsets.only(top: UIConstants.spacing8),
+      padding: EdgeInsets.all(UIConstants.spacing16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            _primaryColor.withOpacity(0.05),
+            _primaryColor.withOpacity(0.02),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadiusConstants.borderRadiusMedium,
+        border: Border.all(
+          color: _primaryColor.withOpacity(0.3),
+          width: 2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'RESUMEN DE TOTALES',
+            style: TextStyle(
+              fontSize: UIConstants.fontSizeMedium,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1,
+            ),
+          ),
+          SizedBox(height: UIConstants.spacing12),
+          
+          // Peso bruto total
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Peso bruto total:',
+                style: TextStyle(fontSize: UIConstants.fontSizeMedium),
+              ),
+              Text(
+                '${_pesoTotalOriginal.toStringAsFixed(2)} kg',
+                style: const TextStyle(
+                  fontSize: UIConstants.fontSizeMedium,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          
+          SizedBox(height: UIConstants.spacing8),
+          
+          // Peso neto total
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Peso neto total:',
+                style: TextStyle(fontSize: UIConstants.fontSizeMedium),
+              ),
+              Text(
+                '${pesoNetoTotal.toStringAsFixed(2)} kg',
+                style: TextStyle(
+                  fontSize: UIConstants.fontSizeMedium,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green[700],
+                ),
+              ),
+            ],
+          ),
+          
+          SizedBox(height: UIConstants.spacing8),
+          
+          // Merma total
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: UIConstants.spacing12,
+              vertical: UIConstants.spacing8,
+            ),
+            decoration: BoxDecoration(
+              color: porcentajeMerma > 10 
+                ? Colors.orange.withOpacity(0.1)
+                : Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadiusConstants.borderRadiusSmall,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      porcentajeMerma > 10 ? Icons.warning : Icons.info,
+                      size: UIConstants.iconSizeSmall,
+                      color: porcentajeMerma > 10 ? Colors.orange : Colors.blue,
+                    ),
+                    SizedBox(width: UIConstants.spacing8),
+                    const Text(
+                      'Merma total:',
+                      style: TextStyle(fontSize: UIConstants.fontSizeMedium),
+                    ),
+                  ],
+                ),
+                Text(
+                  '${mermaTotal.toStringAsFixed(2)} kg (${porcentajeMerma.toStringAsFixed(1)}%)',
+                  style: TextStyle(
+                    fontSize: UIConstants.fontSizeMedium,
+                    fontWeight: FontWeight.bold,
+                    color: porcentajeMerma > 10 ? Colors.orange[700] : Colors.blue[700],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -1331,27 +1842,32 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                     ],
                   ),
                   SizedBox(height: UIConstants.spacing20),
-                  const FieldLabel(
-                    text: 'Peso de salida (kg)',
-                    isRequired: true,
-                  ),
-                  SizedBox(height: UIConstants.spacing8),
-                  WeightInputWidget(
-                  controller: _pesoSalidaController,
-                  label: '',
-                  primaryColor: _primaryColor,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor ingrese el peso de salida';
-                    }
-                    final peso = double.tryParse(value);
-                    if (peso == null || peso <= 0) {
-                      return 'Por favor ingrese un peso válido';
-                    }
-                    return null;
-                  },
-                ),
-                ],
+                  
+                  // Sección de peso - Individual o múltiple
+                  if (_esProcesamientoMultiple) ...[
+                    _buildSeccionPesoMultiple(),
+                  ] else ...[
+                    const FieldLabel(
+                      text: 'Peso de salida (kg)',
+                      isRequired: true,
+                    ),
+                    SizedBox(height: UIConstants.spacing8),
+                    WeightInputWidget(
+                      controller: _pesoSalidaController,
+                      label: '',
+                      primaryColor: _primaryColor,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Por favor ingrese el peso de salida';
+                        }
+                        final peso = double.tryParse(value);
+                        if (peso == null || peso <= 0) {
+                          return 'Por favor ingrese un peso válido';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
               ),
             ),
             

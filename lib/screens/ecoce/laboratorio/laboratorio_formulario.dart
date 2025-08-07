@@ -219,6 +219,26 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
       return;
     }
 
+    // Validación adicional para temperaturas en rango
+    if (!_isTemperaturaUnica) {
+      final tempMin = double.tryParse(_temperaturaRangoMinController.text);
+      final tempMax = double.tryParse(_temperaturaRangoMaxController.text);
+      
+      if (tempMin != null && tempMax != null && tempMin >= tempMax) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('La temperatura mínima debe ser menor que la máxima'),
+            backgroundColor: BioWayColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadiusConstants.borderRadiusSmall,
+            ),
+          ),
+        );
+        return;
+      }
+    }
+
     if (_cumpleRequisitos == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -487,9 +507,13 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
               return 'Este campo es obligatorio';
             }
             
+            final numValue = double.tryParse(value);
+            if (numValue == null) {
+              return 'Ingrese un número válido';
+            }
+            
             if (pattern == "100.00") {
-              final numValue = double.tryParse(value);
-              if (numValue == null || numValue > 100 || numValue < 0) {
+              if (numValue > 100 || numValue < 0) {
                 return 'Debe ser un porcentaje entre 0 y 100';
               }
             }

@@ -14,6 +14,7 @@ import 'laboratorio_registro_muestras.dart';
 import 'laboratorio_toma_muestra_megalote_screen.dart';
 import 'laboratorio_formulario.dart';
 import 'laboratorio_documentacion.dart';
+import 'widgets/muestra_analysis_details_sheet.dart';
 import '../shared/widgets/ecoce_bottom_navigation.dart';
 import '../shared/widgets/shared_qr_scanner_screen.dart';
 
@@ -969,7 +970,13 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: _tabController.index == 2 ? null : () => _navigateToMuestraDetail(muestra),
+        onTap: () {
+          if (_tabController.index == 2) {
+            _showAnalysisDetails(muestra);
+          } else {
+            _navigateToMuestraDetail(muestra);
+          }
+        },
         child: Padding(
           padding: EdgeInsetsConstants.paddingAll16,
           child: Column(
@@ -1054,8 +1061,14 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                     ),
                   ),
                   
-                  // Botón de acción
-                  if (_tabController.index != 2)
+                  // Botón de acción o indicador de tap
+                  if (_tabController.index == 2)
+                    Icon(
+                      Icons.visibility,
+                      color: statusColor,
+                      size: UIConstants.iconSizeMedium,
+                    )
+                  else
                     IconButton(
                       icon: Icon(
                         _tabController.index == 0 ? Icons.analytics : Icons.upload_file,
@@ -1096,24 +1109,34 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
                 ],
               ),
               
-              // Información adicional
-              if (muestra.laboratorioFolio.isNotEmpty) ...[
-                SizedBox(height: UIConstants.spacing12),
+              // Indicador para muestras finalizadas
+              if (_tabController.index == 2 && muestra.datosAnalisis != null) ...[
+                SizedBox(height: UIConstants.spacing8),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing12, vertical: UIConstants.spacing8),
+                  padding: EdgeInsets.symmetric(horizontal: UIConstants.spacing8, vertical: UIConstants.spacing4),
                   decoration: BoxDecoration(
-                    color: Colors.grey[50],
+                    color: const Color(0xFF9333EA).withOpacity(0.05),
                     borderRadius: BorderRadiusConstants.borderRadiusSmall,
+                    border: Border.all(
+                      color: const Color(0xFF9333EA).withOpacity(0.2),
+                      width: 1,
+                    ),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.person, size: UIConstants.fontSizeBody, color: Colors.grey[600]),
-                      SizedBox(width: UIConstants.spacing8),
+                      Icon(
+                        Icons.touch_app,
+                        size: UIConstants.fontSizeSmall,
+                        color: const Color(0xFF9333EA),
+                      ),
+                      SizedBox(width: UIConstants.spacing4),
                       Text(
-                        'Folio Lab: ${muestra.laboratorioFolio}',
+                        'Toca para ver resultados del análisis',
                         style: TextStyle(
-                          fontSize: UIConstants.fontSizeSmall,
-                          color: Colors.grey[700],
+                          fontSize: UIConstants.fontSizeXSmall,
+                          color: const Color(0xFF9333EA),
+                          fontStyle: FontStyle.italic,
                         ),
                       ),
                     ],
@@ -1212,5 +1235,35 @@ class _LaboratorioGestionMuestrasState extends State<LaboratorioGestionMuestras>
         ),
       ).then((_) => _loadMuestras()); // Recargar al volver
     }
+  }
+  
+  void _showAnalysisDetails(MuestraLaboratorioModel muestra) {
+    HapticFeedback.lightImpact();
+    
+    // Verificar si hay datos de análisis
+    if (muestra.datosAnalisis == null) {
+      // Mostrar mensaje si no hay datos
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('No hay datos de análisis disponibles para esta muestra'),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadiusConstants.borderRadiusSmall,
+          ),
+        ),
+      );
+      return;
+    }
+    
+    // Mostrar el bottom sheet con los resultados del análisis
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => MuestraAnalysisDetailsSheet(
+        muestra: muestra,
+      ),
+    );
   }
 }
