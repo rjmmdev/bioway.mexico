@@ -124,12 +124,14 @@ class _LaboratorioFormularioState extends State<LaboratorioFormulario> {
   }
   
   void _initializeResponsableData() async {
-    final userProfile = await _userSession.getUserProfile();
-    if (userProfile != null && mounted) {
-      setState(() {
-        _nombreResponsableController.text = userProfile['ecoceNombre'] ?? '';
-      });
-    }
+    // NO pre-cargar el nombre del responsable - el usuario debe ingresarlo manualmente
+    // Dejar el campo vacío para que el responsable ingrese su nombre
+    // final userProfile = await _userSession.getUserProfile();
+    // if (userProfile != null && mounted) {
+    //   setState(() {
+    //     _nombreResponsableController.text = userProfile['ecoceNombre'] ?? '';
+    //   });
+    // }
   }
   
   // Capturar firma

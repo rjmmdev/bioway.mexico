@@ -115,10 +115,11 @@ class _RecicladorFormularioSalidaState extends State<RecicladorFormularioSalida>
         return;
       }
       
-      // Initialize operator
-      final userData = _userSession.getUserData();
-      print('[RecicladorFormularioSalida] Usuario cargado: ${userData?['nombre']} (${userData?['uid']})');
-      _operadorController.text = userData?['nombre'] ?? '';
+      // NO pre-cargar el nombre del operador - el usuario debe ingresarlo manualmente
+      // Dejar el campo vacío para que el responsable ingrese su nombre
+      // final userData = _userSession.getUserData();
+      // print('[RecicladorFormularioSalida] Usuario cargado: ${userData?['nombre']} (${userData?['uid']})');
+      // _operadorController.text = userData?['nombre'] ?? '';
       
       // Cargar datos del lote
       await _loadLoteData();

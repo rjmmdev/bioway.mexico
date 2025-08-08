@@ -123,11 +123,12 @@ class _TransformadorFormularioRecepcionState extends State<TransformadorFormular
   }
 
   void _initializeForm() async {
-    // Pre-cargar nombre del operador
-    final userData = _userSession.getUserData();
-    if (userData != null && userData['nombre'] != null) {
-      _operadorController.text = userData['nombre'];
-    }
+    // NO pre-cargar el nombre del operador - el usuario debe ingresarlo manualmente
+    // Dejar el campo vacío para que el responsable ingrese su nombre
+    // final userData = _userSession.getUserData();
+    // if (userData != null && userData['nombre'] != null) {
+    //   _operadorController.text = userData['nombre'];
+    // }
     
     // Crear controladores para cada lote
     for (final lote in _lotes) {

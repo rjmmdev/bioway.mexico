@@ -99,9 +99,10 @@ class _LaboratorioTomaMuestraMegaloteScreenState extends State<LaboratorioTomaMu
   }
 
   void _initializeForm() async {
-    final userData = _userSession.getUserData();
-    // Pre-cargar nombre del operador actual
-    _operadorController.text = userData?['nombre'] ?? '';
+    // NO pre-cargar el nombre del operador - el usuario debe ingresarlo manualmente
+    // Dejar el campo vacío para que el responsable ingrese su nombre
+    // final userData = _userSession.getUserData();
+    // _operadorController.text = userData?['nombre'] ?? '';
   }
 
   Future<void> _parseQRAndLoadData() async {
