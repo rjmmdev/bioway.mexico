@@ -27,8 +27,6 @@ import 'screens/ecoce/shared/ecoce_perfil_screen.dart';
 import 'screens/ecoce/shared/ecoce_ayuda_screen.dart';
 
 // Screens - Transformador
-import 'screens/ecoce/transformador/transformador_inicio_screen.dart';
-import 'screens/ecoce/transformador/transformador_produccion_screen.dart';
 import 'screens/ecoce/transformador/transformador_documentacion_screen.dart';
 import 'screens/ecoce/transformador/transformador_formulario_recepcion.dart';
 import 'screens/ecoce/transformador/transformador_main_screen.dart';
@@ -46,7 +44,7 @@ import 'screens/ecoce/repositorio/repositorio_debug_screen.dart';
 
 void main() {
   // Configuración mínima inicial
-  runApp(const BioWayApp());
+  runApp(const EcoceApp());
   
   // Configuraciones adicionales en background después de mostrar la UI
   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -72,18 +70,18 @@ void main() {
   });
 }
 
-class BioWayApp extends StatelessWidget {
-  const BioWayApp({super.key});
+class EcoceApp extends StatelessWidget {
+  const EcoceApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'BioWay México',
+      title: 'ECOCE Trazabilidad',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         // Colores principales
         primarySwatch: Colors.green,
-        primaryColor: BioWayColors.primaryGreen,
+        primaryColor: BioWayColors.ecoceGreen,
 
         // Color de fondo por defecto
         scaffoldBackgroundColor: Colors.white,
@@ -92,9 +90,9 @@ class BioWayApp extends StatelessWidget {
         appBarTheme: const AppBarTheme(
           elevation: 0,
           backgroundColor: Colors.transparent,
-          iconTheme: IconThemeData(color: BioWayColors.darkGreen),
+          iconTheme: IconThemeData(color: BioWayColors.ecoceDark),
           titleTextStyle: TextStyle(
-            color: BioWayColors.darkGreen,
+            color: BioWayColors.ecoceDark,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -108,7 +106,7 @@ class BioWayApp extends StatelessWidget {
         // Configuración de botones elevados
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: BioWayColors.primaryGreen,
+            backgroundColor: BioWayColors.ecoceGreen,
             foregroundColor: Colors.white,
             elevation: 2,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -121,9 +119,9 @@ class BioWayApp extends StatelessWidget {
         // Configuración de botones con borde
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
-            foregroundColor: BioWayColors.primaryGreen,
+            foregroundColor: BioWayColors.ecoceGreen,
             side: const BorderSide(
-              color: BioWayColors.primaryGreen,
+              color: BioWayColors.ecoceGreen,
               width: 2,
             ),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -148,7 +146,7 @@ class BioWayApp extends StatelessWidget {
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(
-              color: BioWayColors.primaryGreen,
+              color: BioWayColors.ecoceGreen,
               width: 2,
             ),
           ),
@@ -170,17 +168,17 @@ class BioWayApp extends StatelessWidget {
           headlineLarge: TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.bold,
-            color: BioWayColors.darkGreen,
+            color: BioWayColors.ecoceDark,
           ),
           headlineMedium: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: BioWayColors.darkGreen,
+            color: BioWayColors.ecoceDark,
           ),
           headlineSmall: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: BioWayColors.darkGreen,
+            color: BioWayColors.ecoceDark,
           ),
           bodyLarge: TextStyle(
             fontSize: 16,
@@ -193,7 +191,7 @@ class BioWayApp extends StatelessWidget {
           labelLarge: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: BioWayColors.darkGreen,
+            color: BioWayColors.ecoceDark,
           ),
         ),
 
@@ -205,9 +203,9 @@ class BioWayApp extends StatelessWidget {
 
         // Configuración de colores
         colorScheme: ColorScheme.fromSeed(
-          seedColor: BioWayColors.primaryGreen,
-          primary: BioWayColors.primaryGreen,
-          secondary: BioWayColors.mediumGreen,
+          seedColor: BioWayColors.ecoceGreen,
+          primary: BioWayColors.ecoceGreen,
+          secondary: BioWayColors.ecoceLight,
           error: BioWayColors.error,
           surface: Colors.white,
         ),
@@ -271,8 +269,7 @@ class BioWayApp extends StatelessWidget {
         // Rutas de Transformador
         '/transformador_inicio': (context) => const TransformadorMainScreen(initialIndex: 0),
         '/transformador_produccion': (context) {
-          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-          return TransformadorMainScreen(
+          return const TransformadorMainScreen(
             initialIndex: 1,
           );
         },

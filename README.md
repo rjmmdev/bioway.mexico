@@ -1,4 +1,4 @@
-# BioWay México - Sistema de Trazabilidad de Reciclaje
+# ECOCE - Sistema de Trazabilidad de Reciclaje
 
 <div align="center">
   <h3>Sistema completo de trazabilidad para materiales reciclables en México</h3>
@@ -14,13 +14,12 @@
 
 ## 📋 Descripción
 
-BioWay México es una aplicación móvil Flutter que proporciona trazabilidad completa para materiales reciclables a través de toda la cadena de suministro. Utiliza códigos QR para el seguimiento en tiempo real y soporta múltiples tipos de usuarios con flujos de trabajo específicos.
+ECOCE Trazabilidad es una aplicación móvil Flutter que proporciona trazabilidad completa para materiales reciclables a través de toda la cadena de suministro. Utiliza códigos QR para el seguimiento en tiempo real y soporta múltiples tipos de usuarios con flujos de trabajo específicos.
 
 ### Estado del Proyecto
 - **Versión**: 1.0.0+1
 - **Plataforma ECOCE**: ✅ En producción
-- **Plataforma BioWay**: ⏳ Pendiente configuración Firebase
-- **Última actualización**: 2025-01-26
+- **Última actualización**: 2025-08-08
 
 ## ✨ Características
 
@@ -40,7 +39,7 @@ BioWay México es una aplicación móvil Flutter que proporciona trazabilidad co
 7. **Repositorio** (Visualización completa - solo lectura)
 
 ### Características Técnicas
-- **Multi-tenant Firebase** para separación de plataformas
+- **Firebase dedicado** para ECOCE
 - **Compresión automática** de imágenes (50KB) y PDFs (5MB)
 - **Firmas digitales** con captura y almacenamiento seguro
 - **Cálculo dinámico de pesos** con sustracción automática de muestras

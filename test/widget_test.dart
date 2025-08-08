@@ -11,16 +11,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:app/main.dart';
 
 void main() {
-  testWidgets('BioWay app starts with splash screen', (WidgetTester tester) async {
+  testWidgets('ECOCE app starts with splash screen', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const BioWayApp());
+    await tester.pumpWidget(const EcoceApp());
 
-    // Verify that the splash screen shows the BioWay text
-    expect(find.text('BioWay'), findsOneWidget);
-    expect(find.text('MÉXICO'), findsOneWidget);
-
-    // Verify that the eco icon is present
-    expect(find.byIcon(Icons.eco), findsOneWidget);
+    // Verify that the splash screen shows the ECOCE text
+    expect(find.text('Sistema de Trazabilidad'), findsOneWidget);
+    expect(find.text('Ecología y Compromiso Empresarial'), findsOneWidget);
 
     // Verify loading text
     expect(find.text('Iniciando...'), findsOneWidget);

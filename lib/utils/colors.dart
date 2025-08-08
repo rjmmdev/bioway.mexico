@@ -1,39 +1,39 @@
 import 'package:flutter/material.dart';
 
-/// Clase que contiene todos los colores utilizados en la aplicación BioWay
+/// Clase que contiene todos los colores utilizados en la aplicación ECOCE
 class BioWayColors {
   // Constructor privado para evitar instanciación
   BioWayColors._();
 
-  // ===== COLORES PRINCIPALES DE BIOWAY (BASADOS EN XML) =====
+  // ===== COLORES PRINCIPALES (Mantenidos para compatibilidad) =====
 
-  /// Verde principal de la marca BioWay - desde background_1.xml
+  /// Verde principal
   static const Color primaryGreen = Color(0xFF70D997);
 
-  /// Verde oscuro para textos y elementos destacados - desde background_1.xml
+  /// Verde oscuro para textos y elementos destacados
   static const Color darkGreen = Color(0xFF3DB388);
 
-  /// Verde más oscuro para textos importantes - desde background_3.xml
+  /// Verde más oscuro para textos importantes
   static const Color deepGreen = Color(0xFF00896F);
 
-  /// Verde claro para fondos y elementos sutiles - desde background_2.xml
+  /// Verde claro para fondos y elementos sutiles
   static const Color lightGreen = Color(0xFFA3FFA6);
 
-  /// Verde medio - desde background_11.xml
+  /// Verde medio
   static const Color mediumGreen = Color(0xFF90EE80);
 
-  /// Verde agua pastel - desde background_11.xml
+  /// Verde agua pastel
   static const Color aquaGreen = Color(0xFFC3FACC);
 
-  /// Turquesa brillante - desde background_11.xml y otros
+  /// Turquesa brillante
   static const Color turquoise = Color(0xFF3FD9FF);
 
   /// Verde lima brillante para acentos
   static const Color limeGreen = Color(0xFF90EE80);
 
-  // ===== COLORES DE ECOCE (BASADOS EN XML) =====
+  // ===== COLORES DE ECOCE =====
 
-  /// Verde característico de ECOCE - basado en colores XML
+  /// Verde característico de ECOCE
   static const Color ecoceGreen = Color(0xFF1EA24D);
 
   /// Verde claro de ECOCE para fondos
@@ -42,53 +42,53 @@ class BioWayColors {
   /// Verde oscuro de ECOCE para textos
   static const Color ecoceDark = Color(0xFF00896F);
 
-  // ===== COLOR DEL INDICADOR DE SWITCH (BASADO EN XML) =====
+  // ===== COLORES DE INTERFAZ =====
 
-  /// Turquesa para el indicador de cambio de plataforma - desde background_11.xml
+  /// Turquesa para elementos destacados
   static const Color switchBlue = Color(0xFF3FD9FF);
 
-  /// Azul medio para estados hover del switch - desde background_22.xml
+  /// Azul medio para estados hover
   static const Color switchBlueLight = Color(0xFF1F97E7);
 
-  /// Morado para elementos especiales - desde background_22.xml
+  /// Morado para elementos especiales
   static const Color switchPurple = Color(0xFF6957BD);
 
-  // ===== GRADIENTES BASADOS EN XML =====
+  // ===== GRADIENTES =====
 
-  /// Gradiente principal de fondo - desde background_11.xml
+  /// Gradiente principal de fondo
   static const List<Color> backgroundGradient = [
     Color(0xFF90EE80), // Verde lime
     Color(0xFFC3FACC), // Verde agua pastel
     Color(0xFF3FD9FF), // Turquesa brillante
   ];
 
-  /// Gradiente suave verde - desde background_1.xml
+  /// Gradiente suave verde
   static const List<Color> softGradient = [
     Color(0xFF3DB388), // Verde oscuro
     Color(0xFF70D997), // Verde principal
   ];
 
-  /// Gradiente verde claro - desde background_2.xml
+  /// Gradiente verde claro
   static const List<Color> accentGradient = [
     Color(0xFF70D997), // Verde principal
     Color(0xFFA3FFA6), // Verde claro
   ];
 
-  /// Gradiente turquesa-morado - desde background_22.xml
+  /// Gradiente turquesa-morado
   static const List<Color> aquaGradient = [
     Color(0xFF3FD9FF), // Turquesa brillante
     Color(0xFF1F97E7), // Azul medio
     Color(0xFF6957BD), // Morado
   ];
 
-  /// Gradiente principal inverso - desde background_33.xml
+  /// Gradiente principal inverso
   static const List<Color> mainGradient = [
     Color(0xFF3FD9FF), // Turquesa brillante
     Color(0xFFC3FACC), // Verde agua pastel
     Color(0xFF90EE80), // Verde lime
   ];
 
-  /// Gradiente cálido - desde background_3.xml
+  /// Gradiente cálido
   static const List<Color> warmGradient = [
     Color(0xFFF4DF9E), // Amarillo suave
     Color(0xFF00896F), // Verde profundo

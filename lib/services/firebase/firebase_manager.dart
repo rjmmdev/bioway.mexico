@@ -99,7 +99,7 @@ class FirebaseManager {
 /// Enumeración de las plataformas disponibles
 enum FirebasePlatform {
   ecoce('ECOCE'),
-  bioway('BioWay');
+  bioway('BioWay'); // Mantenido para compatibilidad pero redirige a ECOCE
 
   final String name;
   const FirebasePlatform(this.name);
