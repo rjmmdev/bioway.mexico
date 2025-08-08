@@ -22,7 +22,7 @@ class PhotoEvidenceWidget extends StatefulWidget {
   const PhotoEvidenceWidget({
     super.key,
     this.title = 'Evidencia Fotográfica',
-    this.maxPhotos = 5,
+    this.maxPhotos = 3,
     this.minPhotos = 1,
     this.isRequired = false,
     required this.onPhotosChanged,
@@ -603,7 +603,7 @@ class PhotoEvidenceFormField extends StatelessWidget {
   const PhotoEvidenceFormField({
     super.key,
     this.title = 'Evidencia Fotográfica',
-    this.maxPhotos = 5,
+    this.maxPhotos = 3,
     this.minPhotos = 1,
     this.isRequired = false,
     required this.onPhotosChanged,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../models/lotes/transformacion_model.dart';
 import '../../../../utils/colors.dart';
 import '../../shared/utils/material_utils.dart';
+// Widget actualizado - cambios aplicados
 
 /// Tarjeta de transformación (megalote) específica del transformador
 class TransformacionCardTransformador extends StatelessWidget {
@@ -24,9 +25,14 @@ class TransformacionCardTransformador extends StatelessWidget {
     // Obtener datos específicos del transformador
     final datosAdicionales = transformacion.datos;
     final pesoSalida = datosAdicionales['peso_salida'] ?? transformacion.pesoTotalEntrada;
-    final cantidadProducto = datosAdicionales['cantidad_producto'] ?? 0;
     final productoFabricado = datosAdicionales['producto_fabricado'] ?? '';
     final merma = transformacion.mermaProceso;
+    
+    // Debug: Log para verificar los datos
+    print('[TransformacionCard] ID: ${transformacion.id}');
+    print('[TransformacionCard] peso_salida: $pesoSalida');
+    print('[TransformacionCard] producto_fabricado: "$productoFabricado"');
+    print('[TransformacionCard] datosAdicionales keys: ${datosAdicionales.keys.toList()}');
     
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -105,96 +111,78 @@ class TransformacionCardTransformador extends StatelessWidget {
                 ],
               ),
               
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               
-              // Información de peso - Adaptativa con Wrap
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              // DEBUG: Texto de prueba para verificar actualización
+              // Container(
+              //   padding: EdgeInsets.all(8),
+              //   color: Colors.red.withValues(alpha: 0.2),
+              //   child: Text('WIDGET ACTUALIZADO - CAMBIOS APLICADOS', style: TextStyle(color: Colors.red)),
+              // ),
+              
+              // Información de peso y producto en la misma fila compacta
+              Row(
                 children: [
-                  _buildInfoChip(
-                    icon: Icons.scale,
-                    label: 'Entrada',
-                    value: '${transformacion.pesoTotalEntrada.toStringAsFixed(2)} kg',
-                    color: Colors.blue,
-                  ),
-                  _buildInfoChip(
-                    icon: Icons.output,
-                    label: 'Salida',
-                    value: '${pesoSalida.toStringAsFixed(2)} kg',
-                    color: Colors.orange,
-                  ),
-                  if (merma > 0)
-                    _buildInfoChip(
-                      icon: Icons.trending_down,
-                      label: 'Merma',
-                      value: '${merma.toStringAsFixed(2)} kg',
-                      color: Colors.red,
+                  // Peso de salida
+                  Expanded(
+                    flex: productoFabricado.isNotEmpty ? 3 : 5,
+                    child: _buildInfoChip(
+                      icon: Icons.output,
+                      label: 'Salida',
+                      value: '${pesoSalida.toStringAsFixed(2)} kg',
+                      color: Colors.orange,
                     ),
-                ],
-              ),
-              
-              // Producto fabricado y cantidad - Adaptativo con Wrap
-              if (productoFabricado.isNotEmpty || cantidadProducto > 0) ...[
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    if (productoFabricado.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  ),
+                  if (productoFabricado.isNotEmpty) ...[
+                    const SizedBox(width: 6),
+                    // Producto fabricado
+                    Expanded(
+                      flex: 4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.deepOrange.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.factory, size: 16, color: Colors.deepOrange),
-                            const SizedBox(width: 6),
+                            const Icon(Icons.factory, size: 14, color: Colors.deepOrange),
+                            const SizedBox(width: 3),
                             Flexible(
                               child: Text(
                                 productoFabricado,
                                 style: const TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.deepOrange,
                                 ),
                                 overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    if (cantidadProducto > 0)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.inventory_2, size: 16, color: Colors.green),
-                            const SizedBox(width: 6),
-                            Text(
-                              '${cantidadProducto.toStringAsFixed(0)} unidades',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.green,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    ),
                   ],
-                ),
-              ],
+                  if (merma > 0) ...[
+                    const SizedBox(width: 6),
+                    // Merma
+                    Expanded(
+                      flex: 3,
+                      child: _buildInfoChip(
+                        icon: Icons.trending_down,
+                        label: 'Merma',
+                        value: '${merma.toStringAsFixed(2)} kg',
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
               
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               
               // Composición de materiales con porcentajes
               Column(
@@ -394,31 +382,26 @@ class TransformacionCardTransformador extends StatelessWidget {
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 11,
-              color: color,
-              fontWeight: FontWeight.bold,
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 3),
+          Flexible(
+            child: Text(
+              '$label: $value',
+              style: TextStyle(
+                fontSize: 10,
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
         ],

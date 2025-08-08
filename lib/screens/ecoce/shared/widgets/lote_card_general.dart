@@ -127,48 +127,16 @@ class LoteCardGeneral extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                esSublote 
-                                  ? 'SUBLOTE: ${lote.id.substring(0, 8).toUpperCase()}'
-                                  : 'ID: ${lote.id.substring(0, 8).toUpperCase()}',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: 'monospace',
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (esSublote) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.purple.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.cut, size: 12, color: Colors.purple),
-                                    SizedBox(width: 2),
-                                    Text(
-                                      'Derivado',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.purple,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ],
+                        Text(
+                          esSublote 
+                            ? 'SUBLOTE: ${lote.id.substring(0, 8).toUpperCase()}'
+                            : 'ID: ${lote.id.substring(0, 8).toUpperCase()}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'monospace',
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                         if (statusText != null)
                           Text(

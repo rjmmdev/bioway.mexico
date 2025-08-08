@@ -373,7 +373,7 @@ class _LaboratorioTomaMuestraScreenState extends State<LaboratorioTomaMuestraScr
         const SizedBox(height: 8),
         PhotoEvidenceFormField(
           title: '',
-          maxPhotos: 5,
+          maxPhotos: 3,
           minPhotos: 0,
           isRequired: false,
           onPhotosChanged: (photos) {

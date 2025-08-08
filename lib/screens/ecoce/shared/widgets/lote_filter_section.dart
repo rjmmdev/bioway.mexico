@@ -82,7 +82,7 @@ class LoteFilterSection extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               child: Row(
-                children: ['Todos', 'PEBD', 'PP', 'Multilaminado'].map((material) {
+                children: ['Todos', 'POLI', 'PP', 'Multilaminado'].map((material) {
                   final isSelected = selectedMaterial == material;
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),

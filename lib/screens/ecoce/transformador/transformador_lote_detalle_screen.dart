@@ -97,6 +97,54 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 360;
     
+    // Para textos muy largos, usar diseño en columna
+    final bool useColumnLayout = value.length > 30 || label.contains('polímero');
+    
+    if (useColumnLayout) {
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: UIConstants.spacing8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (icon != null) ...[
+                  Icon(
+                    icon,
+                    size: isSmallScreen ? 18 : 20,
+                    color: _primaryColor,
+                  ),
+                  SizedBox(width: UIConstants.spacing8),
+                ],
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 13 : 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: UIConstants.spacing4),
+            Padding(
+              padding: EdgeInsets.only(left: icon != null ? 28 : 0),
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: isSmallScreen ? 13 : 14,
+                  color: Colors.black87,
+                ),
+                softWrap: true,
+                overflow: TextOverflow.visible,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Diseño en fila para textos cortos
     return Padding(
       padding: EdgeInsets.symmetric(vertical: UIConstants.spacing8),
       child: Row(
@@ -110,8 +158,8 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
             ),
             SizedBox(width: UIConstants.spacing8),
           ],
-          SizedBox(
-            width: isSmallScreen ? 100 : 120,
+          Flexible(
+            flex: 2,
             child: Text(
               label,
               style: TextStyle(
@@ -121,7 +169,9 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
               ),
             ),
           ),
+          SizedBox(width: UIConstants.spacing8),
           Expanded(
+            flex: 3,
             child: Text(
               value,
               style: TextStyle(
@@ -130,6 +180,7 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
               ),
               softWrap: true,
               overflow: TextOverflow.visible,
+              textAlign: TextAlign.end,
             ),
           ),
         ],
@@ -305,6 +356,8 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
                                         fontWeight: FontWeight.bold,
                                         color: Colors.black87,
                                       ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
                                     ),
                                     SizedBox(height: UIConstants.spacing4),
                                     Text(
@@ -313,6 +366,8 @@ class _TransformadorLoteDetalleScreenState extends State<TransformadorLoteDetall
                                         fontSize: UIConstants.fontSizeMedium,
                                         color: Colors.grey[600],
                                       ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
                                     ),
                                   ],
                                 ),

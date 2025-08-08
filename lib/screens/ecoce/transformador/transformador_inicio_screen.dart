@@ -7,17 +7,17 @@ import '../../../utils/ui_constants.dart';
 import '../../../services/user_session_service.dart';
 import '../../../services/lote_service.dart';
 import '../../../services/lote_unificado_service.dart';
+import '../../../services/transformacion_service.dart';
 import '../../../models/ecoce/ecoce_profile_model.dart';
 import '../../../models/lotes/lote_transformador_model.dart';
-import '../shared/widgets/ecoce_bottom_navigation.dart';
+import '../../../models/lotes/transformacion_model.dart';
 import '../shared/widgets/unified_stat_card.dart';
 import '../shared/utils/material_utils.dart';
-import '../shared/utils/user_type_helper.dart';
 import 'transformador_lote_detalle_screen.dart';
-import '../shared/screens/usuario_qr_screen.dart';
 import '../shared/screens/receptor_recepcion_pasos_screen.dart';
 import 'utils/transformador_navigation_helper.dart';
 import 'transformador_main_screen.dart';
+import 'transformador_produccion_screen.dart';
 
 class TransformadorInicioScreen extends StatefulWidget {
   const TransformadorInicioScreen({super.key});
@@ -30,6 +30,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
   final UserSessionService _sessionService = UserSessionService();
   final LoteService _loteService = LoteService();
   final LoteUnificadoService _loteUnificadoService = LoteUnificadoService();
+  final TransformacionService _transformacionService = TransformacionService();
   final int _selectedIndex = 0;
   
   EcoceProfileModel? _userProfile;
@@ -40,8 +41,8 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
   int _productosCreados = 0;
   double _materialProcesado = 0.0; // en toneladas
   
-  // Stream para lotes
-  Stream<List<LoteTransformadorModel>>? _lotesStream;
+  // Stream para megalotes
+  Stream<List<TransformacionModel>>? _megalotesStream;
 
   void _navigateToRecibirLotes() {
     HapticFeedback.lightImpact();
@@ -182,6 +183,250 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
   Widget _buildLoteCardFromModel(LoteTransformadorModel lote) {
     final loteMap = _loteToMap(lote);
     return _buildLoteCard(loteMap, lote);
+  }
+
+  void _navigateToMegaloteDetail(TransformacionModel megalote) {
+    HapticFeedback.lightImpact();
+    
+    // Determinar el tab basado en el estado del megalote
+    // Tab 0: Salida, Tab 1: Documentación, Tab 2: Completados
+    int targetTab = 1; // Por defecto documentación
+    if (megalote.estado == 'completado' || megalote.estado == 'completada') {
+      targetTab = 2; // Tab de completados
+    } else if (megalote.estado == 'documentacion' || megalote.estado == 'documentada') {
+      targetTab = 1; // Tab de documentación
+    } else if (megalote.estado == 'en_proceso') {
+      targetTab = 1; // Tab de documentación (los en proceso también van aquí)
+    }
+    
+    // Navegar a la pantalla principal con el índice 1 (Producción)
+    // y pasar el tab específico como argumento
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => TransformadorMainScreen(
+          initialIndex: 1, // Índice 1 es la pantalla de Producción
+        ),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+        settings: RouteSettings(
+          arguments: {
+            'initialTab': targetTab, // Pasar el tab específico
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMegaloteCard(TransformacionModel megalote) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 360;
+    
+    // Determinar el color basado en el estado
+    Color estadoColor = Colors.orange;
+    String estadoText = 'DOCUMENTACIÓN';
+    IconData estadoIcon = Icons.description;
+    
+    if (megalote.estado == 'completado') {
+      estadoColor = BioWayColors.success;
+      estadoText = 'COMPLETADO';
+      estadoIcon = Icons.check_circle;
+    } else if (megalote.estado == 'en_proceso') {
+      estadoColor = Colors.blue;
+      estadoText = 'EN PROCESO';
+      estadoIcon = Icons.settings;
+    }
+    
+    // Obtener el material predominante desde los lotes de entrada
+    String materialPredominante = 'Mixto';
+    Color materialColor = Colors.grey;
+    if (megalote.lotesEntrada.isNotEmpty) {
+      // Agrupar por tipo de material y sumar pesos
+      Map<String, double> materialesPorPeso = {};
+      for (var lote in megalote.lotesEntrada) {
+        String material = lote.tipoMaterial.replaceAll('EPF-', '');
+        materialesPorPeso[material] = (materialesPorPeso[material] ?? 0) + lote.peso;
+      }
+      // Encontrar el material con mayor peso
+      if (materialesPorPeso.isNotEmpty) {
+        final materialEntry = materialesPorPeso.entries
+            .reduce((a, b) => a.value > b.value ? a : b);
+        materialPredominante = materialEntry.key;
+        materialColor = MaterialUtils.getMaterialColor(materialPredominante);
+      }
+    }
+    
+    return Container(
+      margin: EdgeInsets.only(bottom: UIConstants.spacing12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _navigateToMegaloteDetail(megalote),
+          borderRadius: BorderRadiusConstants.borderRadiusMedium,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadiusConstants.borderRadiusMedium,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow + 0.01),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(isCompact ? UIConstants.spacing12 : UIConstants.spacing16),
+              child: Row(
+                children: [
+                  // Icono del megalote
+                  Container(
+                    width: isCompact ? 42 : 48,
+                    height: isCompact ? 42 : 48,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          estadoColor.withValues(alpha: UIConstants.opacityMedium),
+                          estadoColor.withValues(alpha: UIConstants.opacityLow),
+                        ],
+                      ),
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
+                    ),
+                    child: Icon(
+                      Icons.hub,
+                      color: estadoColor,
+                      size: isCompact ? 20 : 24,
+                    ),
+                  ),
+                  SizedBox(width: isCompact ? 12 : 16),
+                  // Información del megalote
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Primera línea: ID y estado
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                'Megalote ${megalote.id.substring(0, 8)}...',
+                                style: TextStyle(
+                                  fontSize: isCompact ? 13 : 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            SizedBox(width: UIConstants.spacing8),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isCompact ? UIConstants.spacing4 + 2 : UIConstants.spacing8,
+                                vertical: isCompact ? UIConstants.spacing4 / 2 : UIConstants.spacing4 - 1,
+                              ),
+                              decoration: BoxDecoration(
+                                color: estadoColor.withValues(alpha: UIConstants.opacityLow),
+                                borderRadius: BorderRadius.circular(UIConstants.radiusSmall),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    estadoIcon,
+                                    size: isCompact ? 10 : 11,
+                                    color: estadoColor,
+                                  ),
+                                  SizedBox(width: UIConstants.spacing4),
+                                  Text(
+                                    estadoText,
+                                    style: TextStyle(
+                                      fontSize: isCompact ? 10 : 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: estadoColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: UIConstants.spacing4 + 2),
+                        // Segunda línea: Información del producto
+                        if (megalote.datosAdicionales['producto_fabricado'] != null && 
+                            megalote.datosAdicionales['producto_fabricado'].toString().isNotEmpty)
+                          Text(
+                            megalote.datosAdicionales['producto_fabricado'].toString(),
+                            style: TextStyle(
+                              fontSize: isCompact ? 13 : 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          )
+                        else
+                          Text(
+                            '${megalote.lotesEntrada.length} lotes agrupados',
+                            style: TextStyle(
+                              fontSize: isCompact ? 13 : 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        SizedBox(height: UIConstants.spacing4),
+                        // Tercera línea: Chips informativos
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
+                            _buildCompactChip(
+                              Icons.scale_outlined,
+                              '${megalote.pesoTotalEntrada.toStringAsFixed(1)} kg',
+                              Colors.blue,
+                              isCompact,
+                            ),
+                            _buildCompactChip(
+                              Icons.category,
+                              materialPredominante,
+                              materialColor,
+                              isCompact,
+                            ),
+                            if (megalote.datosAdicionales['cantidad_producto'] != null && 
+                                (megalote.datosAdicionales['cantidad_producto'] as num) > 0)
+                              _buildCompactChip(
+                                Icons.inventory_2,
+                                '${megalote.datosAdicionales['cantidad_producto']} unidades',
+                                Colors.purple,
+                                isCompact,
+                              ),
+                            _buildCompactChip(
+                              Icons.calendar_today_outlined,
+                              FormatUtils.formatDate(megalote.fechaInicio),
+                              Colors.orange,
+                              isCompact,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Flecha de navegación
+                  SizedBox(width: isCompact ? 8 : 12),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.grey[400],
+                    size: isCompact ? 16 : 18,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildLoteCard(Map<String, dynamic> lote, [LoteTransformadorModel? loteModel]) {
@@ -526,12 +771,13 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
   void initState() {
     super.initState();
     _loadUserProfile();
-    _setupLotesStream();
+    _setupMegalotesStream();
     _loadStatistics();
   }
   
-  void _setupLotesStream() {
-    _lotesStream = _loteService.getLotesTransformador();
+  void _setupMegalotesStream() {
+    // Obtener megalotes del transformador en estados documentacion y completado
+    _megalotesStream = _transformacionService.obtenerTransformacionesTransformadorActivo();
   }
   
   Future<void> _loadStatistics() async {
@@ -927,9 +1173,9 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                         
                         SizedBox(height: UIConstants.spacing24),
                         
-                        // Sección Lotes en Proceso
+                        // Sección Megalotes en Proceso
                         const Text(
-                          'Lotes en Proceso',
+                          'Megalotes en Proceso',
                           style: TextStyle(
                             fontSize: UIConstants.fontSizeLarge,
                             fontWeight: FontWeight.bold,
@@ -938,9 +1184,9 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                         ),
                         SizedBox(height: UIConstants.spacing16),
                         
-                        // Lista de lotes con StreamBuilder
-                        StreamBuilder<List<LoteTransformadorModel>>(
-                          stream: _lotesStream,
+                        // Lista de megalotes con StreamBuilder
+                        StreamBuilder<List<TransformacionModel>>(
+                          stream: _megalotesStream,
                           builder: (context, snapshot) {
                             if (snapshot.connectionState == ConnectionState.waiting) {
                               return Center(
@@ -960,13 +1206,13 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                                   child: Column(
                                     children: [
                                       Icon(
-                                        Icons.inbox_outlined,
+                                        Icons.hub_outlined,
                                         size: 64,
                                         color: Colors.grey[300],
                                       ),
                                       SizedBox(height: UIConstants.spacing16),
                                       Text(
-                                        'No hay lotes en proceso',
+                                        'No hay megalotes en proceso',
                                         style: TextStyle(
                                           fontSize: UIConstants.fontSizeBody,
                                           color: Colors.grey[600],
@@ -974,7 +1220,7 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                                       ),
                                       SizedBox(height: UIConstants.spacing8),
                                       Text(
-                                        'Escanea un código QR para comenzar',
+                                        'Recibe lotes para crear megalotes',
                                         style: TextStyle(
                                           fontSize: UIConstants.fontSizeMedium,
                                           color: Colors.grey[400],
@@ -986,9 +1232,9 @@ class _TransformadorInicioScreenState extends State<TransformadorInicioScreen> {
                               );
                             }
                             
-                            final lotes = snapshot.data!;
+                            final megalotes = snapshot.data!;
                             return Column(
-                              children: lotes.map((lote) => _buildLoteCardFromModel(lote)).toList(),
+                              children: megalotes.map((megalote) => _buildMegaloteCard(megalote)).toList(),
                             );
                           },
                         ),

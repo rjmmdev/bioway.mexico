@@ -111,19 +111,76 @@ class LoteUnificadoModel {
   
   /// Obtener el peso actual del lote según el último proceso
   double get pesoActual {
-    // Retornar el peso del proceso más reciente
-    if (transformador != null) {
-      // Ahora pesoSalida ya tiene el fallback correcto desde el modelo
-      return transformador!.pesoSalida ?? transformador!.pesoEntrada;
+    final proceso = datosGenerales.procesoActual;
+    
+    // TRANSFORMADOR: Prioriza SU peso procesado/recibido
+    if (proceso == 'transformador') {
+      // Primero buscar el peso que el transformador registró
+      if (transformador != null && transformador!.pesoSalida != null && transformador!.pesoSalida! > 0) {
+        // Este es el peso neto aprovechable que el transformador tiene disponible
+        return transformador!.pesoSalida!;
+      }
+      
+      // Fallback: Si no hay datos del transformador, usar peso del reciclador
+      if (reciclador != null) {
+        double pesoReciclador = reciclador!.pesoProcesado ?? reciclador!.pesoEntrada ?? 0;
+        // Restar muestras de laboratorio si las hay
+        double pesoMuestras = analisisLaboratorio.fold(0.0, 
+          (sum, analisis) => sum + analisis.pesoMuestra
+        );
+        final pesoNeto = pesoReciclador - pesoMuestras;
+        if (pesoNeto > 0) return pesoNeto;
+      }
+      
+      // Fallback: buscar en transporte fase_2
+      if (transporteFases.containsKey('fase_2')) {
+        final fase2 = transporteFases['fase_2']!;
+        final pesoTransporte = fase2.pesoEntregado ?? fase2.pesoRecogido ?? 0;
+        if (pesoTransporte > 0) return pesoTransporte;
+      }
+      
+      // Último fallback: datos generales
+      if (datosGenerales.peso > 0) return datosGenerales.peso;
+      if (datosGenerales.pesoInicial > 0) return datosGenerales.pesoInicial;
     }
     
-    // Verificar fase_2 de transporte (reciclador -> transformador)
-    if (transporteFases.containsKey('fase_2')) {
-      final fase2 = transporteFases['fase_2']!;
-      return fase2.pesoEntregado ?? fase2.pesoRecogido;
+    // TRANSPORTE: Usa el peso que está transportando (del proceso anterior)
+    if (proceso == 'transporte') {
+      // Determinar qué fase de transporte es
+      final fase = determinarFaseTransporte();
+      
+      if (fase == 'fase_2') {
+        // Transportando desde reciclador hacia transformador
+        if (reciclador != null) {
+          double pesoReciclador = reciclador!.pesoProcesado ?? reciclador!.pesoEntrada ?? 0;
+          // Restar muestras de laboratorio si las hay
+          double pesoMuestras = analisisLaboratorio.fold(0.0, 
+            (sum, analisis) => sum + analisis.pesoMuestra
+          );
+          return pesoReciclador - pesoMuestras;
+        }
+      } else if (fase == 'fase_1') {
+        // Transportando desde origen hacia reciclador
+        if (origen != null && origen!.pesoNace > 0) {
+          return origen!.pesoNace;
+        }
+      }
+      
+      // Fallback: verificar las fases de transporte directamente
+      if (transporteFases.containsKey('fase_2')) {
+        final fase2 = transporteFases['fase_2']!;
+        final pesoTransporte = fase2.pesoRecogido ?? 0;
+        if (pesoTransporte > 0) return pesoTransporte;
+      }
+      if (transporteFases.containsKey('fase_1')) {
+        final fase1 = transporteFases['fase_1']!;
+        final pesoTransporte = fase1.pesoRecogido ?? 0;
+        if (pesoTransporte > 0) return pesoTransporte;
+      }
     }
     
-    if (reciclador != null) {
+    // RECICLADOR: Usa su peso procesado
+    if (proceso == 'reciclador' && reciclador != null) {
       // Si hay análisis de laboratorio, restar el peso de las muestras
       double pesoReciclador = reciclador!.pesoProcesado ?? reciclador!.pesoEntrada;
       double pesoMuestras = analisisLaboratorio.fold(0.0, 
@@ -132,14 +189,24 @@ class LoteUnificadoModel {
       return pesoReciclador - pesoMuestras;
     }
     
+    // ORIGEN: Usa su peso inicial
+    if (proceso == 'origen' && origen != null && origen!.pesoNace > 0) {
+      return origen!.pesoNace;
+    }
+    
+    // FALLBACK GENERAL: Para cualquier otro caso
     // Verificar fase_1 de transporte (origen -> reciclador)
     if (transporteFases.containsKey('fase_1')) {
       final fase1 = transporteFases['fase_1']!;
-      return fase1.pesoEntregado ?? fase1.pesoRecogido;
+      final pesoTransporte = fase1.pesoEntregado ?? fase1.pesoRecogido;
+      if (pesoTransporte > 0) return pesoTransporte;
     }
     
-    if (origen != null) return origen!.pesoNace;
-    return datosGenerales.pesoInicial;
+    // Si hay origen, usar su peso
+    if (origen != null && origen!.pesoNace > 0) return origen!.pesoNace;
+    
+    // Fallback final a datos generales
+    return datosGenerales.peso ?? datosGenerales.pesoActual ?? datosGenerales.pesoNace ?? datosGenerales.pesoInicial ?? 0;
   }
   
   /// Obtener la merma total acumulada
@@ -261,8 +328,8 @@ class DatosGeneralesLote {
       fechaCreacion: (map['fecha_creacion'] as Timestamp).toDate(),
       creadoPor: map['creado_por'] ?? '',
       tipoMaterial: map['tipo_material'] ?? '',
-      pesoInicial: (map['peso_inicial'] ?? 0.0).toDouble(),
-      peso: (map['peso'] ?? map['peso_inicial'] ?? 0.0).toDouble(),
+      pesoInicial: (map['peso_inicial'] ?? map['peso_nace'] ?? map['peso'] ?? 0.0).toDouble(),
+      peso: (map['peso'] ?? map['peso_actual'] ?? map['peso_inicial'] ?? map['peso_nace'] ?? 0.0).toDouble(),
       estadoActual: map['estado_actual'] ?? '',
       procesoActual: map['proceso_actual'] ?? '',
       historialProcesos: List<String>.from(map['historial_procesos'] ?? []),
@@ -275,6 +342,10 @@ class DatosGeneralesLote {
       subloteOrigenId: map['sublote_origen_id'],
     );
   }
+  
+  // Getters de compatibilidad para peso
+  double get pesoNace => pesoInicial;
+  double get pesoActual => peso;
   
   Map<String, dynamic> toJson() {
     return {

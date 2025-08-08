@@ -46,17 +46,37 @@ class _TransformadorMainScreenState extends State<TransformadorMainScreen> {
     _selectedIndex = widget.initialIndex;
     _pageController = PageController(initialPage: _selectedIndex);
     _loadUserProfile();
-    _initializeScreens();
+  }
+  
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_screensInitialized) {
+      _initializeScreens();
+    }
   }
 
   void _initializeScreens() {
+    // Obtener argumentos de navegación si existen
+    final args = ModalRoute.of(context)?.settings.arguments;
+    int? produccionInitialTab;
+    
+    if (args is Map<String, dynamic> && args['initialTab'] != null) {
+      produccionInitialTab = args['initialTab'] as int;
+    }
+    
     _screens = [
       const TransformadorInicioScreen(),
-      const TransformadorProduccionScreen(),
+      TransformadorProduccionScreen(initialTab: produccionInitialTab),
       const EcoceAyudaScreen(showBottomNavigation: false),
       const EcocePerfilScreen(showBottomNavigation: false),
     ];
     _screensInitialized = true;
+    
+    // Forzar rebuild si es necesario
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _loadUserProfile() async {

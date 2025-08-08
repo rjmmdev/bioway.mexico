@@ -186,15 +186,8 @@ class TransformacionModel {
       muestrasLaboratorioIds: _convertirAListaString(data['muestras_laboratorio_ids'], 'muestras_laboratorio_ids'),
       tieneMuestraLaboratorio: data['tiene_muestra_laboratorio'] ?? false,
       pesoMuestrasTotal: _convertirADouble(data['peso_muestras_total'], 'peso_muestras_total'),
-      // Capturar todos los campos adicionales para transformador
-      datosAdicionales: {
-        'peso_salida': data['peso_salida'],
-        'cantidad_producto': data['cantidad_producto'],
-        'producto_fabricado': data['producto_fabricado'],
-        'compuesto_67': data['compuesto_67'],
-        'porcentaje_material_reciclado': data['porcentaje_material_reciclado'],
-        'tipo_polimero': data['tipo_polimero'],
-      },
+      // Capturar TODOS los campos adicionales para transformador
+      datosAdicionales: Map<String, dynamic>.from(data),
     );
   }
   
@@ -353,6 +346,9 @@ class TransformacionModel {
       // Ignore documentos_asociados errors
     }
     
+    // Recopilar todos los campos adicionales que no son parte de los campos principales
+    final datosAdicionales = Map<String, dynamic>.from(data);
+    
     return TransformacionModel(
       id: id,
       tipo: data['tipo'] ?? 'agrupacion_reciclador',
@@ -369,6 +365,7 @@ class TransformacionModel {
       usuarioFolio: data['usuario_folio']?.toString() ?? '',
       procesoAplicado: data['proceso_aplicado']?.toString(),
       observaciones: data['observaciones']?.toString(),
+      datosAdicionales: datosAdicionales, // IMPORTANTE: Pasar todos los datos adicionales
     );
   }
   

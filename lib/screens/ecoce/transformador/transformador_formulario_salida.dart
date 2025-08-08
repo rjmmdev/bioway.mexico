@@ -104,23 +104,15 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
   bool _esProcesamientoMultiple = false;
   double _pesoTotalOriginal = 0.0;
   
-  // Controladores para peso individual por lote (NUEVO)
-  final Map<String, TextEditingController> _pesosRecibidosControllers = {};
-  final Map<String, double> _mermasCalculadas = {};
-  final Map<String, double> _pesosBrutos = {}; // Para almacenar el peso original de cada lote
-  
-  // Totales calculados - Consistente con Reciclador
-  double _pesoNetoTotal = 0.0;
-  double _mermaTotalCalculada = 0.0;
+  // Ya no necesitamos controladores de pesos individuales
+  // El sistema usa solo la cantidad generada total
   
   // Controladores
-  final TextEditingController _pesoSalidaController = TextEditingController(); // Se mantendrá para compatibilidad
   final TextEditingController _operadorController = TextEditingController();
   final TextEditingController _comentariosController = TextEditingController();
   final TextEditingController _productoGeneradoController = TextEditingController();
   final TextEditingController _cantidadGeneradaController = TextEditingController();
-  final TextEditingController _mermaController = TextEditingController();
-  final TextEditingController _productoFabricadoController = TextEditingController();
+  // Merma no aplica en transformación - se agregan materiales
   final TextEditingController _compuestoController = TextEditingController();
   
   
@@ -162,6 +154,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
   bool _hasUnsavedChanges = false;
   List<String> _existingPhotoUrls = [];
   bool _hasImages = false;
+  bool _confirmaPorcentaje = false; // Para confirmar el porcentaje de material reciclado
 
   @override
   void initState() {
@@ -199,17 +192,10 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
 
   @override
   void dispose() {
-    // Limpiar controladores dinámicos
-    _pesosRecibidosControllers.forEach((_, controller) {
-      controller.dispose();
-    });
-    _pesoSalidaController.dispose();
     _operadorController.dispose();
     _comentariosController.dispose();
     _productoGeneradoController.dispose();
     _cantidadGeneradaController.dispose();
-    _mermaController.dispose();
-    _productoFabricadoController.dispose();
     _compuestoController.dispose();
     _scrollController.dispose();
     _operadorFocus.dispose();
@@ -220,10 +206,8 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
   }
   
   void _initializeForm() async {
-    final userData = _userSession.getUserData();
-    if (userData != null) {
-      _operadorController.text = userData['nombre'] ?? '';
-    }
+    // No inicializar el campo del operador con valor por defecto
+    // El usuario debe ingresar el nombre manualmente
     
     setState(() {
       _isLoading = true;
@@ -237,18 +221,36 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
       for (String loteId in _loteIds) {
         final lote = await _loteUnificadoService.obtenerLotePorId(loteId);
         if (lote != null) {
-          final pesoLote = lote.pesoActual;
+          print('[INIT] Cargando lote $loteId:');
+          print('  - pesoActual (getter): ${lote.pesoActual}');
+          print('  - datosGenerales.peso: ${lote.datosGenerales.peso}');
+          print('  - datosGenerales.pesoInicial: ${lote.datosGenerales.pesoInicial}');
+          print('  - reciclador != null: ${lote.reciclador != null}');
+          if (lote.reciclador != null) {
+            print('  - reciclador.pesoProcesado: ${lote.reciclador!.pesoProcesado}');
+            print('  - reciclador.pesoEntrada: ${lote.reciclador!.pesoEntrada}');
+          }
+          
+          double pesoLote = lote.pesoActual;
+          // Si pesoActual es 0, intentar obtenerlo directamente
+          if (pesoLote <= 0) {
+            print('[WARN] pesoActual es 0 en initState, intentando alternativas...');
+            if (lote.reciclador != null) {
+              pesoLote = lote.reciclador!.pesoProcesado ?? lote.reciclador!.pesoEntrada ?? 0;
+            }
+            if (pesoLote <= 0) {
+              pesoLote = lote.datosGenerales.peso;
+            }
+            if (pesoLote <= 0) {
+              pesoLote = lote.datosGenerales.pesoInicial;
+            }
+            print('[INFO] Peso alternativo encontrado: $pesoLote');
+          }
+          
           pesoTotal += pesoLote;
           tiposPolimero.add(lote.datosGenerales.tipoMaterial);
           
-          // Almacenar peso bruto original
-          _pesosBrutos[loteId] = pesoLote;
-          
-          // Crear controlador para este lote si es procesamiento múltiple
-          if (_esProcesamientoMultiple) {
-            _pesosRecibidosControllers[loteId] = TextEditingController();
-            _mermasCalculadas[loteId] = 0.0;
-          }
+          // Solo almacenamos el peso para el cálculo de composición
         }
       }
       
@@ -290,6 +292,10 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
       
       setState(() {
         _pesoTotalOriginal = pesoTotal;
+        print('[INIT] Peso total original establecido: $_pesoTotalOriginal');
+        if (_pesoTotalOriginal <= 0) {
+          print('[ERROR] Peso total es 0! Esto causará problemas en los filtros');
+        }
         if (_cantidadGeneradaController.text.isEmpty) {
           _cantidadGeneradaController.text = '0.00';
         }
@@ -346,10 +352,13 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
       }
       
       // Cargar campos de texto
-      _productoFabricadoController.text = data['producto_fabricado'] ?? '';
+      _productoGeneradoController.text = data['producto_fabricado'] ?? '';
       _compuestoController.text = data['compuesto_67'] ?? '';
       _cantidadGeneradaController.text = (data['cantidad_producto'] ?? _pesoTotalOriginal).toString();
       _comentariosController.text = data['observaciones'] ?? '';
+      
+      // Cargar confirmación del porcentaje si existe
+      _confirmaPorcentaje = data['confirma_porcentaje'] ?? false;
       
       // Cargar firma si existe
       if (data['firma_operador'] != null) {
@@ -366,12 +375,12 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
   }
   
   Future<void> _guardarBorrador() async {
-    // Validar que tengamos el peso de salida antes de guardar
-    if (_pesoSalidaController.text.isEmpty) {
+    // Validar que tengamos la cantidad generada antes de guardar
+    if (_cantidadGeneradaController.text.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Por favor ingrese el peso de salida antes de guardar'),
+            content: Text('Por favor ingrese la cantidad generada antes de guardar'),
             backgroundColor: Colors.orange,
             duration: Duration(seconds: 2),
           ),
@@ -469,6 +478,9 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
         final peso = lote.pesoActual;
         final porcentaje = pesoTotal > 0 ? (peso / pesoTotal) * 100 : 0;
         
+        // Debug: Ver qué material se está guardando
+        print('[Transformador] Agregando lote $loteId con material: ${lote.datosGenerales.tipoMaterial}');
+        
         lotesEntrada.add({
           'lote_id': loteId,
           'peso': peso,
@@ -478,10 +490,16 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
       }
     }
     
-    // Calcular merma
-    final pesoSalida = double.tryParse(_pesoSalidaController.text) ?? _pesoTotalOriginal;
+    // Debug: Mostrar resumen de materiales
+    print('[Transformador] Lotes entrada preparados: ${lotesEntrada.length}');
+    for (var entrada in lotesEntrada) {
+      print('[Transformador]   - ${entrada['lote_id']}: ${entrada['tipo_material']} (${entrada['peso']} kg, ${entrada['porcentaje'].toStringAsFixed(1)}%)');
+    }
+    
+    // Usar la cantidad generada como peso de salida (simplificado)
     final cantidadGenerada = double.tryParse(_cantidadGeneradaController.text) ?? 0;
-    final mermaProceso = _pesoTotalOriginal - pesoSalida;
+    final pesoSalida = cantidadGenerada; // La cantidad generada ES el peso de salida
+    // No hay merma en transformación - se crean nuevos productos con materiales adicionales
     
     final procesosSeleccionados = _procesosAplicados.entries
         .where((e) => e.value)
@@ -498,14 +516,15 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
       'peso_total_entrada': _pesoTotalOriginal,
       'peso_disponible': pesoSalida,
       'peso_salida': pesoSalida,
-      'merma_proceso': mermaProceso >= 0 ? mermaProceso : 0,
+      'merma_proceso': 0, // Sin merma en transformación - se agregan materiales
       'sublotes_generados': [],
       'documentos_asociados': {},
       'procesos_aplicados': procesosSeleccionados,
-      'producto_fabricado': _productoFabricadoController.text.trim(),
+      'producto_fabricado': _productoGeneradoController.text.trim(),
       'compuesto_67': _compuestoController.text.trim(),
       'cantidad_producto': cantidadGenerada,
       'porcentaje_material_reciclado': _porcentajeMaterialReciclado,
+      'confirma_porcentaje': _confirmaPorcentaje,
       'tipo_polimero': _tipoPolimero,
       'proceso_aplicado': procesosSeleccionados.isNotEmpty ? procesosSeleccionados.join(', ') : null,
       'observaciones': _comentariosController.text.trim(),
@@ -547,7 +566,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
   
   bool _checkUnsavedChanges() {
     return _hasUnsavedChanges || 
-           _productoFabricadoController.text.isNotEmpty ||
+           _productoGeneradoController.text.isNotEmpty ||
            _compuestoController.text.isNotEmpty ||
            _cantidadGeneradaController.text != _pesoTotalOriginal.toStringAsFixed(2) ||
            _comentariosController.text.isNotEmpty ||
@@ -557,7 +576,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
   }
   
   bool _isFormValid() {
-    return _productoFabricadoController.text.isNotEmpty &&
+    return _productoGeneradoController.text.isNotEmpty &&
            _compuestoController.text.isNotEmpty &&
            _cantidadGeneradaController.text.isNotEmpty &&
            _procesosAplicados.values.any((selected) => selected) &&
@@ -565,78 +584,9 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
            _photos.isNotEmpty;
   }
 
-  // Métodos auxiliares para cálculo de pesos y mermas
-  double _calcularPesoNetoTotal() {
-    if (!_esProcesamientoMultiple) {
-      return double.tryParse(_pesoSalidaController.text) ?? _pesoTotalOriginal;
-    }
-    
-    double total = 0.0;
-    _pesosRecibidosControllers.forEach((loteId, controller) {
-      final peso = double.tryParse(controller.text);
-      if (peso != null && peso > 0) {
-        total += peso;
-      }
-    });
-    return total;
-  }
-  
-  double _calcularMermaTotal() {
-    final pesoNeto = _calcularPesoNetoTotal();
-    return _pesoTotalOriginal - pesoNeto;
-  }
-  
-  double _calcularPorcentajeMerma() {
-    if (_pesoTotalOriginal == 0) return 0;
-    final merma = _calcularMermaTotal();
-    return (merma / _pesoTotalOriginal) * 100;
-  }
-  
-  void _calcularMermaIndividual(String loteId) {
-    if (!_esProcesamientoMultiple) return;
-    
-    final pesoBruto = _pesosBrutos[loteId] ?? 0;
-    final controllerNeto = _pesosRecibidosControllers[loteId];
-    if (controllerNeto == null) return;
-    
-    final pesoNeto = double.tryParse(controllerNeto.text) ?? 0;
-    
-    setState(() {
-      if (pesoNeto > 0 && pesoNeto <= pesoBruto) {
-        _mermasCalculadas[loteId] = pesoBruto - pesoNeto;
-      } else {
-        _mermasCalculadas[loteId] = 0;
-      }
-      // Actualizar totales automáticamente - Consistente con Reciclador
-      _actualizarTotales();
-    });
-  }
-  
-  void _actualizarTotales() {
-    double pesoNetoTotal = 0;
-    double mermaTotal = 0;
-    
-    if (_esProcesamientoMultiple) {
-      _pesosRecibidosControllers.forEach((loteId, controller) {
-        final pesoNeto = double.tryParse(controller.text) ?? 0;
-        if (pesoNeto > 0) {
-          pesoNetoTotal += pesoNeto;
-        }
-      });
-      
-      _mermasCalculadas.forEach((_, merma) {
-        mermaTotal += merma;
-      });
-    } else {
-      // Para lote individual
-      pesoNetoTotal = double.tryParse(_pesoSalidaController.text) ?? _pesoTotalOriginal;
-      mermaTotal = _pesoTotalOriginal - pesoNetoTotal;
-    }
-    
-    setState(() {
-      _pesoNetoTotal = pesoNetoTotal;
-      _mermaTotalCalculada = mermaTotal;
-    });
+  // Método auxiliar simplificado - ya no necesitamos cálculos de merma
+  double _obtenerCantidadGenerada() {
+    return double.tryParse(_cantidadGeneradaController.text) ?? 0;
   }
 
   void _procesarSalida() async {
@@ -645,94 +595,23 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
       return;
     }
     
-    // Validación específica para procesamiento múltiple
-    if (_esProcesamientoMultiple) {
-      // Verificar que todos los lotes tengan peso ingresado
-      for (String loteId in _loteIds) {
-        final controller = _pesosRecibidosControllers[loteId];
-        if (controller == null || controller.text.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Por favor ingrese el peso para todos los lotes'),
-              backgroundColor: BioWayColors.error,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadiusConstants.borderRadiusSmall,
-              ),
-            ),
-          );
-          return;
-        }
-      }
-      
-      // Confirmación si la merma total es mayor al 10%
-      final porcentajeMerma = _calcularPorcentajeMerma();
-      if (porcentajeMerma > 10) {
-        final confirmar = await showDialog<bool>(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: Row(
-              children: [
-                Icon(Icons.warning, color: Colors.orange, size: 28),
-                SizedBox(width: 12),
-                Text('Merma Elevada'),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'La merma total es del ${porcentajeMerma.toStringAsFixed(1)}%, '
-                  'lo cual supera el 10% esperado.',
-                  style: TextStyle(fontSize: 16),
-                ),
-                SizedBox(height: 16),
-                Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.1 * 255),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.orange.withValues(alpha: 0.3 * 255)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Peso bruto total: ${_pesoTotalOriginal.toStringAsFixed(2)} kg'),
-                      Text('Peso neto total: ${_calcularPesoNetoTotal().toStringAsFixed(2)} kg'),
-                      Text('Merma total: ${_calcularMermaTotal().toStringAsFixed(2)} kg'),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 16),
-                Text(
-                  '¿Está seguro de continuar con estos valores?',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text('Revisar valores'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                ),
-                child: Text('Continuar de todos modos'),
-              ),
-            ],
+    // Validar confirmación del porcentaje de material reciclado
+    if (!_confirmaPorcentaje) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Por favor confirme el porcentaje de material reciclado'),
+          backgroundColor: BioWayColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadiusConstants.borderRadiusSmall,
           ),
-        );
-        
-        if (confirmar != true) {
-          return;
-        }
-      }
+        ),
+      );
+      return;
     }
+    
+    // Ya no necesitamos validación de pesos individuales
+    // Usamos solo la cantidad generada total para todos los casos
     
     
     // Validar que haya al menos un proceso aplicado seleccionado
@@ -881,34 +760,63 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
         List<Map<String, dynamic>> lotesEntrada = [];
         double pesoTotalProcesado = 0;
         
-        // Usar pesos procesados individuales si están disponibles
+        // Calcular peso total de los lotes para porcentajes de composición
+        double pesoTotalLotes = 0;
+        
+        // CONCEPTO CLAVE: Cada lote tiene su peso neto aprovechable del reciclador
+        // Este peso es el que viene del proceso anterior, NO es un peso de entrada/salida
         for (var lote in lotes) {
-          double pesoProcesado;
+          // El peso del lote es el peso neto aprovechable que viene del reciclador
+          double pesoNetoLote = lote.pesoActual;
           
-          if (_esProcesamientoMultiple && _pesosRecibidosControllers.containsKey(lote.id)) {
-            // Usar el peso neto individual ingresado
-            pesoProcesado = double.tryParse(_pesosRecibidosControllers[lote.id]!.text) ?? lote.pesoActual;
-          } else {
-            // Para lote único, usar el peso del campo general
-            pesoProcesado = double.tryParse(_pesoSalidaController.text) ?? lote.pesoActual;
+          print('[DEBUG] Lote ${lote.id}:');
+          print('  - Peso neto aprovechable: ${pesoNetoLote}kg');
+          print('  - Tipo material: ${lote.datosGenerales.tipoMaterial}');
+          
+          if (pesoNetoLote <= 0) {
+            print('[WARN] Lote ${lote.id} tiene peso 0, verificando campos alternativos...');
+            // Intentar obtener el peso de otros lugares si pesoActual falla
+            if (lote.reciclador != null) {
+              pesoNetoLote = lote.reciclador!.pesoProcesado ?? lote.reciclador!.pesoEntrada ?? 0;
+            }
+            if (pesoNetoLote <= 0 && lote.datosGenerales.peso > 0) {
+              pesoNetoLote = lote.datosGenerales.peso;
+            }
+            print('[INFO] Peso alternativo encontrado: ${pesoNetoLote}kg');
           }
           
-          pesoTotalProcesado += pesoProcesado;
+          pesoTotalLotes += pesoNetoLote;
+        }
+        
+        print('[INFO] Peso total de lotes: ${pesoTotalLotes}kg');
+        
+        // Crear entradas de lotes con sus pesos netos aprovechables
+        for (var lote in lotes) {
+          // Obtener el peso neto aprovechable del lote
+          double pesoNetoLote = lote.pesoActual;
+          if (pesoNetoLote <= 0) {
+            // Fallback si pesoActual es 0
+            if (lote.reciclador != null) {
+              pesoNetoLote = lote.reciclador!.pesoProcesado ?? lote.reciclador!.pesoEntrada ?? 0;
+            }
+            if (pesoNetoLote <= 0 && lote.datosGenerales.peso > 0) {
+              pesoNetoLote = lote.datosGenerales.peso;
+            }
+          }
+          
+          // Calcular porcentaje de composición del material
+          final porcentaje = pesoTotalLotes > 0 
+            ? (pesoNetoLote / pesoTotalLotes) * 100 
+            : 0;
           
           lotesEntrada.add({
             'lote_id': lote.id,
-            'peso': lote.pesoActual, // Peso original
-            'peso_procesado': pesoProcesado, // NUEVO: Peso neto real aprovechable
-            'tipo_material': lote.datosGenerales.tipoMaterial,
+            'peso': pesoNetoLote, // Peso neto aprovechable del lote
+            'tipo_material': lote.datosGenerales.tipoMaterial, // Para filtros de material
+            'porcentaje': porcentaje, // Para regla del >50% en filtros
           });
-        }
-        
-        // Calcular porcentajes basados en el peso procesado
-        for (var loteData in lotesEntrada) {
-          final pesoProcesado = loteData['peso_procesado'] as double;
-          loteData['porcentaje'] = pesoTotalProcesado > 0 
-            ? (pesoProcesado / pesoTotalProcesado) * 100 
-            : 0;
+          
+          print('[INFO] Lote agregado: ${lote.id} - ${lote.datosGenerales.tipoMaterial} - ${pesoNetoLote}kg (${porcentaje.toStringAsFixed(1)}%)');
         }
         
         // Crear o actualizar la transformación
@@ -921,30 +829,34 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
         print('tipo: agrupacion_transformador');
         print('Verificando que UID coincide con Auth: ${authUid == _authService.currentUser?.uid}');
         
-        // Calcular merma usando el método auxiliar que considera múltiples lotes
-        final pesoSalida = _calcularPesoNetoTotal();
+        // La cantidad generada es el producto final (NO es un peso de salida)
         final cantidadGenerada = double.tryParse(_cantidadGeneradaController.text) ?? 0;
-        final mermaProceso = _calcularMermaTotal();
+        
+        // Debug: Verificar datos antes de guardar
+        print('[DEBUG] Producto fabricado: "${_productoGeneradoController.text.trim()}"');
+        print('[DEBUG] Cantidad generada: ${cantidadGenerada}kg');
+        print('[DEBUG] Peso total de lotes: ${pesoTotalLotes}kg');
         
         final transformacionData = {
           'tipo': 'agrupacion_transformador',
-          'usuario_id': authUid, // Usar el UID de Firebase Auth directamente
+          'usuario_id': authUid,
           'usuario_folio': userFolio,
-          'fecha_inicio': Timestamp.fromDate(DateTime.now()), // CONVERTIR A TIMESTAMP como el Reciclador
+          'fecha_inicio': Timestamp.fromDate(DateTime.now()),
           'estado': 'documentacion',
-          'lotes_entrada': lotesEntrada,
-          'peso_total_entrada': _pesoTotalOriginal,
-          'peso_disponible': pesoSalida, // Peso disponible después de merma
-          'peso_salida': pesoSalida, // Peso de salida real en kg
-          'merma_proceso': mermaProceso >= 0 ? mermaProceso : 0, // Campo REQUERIDO por el modelo
-          'sublotes_generados': [], // Campo REQUERIDO - lista vacía inicial
-          'documentos_asociados': {}, // Campo REQUERIDO - mapa vacío inicial
+          'lotes_entrada': lotesEntrada, // Cada lote con su peso neto aprovechable
+          'peso_total_entrada': pesoTotalLotes, // Suma de pesos netos de los lotes
+          'peso_disponible': 0, // No aplica para transformador
+          'peso_salida': cantidadGenerada, // Cantidad del producto final generado
+          'merma_proceso': 0, // No hay merma, se agregan materiales
+          'sublotes_generados': [], // Lista vacía inicial
+          'documentos_asociados': {}, // Mapa vacío inicial
           // Campos específicos del transformador
           'procesos_aplicados': procesosSeleccionados,
-          'producto_fabricado': _productoFabricadoController.text.trim(),
+          'producto_fabricado': _productoGeneradoController.text.trim(),
           'compuesto_67': _compuestoController.text.trim(),
           'cantidad_producto': cantidadGenerada,
           'porcentaje_material_reciclado': _porcentajeMaterialReciclado,
+          'confirma_porcentaje': _confirmaPorcentaje,
           'tipo_polimero': _tipoPolimero,
           'proceso_aplicado': procesosSeleccionados.isNotEmpty ? procesosSeleccionados.join(', ') : null,
           'observaciones': _comentariosController.text.trim(),
@@ -1035,31 +947,58 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
         // Procesamiento individual - TAMBIÉN debe crear transformación para las estadísticas
         print('PROCESAMIENTO INDIVIDUAL - Creando transformación para un solo lote...');
         
-        // Obtener información del lote único
-        final loteDoc = await _firestore
-            .collection('lotes')
-            .doc(_loteIds.first)
-            .collection('datos_generales')
-            .doc('info')
-            .get();
+        // IMPORTANTE: Usar el mismo método que el procesamiento múltiple
+        // Obtener el lote completo, no solo datos_generales
+        final loteCompleto = await _loteUnificadoService.obtenerLotePorId(_loteIds.first);
         
-        final tipoMaterial = loteDoc.data()?['tipo_material'] ?? _tipoPolimero ?? 'Material';
-        final pesoLote = (loteDoc.data()?['peso_actual'] ?? 
-                         loteDoc.data()?['peso_nace'] ?? 
-                         widget.peso ?? 0).toDouble();
+        if (loteCompleto == null) {
+          throw Exception('No se pudo obtener el lote ${_loteIds.first}');
+        }
+        
+        final tipoMaterial = loteCompleto.datosGenerales.tipoMaterial;
+        
+        // Obtener el peso usando el mismo método que el procesamiento múltiple
+        double pesoNetoLote = loteCompleto.pesoActual;
+        
+        print('[DEBUG] Procesamiento individual - Lote ${_loteIds.first}:');
+        print('  - Peso neto aprovechable (pesoActual): ${pesoNetoLote}kg');
+        print('  - Tipo material: $tipoMaterial');
+        
+        // Si el peso es 0, intentar alternativas
+        if (pesoNetoLote <= 0) {
+          print('[WARN] Peso es 0, intentando alternativas...');
+          // Intentar con reciclador
+          if (loteCompleto.reciclador != null) {
+            pesoNetoLote = loteCompleto.reciclador!.pesoProcesado ?? 
+                          loteCompleto.reciclador!.pesoEntrada ?? 0;
+            print('  - Peso del reciclador: ${pesoNetoLote}kg');
+          }
+          // Si aún es 0, usar datos generales
+          if (pesoNetoLote <= 0) {
+            pesoNetoLote = loteCompleto.datosGenerales.peso;
+            print('  - Peso de datos generales: ${pesoNetoLote}kg');
+          }
+          // Último intento con widget.peso
+          if (pesoNetoLote <= 0 && widget.peso != null) {
+            pesoNetoLote = widget.peso!.toDouble();
+            print('  - Peso del widget: ${pesoNetoLote}kg');
+          }
+        }
+        
+        if (pesoNetoLote <= 0) {
+          print('[ERROR] No se pudo obtener un peso válido para el lote!');
+        }
         
         // Crear entrada para el lote único
         final loteEntrada = {
           'lote_id': _loteIds.first,
-          'peso': pesoLote,
+          'peso': pesoNetoLote, // Peso neto aprovechable
           'tipo_material': tipoMaterial,
           'porcentaje': 100.0, // Un solo lote = 100%
         };
         
-        // Calcular valores
-        final pesoSalida = double.tryParse(_pesoSalidaController.text) ?? pesoLote;
+        // La cantidad generada es el producto final
         final cantidadGenerada = double.tryParse(_cantidadGeneradaController.text) ?? 0;
-        final mermaProceso = pesoLote - pesoSalida;
         
         // Crear transformación para lote individual
         final transformacionData = {
@@ -1069,10 +1008,10 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
           'fecha_inicio': Timestamp.fromDate(DateTime.now()),
           'estado': 'documentacion',
           'lotes_entrada': [loteEntrada], // Array con un solo lote
-          'peso_total_entrada': pesoLote,
-          'peso_disponible': pesoSalida,
-          'peso_salida': pesoSalida,
-          'merma_proceso': mermaProceso >= 0 ? mermaProceso : 0,
+          'peso_total_entrada': pesoNetoLote, // Peso neto del lote
+          'peso_disponible': 0, // No aplica para transformador
+          'peso_salida': cantidadGenerada, // Cantidad del producto final
+          'merma_proceso': 0, // No hay merma, se agregan materiales
           'sublotes_generados': [],
           'documentos_asociados': {},
           // Campos específicos del transformador
@@ -1081,6 +1020,7 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
           'compuesto_67': _compuestoController.text.trim(),
           'cantidad_producto': cantidadGenerada,
           'porcentaje_material_reciclado': _porcentajeMaterialReciclado,
+          'confirma_porcentaje': _confirmaPorcentaje,
           'tipo_polimero': tipoMaterial,
           'proceso_aplicado': procesosSeleccionados.isNotEmpty ? procesosSeleccionados.join(', ') : null,
           'observaciones': _comentariosController.text.trim(),
@@ -1149,8 +1089,8 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
         await _loteUnificadoService.actualizarProcesoTransformador(
           loteId: _loteIds.first,
           datosTransformador: {
-            'peso_salida': pesoSalida,
-            'peso_procesado': pesoSalida, // NUEVO: Guardar también como peso_procesado para consistencia
+            'peso_salida': cantidadGenerada, // Cantidad del producto final
+            'peso_procesado': cantidadGenerada, // Para consistencia
             'producto_generado': _productoGeneradoController.text.trim(),
             'cantidad_generada': cantidadGenerada.toString(),
             'procesos_aplicados': procesosSeleccionados,
@@ -1376,184 +1316,23 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
         
         SizedBox(height: UIConstants.spacing16),
         
-        // Lista de lotes con campos de peso individual
-        ..._loteIds.map((loteId) => _buildControlPesoIndividual(loteId)),
-        
-        // Resumen de totales
-        _buildResumenTotales(),
+        // Ya no mostramos campos de peso individual ni resumen de totales con merma
+        // El sistema usa solo la cantidad generada total
       ],
     );
   }
   
+  // Función obsoleta - ya no se usa
   Widget _buildControlPesoIndividual(String loteId) {
-    final pesoBruto = _pesosBrutos[loteId] ?? 0;
-    final controller = _pesosRecibidosControllers[loteId];
-    final merma = _mermasCalculadas[loteId] ?? 0;
-    final porcentajeMerma = pesoBruto > 0 ? (merma / pesoBruto) * 100 : 0;
-    
-    return Container(
-            margin: EdgeInsets.only(bottom: UIConstants.spacing16),
-            padding: EdgeInsets.all(UIConstants.spacing16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadiusConstants.borderRadiusMedium,
-              border: Border.all(
-                color: porcentajeMerma > 10 
-                  ? _primaryColor.withValues(alpha: UIConstants.opacityMedium)
-                  : Colors.grey.withValues(alpha: UIConstants.opacityLow),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: UIConstants.opacityVeryLow),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ID del lote
-                Row(
-                  children: [
-                    Icon(
-                      Icons.inventory_2,
-                      size: UIConstants.iconSizeSmall,
-                      color: _primaryColor,
-                    ),
-                    SizedBox(width: UIConstants.spacing8),
-                    Text(
-                      'Lote: ${loteId.substring(0, 8).toUpperCase()}',
-                      style: const TextStyle(
-                        fontSize: UIConstants.fontSizeMedium,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'monospace',
-                      ),
-                    ),
-                  ],
-                ),
-                
-                SizedBox(height: UIConstants.spacing12),
-                
-                // Peso bruto
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Peso bruto:',
-                      style: TextStyle(
-                        fontSize: UIConstants.fontSizeMedium,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    Text(
-                      '${pesoBruto.toStringAsFixed(2)} kg',
-                      style: const TextStyle(
-                        fontSize: UIConstants.fontSizeMedium,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                
-                SizedBox(height: UIConstants.spacing12),
-                
-                // Campo de peso neto
-                const FieldLabel(
-                  text: 'Peso neto aprovechable (kg)',
-                  isRequired: true,
-                ),
-                SizedBox(height: UIConstants.spacing8),
-                TextFormField(
-                  controller: controller,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(
-                    hintText: 'Ingrese el peso real aprovechable',
-                    filled: true,
-                    fillColor: Colors.grey[50],
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
-                      borderSide: BorderSide(color: Colors.grey[300]!),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
-                      borderSide: BorderSide(color: _primaryColor, width: 2),
-                    ),
-                    errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
-                      borderSide: const BorderSide(color: BioWayColors.error, width: 2),
-                    ),
-                  ),
-                  onChanged: (value) {
-                    _calcularMermaIndividual(loteId);
-                  },
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor ingrese el peso neto';
-                    }
-                    final peso = double.tryParse(value);
-                    if (peso == null || peso <= 0) {
-                      return 'Por favor ingrese un peso válido';
-                    }
-                    if (peso > pesoBruto) {
-                      return 'El peso neto no puede ser mayor al peso bruto';
-                    }
-                    return null;
-                  },
-                ),
-                
-                // Indicador de merma si existe
-                if (merma > 0) ...[
-                  SizedBox(height: UIConstants.spacing12),
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: UIConstants.spacing12,
-                      vertical: UIConstants.spacing8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: porcentajeMerma > 10 
-                        ? _primaryColor.withValues(alpha: UIConstants.opacityVeryLow)
-                        : Colors.green.withValues(alpha: UIConstants.opacityVeryLow),
-                      borderRadius: BorderRadiusConstants.borderRadiusSmall,
-                      border: Border.all(
-                        color: porcentajeMerma > 10 
-                          ? _primaryColor.withValues(alpha: UIConstants.opacityLow)
-                          : Colors.green.withValues(alpha: UIConstants.opacityLow),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          porcentajeMerma > 10 ? Icons.warning : Icons.check_circle,
-                          size: UIConstants.iconSizeSmall,
-                          color: porcentajeMerma > 10 ? Colors.orange : Colors.green,
-                        ),
-                        SizedBox(width: UIConstants.spacing8),
-                        Expanded(
-                          child: Text(
-                            'Merma: ${merma.toStringAsFixed(2)} kg (${porcentajeMerma.toStringAsFixed(1)}%)',
-                            style: TextStyle(
-                              fontSize: UIConstants.fontSizeSmall,
-                              fontWeight: FontWeight.w600,
-                              color: porcentajeMerma > 10 ? Colors.orange[700] : Colors.green[700],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          );
+    // Esta función ya no se usa - el sistema simplificado no requiere pesos individuales
+    return const SizedBox.shrink();
   }
   
   Widget _buildResumenTotales() {
-    // Usar variables de estado en lugar de calcular dinámicamente
-    final pesoNetoTotal = _esProcesamientoMultiple ? _pesoNetoTotal : double.tryParse(_pesoSalidaController.text) ?? 0;
-    final mermaTotal = _esProcesamientoMultiple ? _mermaTotalCalculada : (_pesoTotalOriginal - pesoNetoTotal);
-    final porcentajeMerma = _pesoTotalOriginal > 0 ? (mermaTotal / _pesoTotalOriginal) * 100 : 0;
+    // Simplificado: sin merma en transformación
+    final cantidadGenerada = double.tryParse(_cantidadGeneradaController.text) ?? 0;
+    final mermaTotal = 0.0; // No hay merma en transformación
+    final porcentajeMerma = 0.0;
     
     return Container(
       margin: EdgeInsets.only(top: UIConstants.spacing8),
@@ -1606,16 +1385,16 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
           
           SizedBox(height: UIConstants.spacing8),
           
-          // Peso neto total
+          // Cantidad generada total
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Peso neto total:',
+                'Cantidad generada:',
                 style: TextStyle(fontSize: UIConstants.fontSizeMedium),
               ),
               Text(
-                '${pesoNetoTotal.toStringAsFixed(2)} kg',
+                '${cantidadGenerada.toStringAsFixed(2)} kg',
                 style: TextStyle(
                   fontSize: UIConstants.fontSizeMedium,
                   fontWeight: FontWeight.bold,
@@ -1625,43 +1404,31 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
             ],
           ),
           
-          SizedBox(height: UIConstants.spacing8),
-          
-          // Merma total
+          // Info note about transformation
           Container(
             padding: EdgeInsets.symmetric(
               horizontal: UIConstants.spacing12,
               vertical: UIConstants.spacing8,
             ),
             decoration: BoxDecoration(
-              color: porcentajeMerma > 10 
-                ? _primaryColor.withValues(alpha: UIConstants.opacityVeryLow)
-                : Colors.blue.withValues(alpha: UIConstants.opacityVeryLow),
+              color: Colors.blue.withValues(alpha: UIConstants.opacityVeryLow),
               borderRadius: BorderRadiusConstants.borderRadiusSmall,
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      porcentajeMerma > 10 ? Icons.warning : Icons.info,
-                      size: UIConstants.iconSizeSmall,
-                      color: porcentajeMerma > 10 ? Colors.orange : Colors.blue,
-                    ),
-                    SizedBox(width: UIConstants.spacing8),
-                    const Text(
-                      'Merma total:',
-                      style: TextStyle(fontSize: UIConstants.fontSizeMedium),
-                    ),
-                  ],
+                Icon(
+                  Icons.info,
+                  size: UIConstants.iconSizeSmall,
+                  color: Colors.blue,
                 ),
-                Text(
-                  '${mermaTotal.toStringAsFixed(2)} kg (${porcentajeMerma.toStringAsFixed(1)}%)',
-                  style: TextStyle(
-                    fontSize: UIConstants.fontSizeMedium,
-                    fontWeight: FontWeight.bold,
-                    color: porcentajeMerma > 10 ? Colors.orange[700] : Colors.blue[700],
+                SizedBox(width: UIConstants.spacing8),
+                Expanded(
+                  child: Text(
+                    'La transformación incluye materiales adicionales',
+                    style: TextStyle(
+                      fontSize: UIConstants.fontSizeSmall,
+                      color: Colors.blue[700],
+                    ),
                   ),
                 ),
               ],
@@ -1841,75 +1608,6 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
             
             SizedBox(height: UIConstants.spacing20),
             
-            // Sección de peso de salida
-            Container(
-              width: double.infinity,
-              padding: EdgeInsetsConstants.paddingAll20,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadiusConstants.borderRadiusMedium,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: UIConstants.opacityLow),
-                    blurRadius: UIConstants.blurRadiusMedium,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.scale,
-                        color: _primaryColor,
-                        size: UIConstants.iconSizeMedium,
-                      ),
-                      SizedBox(width: UIConstants.spacing12),
-                      Text(
-                        'Peso de Salida',
-                        style: TextStyle(
-                          fontSize: UIConstants.fontSizeBody + 2,
-                          fontWeight: FontWeight.bold,
-                          color: _primaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: UIConstants.spacing20),
-                  
-                  // Sección de peso - Individual o múltiple
-                  if (_esProcesamientoMultiple) ...[
-                    _buildSeccionPesoMultiple(),
-                  ] else ...[
-                    const FieldLabel(
-                      text: 'Peso de salida (kg)',
-                      isRequired: true,
-                    ),
-                    SizedBox(height: UIConstants.spacing8),
-                    WeightInputWidget(
-                      controller: _pesoSalidaController,
-                      label: '',
-                      primaryColor: _primaryColor,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor ingrese el peso de salida';
-                        }
-                        final peso = double.tryParse(value);
-                        if (peso == null || peso <= 0) {
-                          return 'Por favor ingrese un peso válido';
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            
-            SizedBox(height: UIConstants.spacing20),
-            
             // Sección de procesos aplicados
             Container(
               width: double.infinity,
@@ -1948,6 +1646,317 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                   ),
                   SizedBox(height: UIConstants.spacing20),
                   _buildProcesosAplicadosGrid(),
+                ],
+              ),
+            ),
+            
+            SizedBox(height: UIConstants.spacing20),
+            
+            // Sección de composición del producto
+            Container(
+              width: double.infinity,
+              padding: EdgeInsetsConstants.paddingAll20,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadiusConstants.borderRadiusMedium,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: UIConstants.opacityLow),
+                    blurRadius: UIConstants.blurRadiusMedium,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.pie_chart,
+                        color: _primaryColor,
+                        size: UIConstants.iconSizeMedium,
+                      ),
+                      SizedBox(width: UIConstants.spacing12),
+                      Text(
+                        'Composición del Producto',
+                        style: TextStyle(
+                          fontSize: UIConstants.fontSizeBody + 2,
+                          fontWeight: FontWeight.bold,
+                          color: _primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: UIConstants.spacing24),
+                  
+                  // Porcentaje de Material Reciclado (33% fijo)
+                  Container(
+                    padding: EdgeInsets.all(UIConstants.spacing20),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: UIConstants.opacityVeryLow),
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
+                      border: Border.all(
+                        color: Colors.green.withValues(alpha: UIConstants.opacityLow),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.recycling,
+                              color: Colors.green,
+                              size: UIConstants.iconSizeMedium,
+                            ),
+                            SizedBox(width: UIConstants.spacing12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Porcentaje de Material Reciclado',
+                                    style: TextStyle(
+                                      fontSize: UIConstants.fontSizeBody,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green[800],
+                                    ),
+                                  ),
+                                  SizedBox(height: UIConstants.spacing4),
+                                  Text(
+                                    '${_porcentajeMaterialReciclado.toStringAsFixed(0)}% del peso total',
+                                    style: TextStyle(
+                                      fontSize: UIConstants.fontSizeLarge,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green[900],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: UIConstants.spacing16),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: UIConstants.spacing16,
+                            vertical: UIConstants.spacing12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadiusConstants.borderRadiusSmall,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Peso de material reciclado:',
+                                style: TextStyle(
+                                  fontSize: UIConstants.fontSizeMedium,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                              SizedBox(height: UIConstants.spacing4),
+                              Text(
+                                '${_pesoTotalOriginal.toStringAsFixed(2)} kg',
+                                style: TextStyle(
+                                  fontSize: UIConstants.fontSizeBody,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green[800],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: UIConstants.spacing16),
+                        // Checkbox de confirmación
+                        CheckboxListTile(
+                          value: _confirmaPorcentaje,
+                          onChanged: (bool? value) {
+                            setState(() {
+                              _confirmaPorcentaje = value ?? false;
+                            });
+                          },
+                          title: Text(
+                            'Confirmo que el 33% del producto corresponde a material reciclado',
+                            style: TextStyle(
+                              fontSize: UIConstants.fontSizeMedium,
+                              color: Colors.grey[800],
+                            ),
+                          ),
+                          activeColor: Colors.green,
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  SizedBox(height: UIConstants.spacing20),
+                  
+                  // Compuesto al 67%
+                  Container(
+                    padding: EdgeInsets.all(UIConstants.spacing20),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: UIConstants.opacityVeryLow),
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
+                      border: Border.all(
+                        color: Colors.blue.withValues(alpha: UIConstants.opacityLow),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.science,
+                              color: Colors.blue,
+                              size: UIConstants.iconSizeMedium,
+                            ),
+                            SizedBox(width: UIConstants.spacing12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Compuesto al 67%',
+                                    style: TextStyle(
+                                      fontSize: UIConstants.fontSizeBody,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue[800],
+                                    ),
+                                  ),
+                                  SizedBox(height: UIConstants.spacing4),
+                                  Text(
+                                    'Material adicional para completar el producto',
+                                    style: TextStyle(
+                                      fontSize: UIConstants.fontSizeMedium,
+                                      color: Colors.blue[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: UIConstants.spacing16),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: UIConstants.spacing16,
+                            vertical: UIConstants.spacing12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadiusConstants.borderRadiusSmall,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Peso requerido de compuesto:',
+                                style: TextStyle(
+                                  fontSize: UIConstants.fontSizeMedium,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                              SizedBox(height: UIConstants.spacing4),
+                              Text(
+                                '${(_pesoTotalOriginal / 0.33 * 0.67).toStringAsFixed(2)} kg',
+                                style: TextStyle(
+                                  fontSize: UIConstants.fontSizeBody,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue[800],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: UIConstants.spacing20),
+                        // Campo de texto opcional para descripción del compuesto
+                        const FieldLabel(
+                          text: 'Descripción del compuesto (opcional)',
+                          isRequired: false,
+                        ),
+                        SizedBox(height: UIConstants.spacing8),
+                        TextFormField(
+                          controller: _compuestoController,
+                          maxLength: 100,
+                          maxLines: 2,
+                          decoration: InputDecoration(
+                            hintText: 'Ej: Polímero virgen, aditivos, colorantes...',
+                            hintStyle: TextStyle(
+                              color: Colors.grey[400],
+                            ),
+                            counter: Text(
+                              '${_compuestoController.text.length}/100',
+                              style: TextStyle(fontSize: UIConstants.fontSizeSmall),
+                            ),
+                            prefixIcon: Icon(
+                              Icons.edit_note,
+                              color: Colors.blue,
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadiusConstants.borderRadiusMedium,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadiusConstants.borderRadiusMedium,
+                              borderSide: BorderSide(
+                                color: Colors.grey[300]!,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadiusConstants.borderRadiusMedium,
+                              borderSide: BorderSide(
+                                color: Colors.blue,
+                                width: UIConstants.strokeWidth,
+                              ),
+                            ),
+                          ),
+                          onChanged: (value) {
+                            setState(() {}); // Para actualizar el contador
+                          },
+                        ),
+                        SizedBox(height: UIConstants.spacing16),
+                        // Nota informativa
+                        Container(
+                          padding: EdgeInsets.all(UIConstants.spacing12),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withValues(alpha: UIConstants.opacityVeryLow),
+                            borderRadius: BorderRadiusConstants.borderRadiusSmall,
+                            border: Border.all(
+                              color: Colors.amber.withValues(alpha: UIConstants.opacityLow),
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                color: Colors.amber[800],
+                                size: UIConstants.iconSizeSmall,
+                              ),
+                              SizedBox(width: UIConstants.spacing8),
+                              Expanded(
+                                child: Text(
+                                  'El peso total del producto final será de ${(_pesoTotalOriginal / 0.33).toStringAsFixed(2)} kg',
+                                  style: TextStyle(
+                                    fontSize: UIConstants.fontSizeSmall,
+                                    color: Colors.amber[900],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -2004,6 +2013,9 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                     maxLength: 50,
                     decoration: InputDecoration(
                       hintText: 'Ej: Pellets de PET',
+                      hintStyle: TextStyle(
+                        color: Colors.grey[400],
+                      ),
                       counter: Text(
                         '${_productoGeneradoController.text.length}/50',
                         style: TextStyle(fontSize: UIConstants.fontSizeSmall + 1),
@@ -2042,315 +2054,66 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                   
                   SizedBox(height: UIConstants.spacing16),
                   
-                  // Campo de cantidad generada
-                  const FieldLabel(
-                    text: 'Cantidad generada',
-                    isRequired: true,
-                  ),
-                  SizedBox(height: UIConstants.spacing8),
-                  TextFormField(
-                    controller: _cantidadGeneradaController,
-                    focusNode: _cantidadFocus,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      hintText: 'Ej: 500 unidades',
-                      prefixIcon: Icon(
-                        Icons.numbers,
-                        color: _primaryColor,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadiusConstants.borderRadiusMedium,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadiusConstants.borderRadiusMedium,
-                        borderSide: BorderSide(
-                          color: Colors.grey[300]!,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadiusConstants.borderRadiusMedium,
-                        borderSide: BorderSide(
-                          color: _primaryColor,
-                          width: UIConstants.strokeWidth,
-                        ),
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Por favor ingrese la cantidad generada';
-                      }
-                      return null;
-                    },
-                  ),
-                ],
-              ),
-            ),
-            
-            SizedBox(height: UIConstants.spacing20),
-            
-            // Sección de datos del responsable
-            Container(
-              width: double.infinity,
-              padding: EdgeInsetsConstants.paddingAll20,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadiusConstants.borderRadiusMedium,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: UIConstants.opacityLow),
-                    blurRadius: UIConstants.blurRadiusMedium,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+                  // Campo de cantidad generada (peso en kg)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.person,
-                        color: _primaryColor,
-                        size: UIConstants.iconSizeMedium,
+                      const FieldLabel(
+                        text: 'Cantidad generada (kg)',
+                        isRequired: true,
                       ),
-                      SizedBox(width: UIConstants.spacing12),
-                      Text(
-                        'Datos del Responsable',
-                        style: TextStyle(
-                          fontSize: UIConstants.fontSizeBody + 2,
-                          fontWeight: FontWeight.bold,
-                          color: _primaryColor,
+                      SizedBox(height: UIConstants.spacing4),
+                      // Nota informativa sobre el límite
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: UIConstants.spacing8,
+                          vertical: UIConstants.spacing4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withValues(alpha: UIConstants.opacityVeryLow),
+                          borderRadius: BorderRadiusConstants.borderRadiusSmall,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: UIConstants.fontSizeSmall,
+                              color: Colors.blue[700],
+                            ),
+                            SizedBox(width: UIConstants.spacing4),
+                            Expanded(
+                              child: Text(
+                                'Máximo permitido: ${((_pesoTotalOriginal / 0.33) * 1.25).toStringAsFixed(2)} kg (125% del peso total estimado)',
+                                style: TextStyle(
+                                  fontSize: UIConstants.fontSizeSmall,
+                                  color: Colors.blue[700],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: UIConstants.spacing20),
-                  const FieldLabel(
-                    text: 'Nombre del operador',
-                    isRequired: true,
-                  ),
                   SizedBox(height: UIConstants.spacing8),
-                TextFormField(
-                  controller: _operadorController,
-                  focusNode: _operadorFocus,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: InputDecoration(
-                    hintText: 'Ej: Juan Pérez',
-                    prefixIcon: Icon(
-                      Icons.person,
-                      color: _primaryColor,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
-                      borderSide: BorderSide(
-                        color: Colors.grey[300]!,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
-                      borderSide: BorderSide(
-                        color: _primaryColor,
-                        width: UIConstants.strokeWidth,
-                      ),
-                    ),
+                  WeightInputWidget(
+                    controller: _cantidadGeneradaController,
+                    label: '',
+                    primaryColor: _primaryColor,
+                    maxValue: (_pesoTotalOriginal / 0.33) * 1.25, // Límite máximo del 125% aplicado directamente en el widget
+                    quickAddValues: [10, 50, 100, 500], // Valores más apropiados para productos terminados
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor ingrese la cantidad generada';
+                      }
+                      final peso = double.tryParse(value);
+                      if (peso == null || peso <= 0) {
+                        return 'Por favor ingrese un peso válido';
+                      }
+                      // El límite máximo ya está controlado por el widget
+                      return null;
+                    },
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor ingrese el nombre del operador';
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: UIConstants.spacing20),
-                // Botón para firma
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const FieldLabel(
-                      text: 'Firma del responsable',
-                      isRequired: true,
-                    ),
-                    SizedBox(height: UIConstants.spacing8),
-                    GestureDetector(
-                      onTap: _signaturePoints.isEmpty ? () => _showSignatureDialog() : null,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        height: _signaturePoints.isNotEmpty ? 150 : 100,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: _signaturePoints.isNotEmpty 
-                              ? _primaryColor.withValues(alpha: UIConstants.opacityVeryLow)
-                              : Colors.grey[50],
-                          borderRadius: BorderRadiusConstants.borderRadiusMedium,
-                          border: Border.all(
-                            color: _signaturePoints.isNotEmpty 
-                                ? _primaryColor 
-                                : Colors.grey[300]!,
-                            width: _signaturePoints.isNotEmpty ? 2 : 1,
-                          ),
-                        ),
-                        child: !_signaturePoints.isNotEmpty
-                            ? Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.draw,
-                                      size: UIConstants.iconSizeLarge,
-                                      color: Colors.grey[400],
-                                    ),
-                                    SizedBox(height: UIConstants.spacing4),
-                                    Text(
-                                      'Toque para firmar',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: UIConstants.fontSizeMedium,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : Stack(
-                                children: [
-                                  Container(
-                                    padding: EdgeInsetsConstants.paddingAll12,
-                                    child: Center(
-                                      child: AspectRatio(
-                                        aspectRatio: UIConstants.signatureAspectRatio,
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadiusConstants.borderRadiusSmall,
-                                            border: Border.all(color: Colors.grey[200]!),
-                                          ),
-                                          child: ClipRRect(
-                                            borderRadius: BorderRadiusConstants.borderRadiusSmall,
-                                            child: FittedBox(
-                                              fit: BoxFit.contain,
-                                              child: SizedBox(
-                                                width: UIConstants.signatureSize,
-                                                height: UIConstants.signatureSize,
-                                                child: _signatureUrl != null
-                                                ? Image.network(
-                                                    _signatureUrl!,
-                                                    fit: BoxFit.contain,
-                                                    loadingBuilder: (context, child, loadingProgress) {
-                                                      if (loadingProgress == null) return child;
-                                                      return Center(
-                                                        child: CircularProgressIndicator(
-                                                          value: loadingProgress.expectedTotalBytes != null
-                                                              ? loadingProgress.cumulativeBytesLoaded /
-                                                                  loadingProgress.expectedTotalBytes!
-                                                              : null,
-                                                          color: _primaryColor,
-                                                        ),
-                                                      );
-                                                    },
-                                                    errorBuilder: (context, error, stackTrace) {
-                                                      return Center(
-                                                        child: Column(
-                                                          mainAxisAlignment: MainAxisAlignment.center,
-                                                          children: [
-                                                            Icon(
-                                                              Icons.error_outline,
-                                                              color: Colors.red[300],
-                                                              size: UIConstants.iconSizeLarge - 2,
-                                                            ),
-                                                            SizedBox(height: UIConstants.spacing4),
-                                                            Text(
-                                                              'Error al cargar',
-                                                              style: TextStyle(
-                                                                fontSize: UIConstants.fontSizeSmall + 1,
-                                                                color: Colors.red[300],
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      );
-                                                    },
-                                                  )
-                                                : CustomPaint(
-                                                    size: Size(UIConstants.signatureSize, UIConstants.signatureSize / UIConstants.signatureAspectRatio),
-                                                    painter: TransformadorSignaturePainter(
-                                                      points: _signaturePoints,
-                                                      color: _primaryColor,
-                                                      strokeWidth: UIConstants.strokeWidth,
-                                                    ),
-                                                  ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 8,
-                                    right: 8,
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            shape: BoxShape.circle,
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withValues(alpha: UIConstants.opacityLow),
-                                                blurRadius: 4,
-                                              ),
-                                            ],
-                                          ),
-                                          child: IconButton(
-                                            onPressed: _showSignatureDialog,
-                                            icon: Icon(Icons.edit, size: UIConstants.iconSizeMedium - 4),
-                                            color: _primaryColor,
-                                            padding: EdgeInsets.all(UIConstants.spacing8),
-                                            constraints: const BoxConstraints(
-                                              minWidth: UIConstants.iconSizeLarge + UIConstants.spacing12,
-                                              minHeight: UIConstants.iconSizeLarge + UIConstants.spacing12,
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(width: UIConstants.spacing8),
-                                        Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            shape: BoxShape.circle,
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withValues(alpha: UIConstants.opacityLow),
-                                                blurRadius: 4,
-                                              ),
-                                            ],
-                                          ),
-                                          child: IconButton(
-                                            onPressed: () {
-                                              setState(() {
-                                                _signaturePoints.clear();
-                                              });
-                                            },
-                                            icon: Icon(Icons.clear, size: UIConstants.iconSizeMedium - 4),
-                                            color: Colors.red,
-                                            padding: EdgeInsets.all(UIConstants.spacing8),
-                                            constraints: const BoxConstraints(
-                                              minWidth: UIConstants.iconSizeLarge + UIConstants.spacing12,
-                                              minHeight: UIConstants.iconSizeLarge + UIConstants.spacing12,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                      ),
-                    ),
-                  ],
-                ),
                 ],
               ),
             ),
@@ -2411,6 +2174,245 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
             
             SizedBox(height: UIConstants.spacing20),
             
+            // Sección de datos del responsable
+            Container(
+              width: double.infinity,
+              padding: EdgeInsetsConstants.paddingAll20,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadiusConstants.borderRadiusMedium,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: UIConstants.opacityLow),
+                    blurRadius: UIConstants.blurRadiusMedium,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.person,
+                        color: _primaryColor,
+                        size: UIConstants.iconSizeMedium,
+                      ),
+                      SizedBox(width: UIConstants.spacing12),
+                      Text(
+                        'Datos del Responsable',
+                        style: TextStyle(
+                          fontSize: UIConstants.fontSizeBody + 2,
+                          fontWeight: FontWeight.bold,
+                          color: _primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: UIConstants.spacing20),
+                  const FieldLabel(
+                    text: 'Nombre del operador',
+                    isRequired: true,
+                  ),
+                  SizedBox(height: UIConstants.spacing8),
+                TextFormField(
+                  controller: _operadorController,
+                  focusNode: _operadorFocus,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(
+                    hintText: 'Ej: Juan Pérez',
+                    hintStyle: TextStyle(
+                      color: Colors.grey[400],
+                    ),
+                    prefixIcon: Icon(
+                      Icons.person,
+                      color: _primaryColor,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
+                      borderSide: BorderSide(
+                        color: Colors.grey[300]!,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadiusConstants.borderRadiusMedium,
+                      borderSide: BorderSide(
+                        color: _primaryColor,
+                        width: UIConstants.strokeWidth,
+                      ),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor ingrese el nombre del operador';
+                    }
+                    return null;
+                  },
+                ),
+                SizedBox(height: UIConstants.spacing20),
+                // Botón para firma
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const FieldLabel(
+                      text: 'Firma del responsable',
+                      isRequired: true,
+                    ),
+                    SizedBox(height: UIConstants.spacing8),
+                    GestureDetector(
+                      onTap: _signaturePoints.isEmpty ? () => _showSignatureDialog() : null,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        height: _signaturePoints.isNotEmpty ? 150 : 100,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: _signaturePoints.isNotEmpty 
+                              ? _primaryColor.withValues(alpha: 0.05)
+                              : Colors.grey[50],
+                          borderRadius: BorderRadiusConstants.borderRadiusMedium,
+                          border: Border.all(
+                            color: _signaturePoints.isNotEmpty 
+                                ? _primaryColor 
+                                : Colors.grey[300]!,
+                            width: _signaturePoints.isNotEmpty ? 2 : 1,
+                          ),
+                        ),
+                        child: !_signaturePoints.isNotEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.draw,
+                                      size: UIConstants.iconSizeLarge,
+                                      color: Colors.grey[400],
+                                    ),
+                                    SizedBox(height: UIConstants.spacing8),
+                                    Text(
+                                      'Toque para firmar',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: UIConstants.fontSizeMedium,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : Stack(
+                                children: [
+                                  Container(
+                                    padding: EdgeInsetsConstants.paddingAll12,
+                                    child: Center(
+                                      child: AspectRatio(
+                                        aspectRatio: 2.0,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadiusConstants.borderRadiusSmall,
+                                            border: Border.all(
+                                              color: Colors.grey[200]!,
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(7),
+                                            child: FittedBox(
+                                              fit: BoxFit.contain,
+                                              child: SizedBox(
+                                                width: 300,
+                                                height: 300,
+                                                child: CustomPaint(
+                                                  painter: TransformadorSignaturePainter(
+                                                    points: _signaturePoints,
+                                                    color: _primaryColor,
+                                                    strokeWidth: UIConstants.strokeWidth,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            shape: BoxShape.circle,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(alpha: UIConstants.opacityLow),
+                                                blurRadius: 4,
+                                              ),
+                                            ],
+                                          ),
+                                          child: IconButton(
+                                            onPressed: _showSignatureDialog,
+                                            icon: Icon(
+                                              Icons.edit,
+                                              color: _primaryColor,
+                                              size: UIConstants.iconSizeMedium,
+                                            ),
+                                            constraints: const BoxConstraints(
+                                              minWidth: 32,
+                                              minHeight: 32,
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(width: UIConstants.spacing8),
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            shape: BoxShape.circle,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(alpha: UIConstants.opacityLow),
+                                                blurRadius: 4,
+                                              ),
+                                            ],
+                                          ),
+                                          child: IconButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                _signaturePoints.clear();
+                                              });
+                                            },
+                                            icon: Icon(
+                                              Icons.clear,
+                                              color: Colors.red,
+                                              size: UIConstants.iconSizeMedium,
+                                            ),
+                                            constraints: const BoxConstraints(
+                                              minWidth: 32,
+                                              minHeight: 32,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+                ],
+              ),
+            ),
+            
+            SizedBox(height: UIConstants.spacing20),
+            
             // Sección de comentarios
             Container(
               width: double.infinity,
@@ -2459,6 +2461,9 @@ class _TransformadorFormularioSalidaState extends State<TransformadorFormularioS
                   maxLines: 3,
                   decoration: InputDecoration(
                     hintText: 'Ingrese observaciones adicionales',
+                    hintStyle: TextStyle(
+                      color: Colors.grey[400],
+                    ),
                     alignLabelWithHint: true,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadiusConstants.borderRadiusMedium,
